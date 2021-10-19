@@ -56,6 +56,7 @@ public:
 	virtual void OpenTrainUnitsUI(int32 townIdIn) = 0;
 
 	virtual void OpenTownAutoTradeUI(int32 townIdIn) = 0;
+	virtual void OpenCardSetsUI(CardSetTypeEnum cardSetTypeEnum) = 0;
 
 	virtual void ToggleTechUI() = 0;
 	virtual void ToggleProsperityUI() = 0;

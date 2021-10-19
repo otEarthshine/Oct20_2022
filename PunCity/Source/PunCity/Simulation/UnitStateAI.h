@@ -526,7 +526,7 @@ public:
 	void Add_IntercityHaulPickup(int32 workplaceId, int32 townId);		void IntercityHaulPickup();
 	void Add_IntercityHaulDropoff(int32 workplaceId);					void IntercityHaulDropoff();
 
-	void Add_CaravanGiveMoney(int32 workplaceId, int32 targetBuildingId);		void CaravanGiveMoney();
+	void Add_CaravanGiveMoney(int32 workplaceId, int32 targetBuildingId, bool isGivingTarget);		void CaravanGiveMoney();
 
 	void Add_PickupFoodAnimal();		void PickupFoodAnimal();
 	void Add_DropoffFoodAnimal();		void DropoffFoodAnimal();

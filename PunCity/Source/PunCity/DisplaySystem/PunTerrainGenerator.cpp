@@ -351,7 +351,7 @@ void PunTerrainGenerator::GenerateMoisture()
 			if (forestTemperatureStart100 < latitudeFraction100 && latitudeFraction100 < borealTemperatureStart100) {
 				int32 longitudeFraction100 = abs(y4 - _tile4x4DimY / 2) * 100 / (_tile4x4DimY / 2);
 				// longitudeFraction100 .. 0 at middle of map .. 1 at outer part of map
-				return longitudeFraction100 > 20; // middle 18% of map is forced to be forest
+				return 22 < longitudeFraction100 && longitudeFraction100 < 73; // middle X% and outer Y% of map is forced to be forest
 			}
 			return false;
 		};

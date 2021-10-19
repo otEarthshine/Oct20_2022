@@ -18,10 +18,12 @@ void UMainTechTreeUI::SetupTechBoxUIs()
 	SetupTechBoxColumn(columnToTechEnums[6], TechList_EnlightenmentAge1);
 	SetupTechBoxColumn(columnToTechEnums[7], TechList_EnlightenmentAge2);
 	SetupTechBoxColumn(columnToTechEnums[8], TechList_EnlightenmentAge3);
+	SetupTechBoxColumn(columnToTechEnums[9], TechList_EnlightenmentAge4);
 
-	SetupTechBoxColumn(columnToTechEnums[9], TechList_IndustrialAge1);
-	SetupTechBoxColumn(columnToTechEnums[10], TechList_IndustrialAge2);
-	SetupTechBoxColumn(columnToTechEnums[11], TechList_IndustrialAge3);
+	SetupTechBoxColumn(columnToTechEnums[10], TechList_IndustrialAge1);
+	SetupTechBoxColumn(columnToTechEnums[11], TechList_IndustrialAge2);
+	SetupTechBoxColumn(columnToTechEnums[12], TechList_IndustrialAge3);
+	SetupTechBoxColumn(columnToTechEnums[13], TechList_IndustrialAge4);
 
 	check(techEnumToTechBox.Num() == unlockSys->GetTechCount());
 

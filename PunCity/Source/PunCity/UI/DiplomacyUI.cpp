@@ -60,7 +60,7 @@ void UDiplomacyUI::TickUI()
 			bool showEnabled = relationship.CanCreateAlliance(playerId());
 			ADDTEXT_LOCTEXT("Propose Alliance", "Propose Alliance");
 			if (!showEnabled) {
-				ADDTEXT_(LOCTEXT("Need {0} Relationship", "\nNeed {0} Relationship"), TEXT_NUM(relationship.AllyRelationshipThreshold));
+				ADDTEXT_(LOCTEXT("Need {0} Relationship", "\nNeed {0} Relationship"), TEXT_NUM(relationship.AllyRelationshipRequirement(playerId())));
 			}
 			InteractionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::ProposeAlliance, showEnabled, false);
 		}

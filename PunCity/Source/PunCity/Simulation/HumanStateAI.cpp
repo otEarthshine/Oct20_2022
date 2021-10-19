@@ -1297,10 +1297,14 @@ bool HumanStateAI::TryGatherFruit()
 
 	ResourceHolderInfo infoCoconut = workplace()->holderInfo(ResourceEnum::Coconut);
 	PUN_UNIT_CHECK(infoCoconut.isValid());
+
+	ResourceHolderInfo infoDateFruit = workplace()->holderInfo(ResourceEnum::DateFruit);
+	PUN_UNIT_CHECK(infoDateFruit.isValid());
 	
 	int resourceCount = resourceSystem().resourceCountWithPush(infoOrange) + 
 						resourceSystem().resourceCountWithPush(infoPapaya) +
-						resourceSystem().resourceCountWithPush(infoCoconut);
+						resourceSystem().resourceCountWithPush(infoCoconut) +
+						resourceSystem().resourceCountWithPush(infoDateFruit);
 	
 	if (resourceCount > GameConstants::WorkerEmptyBuildingInventoryAmount) {
 		WorkFailed(TryWorkFailEnum::WorkplaceInventoryFull);
@@ -2281,9 +2285,9 @@ bool HumanStateAI::TryCaravanTrade()
 		}
 	}
 
-	Add_CaravanGiveMoney(bld.buildingId(), bld.buildingId());
+	Add_CaravanGiveMoney(bld.buildingId(), _simulation->GetTownhallId(bld.targetTownId()), false);
 	Add_MoveToCaravan(startTile, UnitAnimationEnum::HorseCaravan);
-	Add_CaravanGiveMoney(bld.buildingId(), _simulation->GetTownhallId(bld.targetTownId()));
+	Add_CaravanGiveMoney(bld.buildingId(), _simulation->GetTownhallId(bld.targetTownId()), true);
 	Add_MoveToCaravan(targetTile, UnitAnimationEnum::HorseCaravan);
 	Add_MoveTo(startTile);
 

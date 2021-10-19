@@ -394,7 +394,7 @@ public:
 
 				//PUN_LOG("provinceIdToMergeTo %d flat:%d total:%d maxConnectedTileCount:%d", provinceIdToMergeTo, _provinceFlatTileCount[provinceIdToMergeTo], provinceTileCount(provinceIdToMergeTo), maxConnectedTileCount);
 
-				if (provinceIdToMergeTo != -1)
+				if (provinceIdToMergeTo != -1 && maxConnectedTileCount >= 3) // 3 is probaly 5 WorldTile?
 				{
 					MergeProvince(provinceId, provinceIdToMergeTo, tryFloodEdge);
 				}

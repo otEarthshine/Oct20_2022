@@ -295,6 +295,11 @@ public:
 		networkInterface()->ResetGameUI();
 		_townAutoTradeUI->OpenUI(townIdIn);
 	}
+
+	virtual void OpenCardSetsUI(CardSetTypeEnum cardSetTypeEnum) override {
+		networkInterface()->ResetGameUI();
+		_mainGameUI->OpenCardSetsUI(cardSetTypeEnum);
+	}
 	
 	// Tech Tree
 	void ToggleTechUI() final {
@@ -426,7 +431,7 @@ public:
 		return;
 #endif
 		PUN_CHECK(tile.isValid());
-		if (dataSource()->IsInSampleRange(tile)) {
+ 		if (dataSource()->IsInSampleRange(tile)) {
 			FloatupInfo floatupInfo(floatupEnum, Time::Ticks(), tile, text, resourceEnum, text2);
 			_worldSpaceUI->AddFloatupInfo(floatupInfo);
 		}

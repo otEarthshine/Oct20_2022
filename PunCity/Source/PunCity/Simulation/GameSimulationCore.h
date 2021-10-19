@@ -258,6 +258,21 @@ public:
 		return static_cast<TownManagerBase*>(_townManagers[townId].get());
 	}
 
+	virtual TownManagerBase* townManagerBaseNullable(int32 townId) override
+	{
+		if (townId == -1) {
+			return nullptr;
+		}
+		if (townId >= MinorTownShift) {
+			int32 minorTownId = townId - MinorTownShift;
+			check(minorTownId < _minorTownManagers.size());
+			return _minorTownManagers[minorTownId]->isValid() ? _minorTownManagers[minorTownId].get() : nullptr;
+		}
+		check(townId < _townManagers.size());
+		check(_townManagers[townId]);
+		return static_cast<TownManagerBase*>(_townManagers[townId].get());
+	}
+
 	virtual TownManagerBase* townManager_Minor(int32 townId) override
 	{
 		check(townId >= MinorTownShift);
@@ -963,9 +978,12 @@ public:
 
 	bool IsForeignPlacement(WorldTile2 tile, int32 playerId) override
 	{
+		if (playerId == -1) {
+			return false;
+		}
 		if (tileOwnerPlayer(tile) != playerId) {
 			return SimSettings::IsOn("CheatFastBuild") ||
-					IsResearched(playerId, TechEnum::QuickBuild) ||
+					IsResearched(playerId, TechEnum::ForeignInvestment) ||
 					IsAIPlayer(playerId);
 		}
 		return false;
@@ -1707,7 +1725,18 @@ public:
 	virtual int32 GetProvinceIncome100(int32 provinceId) override
 	{
 		int32 income100 = GetProvinceBaseIncome100(provinceId);
+
+		// Ancient Wonder
+		int32 provinceBuildingId = provinceInfoSystem().provinceBuildingSlot(provinceId).buildingId;
+		if (provinceBuildingId != -1)
+		{
+			if (IsAncientWonderCardEnum(building(provinceBuildingId).buildingEnum())) {
+				income100 += 50 * 100;
+			}
+		}
 		
+		
+		// Protected
 		if (provinceOwnerPlayer(provinceId) != -1 &&
 			IsResearched(provinceOwnerPlayer(provinceId), TechEnum::Fort) &&
 			provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe)
@@ -1788,7 +1817,7 @@ public:
 
 	int32 GetProvinceBaseClaimPrice(int32 provinceId)
 	{
-		int32 baseClaimPrice100 = GetProvinceIncome100(provinceId) * ClaimToIncomeRatio;
+		int32 baseClaimPrice100 = GetProvinceBaseIncome100(provinceId) * ClaimToIncomeRatio;
 		return (baseClaimPrice100 / 100);
 	}
 
@@ -1803,7 +1832,7 @@ public:
 		{
 			int32 penaltyMoney = baseClaimPrice * penaltyPercent / 100;
 			if (penaltyMoney > 0) {
-				result.push_back({ penaltyText, penaltyMoney / 100 });
+				result.push_back({ penaltyText, penaltyMoney });
 			}
 		};
 
@@ -1848,29 +1877,6 @@ public:
 		for (const BonusPair& pair : pairs) {
 			claimPrice += pair.value;
 		}
-
-		//int32 distancePenaltyCostPercent = GetProvinceClaimCostPenalty_DistanceFromTownhall(provinceId, playerId);
-		//claimPrice = IncrementByPercent100(claimPrice, distancePenaltyCostPercent);
-		//
-		//claimPrice = IncrementByPercent100(claimPrice, GetProvinceClaimCostPenalty_ShallowDeep(claimConnectionEnum));
-
-		//
-		//// Cost Penalty from Regional Building
-		//int32 regionalBuildingCost = 0;
-		//ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
-		//{
-		//	if (bld.isEnum(CardEnum::RegionTribalVillage)) {
-		//		regionalBuildingCost = std::max(regionalBuildingCost, 200);
-		//	}
-		//	else if (bld.isEnum(CardEnum::RegionCrates)) {
-		//		regionalBuildingCost = std::max(regionalBuildingCost, 50);
-		//	}
-		//	else if (bld.isEnum(CardEnum::RegionShrine)) {
-		//		regionalBuildingCost = std::max(regionalBuildingCost, 50);
-		//	}
-		//});
-		//claimPrice += regionalBuildingCost;
-		
 		
 		return claimPrice;
 	}
@@ -2173,30 +2179,40 @@ public:
 	ClaimConnectionEnum GetProvinceClaimConnectionEnumPlayer(int32 provinceId, int32 playerId)
 	{
 		const auto& townIds = GetTownIds(playerId);
+
+		bool hasRiverConnection = false;
 		
 		for (int32 townId : townIds)
 		{
-			ClaimConnectionEnum claimConnectionEnum = ClaimConnectionEnum::Flat;
-			bool isProvinceNextToTown = _provinceSystem.ExecuteAdjacentProvincesWithExitTrue(provinceId, [&](ProvinceConnection connection)
+			const std::vector<ProvinceConnection>& connections = _provinceSystem.GetProvinceConnections(provinceId);
+			for (int32 i = 0; i < connections.size(); i++) 
 			{
-				if (connection.tileType == TerrainTileType::River) {
-					claimConnectionEnum = ClaimConnectionEnum::River;
+				TerrainTileType tileType = connections[i].tileType;
+				if (tileType == TerrainTileType::None ||
+					tileType == TerrainTileType::River)
+				{
+					if (provinceOwnerTown_Major(connections[i].provinceId) == townId)
+					{
+						if (tileType == TerrainTileType::None) {
+							return ClaimConnectionEnum::Flat;
+						}
+						hasRiverConnection = true;
+					}
 				}
-				return connection.isConnectedTileType() &&
-					provinceOwnerTown_Major(connection.provinceId) == townId;
-			});
-			if (isProvinceNextToTown) {
-				return claimConnectionEnum;
 			}
 		}
+
+		if (hasRiverConnection) {
+			return ClaimConnectionEnum::River;
+		}
+		
+		
 		for (int32 townId : townIds) {
 			if (IsProvinceNextToTownByShallowWater(provinceId, townId)) {
 				return ClaimConnectionEnum::ShallowWater;
 			}
 		}
-		//if (IsProvinceOverseaClaimableByPlayer(provinceId, playerId, -1)) {
-		//	return ClaimConnectionEnum::Deepwater;
-		//}
+
 		return ClaimConnectionEnum::None;
 	}
 	// TODO: IS this needed?
@@ -3063,13 +3079,18 @@ public:
 		}
 		return true;
 	}
-	int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) final {
+
+	virtual int32 GetCardPrice(int32 playerId, CardEnum buildingEnum) override {
+		return cardSystem(playerId).GetCardPrice(buildingEnum);
+	}
+	
+	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) override {
 		return cardSystem(playerId).BoughtCardCount(buildingEnum);
 	}
-	int32 TownhallCardCountTown(int32 townId, CardEnum cardEnum) final {
+	virtual int32 TownhallCardCountTown(int32 townId, CardEnum cardEnum) override {
 		return townManager(townId).TownhallCardCount(cardEnum);
 	}
-	int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) final {
+	virtual int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) override {
 		const auto& townIds = GetTownIds(playerId);
 		int32 count = 0;
 		for (int32 townId : townIds) {
@@ -3079,10 +3100,10 @@ public:
 	}
 
 
-	int32 HasTownBonus(int32 townId, CardEnum cardEnum) final {
+	virtual int32 HasTownBonus(int32 townId, CardEnum cardEnum) override {
 		return townManager(townId).HasTownBonus(cardEnum);
 	}
-	int32 HasGlobalBonus(int32 playerId, CardEnum cardEnum) final {
+	virtual int32 HasGlobalBonus(int32 playerId, CardEnum cardEnum) override {
 		return playerOwned(playerId).HasGlobalBonus(cardEnum);
 	}
 

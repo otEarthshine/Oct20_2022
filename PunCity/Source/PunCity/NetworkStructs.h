@@ -1023,6 +1023,7 @@ public:
 	int32 medicineAmount = -1;
 	int32 toolsAmount = -1;
 	int32 stoneAmount = -1;
+	int32 clayAmount = -1;
 
 	bool isValid() { return foodAmount >= 0; }
 
@@ -1032,7 +1033,8 @@ public:
 			woodAmount * GetResourceInfo(ResourceEnum::Wood).basePrice +
 			medicineAmount * GetResourceInfo(ResourceEnum::Medicine).basePrice +
 			toolsAmount * GetResourceInfo(ResourceEnum::SteelTools).basePrice +
-			stoneAmount * GetResourceInfo(ResourceEnum::Stone).basePrice;
+			stoneAmount * GetResourceInfo(ResourceEnum::Stone).basePrice +
+			clayAmount * GetResourceInfo(ResourceEnum::Clay).basePrice;
 	}
 	std::unordered_map<ResourceEnum, int32> resourceMap()
 	{
@@ -1042,15 +1044,17 @@ public:
 		resourceMap[ResourceEnum::Medicine] = medicineAmount;
 		resourceMap[ResourceEnum::SteelTools] = toolsAmount;
 		resourceMap[ResourceEnum::Stone] = stoneAmount;
+		resourceMap[ResourceEnum::Clay] = clayAmount;
 		return resourceMap;
 	}
 
-	static FChooseInitialResources GetDefault()
+	static FChooseInitialResources GetDefault(FactionEnum factionEnum)
 	{
 		FChooseInitialResources command;
 		command.foodAmount = 300;
 		command.woodAmount = 120;
 		command.stoneAmount = 120;
+		command.clayAmount = factionEnum == FactionEnum::Arab ? 120 : 0;
 		
 		command.medicineAmount = 240;
 		command.toolsAmount = 180;
@@ -1065,6 +1069,7 @@ public:
 		blob << medicineAmount;
 		blob << toolsAmount;
 		blob << stoneAmount;
+		blob << clayAmount;
 	}
 
 	void Serialize(FArchive &Ar)
@@ -1074,6 +1079,7 @@ public:
 		Ar << medicineAmount;
 		Ar << toolsAmount;
 		Ar << stoneAmount;
+		Ar << clayAmount;
 	}
 };
 

@@ -2801,7 +2801,8 @@ void UnitStateAI::StoreGatheredAtWorkplace()
 	// TODO: right now only fruit, later on will need to be able to clear the whole inventory
 	PUN_CHECK2(_inventory.Has(ResourceEnum::Orange) 
 			|| _inventory.Has(ResourceEnum::Papaya)
-			|| _inventory.Has(ResourceEnum::Coconut), debugStr());
+			|| _inventory.Has(ResourceEnum::Coconut)
+			|| _inventory.Has(ResourceEnum::DateFruit), debugStr());
 
 	// End workplace reservation, and switch to drop-off resource reservation instead
 	UnitReservation workplaceReservation = PopReservation(ReservationType::Workplace);
@@ -3103,14 +3104,15 @@ void UnitStateAI::IntercityHaulDropoff()
 }
 
 
-void UnitStateAI::Add_CaravanGiveMoney(int32 workplaceId, int32 targetBuildingId) {
-	AddAction(ActionEnum::CaravanGiveMoney, workplaceId, targetBuildingId);
+void UnitStateAI::Add_CaravanGiveMoney(int32 workplaceId, int32 targetBuildingId, bool isGivingTarget) {
+	AddAction(ActionEnum::CaravanGiveMoney, workplaceId, targetBuildingId, isGivingTarget);
 }
 
 void UnitStateAI::CaravanGiveMoney()
 {
 	int32 workplaceId = action().int32val1;
 	int32 targetBuildingId = action().int32val2;
+	bool isGivingTarget = action().int32val3;
 
 	if (Building* workplace = _simulation->buildingPtr(workplaceId)) {
 		if (workplace->isEnum(CardEnum::Caravansary))
@@ -3132,11 +3134,14 @@ void UnitStateAI::CaravanGiveMoney()
 				caravansary.AddRouteMoney(tradeMoney);
 
 				// Floatup
-				_simulation->uiInterface()->ShowFloatupInfo(workplace->playerId(), FloatupEnum::GainMoney, targetBuilding->centerTile(), TEXT_NUMSIGNED(tradeMoney));
-				_simulation->uiInterface()->ShowFloatupInfo(targetBuilding->playerId(), FloatupEnum::GainMoney, targetBuilding->centerTile(), TEXT_NUMSIGNED(tradeMoney));
+				Building* floatupBuilding = isGivingTarget ? targetBuilding : workplace;
+				_simulation->uiInterface()->ShowFloatupInfo(workplace->playerId(), FloatupEnum::GainMoney, floatupBuilding->centerTile(), TEXT_NUMSIGNED(tradeMoney));
+				_simulation->uiInterface()->ShowFloatupInfo(targetBuilding->playerId(), FloatupEnum::GainMoney, floatupBuilding->centerTile(), TEXT_NUMSIGNED(tradeMoney));
 			}
 		}
 	}
+
+	NextAction(UnitUpdateCallerEnum::CaravanGiveMoney);
 }
 
 

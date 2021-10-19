@@ -604,6 +604,8 @@ public:
 
 	void Tick1SecRelationship();
 
+	void ProposeAlliance(int32 askingPlayerId);
+
 
 	/*
 	 * Helpers

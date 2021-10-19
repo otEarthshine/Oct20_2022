@@ -128,7 +128,7 @@ private:
 			
 			if (i == 3) { setColumnTitle(2); }
 			if (i == 6) { setColumnTitle(3); }
-			if (i == 9) { setColumnTitle(4); }
+			if (i == 10) { setColumnTitle(4); }
 			else {
 				columnTitleText->SetText(FText());
 			}

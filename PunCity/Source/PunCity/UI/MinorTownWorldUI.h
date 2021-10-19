@@ -15,6 +15,7 @@ class PROTOTYPECITY_API UMinorTownWorldUI : public UPunWidget
 public:
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ConnectTradeRouteButton;
 
 	UPROPERTY(meta = (BindWidget)) UButton* AttackButton1;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton1RichText;
@@ -50,6 +51,16 @@ public:
 	
 	UFUNCTION() void OnClickDiplomacyButton() {
 		GetPunHUD()->OpenDiplomacyUI(townId());
+	}
+
+	UFUNCTION() void OnClickConnectTradeButton() {
+		auto command = make_shared<FGenericCommand>();
+		command->callbackEnum = CallbackEnum::EstablishTradeRoute;
+		command->townId = uiTownId;
+		command->intVar1 = uiTownId;
+		command->intVar2 = playerId(); // Capital Town Id
+
+		networkInterface()->SendNetworkCommand(command);
 	}
 
 	UFUNCTION() void OnClickVassalizeButton()

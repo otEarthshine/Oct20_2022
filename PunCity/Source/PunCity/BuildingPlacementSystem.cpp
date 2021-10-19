@@ -2799,10 +2799,13 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				[&](WorldTile2 tile) { return simulation.IsBuildable(tile); }
 			);
 			
-			if (canForeignPlace) {
+			if (canForeignPlace) 
+			{
+				FactionEnum factionEnum = simulation.playerOwned(simulation.tileOwnerPlayer(_area.centerTile())).factionEnum();
+				
 				SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
 					LOCTEXT("ForeignBuildCost", "Build Cost\n<img id=\"Coin\"/>{0}"),
-					TEXT_NUM(Building::GetQuickBuildBaseCost(_buildingEnum, GetBuildingInfo(_buildingEnum).constructionResources, [&](ResourceEnum resourceEnum) { return 0; }))
+					TEXT_NUM(Building::GetQuickBuildBaseCost(_buildingEnum, GetBuildingInfo(_buildingEnum).GetConstructionResources(factionEnum), [&](ResourceEnum resourceEnum) { return 0; }))
 				));
 			}
 		}

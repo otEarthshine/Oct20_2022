@@ -47,6 +47,8 @@ struct TechBoxLocation
 enum class UnlockStateEnum
 {
 	InfluencePoints,
+	ForeignPort,
+	TrainUnits,
 	Count,
 };
 
@@ -372,10 +374,10 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Vassalize Desc", "Unlock Vassalization which allows you to turn other city into a vassal."),
 	}},
 
-	{ TechEnum::IntercityRoad, {
-		LOCTEXT("Intercity Connection", "Intercity Connection"),
-		LOCTEXT("Intercity Connection Desc", "Allow connecting Cities with Intercity Road to establish trade connections"),
-	}},
+	//{ TechEnum::IntercityRoad, {
+	//	LOCTEXT("Intercity Connection", "Intercity Connection"),
+	//	LOCTEXT("Intercity Connection Desc", "Allow connecting Cities with Intercity Road to establish trade connections"),
+	//}},
 
 	{ TechEnum::Combo, {
 		LOCTEXT("Building Combo", "Building Combo"),
@@ -409,6 +411,67 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Foreign Relation", "Foreign Relation"),
 		LOCTEXT("Foreign Relation Desc", "Unlocks Diplomacy, Gifting, and Trade Deal"),
 	} },
+	{ TechEnum::PolicyMaking, {
+		LOCTEXT("Policy Making", "Policy Making"),
+		LOCTEXT("Policy Making Desc", "TODO: TEXT"),
+	} },
+	{ TechEnum::ForeignInvestment, {
+		LOCTEXT("Foreign Investment", "Foreign Investment"),
+		LOCTEXT("Foreign Investment Desc", "Allows building in foreign land to help allies."),
+	} },
+
+	{ TechEnum::Museum, {
+		LOCTEXT("Museum", "Museum"),
+		LOCTEXT("Foreign Investment Desc", "Allows Artifact Excavation from Ruins."),
+	} },
+
+	{ TechEnum::MarketInfluence, {
+		LOCTEXT("Market Influence", "Market Influence"),
+		LOCTEXT("Market Influence Desc", ""),
+	} },
+
+	{ TechEnum::Archer, {
+		LOCTEXT("Archer", "Archer"),
+		LOCTEXT("Archer Desc", ""),
+	} },
+	{ TechEnum::Warrior, {
+		LOCTEXT("Warrior", "Warrior"),
+		LOCTEXT("Warrior Desc", ""),
+	} },
+	{ TechEnum::Swordsman, {
+		LOCTEXT("Swordsman", "Swordsman"),
+		LOCTEXT("Swordsman Desc", ""),
+	} },
+	{ TechEnum::MilitaryEngineering1, {
+		LOCTEXT("Military Engineering I", "Military Engineering I"),
+		LOCTEXT("Military Engineering I Desc", ""),
+	} },
+	{ TechEnum::MilitaryEngineering2, {
+		LOCTEXT("Military Engineering II", "Military Engineering II"),
+		LOCTEXT("Military Engineering II Desc", ""),
+	} },
+
+	{ TechEnum::Musketeer, {
+		LOCTEXT("Guns", "Guns"),
+		LOCTEXT("Guns Desc", ""),
+	} },
+	{ TechEnum::Infantry, {
+		LOCTEXT("Infantry", "Infantry"),
+		LOCTEXT("Infantry Desc", ""),
+	} },
+	{ TechEnum::MachineGun, {
+		LOCTEXT("Machine Gun", "Machine Gun"),
+		LOCTEXT("Machine Gun Desc", ""),
+	} },
+	{ TechEnum::Artillery, {
+		LOCTEXT("Artillery", "Artillery"),
+		LOCTEXT("Artillery Desc", ""),
+	} },
+	{ TechEnum::Battleship, {
+		LOCTEXT("Battleship", "Battleship"),
+		LOCTEXT("Battleship Desc", ""),
+	} },
+
 };
 
 enum class TechClassEnum
@@ -1110,8 +1173,10 @@ public:
 				{ CardEnum::GoldSmelter }
 			);
 			AddTech_Bonus(TechEnum::QuickBuild, { TechEnum::Blacksmith });
-			AddTech_Bonus(TechEnum::TradeRoute, { TechEnum::Fort });
-			AddTech_Building(TechEnum::ForeignRelation, { TechEnum::Fort, TechEnum::TradingCompany, TechEnum::Logistics2 },
+			AddTech_BuildingPermanent(TechEnum::TradeRoute, { TechEnum::Fort, TechEnum::TradingCompany },
+				{ CardEnum::IntercityRoad, CardEnum::IntercityBridge }
+			);
+			AddTech_Building(TechEnum::ForeignRelation, { TechEnum::TradingCompany, TechEnum::Logistics2 },
 				CardEnum::Embassy
 			);
 			AddTech_BuildingPermanent(TechEnum::Logistics3, { TechEnum::Logistics2 },
@@ -1136,12 +1201,11 @@ public:
 			AddTech_Bonus(TechEnum::EnlightenmentAge, {},
 				TechRequirements::HouseLvlCount(4, 30)
 			);
-			AddTech_Building(TechEnum::GlassSmelting, { TechEnum::QuickBuild, TechEnum::GoldSmelting },
+			AddTech_Building(TechEnum::SandMine, { TechEnum::QuickBuild, TechEnum::GoldSmelting },
 				{ CardEnum::SandMine, CardEnum::GlassSmelter }
 			);
-			AddTech_Building(TechEnum::CoffeeRoaster, { TechEnum::TradeRoute },
-				CardEnum::CoffeeRoaster,
-				TechRequirements::HouseLvlCount(4, 40)
+			AddTech_Building(TechEnum::CardMaker, { TechEnum::TradeRoute },
+				{ CardEnum::CardMaker, CardEnum::PaperMaker }
 			);
 			AddTech_Building(TechEnum::School, { TechEnum::TradeRoute, TechEnum::ForeignRelation },
 				CardEnum::School
@@ -1153,28 +1217,29 @@ public:
 				{ CardEnum::StoneRoad }
 			);
 			
-			AddTech_Building(TechEnum::Irrigation, { TechEnum::Medicine, TechEnum::CandleMaker },
-				{ CardEnum::IrrigationReservoir, CardEnum::IrrigationPump }
+			AddTech_Building(TechEnum::CoffeeRoaster, { TechEnum::Medicine, TechEnum::CandleMaker },
+				CardEnum::CoffeeRoaster,
+				TechRequirements::HouseLvlCount(4, 40)
 			);
 			
 			
 			//
 			_columnIndex = 7;
-			AddTech_Building(TechEnum::Glassworks, { TechEnum::GlassSmelting },
+			AddTech_Building(TechEnum::Glassworks, { TechEnum::SandMine },
 				CardEnum::Glassworks,
 				TechRequirements::HouseLvlCount(5, 30)
 			);
-			AddTech_Bonus(TechEnum::WorkSchedule, { TechEnum::GlassSmelting, TechEnum::CoffeeRoaster });
-			AddTech_Bonus(TechEnum::BudgetAdjustment, { TechEnum::School, TechEnum::Logistics4 });
-			AddTech_Bonus(TechEnum::Logistics5, { TechEnum::Logistics4 });
-			AddTech_BuildingPermanent(TechEnum::IntercityRoad, { TechEnum::Logistics4, TechEnum::StoneRoad },
-				{ CardEnum::IntercityRoad, CardEnum::IntercityBridge }
+			AddTech_Bonus(TechEnum::BudgetAdjustment, { TechEnum::SandMine, TechEnum::CardMaker });
+			AddTech_Building(TechEnum::PolicyMaking, { TechEnum::CardMaker, TechEnum::School, TechEnum::Logistics4 },
+				{ CardEnum::PolicyOffice }
 			);
+			AddTech_Bonus(TechEnum::Logistics5, { TechEnum::Logistics4, TechEnum::StoneRoad });
+
 			AddTech_Building(TechEnum::Theatre, { TechEnum::Winery },
 				CardEnum::Theatre
 			);
 			
-			AddTech_Building(TechEnum::ShroomFarm, { TechEnum::Irrigation },
+			AddTech_Building(TechEnum::ShroomFarm, { TechEnum::CoffeeRoaster },
 				CardEnum::MagicMushroomFarm, 
 				TechRequirements::HouseLvlCount(4, 80)
 			);
@@ -1182,29 +1247,49 @@ public:
 				
 			//
 			_columnIndex = 8;
-			AddTech_BuildingPermanent(TechEnum::Machinery, { TechEnum::WorkSchedule },
-				{ CardEnum::Tunnel }
-			); // TODO: Machinery + Improved Woodcutting
-			AddTech_Building(TechEnum::GoldWorking, { TechEnum::WorkSchedule, TechEnum::BudgetAdjustment },
-				{ CardEnum::Mint }
+			AddTech_Bonus(TechEnum::WorkSchedule, { TechEnum::BudgetAdjustment });
+			AddTech_Building(TechEnum::ForeignInvestment, { TechEnum::BudgetAdjustment, TechEnum::PolicyMaking },
+				{ CardEnum::ForeignQuarter }
 			);
-			AddTech_Building(TechEnum::Bank, { TechEnum::BudgetAdjustment },
-				{ CardEnum::Bank }
-			);
-			AddTech_BuildingPermanent(TechEnum::Colony, { TechEnum::Logistics5, TechEnum::IntercityRoad },
+			
+			AddTech_BuildingPermanent(TechEnum::Colony, { TechEnum::Logistics5 },
 				{ CardEnum::Colony, CardEnum::PortColony }
 			);
+			AddTech_Building(TechEnum::Tourism, { TechEnum::Theatre },
+				{ CardEnum::Hotel }
+			);
+			
 			AddTech_Building(TechEnum::Chocolatier, { TechEnum::Theatre },
 				CardEnum::Chocolatier,
 				TechRequirements::HouseLvlCount(6, 50)
 			);
+			
 			AddTech_Building(TechEnum::RanchCow, { TechEnum::ShroomFarm },
 				{ CardEnum::RanchCow }
 			);
 
+			//
+			_columnIndex = 9;
+			AddTech_BuildingPermanent(TechEnum::Machinery, { TechEnum::WorkSchedule, TechEnum::ForeignInvestment },
+				{ CardEnum::Tunnel }
+			); // TODO: Machinery + Improved Woodcutting
+			AddTech_Building(TechEnum::GoldWorking, { TechEnum::ForeignInvestment },
+				{ CardEnum::Mint }
+			);
+			AddTech_Building(TechEnum::Bank, { TechEnum::ForeignInvestment, TechEnum::Colony },
+				{ CardEnum::Bank }
+			);
+
+			AddTech_Building(TechEnum::Museum, { TechEnum::Colony, TechEnum::Tourism, TechEnum::Chocolatier },
+				{ CardEnum::Museum }
+			);
+			AddTech_Building(TechEnum::Zoo, { TechEnum::Chocolatier, TechEnum::RanchCow },
+				{ CardEnum::Zoo }
+			);
+			
 			
 			// Industrial
-			_columnIndex = 9;
+			_columnIndex = 10;
 			AddTech_Bonus(TechEnum::IndustrialAge, {},
 				TechRequirements::HouseLvlCount(6, 80)
 			);
@@ -1214,14 +1299,16 @@ public:
 			AddTech_Building(TechEnum::Industrialization, { TechEnum::Machinery, TechEnum::GoldWorking },
 				{ CardEnum::IndustrialIronSmelter, CardEnum::Steelworks }
 			);
-			AddTech_Building(TechEnum::JewelryCrafting, { TechEnum::GoldWorking },
+			AddTech_Building(TechEnum::JewelryCrafting, { TechEnum::GoldWorking, TechEnum::Bank },
 				{ CardEnum::Jeweler }
 			);
-			AddTech_Bonus(TechEnum::ScientificTheories, { TechEnum::Bank, TechEnum::Colony });
-			AddTech_Bonus(TechEnum::Fertilizers, { TechEnum::Chocolatier, TechEnum::RanchCow });
+			AddTech_Building(TechEnum::SpyCenter, { TechEnum::Bank, TechEnum::Museum },
+				{ CardEnum::SpyCenter }
+			);
+			AddTech_Bonus(TechEnum::Fertilizers, { TechEnum::Zoo });
 
 
-			_columnIndex = 10;
+			_columnIndex = 11;
 			AddTech_Building(TechEnum::Electricity, { TechEnum::ConcreteFactory, TechEnum::Industrialization },
 				CardEnum::CoalPowerPlant
 			);
@@ -1231,27 +1318,38 @@ public:
 			AddTech_Building(TechEnum::CottonMilling, { TechEnum::Industrialization },
 				CardEnum::CottonMill
 			);
-			AddTech_Building(TechEnum::ClockMakers, { TechEnum::JewelryCrafting, TechEnum::ScientificTheories },
+			AddTech_Building(TechEnum::ClockMakers, { TechEnum::JewelryCrafting, TechEnum::SpyCenter },
 				CardEnum::ClockMakers
 			);
-			AddTech_Bonus(TechEnum::SocialScience, { TechEnum::ScientificTheories });
+			AddTech_Building(TechEnum::CardCombiner, { TechEnum::SpyCenter },
+				{ CardEnum::CardCombiner }
+			);
 
 			// TODO: ... Melon Gone
 			
 
 
-			_columnIndex = 11;
+			_columnIndex = 12;
 			AddTech_Building(TechEnum::Petroleum, { TechEnum::Electricity },
 				{ CardEnum::OilRig, CardEnum::OilPowerPlant }
-			);
-			AddTech_Building(TechEnum::ExhibitionHall, { TechEnum::Electricity },
-				{ CardEnum::ExhibitionHall },
-				TechRequirements::HouseLvlCount(8, 100)
 			);
 			AddTech_Building(TechEnum::Printing, { TechEnum::Electricity, TechEnum::PaperMill },
 				{ CardEnum::PrintingPress }
 			);
-			AddTech_Bonus(TechEnum::EconomicTheories, { TechEnum::ClockMakers, TechEnum::SocialScience });
+			AddTech_Building(TechEnum::MarketInfluence, { TechEnum::CottonMilling, TechEnum::ClockMakers, TechEnum::CardCombiner },
+				{ CardEnum::WorldTradeOffice }
+			);
+
+			
+			_columnIndex = 13;
+			AddTech_Bonus(TechEnum::ScientificTheories, { TechEnum::Petroleum, TechEnum::Printing });
+			
+			AddTech_Bonus(TechEnum::EconomicTheories, { TechEnum::Printing, TechEnum::MarketInfluence });
+			AddTech_Bonus(TechEnum::SocialScience, { TechEnum::MarketInfluence });
+			AddTech_Building(TechEnum::ExhibitionHall, { TechEnum::MarketInfluence },
+				{ CardEnum::ExhibitionHall },
+				TechRequirements::HouseLvlCount(8, 100)
+			);
 
 			townhallUpgradeUnlocked = false;
 			unlockedStatisticsBureau = false;
@@ -1261,7 +1359,7 @@ public:
 			unlockedSetTradeAmount = false;
 			unlockedSetDeliveryTarget = false;
 
-			_unlockStates.resize(static_cast<int>(UnlockStateEnum::Count));
+			_unlockStates.resize(static_cast<int>(UnlockStateEnum::Count), false);
 
 			/*
 			 * Prosperity Tech UI
@@ -1293,7 +1391,7 @@ public:
 				CardEnum::FrugalityBook
 			);
 			
-			AddTech_Bonus(TechEnum::InfluencePoints, {});
+			//AddTech_Bonus(TechEnum::InfluencePoints, {});
 			
 
 			//
@@ -1314,14 +1412,12 @@ public:
 				CardEnum::ProductivityBook
 			);
 
-			AddTech_Bonus(TechEnum::HomeLandDefense, { TechEnum::InfluencePoints });
+			//AddTech_Bonus(TechEnum::HomeLandDefense, { TechEnum::InfluencePoints });
 
 			
 			//
 			_columnIndex = 3;
-			AddTech_Building(TechEnum::Archives, {},
-				{ CardEnum::Archives }
-			);
+			AddTech_Bonus(TechEnum::CardInventory1, {});
 			AddTech_CardGiving(TechEnum::SmelterCombo, { TechEnum::QuarryImprovement },
 				CardEnum::SmeltCombo
 			);
@@ -1333,10 +1429,9 @@ public:
 			AddTech_CardGiving(TechEnum::Sustainability, { TechEnum::Productivity },
 				CardEnum::SustainabilityBook
 			);
-			AddTech_Building(TechEnum::BarrackArcher, { TechEnum::HomeLandDefense },
-				CardEnum::BarrackArcher
-			);
-			AddTech_Bonus(TechEnum::Conquer, { TechEnum::HomeLandDefense });
+
+			AddTech_Bonus(TechEnum::Warrior, {});
+			AddTech_Bonus(TechEnum::Archer, {});
 
 			
 			//
@@ -1355,12 +1450,8 @@ public:
 				{ CardEnum::GardenShrubbery1 }
 			);
 
-			AddTech_Bonus(TechEnum::CardInventory1, {});
-
-			AddTech_CardGiving(TechEnum::SlaveLabor, {},
-				CardEnum::SlaveLabor
-			);
-			AddTech_Bonus(TechEnum::Vassalize, { TechEnum::Conquer });
+			AddTech_Bonus(TechEnum::Swordsman, { TechEnum::Warrior });
+			AddTech_Bonus(TechEnum::Conquer, { TechEnum::Warrior, TechEnum::Archer });
 			
 			
 			//
@@ -1380,19 +1471,17 @@ public:
 				{ CardEnum::BlueberrySeed }
 			);
 
-			AddTech_Bonus(TechEnum::CardInventory2, { TechEnum::CardInventory1 });
-			
-			AddTech_CardGiving(TechEnum::Lockdown, { TechEnum::SlaveLabor },
-				{ CardEnum::Lockdown }
-			);
-			AddTech_Building(TechEnum::PaperMaker, { TechEnum::Vassalize },
-				CardEnum::PaperMaker
-			);
+			AddTech_Bonus(TechEnum::MilitaryEngineering1, { TechEnum::Swordsman });
+			AddTech_Bonus(TechEnum::Vassalize, { TechEnum::Conquer });
+		
 
 			
 			//
 			_columnIndex = 6;
 			AddTech_Bonus(TechEnum::TaxAdjustment, { TechEnum::HouseAdjacency });
+
+			AddTech_Bonus(TechEnum::CardInventory2, {});
+			
 			AddTech_CardGiving(TechEnum::DesertPilgrim, {},
 				{ CardEnum::DesertPilgrim }
 			);
@@ -1406,9 +1495,7 @@ public:
 				{ CardEnum::Motivation }
 			);
 
-			AddTech_Building(TechEnum::BarrackKnight, { TechEnum::Fort },
-				CardEnum::BarrackSwordman
-			);
+			AddTech_Bonus(TechEnum::Musketeer, {});
 
 			
 			//
@@ -1429,14 +1516,28 @@ public:
 			AddTech_CardGiving(TechEnum::Passion, { TechEnum::Motivation },
 				{ CardEnum::Passion }
 			);
+
+			AddTech_CardGiving(TechEnum::SlaveLabor, {},
+				CardEnum::SlaveLabor
+			);
 			
+
+
+			//
+			_columnIndex = 8;
+
+
 			AddTech_Building(TechEnum::ResourceOutpost, {},
 				CardEnum::ResourceOutpost
 			);
 
+			AddTech_CardGiving(TechEnum::Lockdown, { TechEnum::SlaveLabor },
+				{ CardEnum::Lockdown }
+			);
+			
 			
 			//
-			_columnIndex = 8;
+			_columnIndex = 9;
 			AddTech_CardGiving(TechEnum::Conglomerate, {},
 				{ CardEnum::Conglomerate }
 			);
@@ -1452,9 +1553,10 @@ public:
 				{ CardEnum::BirthControl }
 			);
 
+
 			
-			//
-			_columnIndex = 9;
+			// Aux Industrial
+			_columnIndex = 10;
 			AddTech_Bonus(TechEnum::WinerySnob, { TechEnum::Conglomerate });
 			AddTech_Building(TechEnum::ResearchLab, { TechEnum::Conglomerate },
 				CardEnum::ResearchLab
@@ -1472,7 +1574,7 @@ public:
 
 			
 			//
-			_columnIndex = 10;
+			_columnIndex = 11;
 			AddTech_CardGiving(TechEnum::BlingBling, { TechEnum::WinerySnob },
 				{ CardEnum::BlingBling }
 			);
@@ -1493,7 +1595,7 @@ public:
 
 			
 			//
-			_columnIndex = 11;
+			_columnIndex = 12;
 			AddTech_Building(TechEnum::GrandPalace, {},
 				CardEnum::GrandPalace
 			);
@@ -1612,6 +1714,8 @@ public:
 		unlockTree(_columnToTechs);
 		unlockTree(_columnToUpgradeTechEnum);
 
+		SetUnlockState(UnlockStateEnum::InfluencePoints, true);
+
 		_techQueue.clear();
 	}
 
@@ -1701,7 +1805,7 @@ public:
 				return true;
 			}
 		}
-		if (column == 6 || column == 7 || column == 8) {
+		if (column == 6 || column == 7 || column == 8 || column == 9) {
 			if (techEnum == TechEnum::EnlightenmentAge) {
 				return columnToResearchedCount(5) == 0;
 			}
@@ -1709,7 +1813,7 @@ public:
 				return true;
 			}
 		}
-		if (column == 9 || column == 10 || column == 11) {
+		if (column == 10 || column == 11 || column == 12) {
 			if (techEnum == TechEnum::IndustrialAge) {
 				return columnToResearchedCount(8) == 0;
 			}

@@ -71,6 +71,7 @@ enum class UnitUpdateCallerEnum : uint8
 
 	IntercityPickup,
 	IntercityDropoff,
+	CaravanGiveMoney,
 };
 
 class IUnitDataSource

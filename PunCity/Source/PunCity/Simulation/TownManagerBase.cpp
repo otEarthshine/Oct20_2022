@@ -134,9 +134,12 @@ void TownManagerBase::Tick1Sec_TownBase()
 		if (Time::Seconds() % 2 == 0)
 		{
 			int32 incomePerRound = GetMinorCityMoneyIncome();
-			int32 incomePer2Sec = GameRand::RandRound(incomePerRound * 2, Time::TicksPerSecond);
-			
-			_minorCityWealth += incomePer2Sec;
+			int32 incomePer2Sec = GameRand::RandRound(incomePerRound * 2, Time::SecondsPerRound);
+
+			if (incomePer2Sec > 0) {
+				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, _simulation->building(townhallId).centerTile(), TEXT_NUMSIGNED(incomePer2Sec));
+				_minorCityWealth += incomePer2Sec;
+			}
 		}
 
 		//! Refresh Target Wealth every 30 secs
@@ -349,6 +352,8 @@ void TownManagerBase::Tick1SecRelationship()
 				_relationships.DecayModifier(playerId, RelationshipModifierEnum::YouGaveUsGifts);
 				_relationships.DecayModifier(playerId, RelationshipModifierEnum::YouStealFromUs);
 				_relationships.DecayModifier(playerId, RelationshipModifierEnum::YouKidnapFromUs);
+				_relationships.DecayModifier(playerId, RelationshipModifierEnum::GoodTradeDeal);
+				_relationships.DecayModifier(playerId, RelationshipModifierEnum::DiplomaticBuildings);
 			}
 
 			//if (Time::Ticks() % Time::TicksPerMinute == 0)
@@ -397,7 +402,70 @@ void TownManagerBase::Tick1SecRelationship()
 					}
 				}
 			}
+
+
+			/*
+			 * Check alliance state
+			 */
+			if (_relationships.isAlly(playerId)) {
+				if (!_relationships.CanCreateAlliance(playerId)) {
+					_relationships.SetAlliance(playerId, false);
+				}
+			}
+
+
+			/*
+			 * Relationship reward
+			 */
+			auto addInfluenceReward = [&](int32 influencePerRound)
+			{
+				//! Income every 5 secs
+				if (Time::Seconds() % 5 == 0)
+				{
+					int32 incomePerXSec = GameRand::RandRound(influencePerRound * 5, Time::SecondsPerRound);
+					if (incomePerXSec > 0) {
+						_simulation->uiInterface()->ShowFloatupInfo(playerId, FloatupEnum::GainInfluence, _simulation->building(townhallId).centerTile(), TEXT_NUMSIGNED(incomePerXSec));
+						_simulation->ChangeInfluence(playerId, incomePerXSec);
+					}
+				}
+			};
+			
+			int32 totalRelationship = _relationships.GetTotalRelationship(playerId);
+			if (_relationships.isAlly(playerId)) {
+				addInfluenceReward(150);
+			}
+			else if (totalRelationship >= 60) {
+				addInfluenceReward(60);
+			}
+			else if (totalRelationship >= 30) {
+				addInfluenceReward(30);
+			}
+			
 #undef MODIFIER
 		}
+	}
+}
+
+void TownManagerBase::ProposeAlliance(int32 askingPlayerId)
+{
+	if (_relationships.CanCreateAlliance(askingPlayerId))
+	{
+		// Cancel old alliances if MinorTown
+		if (IsMinorTown(_townId))
+		{
+			for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
+				if (_relationships.isAlly(i)) {
+					_relationships.SetAlliance(askingPlayerId, false);
+
+					_simulation->AddPopup(i, FText::Format(
+						NSLOCTEXT("TownManagerBase", "MinorTownChangeAlly_Popup", "{0} now considers {1} their main ally instead of you.<space>This is due to their improved relationship with {1}."),
+						_simulation->townNameT(_townId),
+						_simulation->playerNameT(askingPlayerId)
+					));
+				}
+			}
+		}
+
+		_relationships.SetAlliance(askingPlayerId, true);
 	}
 }

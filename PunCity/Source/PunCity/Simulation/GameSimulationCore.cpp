@@ -1026,7 +1026,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							if (!townhallCapital.alreadyGotInitialCard && townhallCapital.townAgeTicks() >= Time::TicksPerSecond)
 							{
 								GenerateRareCardSelection(playerId, RareHandEnum::InitialCards1, FText());
-								//GenerateRareCardSelection(playerId, RareHandEnum::InitialCards2, FText());
 
 								townhallCapital.alreadyGotInitialCard = true;
 							}
@@ -2340,7 +2339,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	 * All other buildings
 	 */
 	 // Tech Researched... Build Foreign
-	else if (IsForeignPlacement(area.centerTile(), playerId))
+	else if (IsForeignPlacement(area.centerTile(), playerId) ||
+			IsForeignOnlyBuilding(cardEnum))
 	{
 		auto emptyFunc = [&](WorldTile2 tile, bool isGreen, bool isInsideTargetTown) {};
 		
@@ -2354,8 +2354,14 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			return -1;
 		}
 
+		// Minor Towns doesn't allow any building except hotel
+		WorldTile2 centerTile = area.centerTile();
+		int32 tileTownId = tileOwnerTown(centerTile);
+
 		//! Check QuickBuild cost + Popup
-		int32 quickBuildCost = Building::GetQuickBuildBaseCost(cardEnum, GetBuildingInfo(cardEnum).constructionResources, [&](ResourceEnum resourceEnum) { return 0; });
+		std::vector<int32> constructionResources = GetBuildingInfo(cardEnum).GetConstructionResources(townManagerBase(tileTownId)->factionEnum());
+		
+		int32 quickBuildCost = Building::GetQuickBuildBaseCost(cardEnum, constructionResources, [&](ResourceEnum resourceEnum) { return 0; });
 		if (IsAIPlayer(playerId)) { // Free quickBuild for AI
 			ChangeMoney(playerId, quickBuildCost);
 		}
@@ -2370,9 +2376,6 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		}
 		
 
-		// Minor Towns doesn't allow any building except hotel
-		WorldTile2 centerTile = area.centerTile();
-		int32 tileTownId = tileOwnerTown(centerTile);
 		if (IsMinorTown(tileTownId)) {
 			if (cardEnum != CardEnum::Hotel)
 			{
@@ -2522,12 +2525,13 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		// Special case: Foreign Building
 		if (playerId != -1 &&
-			IsForeignPlacement(area.centerTile(), playerId))
+			(IsForeignPlacement(area.centerTile(), playerId) ||
+			IsForeignOnlyBuilding(cardEnum)))
 		{
 			bld.SetForeignBuilder(playerId);
 			
 			// Take the build money
-			int32 quickBuildCost = Building::GetQuickBuildBaseCost(cardEnum, GetBuildingInfo(cardEnum).constructionResources, [&](ResourceEnum resourceEnum) { return 0; });
+			int32 quickBuildCost = Building::GetQuickBuildBaseCost(cardEnum, GetBuildingInfo(cardEnum).GetConstructionResources(bld.factionEnum()), [&](ResourceEnum resourceEnum) { return 0; });
 			ChangeMoney(playerId, -quickBuildCost);
 
 			// AI would already approved this... just finish up the building right away
@@ -3257,9 +3261,10 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		}
 		else if (command.callbackEnum == CallbackEnum::ProposeAlliance) 
 		{
-			RelationshipModifiers& relationship = townManagerBase(command.intVar1)->relationship();
-			relationship.ProposeAlliance(command.playerId);
-			if (relationship.isAlly(command.playerId)) {
+			TownManagerBase* townMgr = townManagerBase(command.intVar1);
+			townMgr->ProposeAlliance(command.playerId);
+			if (townMgr->relationship().isAlly(command.playerId)) 
+			{
 				AddPopupToFront(command.playerId, FText::Format(
 					LOCTEXT("ProposeAlliance_AcceptedPopup", "{0} accepted your alliance request"),
 					townNameT(command.intVar1)
@@ -3883,7 +3888,7 @@ void GameSimulationCore::UpgradeBuilding(FUpgradeBuilding command)
 			else
 			{
 				// Note: If single UpgradeBuilding succeed, we only need sound (no popup)
-				bld->UpgradeBuilding(command.upgradeType, true, neededResource);
+				bld->UpgradeBuilding(command.upgradeType, true, neededResource, command.playerId);
 			}
 
 		}
@@ -3988,6 +3993,15 @@ void GameSimulationCore::ChangeWorkMode(FChangeWorkMode command)
 		// Target Town
 		else {
 			hub.SetTargetTownId(command.intVar2);
+		}
+	}
+	else if (bld.isEnum(CardEnum::WorldTradeOffice))
+	{
+		auto& office = bld.subclass<WorldTradeOffice>();
+		if (command.intVar1 == 0) {
+			office.resourceEnumToIncreasePrice = static_cast<ResourceEnum>(command.intVar2);
+		} else {
+			office.resourceEnumToDecreasePrice = static_cast<ResourceEnum>(command.intVar2);
 		}
 	}
 	else if (bld.isEnum(CardEnum::Caravansary))
@@ -4908,6 +4922,18 @@ void GameSimulationCore::UseCard(FUseCard command)
 	if (command.callbackEnum == CallbackEnum::CardInventorySlotting)
 	{
 		cardSys.MoveHandToCardInventory(command.cardStatus, command.variable1);
+		return;
+	}
+
+	// Card Set Slotting
+	if (command.callbackEnum == CallbackEnum::SelectCardSetSlotCard)
+	{
+		cardSys.MoveCardSetToHand(command.cardStatus, static_cast<CardSetTypeEnum>(command.variable1));
+		return;
+	}
+	if (command.callbackEnum == CallbackEnum::CardSetSlotting)
+	{
+		cardSys.MoveHandToCardSet(command.cardStatus, static_cast<CardSetTypeEnum>(command.variable1), command.variable2);
 		return;
 	}
 	
@@ -5869,7 +5895,8 @@ void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
 		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
 		
 		playerOwned(command.playerId).initialResources = command;
-		globalResourceSystem(command.playerId).ChangeMoney(-(command.totalCost() - FChooseInitialResources::GetDefault().totalCost()));
+		FactionEnum factionEnum = playerOwned(command.playerId).factionEnum();
+		globalResourceSystem(command.playerId).ChangeMoney(-(command.totalCost() - FChooseInitialResources::GetDefault(factionEnum).totalCost()));
 	}
 }
 
@@ -6743,7 +6770,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 		FChooseInitialResources initialResources = playerOwned.initialResources;
 		if (IsColonyPlacement(commandBuildingEnum)) {
-			initialResources = FChooseInitialResources::GetDefault();
+			initialResources = FChooseInitialResources::GetDefault(playerOwned.factionEnum());
 			initialResources.medicineAmount /= 2;
 			initialResources.toolsAmount /= 4;
 		}
@@ -6865,6 +6892,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 
 		AddResourceGlobal(townId, ResourceEnum::Wood, initialResources.woodAmount);
 		AddResourceGlobal(townId, ResourceEnum::Stone,initialResources.stoneAmount);
+		AddResourceGlobal(townId, ResourceEnum::Clay, initialResources.clayAmount);
 
 		AddResourceGlobal(townId, ResourceEnum::Medicine, initialResources.medicineAmount);
 		AddResourceGlobal(townId, ResourceEnum::SteelTools, initialResources.toolsAmount);

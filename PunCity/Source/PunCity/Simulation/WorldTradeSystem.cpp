@@ -36,11 +36,13 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 	int32 playerId1 = building1.playerId();
 	check(playerId1 != -1);
 	int32 playerId2 = building2.playerId();
+
+	int32 popupPlayerId = command.playerId != -1 ? command.playerId : playerId1;
 	
 	// Already established
 	if (HasTradeRoute(tradeRoutePair)) 
 	{
-		_simulation->AddPopupToFront(playerId1,
+		_simulation->AddPopupToFront(popupPlayerId,
 			LOCTEXT("AlreadyHasTradeRoute","Already establish the trade route."), 
 			ExclusiveUIEnum::None, "PopupCannot"
 		);
@@ -69,6 +71,25 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 		}
 
 		SortTradeRoutes();
+
+
+		/*
+		 * Unlocks Caravansary
+		 */
+		_simulation->AddDrawCards(command.playerId, CardEnum::Caravansary);
+
+		int32 buildingEnumInt = static_cast<int32>(CardEnum::Caravansary);
+		
+		_simulation->AddPopup(
+			PopupInfo(command.playerId,
+				FText::Format(
+					LOCTEXT("UnlockedBuilding_Pop", "Unlocked Caravansary.<space>Trade Caravans bring profit from Trade Route.<space>Would you like to buy a Caravansary card for {0}<img id=\"Coin\"/>."),
+					TEXT_NUM(_simulation->GetCardPrice(command.playerId, CardEnum::Caravansary))
+				),
+				{ LOCTEXT("Buy", "Buy"), LOCTEXT("Refuse", "Refuse") },
+				PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt
+			)
+		);
 	};
 
 	/*
@@ -116,7 +137,7 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 	if (portIds2.size() == 0)
 	{
 		// Complain about needing road to trade
-		_simulation->AddPopupToFront(playerId1,
+		_simulation->AddPopupToFront(popupPlayerId,
 			LOCTEXT("NeedIntercityRoadToMakeTradeRoute", "Need intercity road to establish the trade route. Connect your Townhall to target Townhall with Road."),
 			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
 		);
@@ -128,7 +149,7 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 	if (portIds1.size() == 0)
 	{
 		// Complain about needing port
-		_simulation->AddPopupToFront(playerId1,
+		_simulation->AddPopupToFront(popupPlayerId,
 			LOCTEXT("NeedPortToMakeTradeRoute", "Need Trading Port to establish the trade route."),
 			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
 		);

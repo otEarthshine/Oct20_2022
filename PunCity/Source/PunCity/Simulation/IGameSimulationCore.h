@@ -97,6 +97,7 @@ public:
 	virtual class TownManager* townManagerPtr(int32 townId) = 0;
 
 	virtual class TownManagerBase* townManagerBase(int32 townId) = 0;
+	virtual class TownManagerBase* townManagerBaseNullable(int32 townId) = 0;
 	
 	virtual TownManagerBase* townManager_Minor(int32 townId) = 0;
 	
@@ -618,6 +619,8 @@ public:
 	virtual void ImmigrationEvent(int32 townId, int32 migrationCount, FText message, PopupReceiverEnum receiverEnum) = 0;
 	
 	//! Card system
+	virtual int32 GetCardPrice(int32 playerId, CardEnum buildingEnum) = 0;
+	
 	virtual int32 BoughtCardCount(int32 playerId, CardEnum buildingEnum) = 0;
 	virtual int32 TownhallCardCountTown(int32 townId, CardEnum cardEnum) = 0;
 	virtual int32 TownhallCardCountAll(int32 playerId, CardEnum cardEnum) = 0;

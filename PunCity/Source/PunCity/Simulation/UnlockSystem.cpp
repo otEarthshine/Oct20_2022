@@ -345,6 +345,19 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 		}
 	}
 
+	//! Military Tech.. Unlock TrainUnits
+	if (IsMilitaryTechEnum(techEnum))
+	{
+		UnlockSystem* unlockSys = simulation->unlockSystem(playerId);
+		if (!unlockSys->unlockState(UnlockStateEnum::TrainUnits)) {
+			unlockSys->SetUnlockState(UnlockStateEnum::TrainUnits, true);
+
+			_simulation->AddPopup(playerId,
+				LOCTEXT("UnlockedTraining_Pop", "Unlocked Military Training.<space>Click Train Units Button above Townhall to bring up the Training UI.")
+			);
+		}
+	}
+
 	ResearchInfo::OnUnlock(playerId, simulation);
 }
 

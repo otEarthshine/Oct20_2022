@@ -51,6 +51,7 @@ void GathererHut::FinishConstruction()
 	AddResourceHolder(ResourceEnum::Orange, ResourceHolderType::Provider, 0);
 	AddResourceHolder(ResourceEnum::Papaya, ResourceHolderType::Provider, 0);
 	AddResourceHolder(ResourceEnum::Coconut, ResourceHolderType::Provider, 0);
+	AddResourceHolder(ResourceEnum::DateFruit, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
 		MakeProductionUpgrade(delicateGatheringText, ResourceEnum::SteelTools, 20),
@@ -2021,6 +2022,7 @@ void MinorCity::OnDeinit()
 	for (int32 occupantId : _occupantIds) {
 		_simulation->unitAI(occupantId).Die();
 	}
+	
 }
 
 /*
@@ -2043,7 +2045,7 @@ void ProvinceRuin::OnUpgradeBuildingWithPlayerId(int32 upgradeIndex, int32 upgra
 {
 	if (upgradeIndex == 0)
 	{
-		_simulation->TryAddCardToBoughtHand(upgraderPlayerId, CardEnum::DecorativePlates);
+		_simulation->TryAddCardToBoughtHand(upgraderPlayerId, CardEnum::Codex);
 	}
 }
 
@@ -2131,10 +2133,12 @@ void DiplomaticBuilding::FinishConstruction()
 {
 	Building::FinishConstruction();
 	_simulation->playerOwned(foreignBuilder()).AddDiplomaticBuilding(buildingId());
+	_simulation->playerOwned(_playerId).AddDiplomaticBuilding(buildingId());
 }
 
 void DiplomaticBuilding::OnDeinit() {
 	_simulation->playerOwned(foreignBuilder()).RemoveDiplomaticBuilding(buildingId());
+	_simulation->playerOwned(_playerId).RemoveDiplomaticBuilding(buildingId());
 }
 
 /*
@@ -2180,17 +2184,36 @@ void ForeignQuarter::FinishConstruction()
 	AddUpgrades({
 		MakeLevelUpgrade(
 			LOCTEXT("ForeignQuarterUpgrade_MilitaryQuarter", "Military Quarter"),
-			LOCTEXT("EmbassyUpgrade_ForeignInvestment Desc", "Each Upgrade Level Increases <img id=\"Influence\"/> gain by 100"),
+			LOCTEXT("ForeignQuarterUpgrade_MilitaryQuarter Desc", "Each Upgrade Level Increases <img id=\"Influence\"/> gain by 100"),
 			ResourceEnum::Money, 30
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("ForeignQuarterUpgrade_MerchantQuarter", "Merchant Quarter"),
-			LOCTEXT("EmbassyUpgrade_ForeignInvestment Desc", "Each Upgrade Level Increases <img id=\"Coin\"/> gain by 100"),
+			LOCTEXT("ForeignQuarterUpgrade_MerchantQuarter Desc", "Each Upgrade Level Increases <img id=\"Coin\"/> gain by 100"),
 			ResourceEnum::Money, 30
 		),
 	});
 
 	DiplomaticBuilding::FinishConstruction();
+
+	UnlockSystem* unlockSys = _simulation->unlockSystem(foreignBuilder());
+	if (!unlockSys->unlockState(UnlockStateEnum::ForeignPort)) {
+		unlockSys->SetUnlockState(UnlockStateEnum::ForeignPort, true);
+
+		CardEnum unlockBuildingEnum = CardEnum::ForeignPort;
+		_simulation->AddDrawCards(foreignBuilder(), unlockBuildingEnum);
+
+		_simulation->AddPopup(
+			PopupInfo(foreignBuilder(),
+				FText::Format(
+					LOCTEXT("UnlockedBuilding_Pop", "Unlocked Foreign Port.<space>Foreign Port can increase the effectiveness of Foreign Quarters.<space>Would you like to buy a Foreign Port card for {0}<img id=\"Coin\"/>."),
+					TEXT_NUM(_simulation->GetCardPrice(foreignBuilder(), unlockBuildingEnum))
+				),
+				{ LOCTEXT("Buy", "Buy"), LOCTEXT("Refuse", "Refuse") },
+				PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int32>(unlockBuildingEnum)
+			)
+		);
+	}
 }
 
 /*
@@ -2338,6 +2361,47 @@ void PolicyOffice::FinishConstruction()
 	_simulation->playerOwned(_playerId).AddUniqueBuildingId(CardEnum::SpyCenter, buildingId());
 
 	Building::FinishConstruction();
+}
+
+/*
+ * World Trade Office
+ */
+void WorldTradeOffice::FinishConstruction()
+{
+	Building::FinishConstruction();
+}
+void WorldTradeOffice::OnTick1Sec()
+{
+	if (Time::Ticks() % (Time::TicksPerSecond * 10) == 0)
+	{
+		const int32 influenceUsagePerManipulation = 10;
+
+		if (_simulation->influence(_playerId) >= influenceUsagePerManipulation)
+		{
+			if (resourceEnumToIncreasePrice != ResourceEnum::None) {
+				_simulation->worldTradeSystem().ChangePrice100_Percent(resourceEnumToIncreasePrice, 1);
+			}
+			if (resourceEnumToDecreasePrice != ResourceEnum::None) {
+				_simulation->worldTradeSystem().ChangePrice100_Percent(resourceEnumToDecreasePrice, -1);
+			}
+
+			_simulation->ChangeInfluence(_playerId, -influenceUsagePerManipulation);
+			_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(-influenceUsagePerManipulation));
+		}
+	}
+}
+
+/*
+ * Caravansary
+ */
+std::vector<BonusPair> Caravansary::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = Building::GetBonuses();
+
+	bonuses.push_back({ LOCTEXT("Trade Route Experience", "Trade Route Experience"), static_cast<int32>(sqrt(_cumulativeRouteMoney)) });
+
+
+	return bonuses;
 }
 
 

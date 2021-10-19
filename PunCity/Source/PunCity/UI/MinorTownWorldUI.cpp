@@ -50,6 +50,17 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	else {
 		PlayerColorCircle->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+	if (simulation().townPlayerId(uiTownId) != playerId() &&
+		simulation().IsResearched(playerId(), TechEnum::TradeRoute) &&
+		!simulation().worldTradeSystem().HasTradeRoute(playerId(), uiTownId))
+	{
+		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Visible);
+		BUTTON_ON_CLICK(ConnectTradeRouteButton, this, &UMinorTownWorldUI::OnClickConnectTradeButton);
+	}
+	else {
+		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
 }
 
 

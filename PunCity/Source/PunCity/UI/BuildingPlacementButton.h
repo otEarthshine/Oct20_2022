@@ -71,7 +71,7 @@ public:
 		{
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->BuildingIconMaterial, this);
 
-			if (UTexture2D* cardIcon = assetLoader->GetCardIconNullable(buildingEnum)) {
+			if (UTexture2D* cardIcon = assetLoader->GetCardIconNullable(playerFactionEnum(), buildingEnum)) {
 				colorMaterial->SetTextureParameterValue("ColorTexture", cardIcon);
 				colorMaterial->SetTextureParameterValue("DepthTexture", nullptr);
 			}
@@ -90,7 +90,7 @@ public:
 			
 		} else {
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
-			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(buildingEnum));
+			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), buildingEnum));
 			
 			//grayMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconGrayMaterial, this);
 		}

@@ -888,6 +888,9 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						IsTradingPostLike(building.buildingEnum()) ||
 						building.isEnum(CardEnum::TradingCompany) ||
 						building.isEnum(CardEnum::SpyCenter) ||
+						building.isEnum(CardEnum::Zoo) ||
+						building.isEnum(CardEnum::Museum) ||
+						building.isEnum(CardEnum::CardCombiner) ||
 						IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::HuntingLodge) ||
@@ -1571,7 +1574,9 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	// Show building resource need...
 	if (showResource)
 	{
-		std::vector<int32> constructionResources = GetBuildingInfo(placementInfo.buildingEnum).constructionResources;
+		FactionEnum factionEnum = simulation().playerOwned(playerId()).factionEnum();
+		
+		std::vector<int32> constructionResources = GetBuildingInfo(placementInfo.buildingEnum).GetConstructionResources(factionEnum);
 		for (int32 i = 0; i < constructionResources.size(); i++) {
 			if (constructionResources[i] > 0) {
 				ResourceEnum resourceEnum = ConstructionResources[i];

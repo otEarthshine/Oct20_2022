@@ -153,6 +153,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* FeeLeftText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* NetTotalLeftText;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* CitiesTradeOffersOverlay;
 	UPROPERTY(meta = (BindWidget)) UScrollBox* CitiesTradeOffersBox;
 	
 

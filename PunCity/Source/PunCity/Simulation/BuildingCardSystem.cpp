@@ -3,6 +3,8 @@
 
 #include "BuildingCardSystem.h"
 
+#include "TownManagerBase.h"
+
 #define LOCTEXT_NAMESPACE "BuildingCardSystem"
 
 void BuildingCardSystem::TickRound()
@@ -39,7 +41,6 @@ FText BuildingCardSystem::rareHandMessage2()
 	switch(_rareHandData.rareHandEnum)
 	{
 	case RareHandEnum::InitialCards1: return LOCTEXT("ChooseAStartingCard", "Choose a Starting Card");
-	case RareHandEnum::InitialCards2: return LOCTEXT("ChooseAnotherStartingCard", "Choose Another Starting Card");
 
 	case RareHandEnum::TownhallLvl2Cards:
 	case RareHandEnum::TownhallLvl3Cards:
@@ -125,22 +126,6 @@ void BuildingCardSystem::RollRareHandExecute()
 			PopupReceiverEnum::StartGame_AskAboutAdvice, true
 		);
 		_simulation->AddPopup(popup);
-	}
-	else if (_rareHandData.rareHandEnum == RareHandEnum::InitialCards2)
-	{
-		_cardsRareHand = {
-			CardEnum::CabbageSeed,
-			CardEnum::Investment,
-			CardEnum::IronSmelter,
-		};
-
-		//PopupInfo popup(_playerId,
-		//	LOCTEXT("GuideAsk_Pop", "Would you like some guidance?"),
-		//	{ LOCTEXT("ChoiceGuide", "Yes, guide me"),
-		//		LOCTEXT("ChoiceNoGuide", "No, I already know what to do") },
-		//	PopupReceiverEnum::StartGame_AskAboutAdvice, true
-		//);
-		//_simulation->AddPopup(popup);
 	}
 	
 

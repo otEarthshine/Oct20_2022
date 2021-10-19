@@ -1311,8 +1311,8 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::PitaBread, LOCTEXT("Pita Bread", "Pita Bread"), FoodCost, LOCTEXT("Pita Bread Desc", "Delicious food baked from Wheat Flour")),
 	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 50, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::DateFruit, LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
-	ResourceInfo(ResourceEnum::DateFruit,		LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	
 };
 
@@ -1434,6 +1434,7 @@ static const std::vector<ResourceEnum> FoodEnums_NonInput
 	ResourceEnum::Cabbage,
 	ResourceEnum::Papaya,
 	ResourceEnum::Coconut,
+	ResourceEnum::DateFruit,
 	ResourceEnum::Fish,
 
 	ResourceEnum::Pork,
@@ -1589,6 +1590,7 @@ const ResourceEnum HerbivoreFoodEnums[] =
 	ResourceEnum::Orange,
 	ResourceEnum::Papaya,
 	ResourceEnum::Coconut,
+	ResourceEnum::DateFruit,
 	
 	ResourceEnum::Wheat,
 	ResourceEnum::Milk,
@@ -1604,8 +1606,11 @@ static const ResourceEnum ConstructionResources[] = {
 	ResourceEnum::Glass,
 	ResourceEnum::Concrete,
 	ResourceEnum::Steel,
+	
+	ResourceEnum::Clay,
 };
 static const int32 ConstructionResourceCount = _countof(ConstructionResources);
+
 
 static int32 ConstructionCostAsMoney(std::vector<int32> bldResourceCost) {
 	int32 resourceValue = 0;
@@ -1822,6 +1827,22 @@ static int32 SumResourceCost(const std::vector<ResourcePair>& resourcePairs)
 		}
 		else {
 			result += GetResourceInfo(resourcePair.resourceEnum).basePrice * resourcePair.count;
+		}
+	}
+	return result;
+}
+
+static std::vector<int32> GetConstructionResourceListFromResourcePairs(std::vector<ResourcePair> resourcePairs)
+{
+	std::vector<int32> result(ConstructionResourceCount, 0);
+	
+	for (int32 i = 0; i < ConstructionResourceCount; i++)  
+	{
+		for (int32 j = 0; j < resourcePairs.size(); j++) {
+			if (ConstructionResources[i] == resourcePairs[j].resourceEnum) {
+				result[i] = resourcePairs[j].count;
+				break;
+			}
 		}
 	}
 	return result;
@@ -2269,6 +2290,8 @@ enum class CardEnum : uint16
 	ForeignPort,
 	SpyCenter,
 	PolicyOffice,
+	WorldTradeOffice,
+	CardCombiner,
 
 	MayanPyramid,
 	EgyptianPyramid,
@@ -2339,7 +2362,7 @@ enum class CardEnum : uint16
 	SmeltCombo,
 	
 	Immigration,
-	DuplicateBuilding,
+	DuplicateBuilding, // ??
 
 	Pig,
 	Sheep,
@@ -2361,18 +2384,29 @@ enum class CardEnum : uint16
 	Bobcat,
 
 	//! Artifacts
-	DecorativePlates,
+	Codex,
+	SacrificialAltar,
+	StoneStele,
 	BallCourtGoals,
-	//Codex,
-	//StoneStele,
-	//MortuaryMask,
-	//
-	//FeatherCrown,
-	//TempleMurals,
-	//IncenseHolders,
-	//SacrificialAltar,
-	//BloodlettingKnife,
-	RitualHeaddress,
+	FeatherCrown,
+	
+	CanopicJars,
+	DepartureScrolls,
+	DeathMask,
+	SolarBarque,
+	GoldCapstone,
+
+	FeastRemains,
+	ForeignTrinkets,
+	ChalkPlaque,
+	OfferingCup,
+	OrnateTrinkets,
+
+	TatooingNeedles,
+	Petroglyphs,
+	StoneFishhooks,
+	CoralEyes,
+	AncientStaff,
 	
 	//
 	FireStarter,
@@ -2491,7 +2525,7 @@ enum class CardEnum : uint16
 
 	
 	
-	None,
+	None, // Also Total Count
 
 	//! For Laborer Priority
 	GatherTiles,
@@ -2945,6 +2979,17 @@ struct BldInfo
 	}
 
 	int32 minEra() const { return resourceInfo.era; }
+
+	std::vector<int32> GetConstructionResources(FactionEnum factionEnum) const
+	{
+		if (factionEnum == FactionEnum::Arab) {
+			if (cardEnum == CardEnum::House) {
+				return GetConstructionResourceListFromResourcePairs({ ResourcePair(ResourceEnum::Clay, 20) });
+			}
+		}
+		return constructionResources;
+	}
+	
 
 	BldInfo(CardEnum buildingEnum,
 		FText nameIn,
@@ -3691,17 +3736,23 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::PolicyOffice, _LOCTEXT("Policy Office", "Policy Office"), LOCTEXT("Policy Office (Plural)", "Policy Office"), LOCTEXT("Policy Office Desc", ""),
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
+	BldInfo(CardEnum::WorldTradeOffice, _LOCTEXT("World Trade Office", "World Trade Office"), LOCTEXT("World Trade Office (Plural)", "World Trade Office"), LOCTEXT("World Trade Office Desc", ""),
+		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+	),
+	BldInfo(CardEnum::CardCombiner, _LOCTEXT("Card Combiner", "Card Combiner"), LOCTEXT("Card Combiner (Plural)", "Card Combiner"), LOCTEXT("Card Combiner Desc", ""),
+		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+	),
 
-	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Jungle Ruin", "Jungle Ruin"), LOCTEXT("Jungle Ruin (Plural)", "Jungle Ruins"), LOCTEXT("Jungle Ruin Desc", ""),
+	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Stepped Ruin", "Stepped Ruin"), LOCTEXT("Stepped Ruin (Plural)", "Stepped Ruins"), LOCTEXT("Stepped Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
-	BldInfo(CardEnum::EgyptianPyramid, _LOCTEXT("Desert Ruin", "Desert Ruin"), LOCTEXT("Desert Ruin (Plural)", "Desert Ruins"), LOCTEXT("Desert Ruin Desc", ""),
+	BldInfo(CardEnum::EgyptianPyramid, _LOCTEXT("Pyramid Ruin", "Pyramid Ruin"), LOCTEXT("Pyramid Ruin (Plural)", "Pyramid Ruins"), LOCTEXT("Pyramid Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
-	BldInfo(CardEnum::StoneHenge, _LOCTEXT("StoneHenge", "StoneHenge"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
+	BldInfo(CardEnum::StoneHenge, _LOCTEXT("Stone Circle Ruin", "Stone Circle Ruin"), LOCTEXT("Stone Circle Ruin (Plural)", "Stone Circle Ruins"), LOCTEXT("Stone Circle Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
-	BldInfo(CardEnum::EasterIsland, _LOCTEXT("EasterIsland", "EasterIsland"), LOCTEXT("Ruin (Plural)", "Ruins"), LOCTEXT("Ruin Desc", ""),
+	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Mysterious Statue Ruin", "Mysterious Statues Ruin"), LOCTEXT("Mysterious Statues Ruin (Plural)", "Mysterious Statues Ruins"), LOCTEXT("Mysterious Statue Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	
@@ -3832,10 +3883,31 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Bobcat,			_LOCTEXT("Bobcat", "Bobcat"), 1000, LOCTEXT("Bobcat Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
 
 	//! Artifacts
-	BldInfo(CardEnum::DecorativePlates,			_LOCTEXT("Artifact1", "Artifact1"), 1000, LOCTEXT("Artifact1 Desc","")),
-	BldInfo(CardEnum::BallCourtGoals,			_LOCTEXT("Artifact2", "Artifact2"), 1000, LOCTEXT("Artifact2 Desc","")),
-	BldInfo(CardEnum::RitualHeaddress,			_LOCTEXT("Artifact3", "Artifact3"), 1000, LOCTEXT("Artifact3 Desc","")),
+	BldInfo(CardEnum::Codex,			_LOCTEXT("Codex", "Codex"), 1000,						LOCTEXT("Codex Desc","")),
+	BldInfo(CardEnum::SacrificialAltar,	_LOCTEXT("Sacrificial Altar", "Sacrificial Altar"), 1000, LOCTEXT("Sacrificial Altar Desc","")),
+	BldInfo(CardEnum::StoneStele,		_LOCTEXT("Stone Stele", "Stone Stele"), 1000,			LOCTEXT("Stone Stele Desc","")),
+	BldInfo(CardEnum::BallCourtGoals,	_LOCTEXT("Ball Court Goals", "Ball Court Goals"), 1000, LOCTEXT("Ball Court Goals Desc","")),
+	BldInfo(CardEnum::FeatherCrown,		_LOCTEXT("Feather Crown", "Feather Crown"), 1000,		LOCTEXT("Feather Crown Desc","")),
 
+	BldInfo(CardEnum::CanopicJars,		_LOCTEXT("Canopic Jars", "Canopic Jars"), 1000,			LOCTEXT("Canopic Jars Desc","")),
+	BldInfo(CardEnum::DepartureScrolls,	_LOCTEXT("Departure Scrolls", "Departure Scrolls"), 1000, LOCTEXT("Departure Scrolls Desc","")),
+	BldInfo(CardEnum::DeathMask,		_LOCTEXT("Death Mask", "Death Mask"), 1000,				LOCTEXT("Death Mask Desc","")),
+	BldInfo(CardEnum::SolarBarque,		_LOCTEXT("Solar Barque", "Solar Barque"), 1000,			LOCTEXT("Solar Barque Desc","")),
+	BldInfo(CardEnum::GoldCapstone,		_LOCTEXT("Gold Capstone", "Gold Capstone"), 1000,		LOCTEXT("Gold Capstone Desc","")),
+
+	BldInfo(CardEnum::FeastRemains,		_LOCTEXT("Feast Remains", "Feast Remains"), 1000,		LOCTEXT("Feast Remains Desc","")),
+	BldInfo(CardEnum::ForeignTrinkets,	_LOCTEXT("Foreign Trinkets", "Foreign Trinkets"), 1000, LOCTEXT("Foreign Trinkets Desc","")),
+	BldInfo(CardEnum::ChalkPlaque,		_LOCTEXT("Chalk Plaque", "Chalk Plaque"), 1000,			LOCTEXT("Chalk Plaque Desc","")),
+	BldInfo(CardEnum::OfferingCup,		_LOCTEXT("Offering Cup", "Offering Cup"), 1000,		LOCTEXT("Offering Cup Desc","")),
+	BldInfo(CardEnum::OrnateTrinkets,	_LOCTEXT("Ornate Trinkets", "Ornate Trinkets"), 1000,		LOCTEXT("Ornate Trinkets Desc","")),
+
+	BldInfo(CardEnum::TatooingNeedles,	_LOCTEXT("Tatooing Needles", "Tatooing Needles"), 1000, LOCTEXT("Tatooing Needles Desc", "")),
+	BldInfo(CardEnum::Petroglyphs,		_LOCTEXT("Petroglyphs", "Petroglyphs"), 1000,			LOCTEXT("Petroglyphs Desc", "")),
+	BldInfo(CardEnum::StoneFishhooks,	_LOCTEXT("Stone Fishhooks", "Stone Fishhooks"), 1000, LOCTEXT("Stone Fishhooks Desc", "")),
+	BldInfo(CardEnum::CoralEyes,		_LOCTEXT("Coral Eyes", "Coral Eyes"), 1000,			LOCTEXT("Coral Eyes Desc", "")),
+	BldInfo(CardEnum::AncientStaff,		_LOCTEXT("Ancient Staff", "Ancient Staff"), 1000,		LOCTEXT("Ancient Staff Desc", "")),
+
+	
 	//
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
 	BldInfo(CardEnum::Steal,			_LOCTEXT("StealOld", "StealOld"), 200,					LOCTEXT("StealOld Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall. <Gray>(max 10000)</>")),
@@ -3957,6 +4029,7 @@ static const BldInfo CardInfos[]
 
 static const int32 BuildingEnumCount = _countof(BuildingInfo);
 static const int32 NonBuildingCardEnumCount = _countof(CardInfos);
+static const int32 CardEnumCount_WithNone = static_cast<int32>(CardEnum::None) + 1;
 
 static const std::vector<CardEnum> ActionCards
 {
@@ -4140,7 +4213,7 @@ static bool IsZooAnimalCard(CardEnum cardEnum) {
 }
 
 static bool IsArtifactCard(CardEnum cardEnum) {
-	return IsCardEnumBetween(cardEnum, CardEnum::DecorativePlates, CardEnum::RitualHeaddress);
+	return IsCardEnumBetween(cardEnum, CardEnum::Codex, CardEnum::AncientStaff);
 }
 
 
@@ -5566,7 +5639,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Cactus1,	LOCTEXT("Cactus", "Cactus"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Cactus Desc", "Desert plant with thick leafless stem covered in sharp spikes. Hurts to touch.")),
 	TileObjInfo(TileObjEnum::SavannaTree1,	LOCTEXT("Savanna Acacia", "Savanna Acacia"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Savanna Acacia Desc", "Myths say acacia trees descended from an ancient tree of life.")),
 
-	TileObjInfo(TileObjEnum::DesertDatePalm,	LOCTEXT("Date Palm", "Date Palm"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Date Palm Desc", "TODO:TEXT")),
+	TileObjInfo(TileObjEnum::DesertDatePalm,	LOCTEXT("Date Palm", "Date Palm"),	ResourceTileType::Tree,	ResourcePair(ResourceEnum::DateFruit, GatherBaseYield100),						defaultWood100, LOCTEXT("Date Palm Desc", "TODO:TEXT")),
 	TileObjInfo(TileObjEnum::DesertGingerbreadTree,	LOCTEXT("Gingerbread Tree", "Gingerbread Tree"),	ResourceTileType::Tree,	ResourcePair::Invalid(),						defaultWood100, LOCTEXT("Gingerbread Tree Desc", "TODO:TEXT")),
 
 
@@ -6146,6 +6219,7 @@ enum class ScienceEnum : uint8
 
 	Rationalism,
 	FreeThoughts,
+	EuropeBonus,
 
 	// ScienceModifiers Below
 	Library,
@@ -6165,7 +6239,8 @@ static TArray<FText> ScienceEnumNameList
 	LOCTEXT("ScientificTheories", "Scientific Theories"),
 
 	LOCTEXT("Rationalism", "Rationalism"),
-	LOCTEXT("FreeThoughts", "FreeThoughts"),
+	LOCTEXT("Free Thoughts", "Free Thoughts"),
+	LOCTEXT("Faction Bonus", "Faction Bonus"),
 
 	LOCTEXT("Library", "Library"),
 	LOCTEXT("School", "School"),
@@ -6317,7 +6392,7 @@ enum class TechEnum : uint8
 
 	// Apr 1
 	SandMine,
-	GlassSmelting,
+	//GlassSmelting,
 	Glassworks,
 	ConcreteFactory,
 	Industrialization,
@@ -6387,7 +6462,7 @@ enum class TechEnum : uint8
 
 	Machinery,
 	Colony,
-	PortColony,
+	//PortColony,
 
 	IndustrialAdjacency,
 
@@ -6441,7 +6516,7 @@ enum class TechEnum : uint8
 	Fort,
 	ResourceOutpost,
 	ResearchLab,
-	IntercityRoad,
+	//IntercityRoad,
 
 	Combo,
 
@@ -6450,6 +6525,11 @@ enum class TechEnum : uint8
 	 */
 	CardInventory1,
 	CardInventory2,
+
+	//! Military
+	Warrior,
+	Archer,
+	Swordsman,
 
 	MilitaryEngineering1,
 	MilitaryEngineering2,
@@ -6465,9 +6545,19 @@ enum class TechEnum : uint8
 	MachineGun,
 	Artillery,
 	Battleship,
+	
 
 	TradeRoute,
 	ForeignRelation,
+	PolicyMaking,
+	ForeignInvestment,
+	Tourism,
+	Museum,
+	Zoo,
+
+	SpyCenter,
+	CardCombiner,
+	MarketInfluence,
 	
 	Count,
 };
@@ -6491,6 +6581,12 @@ enum class ClaimConnectionEnum : uint8
 };
 
 void AppendClaimConnectionString(TArray<FText>& args, ClaimConnectionEnum claimConnectionEnum);
+
+static bool IsMilitaryTechEnum(TechEnum techEnum)
+{
+	return static_cast<int>(TechEnum::Warrior) <= static_cast<int>(techEnum) && static_cast<int>(techEnum) <= static_cast<int>(TechEnum::Battleship);
+}
+
 
 /*
  * Quest
@@ -9682,9 +9778,11 @@ enum class CallbackEnum : uint8
 	SelectCardRemoval,
 	SellCard,
 	SelectBuildingSlotCard,
-	SelectInventorySlotCard,
 	SelectDeployMilitarySlotCard,
+	SelectInventorySlotCard,
 	CardInventorySlotting,
+	SelectCardSetSlotCard,
+	CardSetSlotting,
 	ArchivesSlotting,
 
 	SelectStartingLocation,
@@ -9988,6 +10086,7 @@ static FText GetHoverWarningDescription(HoverWarning hoverWarning) { return Hove
  */
 
 static const int32 GoldToRelationship = 20;
+static const int32 InfluenceToRelationship = 5;
 
 enum class RelationshipModifierEnum : uint8
 {
@@ -9996,6 +10095,7 @@ enum class RelationshipModifierEnum : uint8
 	YouBefriendedUs,
 	WeAreFamily,
 	GoodTradeDeal,
+	DiplomaticBuildings,
 
 	AdjacentBordersSparkTensions,
 	TownhallProximitySparkTensions,
@@ -10028,18 +10128,14 @@ public:
 
 	void SetModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
 		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] = value;
-		CheckAllianceState(askingPlayerId);
 	}
 	void ChangeModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 value) {
 		_relationshipModifiers[askingPlayerId][static_cast<int>(modifier)] += value;
-		CheckAllianceState(askingPlayerId);
 	}
 	void DecayModifier(int32 askingPlayerId, RelationshipModifierEnum modifier, int32 changeValue = 1) {
 		int32& modifierValue = _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
 		if (modifierValue > 0) modifierValue = std::max(0, modifierValue - changeValue);
 		if (modifierValue < 0) modifierValue = std::min(0, modifierValue + changeValue);
-
-		CheckAllianceState(askingPlayerId);
 	}
 
 	//int32& GetModifierMutable(int32 askingPlayerId, RelationshipModifierEnum modifier) {
@@ -10048,6 +10144,10 @@ public:
 	int32 GetModifier(int32 askingPlayerId, RelationshipModifierEnum modifier) const {
 		return _relationshipModifiers[askingPlayerId][static_cast<int>(modifier)];
 	}
+
+	//const std::vector<std::vector<int32>>& relationshipModifiers() { return _relationshipModifiers; }
+
+	
 
 	// TODO: for abandon town
 	void ClearRelationshipModifiers(int32 towardPlayerId) {
@@ -10079,23 +10179,29 @@ public:
 	}
 
 	//! Alliance
-	bool isAlly(int32 askingPlayerId) { return _isAlly[askingPlayerId]; }
-	bool CanCreateAlliance(int32 askingPlayerId) { return GetTotalRelationship(askingPlayerId) >= AllyRelationshipThreshold; }
-	void ProposeAlliance(int32 askingPlayerId) {
-		if (CanCreateAlliance(askingPlayerId)) {
-			_isAlly[askingPlayerId] = true;
-		}
+	bool isAlly(int32 askingPlayerId) const { return _isAlly[askingPlayerId]; }
+	bool CanCreateAlliance(int32 askingPlayerId) {
+		return GetTotalRelationship(askingPlayerId) >= AllyRelationshipRequirement(askingPlayerId);
 	}
-	void CheckAllianceState(int32 askingPlayerId) {
-		if (!CanCreateAlliance(askingPlayerId)) {
-			_isAlly[askingPlayerId] = false;
+	void SetAlliance(int32 askingPlayerId, bool isAlly) {
+		_isAlly[askingPlayerId] = isAlly;
+	}
+
+	int32 AllyRelationshipRequirement(int32 askingPlayerId)
+	{
+		int32 maxRelationship = AllyRelationshipMinimumRequirement;
+		for (int32 i = 0; i < _relationshipModifiers.size(); i++) {
+			if (i != askingPlayerId) {
+				maxRelationship = std::max(maxRelationship, GetTotalRelationship(i) + 30);
+			}
 		}
+		return maxRelationship;
 	}
 
 	bool isEnemy(int32 askingPlayerId) { return GetTotalRelationship(askingPlayerId) < 0; }
 	
 
-	static const int32 AllyRelationshipThreshold = 100;
+	static const int32 AllyRelationshipMinimumRequirement = 100;
 
 	
 	//! Serialize
@@ -10223,10 +10329,13 @@ public:
 	FactionEnum factionEnum = FactionEnum::None;
 
 	FText name;
+
+	FText uniqueBonusDescription;
 	
-	FactionInfo(FactionEnum factionEnum, FText name) :
+	FactionInfo(FactionEnum factionEnum, FText name, FText uniqueBonusDescription) :
 		factionEnum(factionEnum),
-		name(name)
+		name(name),
+		uniqueBonusDescription(uniqueBonusDescription)
 	{}
 
 };
@@ -10235,8 +10344,8 @@ public:
 
 static const std::vector<FactionInfo> FactionInfos =
 {
-	FactionInfo(FactionEnum::Europe, LOCTEXT("Europe", "Europe")),
-	FactionInfo(FactionEnum::Arab, LOCTEXT("Arab", "Arab"))
+	FactionInfo(FactionEnum::Europe, LOCTEXT("Europe", "Europe"), LOCTEXT("Europe Ability Description", "+5% research speed")),
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Arab", "Arab"), LOCTEXT("Arab Ability Description", "+10% industrial production"))
 };
 
 #undef LOCTEXT_NAMESPACE
@@ -10387,6 +10496,79 @@ static bool IsAncientWonderCardEnum(CardEnum cardEnum) {
 
 
 static const int32 BaseArtifactExcavationCost = 1000;
+
+
+/*
+ * Zoo
+ * Museum
+ * Card Combiner
+ */
+
+enum class CardSetTypeEnum : uint8
+{
+	Zoo,
+	Museum,
+	CardCombiner,
+};
+
+class CardSetInfo
+{
+public:
+	FText name;
+	FText description;
+	
+	std::vector<CardEnum> cardEnums;
+
+	CardSetInfo(FText name, FText description, std::vector<CardEnum> cardEnums) :
+		name(name), description(description), cardEnums(cardEnums)
+	{}
+};
+
+#define LOCTEXT_NAMESPACE "CardSetInfo"
+
+static const std::vector<CardSetInfo> ZooSetInfos
+{
+	CardSetInfo(LOCTEXT("Deer", "Deer"), LOCTEXT("", ""), { CardEnum::RedDeer, CardEnum::YellowDeer, CardEnum::DarkDeer }),
+	CardSetInfo(LOCTEXT("Boar", "Boar"), LOCTEXT("", ""), { CardEnum::Boar }),
+	CardSetInfo(LOCTEXT("Bear", "Bear"), LOCTEXT("", ""), { CardEnum::BrownBear, CardEnum::BlackBear, CardEnum::Panda }),
+};
+
+static const std::vector<CardSetInfo> MuseumSetInfos
+{
+	CardSetInfo(LOCTEXT("Prosperity", "Prosperity"), LOCTEXT("", ""), { CardEnum::Codex, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
+	CardSetInfo(LOCTEXT("Mummification", "Mummification"), LOCTEXT("", ""), { CardEnum::CanopicJars, CardEnum::DepartureScrolls, CardEnum::DeathMask }),
+	CardSetInfo(LOCTEXT("Pilgrimage", "Pilgrimage"), LOCTEXT("", ""), { CardEnum::FeastRemains, CardEnum::ForeignTrinkets, CardEnum::ChalkPlaque }),
+	CardSetInfo(LOCTEXT("Islander Life", "Islander Life"), LOCTEXT("", ""), { CardEnum::TatooingNeedles, CardEnum::Petroglyphs, CardEnum::StoneFishhooks }),
+
+	CardSetInfo(LOCTEXT("A Fulfilled Life", "A Fulfilled Life"), LOCTEXT("", ""), { CardEnum::BallCourtGoals, CardEnum::SolarBarque }),
+	CardSetInfo(LOCTEXT("Remembrance", "Remembrance"), LOCTEXT("", ""), { CardEnum::OfferingCup, CardEnum::CoralEyes }),
+
+	CardSetInfo(LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("", ""), { CardEnum::FeatherCrown, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
+};
+
+static const std::vector<CardSetInfo> CardCombinerSetInfos
+{
+	CardSetInfo(LOCTEXT("Productivity Book II", "Productivity Book II"), LOCTEXT("", ""), { CardEnum::ProductivityBook, CardEnum::ProductivityBook, CardEnum::ProductivityBook }),
+	CardSetInfo(LOCTEXT("Sustainanility Book II", "Sustainanility Book II"), LOCTEXT("", ""), { CardEnum::SustainabilityBook, CardEnum::SustainabilityBook, CardEnum::SustainabilityBook }),
+};
+
+#undef LOCTEXT_NAMESPACE
+
+enum class ZooCardSetEnum
+{
+	
+};
+
+
+enum class MuseumCardSetEnum
+{
+
+};
+
+enum class CombinerCardSetEnum
+{
+
+};
 
 
 /*

@@ -257,7 +257,7 @@ public:
 			constructionResources.resize(ConstructionResourceCount, 0);
 			return constructionResources;
 		}
-		return GetBuildingInfo(_buildingEnum).constructionResources;
+		return GetBuildingInfo(_buildingEnum).GetConstructionResources(factionEnum());
 		//return _simulation->GetConstructionResourceCost(_buildingEnum, _area);
 	}
 
@@ -1281,6 +1281,7 @@ public:
 	
 	//bool NeedRoadConnection();
 
+	// Note: Doesn't work with upgradeLevel
 	bool IsUpgraded(int index) const {
 		return _upgrades.size() > index ? _upgrades[index].isUpgraded : false;
 	}

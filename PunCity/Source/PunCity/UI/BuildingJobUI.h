@@ -70,8 +70,17 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* TradeButton;
 	UPROPERTY(meta = (BindWidget)) UButton* AutoTradeButton;
 
-	UPROPERTY(meta = (BindWidget)) UButton* RevealSpyNestButton;
+
+	enum class GenericButtonEnum {
+		RevealSpyNest,
+		Zoo,
+		Museum,
+		CardCombiner,
+	};
+
+	UPROPERTY(meta = (BindWidget)) UButton* RevealSpyNestButton; // Generic Button
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RevealSpyNestButtonText;
+	GenericButtonEnum genericButtonEnum = GenericButtonEnum::RevealSpyNest;
 
 	UPROPERTY(meta = (BindWidget)) UButton* StatisticsButton;
 	UPROPERTY(meta = (BindWidget)) UButton* JobPriorityButton;
@@ -113,6 +122,10 @@ public:
 	{	
 		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobBldStatus);
 
+		auto isOwnedOrFastBuild = [&]() {
+			return building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild");
+		};
+
 		if (building.isEnum(CardEnum::StatisticsBureau)) {
 			// Note StatisticsButton gets its visibility set to Collapsed when it gets init
 			if (building.ownedBy(playerId())) {
@@ -129,19 +142,47 @@ public:
 		}
 		if (building.isEnum(CardEnum::TradingCompany)) 
 		{
-			if (building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild")) {
+			if (isOwnedOrFastBuild()) {
 				AutoTradeButton->SetVisibility(ESlateVisibility::Visible);
 			}
 			return;
 		}
 		if (building.isEnum(CardEnum::SpyCenter))
 		{
-			if (building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild")) {
+			if (isOwnedOrFastBuild()) {
 				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
 				RevealSpyNestButtonText->SetText(FText::Format(
 					NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest\n<img id=\"Coin\"/>{0}"), 
 					TEXT_NUM(simulation().GetRevealSpyNestPrice()))
 				);
+				genericButtonEnum = GenericButtonEnum::RevealSpyNest;
+			}
+			return;
+		}
+		if (building.isEnum(CardEnum::Zoo))
+		{
+			if (isOwnedOrFastBuild()) {
+				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
+				RevealSpyNestButtonText->SetText(NSLOCTEXT("BuildingJobUI", "Zoo Sets Button", "Zoo Collection"));
+				genericButtonEnum = GenericButtonEnum::Zoo;
+			}
+			return;
+		}
+		if (building.isEnum(CardEnum::Museum))
+		{
+			if (isOwnedOrFastBuild()) {
+				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
+				RevealSpyNestButtonText->SetText(NSLOCTEXT("BuildingJobUI", "Museum Sets Button", "Artifact Collection"));
+				genericButtonEnum = GenericButtonEnum::Museum;
+			}
+			return;
+		}
+		if (building.isEnum(CardEnum::CardCombiner))
+		{
+			if (isOwnedOrFastBuild()) {
+				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
+				RevealSpyNestButtonText->SetText(NSLOCTEXT("BuildingJobUI", "Card Combiner Sets Button", "Combine Cards"));
+				genericButtonEnum = GenericButtonEnum::CardCombiner;
 			}
 			return;
 		}
@@ -368,8 +409,19 @@ private:
 		GetPunHUD()->OpenTownAutoTradeUI(building.townId());
 	}
 
-	UFUNCTION() void OnClickRevealSpyNestButton() {
-		inputSystemInterface()->StartRevealSpyNest();
+	UFUNCTION() void OnClickGenericButton() {
+		if (genericButtonEnum == GenericButtonEnum::RevealSpyNest) {
+			inputSystemInterface()->StartRevealSpyNest();
+		}
+		else if (genericButtonEnum == GenericButtonEnum::Zoo) {
+			GetPunHUD()->OpenCardSetsUI(CardSetTypeEnum::Zoo);
+		}
+		else if (genericButtonEnum == GenericButtonEnum::Museum) {
+			GetPunHUD()->OpenCardSetsUI(CardSetTypeEnum::Museum);
+		}
+		else if (genericButtonEnum == GenericButtonEnum::CardCombiner) {
+			GetPunHUD()->OpenCardSetsUI(CardSetTypeEnum::CardCombiner);
+		}
 	}
 
 	UFUNCTION() void OnClickStatisticsButton() {

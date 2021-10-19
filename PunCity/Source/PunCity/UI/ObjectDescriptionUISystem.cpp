@@ -738,6 +738,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				focusBox->AddSpacer();
 
+				const RelationshipModifiers& relationship = townManagerBase->relationship();
+				int32 totalRelationshipToPlayer = townManagerBase->relationship().GetTotalRelationship(playerId());
+
 				if (townManagerBase->lordPlayerId() != -1) {
 					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 						LOCTEXT("Lord", "Lord"),
@@ -749,10 +752,63 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						LOCTEXT("Relationship", "Relationship"),
 						FText::Format(
 							INVTEXT("{0}/{1}"),
-							TEXT_NUM(townManagerBase->relationship().GetTotalRelationship(playerId())),
-							TEXT_NUM(RelationshipModifiers::AllyRelationshipThreshold)
+							TEXT_NUM(totalRelationshipToPlayer),
+							TEXT_NUM(townManagerBase->relationship().AllyRelationshipRequirement(playerId()))
 						)
 					);
+				}
+
+				focusBox->AddSpacer();
+				focusBox->AddSpacer();
+
+				//! Relationship Level
+				focusBox->AddRichText(FText::Format(
+					LOCTEXT("Relationship Tier 1", "{0}Relationship Lv 1 (exceed 30):</>\n{0}+30</><img id=\"Influence\"/> {0}per round</>"),
+					totalRelationshipToPlayer > 30 ? INVTEXT("<Default>") : INVTEXT("<Gray>")
+				));
+				focusBox->AddSpacer();
+
+				focusBox->AddRichText(FText::Format(
+					LOCTEXT("Relationship Tier 2", "{0}Relationship Lv 2 (exceed 60):</>\n{0}+60</><img id=\"Influence\"/> {0}per round</>"),
+					totalRelationshipToPlayer >60 ? INVTEXT("<Default>") : INVTEXT("<Gray>")
+				));
+				focusBox->AddSpacer();
+
+				focusBox->AddRichText(FText::Format(
+					LOCTEXT("Relationship Tier 3", "{0}Relationship Lv 3 (ally):</>\n{0}+150</><img id=\"Influence\"/> {0}per round</>"),
+					relationship.isAlly(playerId()) ? INVTEXT("<Default>") : INVTEXT("<Gray>")
+				));
+
+				focusBox->AddSpacer();
+				focusBox->AddSpacer();
+
+				//! Highest 3 relationship
+				{
+					std::vector<std::pair<int32, int32>> playerIdAndRelationship;
+					for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
+						if (i != playerId()) {
+							int32 totalRelationship = relationship.GetTotalRelationship(i);
+							if (totalRelationship > 0) {
+								playerIdAndRelationship.push_back({ i, totalRelationship });
+							}
+						}
+					}
+
+					std::sort(playerIdAndRelationship.begin(), playerIdAndRelationship.end(), [&](std::pair<int32, int32> a, std::pair<int32, int32> b) {
+						return a.second > b.second;
+					});
+
+					int32 loopCount = std::min(3, static_cast<int>(playerIdAndRelationship.size()));
+					if (loopCount > 0) {
+						focusBox->AddRichText(LOCTEXT("Relationship with Others:", "Relationship with Others:"));
+					}
+					for (int32 i = 0; i < loopCount; i++) {
+						focusBox->AddRichText(FText::Format(
+							INVTEXT("{0} {1}"),
+							sim.playerNameT(playerIdAndRelationship[i].first),
+							playerIdAndRelationship[i].second
+						));
+					}
 				}
 			}
 			
@@ -909,7 +965,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				if (IsProducer(building.buildingEnum()) ||
 					building.buildingEnum() == CardEnum::FruitGatherer ||
 					building.buildingEnum() == CardEnum::Forester ||
-					building.buildingEnum() == CardEnum::HuntingLodge)
+					building.buildingEnum() == CardEnum::HuntingLodge ||
+					building.buildingEnum() == CardEnum::Caravansary)
 				{
 					AddEfficiencyText(building, focusBox);
 				}
@@ -1867,17 +1924,25 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (IsAncientWonderCardEnum(building.buildingEnum()))
 					{
 						const ProvinceRuin& provinceRuin = building.subclass<ProvinceRuin>();
-						int32 digDistance = provinceRuin.GetDigDistance(playerId());
-						if (digDistance != INT32_MAX)
-						{
-							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-								LOCTEXT("Distance to your nearest Townhall", "Distance to Townhall"),
-								TEXT_NUM(digDistance)
-							);
-						}
 
-						if (provinceRuin.GetDigDistanceFactor(playerId()) > 100) {
-							focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("RuinFarFromTownhall_FocusUI", "Excavating far from Townhall incur cost penalty")));
+						focusBox->AddRichText(
+							LOCTEXT("AncientWonder Desc", "+50<img id=\"Coin\"/> Province Base Income")
+						);
+
+						if (sim.IsResearched(playerId(), TechEnum::Museum))
+						{
+							int32 digDistance = provinceRuin.GetDigDistance(playerId());
+							if (digDistance != INT32_MAX)
+							{
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+									LOCTEXT("Distance to your nearest Townhall", "Distance to Townhall"),
+									TEXT_NUM(digDistance)
+								);
+							}
+
+							if (provinceRuin.GetDigDistanceFactor(playerId()) > 100) {
+								focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("RuinFarFromTownhall_FocusUI", "Excavating far from Townhall incur cost penalty")));
+							}
 						}
 					}
 					//! Diplomatic
@@ -2088,6 +2153,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						if (showWhenOwnedByCurrentPlayer)
 						{
 							auto& caravansary = building.subclass<Caravansary>();
+							
 
 							// targetAmount
 							// - just opened UI, get it from targetAmount (actual value)
@@ -2135,12 +2201,73 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										0,
 										optionInts
 									);
-									focusBox->AddSpacer(18);
 								}
 								else {
 									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Need Trade Route", "Need Trade Route")));
 								}
+								focusBox->AddSpacer(18);
 							}
+
+							if (caravansary.targetTownId() != -1) {
+								WorldTile2 targetTile = simulation().GetTownhallGate_All(caravansary.targetTownId());
+								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Profit per trip", "Profit per trip"), TEXT_NUM(caravansary.GetTradeMoney(targetTile)));
+							}
+							
+						}
+					}
+					else if (building.isEnum(CardEnum::WorldTradeOffice))
+					{
+						if (showWhenOwnedByCurrentPlayer)
+						{
+							auto& bld = building.subclass<WorldTradeOffice>();
+
+							focusBox->AddRichText(LOCTEXT("WorldTradeOffice Description", "Every 10 secs:\n- spend 10<img id=\"Influence\"/>\n- increase price of goods by 1%"));
+							focusBox->AddSpacer(24);
+							
+							// targetAmount
+							// - just opened UI, get it from targetAmount (actual value)
+							// - after opened, we keep value in lastTargetAmountSet
+							if (_justOpenedDescriptionUI) {
+								bld.lastResourceEnumToIncreasePrice = bld.resourceEnumToIncreasePrice;
+								bld.lastResourceEnumToDecreasePrice = bld.resourceEnumToDecreasePrice;
+							}
+
+							const FText noneText = LOCTEXT("None", "None");
+
+							TArray<FText> options;
+							options.Add(noneText);
+							for (ResourceInfo info : SortedNameResourceInfo) {
+								options.Add(info.GetName());
+							}
+
+							auto addDropDown = [&](int32 index, ResourceEnum resourceEnum)
+							{
+								focusBox->AddDropdown(
+									building.buildingId(),
+									options,
+									ResourceName_WithNone(resourceEnum),
+									[](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex, int32 optionInt)
+									{
+										std::wstring resourceName = ToWString(sItem);
+
+										auto command = make_shared<FChangeWorkMode>();
+										command->buildingId = objectId;
+										command->intVar1 = dropdownIndex;
+										command->intVar2 = static_cast<int32>(FindResourceEnumByName(resourceName));
+										networkInterface->SendNetworkCommand(command);
+									},
+									index
+								);
+
+								focusBox->AddSpacer(24);
+							};
+
+							focusBox->AddRichText(LOCTEXT("Resource to increase price:", "Resource to increase price:"));
+							addDropDown(0, bld.lastResourceEnumToIncreasePrice);
+
+							focusBox->AddRichText(LOCTEXT("Resource to decrease price:", "Resource to decrease price:"));
+							addDropDown(1, bld.lastResourceEnumToDecreasePrice);
+
 						}
 					}
 					else if (IsMountainMine(building.buildingEnum()))
@@ -3041,7 +3168,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						bonusIcon->SetVisibility(ESlateVisibility::Visible);
 						SetChildHUD(bonusIcon);
-						bonusIcon->BuildingIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(bonusEnum));
+						bonusIcon->BuildingIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), bonusEnum));
 
 						const BldInfo& info = GetBuildingInfo(bonusEnum);
 						UToolTipWidgetBase* tooltip = UPunBoxWidget::AddToolTip(bonusIcon, bonusIcon);
@@ -3218,7 +3345,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 
 				// Special case:
-				if (IsAncientWonderCardEnum(buildingEnum)) {
+				if (IsAncientWonderCardEnum(buildingEnum) && 
+					sim.IsResearched(playerId(), TechEnum::Museum)) 
+				{
 					isUpgraderPlayer = true;
 				}
 				
@@ -4464,10 +4593,10 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 					std::vector<BonusPair> pairs = sim.GetProvinceClaimPriceStructure(provinceId, playerId(), claimConnectionEnum, claimPrice);
 
 					for (const BonusPair& pair : pairs) {
-						args.Add(FText::Format(INVTEXT("\n  +<img id=\"Coin\"/>{0} {1}"), TEXT_100(pair.value), pair.name));
+						args.Add(FText::Format(INVTEXT("\n  +<img id=\"Coin\"/>{0} {1}"), TEXT_NUM(pair.value), pair.name));
 					}
 					// Double with money claim
-					args.Add(FText::Format(LOCTEXT("Claim by money", "\n  +<img id=\"Coin\"/>{0} claim by money (x2)"), TEXT_NUM(provincePrice)));
+					args.Add(FText::Format(LOCTEXT("Claim by money", "\n  +<img id=\"Coin\"/>{0} claim by money (x2 price)"), TEXT_NUM(provincePrice)));
 
 					args.Add(FText::Format(LOCTEXT("ClaimByMoneyButton_Tip", "\nTotal: {0}<img id=\"Coin\"/>"), TEXT_NUM(provincePriceMoney)));
 					

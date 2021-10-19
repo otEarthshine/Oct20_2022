@@ -7,7 +7,9 @@
 
 bool UInitialResourceUI::CheckEnoughMoneyAndStorage()
 {
-	int32 valueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
+	FactionEnum factionEnum = simulation().playerOwned(playerId()).factionEnum();
+	
+	int32 valueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault(factionEnum).totalCost();
 	if (valueIncrease > simulation().moneyCap32(playerId())) {
 		// Not enough money... revert the change
 		initialResources = lastInitialResources;

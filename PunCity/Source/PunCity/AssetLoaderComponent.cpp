@@ -869,9 +869,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	/*
 	 * Card Icons
 	 */
+	_cardIcons.SetNum(FactionEnumCount * CardEnumCount_WithNone);
+	
 	int32 addCardIconCount = 0;
 	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName) {
-		_cardIcons.Add(static_cast<int32>(cardEnum), LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages_BleGood/") + iconFileName + FString("_1024")));
+		for (int32 i = 0; i < FactionEnumCount; i++) {
+			SetCardIcon(i, cardEnum, LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages_BleGood/") + iconFileName + FString("_1024")));
+		}
 		addCardIconCount++;
 	};
 	addCardIcon(CardEnum::None, "CardNone");
@@ -972,28 +976,34 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	 * Add Building Card Icons
 	 */
 	addCardIconCount = 0;
-	
-	for (CardEnum buildingEnum : SortedNameBuildingEnum) {
-		FString name = GetBuildingInfo(buildingEnum).nameF().Replace(TEXT(" "), TEXT(""));
-		name = name.Replace(TEXT("'"), TEXT(""));
 
-		FString path = FString("UI/BuildingSnapshots/") + name;
-
-		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
-		if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+	auto addBuildingCardIcons = [&](FactionEnum factionEnum, FString folderPath)
+	{
+		for (CardEnum buildingEnum : SortedNameBuildingEnum)
 		{
-			UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/") + path));
-			UTexture2D* cardIconTexture = Cast<UTexture2D>(cardIconTextureObj);
+			FString name = GetBuildingInfo(buildingEnum).nameF().Replace(TEXT(" "), TEXT(""));
+			name = name.Replace(TEXT("'"), TEXT(""));
 
-			if (cardIconTexture) {
-				_cardIcons.Add(static_cast<int32>(buildingEnum), cardIconTexture);
-				addCardIconCount++;
+			FString path = folderPath + name;
+
+			IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
+			if (platformFile.FileExists(*(FPaths::ProjectContentDir() + path + FString(".uasset"))))
+			{
+				UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/") + path));
+				UTexture2D* cardIconTexture = Cast<UTexture2D>(cardIconTextureObj);
+
+				if (cardIconTexture) {
+					SetCardIcon(static_cast<int32>(factionEnum), buildingEnum, cardIconTexture);
+					addCardIconCount++;
+				}
 			}
 		}
-	}
+	};
 
-	check(addCardIconCount == 70);
-
+	addBuildingCardIcons(FactionEnum::Europe, "UI/BuildingSnapshots/");
+	addBuildingCardIcons(FactionEnum::Arab, "UI/BuildingSnapshotsArab/");
+	
+	check(addCardIconCount == 119);
 	
 	
 	//BorealFishing
@@ -1218,9 +1228,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Glassware, "Glassware/Glassware");
 	LoadResource2(ResourceEnum::PocketWatch, "PocketWatch/Pocketwatch");
 
-	LoadResource2(ResourceEnum::PitaBread, "PocketWatch/Pocketwatch");
+	LoadResource2(ResourceEnum::PitaBread, "Bread/BreadBasket");
 	LoadResource2(ResourceEnum::Carpet, "PocketWatch/Pocketwatch");
-	LoadResource2(ResourceEnum::DateFruit, "PocketWatch/Pocketwatch");
+	LoadResource2(ResourceEnum::DateFruit, "Coconut/Coconut");
 	LoadResource2(ResourceEnum::ToiletPaper, "PocketWatch/Pocketwatch");
 	
 	
@@ -1266,7 +1276,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadTree(TileObjEnum::SavannaTree1, "SavannaTree1/SavannaTree1Trunk", "SavannaTree1/SavannaTree1Leaf", defaultFruit, "OrangeTree/TreeLeaf_lo", "SavannaTree1/SavannaTree1Leaf", "SavannaTree1/SavannaTree1Stump");
 	LoadTree(TileObjEnum::Cactus1, "BirchSeed", "Cactus1/Cactus1", defaultFruit, "Cactus1/Cactus1", "Cactus1/Cactus1", "Cactus1/Cactus1");
 	
-	LoadTree(TileObjEnum::DesertDatePalm, "OrangeTrunk", "DesertPlants/DesertDatePalm", defaultFruit, "DesertPlants/DesertDatePalm", "DesertPlants/DesertDatePalm", "OrangeStump");
+	LoadTree(TileObjEnum::DesertDatePalm, "OrangeTrunk", "DesertPlants/DesertDatePalm", "Coconut/Coconut1/CoconutFruits", "DesertPlants/DesertDatePalm", "DesertPlants/DesertDatePalm", "OrangeStump");
 	LoadTree(TileObjEnum::DesertGingerbreadTree, "OrangeTrunk", "DesertPlants/DesertGingerbreadTree", defaultFruit, "DesertPlants/DesertGingerbreadTree", "DesertPlants/DesertGingerbreadTree", "OrangeStump");
 
 	

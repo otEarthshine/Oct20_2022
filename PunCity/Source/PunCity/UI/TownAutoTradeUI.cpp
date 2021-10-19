@@ -167,7 +167,10 @@ void UTownAutoTradeUI::TickUI()
 	 * Cities Trade Offers
 	 * - Calculating BuyMoney Fee etc. is here since this is calculated with actual value (which is delayed)
 	 */
+	if (sim.IsResearched(playerId(), TechEnum::TradeRoute))
 	{
+		CitiesTradeOffersOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		
 		int32 index = 0;
 
 		// TODO: Show tradable minor cities
@@ -249,7 +252,7 @@ void UTownAutoTradeUI::TickUI()
 			tradeRoute.townId2 = townId;
 
 			bool hasTradeRoute = worldTradeSys.HasTradeRoute(tradeRoute);
-			bool canCreateTradeRoute = !hasTradeRoute && sim.IsResearched(sim.townPlayerId(uiTownId), TechEnum::IntercityRoad);
+			bool canCreateTradeRoute = !hasTradeRoute && sim.IsResearched(sim.townPlayerId(uiTownId), TechEnum::TradeRoute);
 			tradeOffersRow->EstablishTradeRouteButton->SetVisibility(canCreateTradeRoute ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			tradeOffersRow->TradeRouteCloseXButton->SetVisibility(hasTradeRoute ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			tradeOffersRow->TradeRouteConnectedText->SetVisibility(hasTradeRoute ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
@@ -262,6 +265,9 @@ void UTownAutoTradeUI::TickUI()
 		});
 
 		BoxAfterAdd(CitiesTradeOffersBox, index);
+	}
+	else {
+		CitiesTradeOffersOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	/*

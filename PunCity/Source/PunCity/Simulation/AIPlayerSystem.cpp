@@ -120,7 +120,7 @@ void AIPlayerSystem::Tick1Sec()
 	 * Choose initial resources (Initialize)
 	 */
 	if (!playerOwned.hasChosenInitialResources()) {
-		FChooseInitialResources command = FChooseInitialResources::GetDefault();
+		FChooseInitialResources command = FChooseInitialResources::GetDefault(factionEnum());
 		command.playerId = _aiPlayerId;
 		_playerInterface->ChooseInitialResources(command);
 		return;

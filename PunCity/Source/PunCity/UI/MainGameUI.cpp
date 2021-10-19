@@ -169,6 +169,13 @@ void UMainGameUI::PunInit()
 	}
 
 	/*
+	 * Card Sets
+	 */
+	CardSetsUIOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
+
+	
+	/*
 	 * Job Priority
 	 */
 	BUTTON_ON_CLICK(JobPriorityCloseButton, this, &UMainGameUI::OnClickJobPriorityCloseButton);
@@ -822,7 +829,7 @@ void UMainGameUI::Tick()
 				if (IsBuildingCard(cardButton->cardStatus.cardEnum))
 				{
 					bool needResource = false;
-					const std::vector<int32> resourceNeeded = GetBuildingInfo(cardButton->cardStatus.cardEnum).constructionResources;
+					const std::vector<int32> resourceNeeded = GetBuildingInfo(cardButton->cardStatus.cardEnum).GetConstructionResources(sim.playerOwned(playerId()).factionEnum());
 					
 					for (size_t j = 0; j < _countof(ConstructionResources); j++) {
 						if (resourceNeeded[j] > resourceSystem.resourceCount(ConstructionResources[j])) {
@@ -1625,7 +1632,7 @@ void UMainGameUI::Tick()
 
 
 	TickReinforcementUI();
-	
+	TickCardSetsUI();
 	
 	/*
 	 * Card animation, the beginning part

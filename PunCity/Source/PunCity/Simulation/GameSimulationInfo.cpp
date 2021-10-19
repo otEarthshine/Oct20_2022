@@ -110,6 +110,7 @@ static TArray<FText> RelationshipModifierName
 	LOCTEXT("RelationBefriended", "You befriended us"),
 	LOCTEXT("RelationFamily", "We are family"),
 	LOCTEXT("RelationGoodTradeDeal", "Good Trade Deal"),
+	LOCTEXT("Diplomatic Buildings", "Diplomatic Buildings"),
 
 	LOCTEXT("RelationAdjacentBorders", "Adjacent borders spark tensions"),
 	LOCTEXT("RelationProximity", "Townhalls proximity spark tensions"),
@@ -211,7 +212,7 @@ void CardStatus::Serialize(class PunSerializedData& blob)
 void AppendClaimConnectionString(TArray<FText>& args, ClaimConnectionEnum claimConnectionEnum)
 {
 	if (claimConnectionEnum == ClaimConnectionEnum::River) {
-		ADDTEXT_LOCTEXT("river_claim", " (cross river)");
+		ADDTEXT_LOCTEXT("river_claim", " <Orange>(cross river)</>");
 	}
 	else if (claimConnectionEnum == ClaimConnectionEnum::ShallowWater) {
 		ADDTEXT_LOCTEXT("shallow_water", " (shallow water)");

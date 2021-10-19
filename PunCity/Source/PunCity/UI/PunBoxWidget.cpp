@@ -107,7 +107,8 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 		}
 		else
 		{
-			auto resourcesNeeded = GetBuildingInfo(buildingEnum).constructionResources;
+			FactionEnum factionEnum = punWidgetSupport->simulation().playerOwned(punWidgetSupport->playerId()).factionEnum();
+			auto resourcesNeeded = GetBuildingInfo(buildingEnum).GetConstructionResources(factionEnum);
 			bool needResource = false;
 			for (int i = 0; i < resourcesNeeded.size(); i++) {
 				if (resourcesNeeded[i] > 0) {

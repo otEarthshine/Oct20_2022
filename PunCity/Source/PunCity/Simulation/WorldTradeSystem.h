@@ -111,6 +111,10 @@ public:
 		return _enumToSupplyValue100[static_cast<int>(resourceEnum)] + 1; // Note: can't be 0
 	}
 
+	void ChangePrice100_Percent(ResourceEnum resourceEnum, int32 percent) {
+		_enumToSupplyValue100[static_cast<int>(resourceEnum)] = _enumToSupplyValue100[static_cast<int>(resourceEnum)] * 100 / (100 + percent); // more percent, less supply, more price
+	}
+
 	const std::vector<PlayerSupplyChange>& GetSupplyChanges(ResourceEnum resourceEnum) {
 		return _resourceEnumToPlayerSupplyChanges[static_cast<int>(resourceEnum)];
 	}
@@ -160,6 +164,13 @@ public:
 		}
 		return false;
 	}
+	bool HasTradeRoute(int32 townId1, int32 townId2) const {
+		TradeRoutePair route;
+		route.townId1 = townId1;
+		route.townId2 = townId2;
+		return HasTradeRoute(route);
+	}
+	
 	bool TryEstablishTradeRoute(const FGenericCommand& command);
 	void TryCancelTradeRoute(const FGenericCommand& command);
 

@@ -318,7 +318,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::RegionCrates, Building);
 
 		  CASE_BUILDING(CardEnum::MinorCity, MinorCity);
-		  CASE_BUILDING(CardEnum::MinorCityPort, MinorCityChild);
+		  CASE_BUILDING(CardEnum::MinorCityPort, Building);
 
 		  CASE_BUILDING(CardEnum::Oasis, ProvinceOasis);
 		  CASE_BUILDING(CardEnum::MayanPyramid, ProvinceRuin);
@@ -333,6 +333,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::ForeignPort, ForeignPort);
 		  CASE_BUILDING(CardEnum::SpyCenter, SpyCenter);
 		  CASE_BUILDING(CardEnum::PolicyOffice, PolicyOffice);
+		  CASE_BUILDING(CardEnum::WorldTradeOffice, WorldTradeOffice);
+		  CASE_BUILDING(CardEnum::CardCombiner, CardCombiner);
 
 		  CASE_BUILDING(CardEnum::PitaBakery, PitaBakery);
 

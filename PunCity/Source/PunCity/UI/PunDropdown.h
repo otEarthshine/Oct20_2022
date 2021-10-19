@@ -55,9 +55,12 @@ public:
 
 		
 		int32 optionInt = -1;
-		for (int32 i = 0; i < _lastOptions.Num(); i++) {
-			if (_lastOptions[i].ToString() == sItem) {
-				optionInt = _lastOptionInts[i];
+		if (_lastOptionInts.Num() > 0)
+		{
+			for (int32 i = 0; i < _lastOptions.Num(); i++) {
+				if (_lastOptions[i].ToString() == sItem) {
+					optionInt = _lastOptionInts[i];
+				}
 			}
 		}
 		

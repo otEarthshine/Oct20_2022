@@ -420,19 +420,25 @@ public:
 		}
 		return _biomeIcons[biomeEnum];
 	}
-	
 
-	UTexture2D* GetCardIcon(CardEnum cardEnum) {
-		if (_cardIcons.Contains(static_cast<int32>(cardEnum))) {
-			return _cardIcons[static_cast<int32>(cardEnum)];
-		}
-		return _cardIcons[static_cast<int32>(CardEnum::None)];
+	UTexture2D* GetCardIcon(FactionEnum factionEnum, CardEnum cardEnum) {
+		UTexture2D* cardIcon = GetCardIconNullable(factionEnum, cardEnum);
+		return cardIcon ? cardIcon : _cardIcons[static_cast<int32>(CardEnum::None)];
+		//if (_cardIcons[factionEnum].Contains(static_cast<int32>(cardEnum))) {
+		//	return _cardIcons[factionEnum][static_cast<int32>(cardEnum)];
+		//}
+		//return _cardIcons[static_cast<int32>(CardEnum::None)];
 	}
-	UTexture2D* GetCardIconNullable(CardEnum cardEnum) {
-		if (_cardIcons.Contains(static_cast<int32>(cardEnum))) {
-			return _cardIcons[static_cast<int32>(cardEnum)];
-		}
-		return nullptr;
+	UTexture2D* GetCardIconNullable(FactionEnum factionEnum, CardEnum cardEnum) {
+		return _cardIcons[static_cast<int32>(factionEnum) * CardEnumCount_WithNone + static_cast<int32>(cardEnum)];
+		//if (_cardIcons.Contains(static_cast<int32>(cardEnum))) {
+		//	return _cardIcons[static_cast<int32>(cardEnum)];
+		//}
+		//return nullptr;
+	}
+
+	void SetCardIcon(int32 factionEnumInt, CardEnum cardEnum, UTexture2D* texture) {
+		_cardIcons[factionEnumInt * CardEnumCount_WithNone + static_cast<int32>(cardEnum)] = texture;
 	}
 
 
@@ -951,7 +957,7 @@ private:
 
 	TSet<CardEnum> _buildingsUsingSpecialIcon;
 
-	UPROPERTY() TMap<int32, UTexture2D*> _cardIcons;
+	UPROPERTY() TArray<UTexture2D*> _cardIcons;
 
 
 	UPROPERTY() UMainMenuAssetLoaderComponent* _mainMenuAssetLoader;

@@ -987,6 +987,32 @@ public:
 		}
 	}
 
+	UFUNCTION(Exec) void AIGift(int32 aiPlayerId, int32 targetTownId, int32 moneyAmount)
+	{
+		{
+			auto command = make_shared<FGenericCommand>();
+			command->playerId = aiPlayerId;
+			command->genericCommandType = FGenericCommand::Type::SendGift;
+			command->intVar1 = aiPlayerId; // sourceTargetId
+			command->intVar2 = targetTownId; // targetTownId
+			command->intVar3 = moneyAmount;
+			command->intVar4 = 0;
+
+			command->intVar5 = static_cast<int32>(TradeDealStageEnum::Gifting);
+
+			gameManager->simulation().GenericCommand(*command);
+		}
+
+		{
+			auto command = make_shared<FGenericCommand>();
+			command->playerId = aiPlayerId;
+			command->callbackEnum = CallbackEnum::ProposeAlliance;
+			command->intVar1 = static_cast<int>(targetTownId);
+
+			gameManager->simulation().GenericCommand(*command);
+		}
+	}
+
 	
 	UFUNCTION(Exec) void WarpUnit(int32 unitId, int32 tileX, int32 tileY)
 	{

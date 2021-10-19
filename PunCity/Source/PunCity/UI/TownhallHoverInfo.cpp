@@ -96,16 +96,19 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			}
 
 			// TrainUnits
-			TrainUnitsRow->SetVisibility(ESlateVisibility::Visible);
-			BUTTON_ON_CLICK(TrainUnitsButton, this, &UTownhallHoverInfo::OnClickTrainUnitsButton);
+			if (sim.unlockSystem(playerId())->unlockState(UnlockStateEnum::TrainUnits))
+			{
+				TrainUnitsRow->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(TrainUnitsButton, this, &UTownhallHoverInfo::OnClickTrainUnitsButton);
 
-			TownManager& townMgr = sim.townManager(townId());
-			std::vector<CardStatus> trainCards = townMgr.trainUnitsQueueDisplay();
-			if (trainCards.size() > 0) {
-				UMaterialInstanceDynamic* material = TrainUnitsClock->GetDynamicMaterial();
-				material->SetScalarParameterValue(FName("Fraction"), townMgr.GetTrainingFraction());
-				material->SetTextureParameterValue(FName("UnitIcon"), assetLoader()->GetCardIconNullable(trainCards[0].cardEnum));
-				TrainUnitsClock->SetVisibility(ESlateVisibility::Visible);
+				TownManager& townMgr = sim.townManager(townId());
+				std::vector<CardStatus> trainCards = townMgr.trainUnitsQueueDisplay();
+				if (trainCards.size() > 0) {
+					UMaterialInstanceDynamic* material = TrainUnitsClock->GetDynamicMaterial();
+					material->SetScalarParameterValue(FName("Fraction"), townMgr.GetTrainingFraction());
+					material->SetTextureParameterValue(FName("UnitIcon"), assetLoader()->GetCardIconNullable(playerFactionEnum(), trainCards[0].cardEnum));
+					TrainUnitsClock->SetVisibility(ESlateVisibility::Visible);
+				}
 			}
 
 			// Vassalize

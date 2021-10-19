@@ -29,11 +29,13 @@ public:
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge1;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge2;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge3;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_EnlightenmentAge4;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Title_IndustrialAge;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge1;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge2;
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge3;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* TechList_IndustrialAge4;
 
 	
 	virtual UOverlay* GetTechSpecialLine(TechEnum techEnum) override {

@@ -43,6 +43,12 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* StoneArrowUpButton;
 	UPROPERTY(meta = (BindWidget)) UButton* StoneArrowDownButton;
 
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* InitialClayBox;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ClayPriceText;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* ClayInventoryText;
+	UPROPERTY(meta = (BindWidget)) UButton* ClayArrowUpButton;
+	UPROPERTY(meta = (BindWidget)) UButton* ClayArrowDownButton;
+
 	UPROPERTY(meta = (BindWidget)) UButton* ConfirmButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* InitialMoneyText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* InitialStorageSpaceText;
@@ -68,6 +74,9 @@ public:
 		BUTTON_ON_CLICK(StoneArrowUpButton, this, &UInitialResourceUI::OnClickStoneArrowUpButton);
 		BUTTON_ON_CLICK(StoneArrowDownButton, this, &UInitialResourceUI::OnClickStoneArrowDownButton);
 
+		BUTTON_ON_CLICK(ClayArrowUpButton, this, &UInitialResourceUI::OnClickClayArrowUpButton);
+		BUTTON_ON_CLICK(ClayArrowDownButton, this, &UInitialResourceUI::OnClickClayArrowDownButton);
+
 		BUTTON_ON_CLICK(ConfirmButton, this, &UInitialResourceUI::OnClickConfirmButton);
 
 		InitialResourceUI->SetVisibility(ESlateVisibility::Collapsed);
@@ -88,6 +97,9 @@ public:
 
 		AddToolTip(StoneArrowUpButton, shiftClick100Text);
 		AddToolTip(StoneArrowDownButton, shiftClick100Text);
+
+		AddToolTip(ClayArrowUpButton, shiftClick100Text);
+		AddToolTip(ClayArrowDownButton, shiftClick100Text);
 	}
 
 	void TickUI()
@@ -106,7 +118,7 @@ public:
 		{
 			// Opening UI
 			if (InitialResourceUI->GetVisibility() == ESlateVisibility::Collapsed) {
-				initialResources = FChooseInitialResources::GetDefault();
+				initialResources = FChooseInitialResources::GetDefault(playerOwned.factionEnum());
 			}
 			InitialResourceUI->SetVisibility(ESlateVisibility::Visible);
 
@@ -132,6 +144,12 @@ public:
 			SetText(StonePriceText, std::to_string(GetResourceInfo(ResourceEnum::Stone).basePrice));
 			SetText(StoneInventoryText, std::to_string(initialResources.stoneAmount));
 
+			// Clay
+			InitialClayBox->SetVisibility(playerOwned.factionEnum() == FactionEnum::Arab ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			SetText(ClayPriceText, std::to_string(GetResourceInfo(ResourceEnum::Clay).basePrice));
+			SetText(ClayInventoryText, std::to_string(initialResources.clayAmount));
+			
+
 			// Medicine
 			SetText(MedicinePriceText, std::to_string(GetResourceInfo(ResourceEnum::Medicine).basePrice));
 			SetText(MedicineInventoryText, std::to_string(initialResources.medicineAmount));
@@ -140,7 +158,7 @@ public:
 			SetText(ToolsPriceText, std::to_string(GetResourceInfo(ResourceEnum::SteelTools).basePrice));
 			SetText(ToolsInventoryText, std::to_string(initialResources.toolsAmount));
 
-			int32 resourceValueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault().totalCost();
+			int32 resourceValueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault(playerOwned.factionEnum()).totalCost();
 			SetText(InitialMoneyText, std::to_string(simulation().money64(playerId()) - static_cast<int64>(resourceValueIncrease)));
 			auto resourceMap = initialResources.resourceMap();
 			SetText(InitialStorageSpaceText, std::to_string(StorageTilesOccupied(resourceMap)) + "/" + std::to_string(InitialStorageSpace));
@@ -192,6 +210,9 @@ private:
 
 	UFUNCTION() void OnClickStoneArrowUpButton() { TryIncrement(initialResources.stoneAmount); }
 	UFUNCTION() void OnClickStoneArrowDownButton() { TryDecrement(initialResources.stoneAmount); }
+
+	UFUNCTION() void OnClickClayArrowUpButton() { TryIncrement(initialResources.clayAmount); }
+	UFUNCTION() void OnClickClayArrowDownButton() { TryDecrement(initialResources.clayAmount); }
 
 	UFUNCTION() void OnClickConfirmButton() {
 		auto command = std::make_shared<FChooseInitialResources>();

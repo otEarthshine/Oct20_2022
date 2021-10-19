@@ -67,6 +67,23 @@ public:
 			//AddDrawCards(CardEnum::ShrineWisdom, 1);
 
 			RollHand(handSize());
+
+			//
+			auto fillCardSets = [&](const std::vector<CardSetInfo>& cardSetInfos)
+			{
+				std::vector<std::vector<CardStatus>> cardSets;
+				for (const CardSetInfo& cardSetInfo : cardSetInfos) {
+					std::vector<CardStatus> cardSet;
+					for (CardEnum cardEnum : cardSetInfo.cardEnums) {
+						cardSet.push_back(CardStatus(cardEnum, 0));
+					}
+					cardSets.push_back(cardSet);
+				}
+				_cardSetEnumToCardSets.push_back(cardSets);
+			};
+			fillCardSets(ZooSetInfos);
+			fillCardSets(MuseumSetInfos);
+			fillCardSets(CardCombinerSetInfos);
 		}
 	}
 
@@ -773,6 +790,91 @@ public:
 	}
 
 	/*
+	 * Zoo, Museum, Card Combiner
+	 */
+
+	const std::vector<std::vector<CardStatus>>& GetCardSets(CardSetTypeEnum cardSetTypeEnum) {
+		return _cardSetEnumToCardSets[static_cast<int>(cardSetTypeEnum)];
+	}
+
+	bool CanAddCardsSet(CardEnum cardEnum, CardSetTypeEnum cardSetTypeEnum)
+	{
+		std::vector<std::vector<CardStatus>>& cardSets = _cardSetEnumToCardSets[static_cast<int>(cardSetTypeEnum)];
+		for (size_t i = cardSets.size(); i-- > 0;) 
+		{
+			std::vector<CardStatus>& cardSet = cardSets[i];
+			for (size_t j = cardSet.size(); j-- > 0;) 
+			{
+				if (cardSet[j].cardEnum == cardEnum &&
+					cardSet[j].stackSize == 0) 
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	void MoveHandToCardSet(CardStatus cardStatus, CardSetTypeEnum cardSetTypeEnum, int32 targetCount)
+	{
+		int32 removedCount = RemoveCardsFromBoughtHand(cardStatus, targetCount);
+		if (removedCount > 0)
+		{
+			std::vector<std::vector<CardStatus>>& cardSets = _cardSetEnumToCardSets[static_cast<int>(cardSetTypeEnum)];
+			for (size_t i = cardSets.size(); i-- > 0;)
+			{
+				std::vector<CardStatus>& cardSet = cardSets[i];
+				for (size_t j = cardSet.size(); j-- > 0;)
+				{
+					if (cardSet[j].cardEnum == cardStatus.cardEnum &&
+						cardSet[j].stackSize == 0) 
+					{
+						_cardsInventory[i].stackSize++;
+						removedCount--;
+						if (removedCount == 0) {
+							return;
+						}
+					}
+				}
+			}
+			if (removedCount > 0) {
+				TryAddCardToBoughtHand(cardStatus.cardEnum, removedCount);
+			}
+		}
+	}
+
+	void MoveCardSetToHand(CardStatus cardStatus, CardSetTypeEnum cardSetTypeEnum)
+	{
+		if (!CanAddCardToBoughtHand(cardStatus.cardEnum, 1)) {
+			_simulation->AddPopupToFront(_playerId,
+				NSLOCTEXT("CardSys", "ReachedHandLimit_InventoryToHand_Pop", "Reached hand limit."),
+				ExclusiveUIEnum::CardInventory, "PopupCannot"
+			);
+			return;
+		}
+
+		std::vector<std::vector<CardStatus>>& cardSets = _cardSetEnumToCardSets[static_cast<int>(cardSetTypeEnum)];
+		for (size_t i = cardSets.size(); i-- > 0;)
+		{
+			std::vector<CardStatus>& cardSet = cardSets[i];
+			for (size_t j = cardSet.size(); j-- > 0;)
+			{
+				if (cardSet[j].cardEnum == cardStatus.cardEnum &&
+					cardSet[j].stackSize > 0)
+				{
+					if (TryAddCardToBoughtHand(cardStatus.cardEnum, 1)) {
+						cardSet[j].stackSize = 0;
+					}
+					return;
+				}
+			}
+		}
+
+	}
+
+	
+
+	/*
 	 * Card Removal
 	 */
 	void RemoveDrawCards(CardEnum cardEnum)
@@ -862,6 +964,8 @@ public:
 
 		SerializeVecObj(Ar, _cardsInventory);
 
+		SerializeVecVecVecObj(Ar, _cardSetEnumToCardSets);
+
 		
 		SerializeVecValue(Ar, _cardsRareHand);
 		_rareHandData >> Ar;
@@ -929,6 +1033,8 @@ public:
 	bool needHand1Refresh = false;
 
 	std::vector<CardStatus> pendingMilitarySlotCards;
+
+	std::vector<CardStatus> pendingCardSetsSlotCards;
 	
 private:
 	IGameSimulationCore* _simulation = nullptr;
@@ -950,6 +1056,8 @@ private:
 	std::vector<CardStatus> _cardsBought;
 
 	std::vector<CardStatus> _cardsInventory;
+
+	std::vector<std::vector<std::vector<CardStatus>>> _cardSetEnumToCardSets;
 	
 
 	std::vector<CardEnum> _cardsRareHand;

@@ -35,7 +35,7 @@ public:
 
 			auto setCardIcon = [&]()
 			{
-				if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(buildingEnum)) {
+				if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(playerFactionEnum(), buildingEnum)) {
 					material->SetTextureParameterValue("ColorTexture", cardIcon);
 				}
 				else if (UTexture2D* buildingIcon = assetLoader()->GetBuildingIconNullable(buildingEnum)) {

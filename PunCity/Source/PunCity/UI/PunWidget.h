@@ -147,6 +147,8 @@ public:
 
 	int32 playerId() { return GetPunHUD()->playerId(); }
 	int32 currentTownId() { return GetPunHUD()->currentTownId(); }
+
+	FactionEnum playerFactionEnum() { return dataSource()->playerInfo(playerId()).factionEnum(); }
 	
 	UWorld* GetWorldPun() { return GetPunHUD()->GetWorldPun(); }
 

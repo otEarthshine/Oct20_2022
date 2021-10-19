@@ -207,7 +207,7 @@ private:
 			if (buildingEnumToVariationToModuleTransforms[i].Num() == 0) {
 				CardEnum buildingEnum = static_cast<CardEnum>(i);
 				if (buildingEnum != CardEnum::Farm) {
-					setName(buildingEnum, "Ministry");
+					setName(buildingEnum, WithFactionName("Ministry"));
 				}
 			}
 		}

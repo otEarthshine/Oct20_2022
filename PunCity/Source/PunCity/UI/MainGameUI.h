@@ -643,6 +643,140 @@ public:
 			simulation().cardSystem(playerId()).pendingMilitarySlotCards.clear();
 		}
 	}
+
+public:
+	/*
+	 * Card Sets UI
+	 */
+	UPROPERTY(meta = (BindWidget)) UOverlay* CardSetsUIOverlay;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* CardSetsUITitleText;
+
+	UPROPERTY(meta = (BindWidget)) UButton* CardSetsUICloseButton;
+	UPROPERTY(meta = (BindWidget)) UWGT_ButtonCpp* CardSetsUICloseXButton;
+
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* CardSetsUIOuterVerticalBox;
+
+	CardSetTypeEnum cardSetTypeEnum = CardSetTypeEnum::Zoo;
+
+	void OpenCardSetsUI(CardSetTypeEnum cardSetTypeEnumIn)
+	{
+		cardSetTypeEnum = cardSetTypeEnumIn;
+
+		CardSetsUIOverlay->SetVisibility(ESlateVisibility::Visible);
+
+
+		// Clear UI
+		for (int i = CardSetsUIOuterVerticalBox->GetChildrenCount(); i-- > 0;)
+		{
+			auto cardSetBoxRow = CastChecked<UHorizontalBox>(CardSetsUIOuterVerticalBox->GetChildAt(i));
+			cardSetBoxRow->SetVisibility(ESlateVisibility::Collapsed);
+			
+			for (int j = cardSetBoxRow->GetChildrenCount(); j-- > 0;)
+			{
+				auto cardSetBox = Cast<UVerticalBox>(cardSetBoxRow->GetChildAt(j));
+				if (cardSetBox)
+				{
+					cardSetBox->SetVisibility(ESlateVisibility::Collapsed);
+					cardSetBoxRow->GetChildAt(j - 1)->SetVisibility(ESlateVisibility::Collapsed);
+
+					auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(1));
+					for (int32 k = cardSetsUISlots->GetChildrenCount(); k-- > 0;) {
+						auto cardButton = CastChecked<UBuildingPlacementButton>(cardSetsUISlots->GetChildAt(k));
+						cardButton->SetVisibility(ESlateVisibility::Collapsed);
+						SetChildHUD(cardButton);
+					}
+				}
+			}
+		}
+		
+
+		BUTTON_ON_CLICK(CardSetsUICloseButton, this, &UMainGameUI::OnClickCardSetsUICloseButton);
+		BUTTON_ON_CLICK(CardSetsUICloseXButton->CoreButton, this, &UMainGameUI::OnClickCardSetsUICloseButton);
+
+		TickCardSetsUI();
+	}
+
+	void TickCardSetsUI()
+	{
+		if (!CardSetsUIOverlay->IsVisible()) {
+			return;
+		}
+		
+		// Fill Card Sets
+		const std::vector<std::vector<CardStatus>>& cardSets = simulation().cardSystem(playerId()).GetCardSets(cardSetTypeEnum);
+
+		int32 cardSetTypeInfoIndex = 0;
+		auto fillCardSet = [&](int32 rowIndex, int32 columnIndex, const std::vector<CardSetInfo>& cardSetTypeInfos)
+		{
+			columnIndex = columnIndex * 2 + 1;
+			
+			auto cardSetBoxRow = CastChecked<UHorizontalBox>(CardSetsUIOuterVerticalBox->GetChildAt(rowIndex));
+			auto cardSetBox = CastChecked<UVerticalBox>(cardSetBoxRow->GetChildAt(columnIndex));
+
+			cardSetBoxRow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			cardSetBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			cardSetBoxRow->GetChildAt(columnIndex - 1)->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+			auto cardSetsUITitleText = CastChecked<UTextBlock>(cardSetBox->GetChildAt(0));
+			cardSetsUITitleText->SetText(cardSetTypeInfos[cardSetTypeInfoIndex].name);
+
+			auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(1));
+			for (int32 i = 0; i < cardSetsUISlots->GetChildrenCount(); i++)
+			{
+				const std::vector<CardStatus>& cardSet = cardSets[cardSetTypeInfoIndex];
+				
+				auto cardButton = CastChecked<UBuildingPlacementButton>(cardSetsUISlots->GetChildAt(i));
+				if (i < cardSet.size()) {
+					cardButton->SetVisibility(ESlateVisibility::Visible);
+					cardButton->PunInit(cardSet[i], i, this, CallbackEnum::SelectDeployMilitarySlotCard, CardHandEnum::DeployMilitarySlots);
+					cardButton->SetCardStatus(CardHandEnum::DeployMilitarySlots, false, false);
+					cardButton->RefreshBuildingIcon(assetLoader());
+				}
+				else {
+					cardButton->SetVisibility(ESlateVisibility::Collapsed);
+				}
+			}
+
+			cardSetTypeInfoIndex++;
+		};
+
+		if (cardSetTypeEnum == CardSetTypeEnum::Zoo)
+		{
+			CardSetsUITitleText->SetText(NSLOCTEXT("CardSetsUI", "Zoo Animal Collection", "Zoo Animal Collection"));
+
+			cardSetTypeInfoIndex = 0;
+			fillCardSet(0, 0, ZooSetInfos);
+			fillCardSet(0, 1, ZooSetInfos);
+			fillCardSet(1, 0, ZooSetInfos);
+		}
+		else if (cardSetTypeEnum == CardSetTypeEnum::Museum)
+		{
+			CardSetsUITitleText->SetText(NSLOCTEXT("CardSetsUI", "Museum Artifact Collection", "Museum Artifact Collection"));
+
+			fillCardSet(0, 0, MuseumSetInfos);
+			fillCardSet(0, 1, MuseumSetInfos);
+			fillCardSet(0, 2, MuseumSetInfos);
+			
+			fillCardSet(1, 0, MuseumSetInfos);
+			fillCardSet(1, 1, MuseumSetInfos);
+			fillCardSet(1, 2, MuseumSetInfos);
+			
+			fillCardSet(2, 0, MuseumSetInfos);
+		}
+		else
+		{
+			CardSetsUITitleText->SetText(NSLOCTEXT("CardSetsUI", "Card Combiner", "Card Combiner"));
+
+			fillCardSet(0, 0, CardCombinerSetInfos);
+			fillCardSet(0, 1, CardCombinerSetInfos);
+		}
+	}
+
+	UFUNCTION() void OnClickCardSetsUICloseButton()
+	{
+		CardSetsUIOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		simulation().cardSystem(playerId()).pendingCardSetsSlotCards.clear();
+	}
 	
 	
 private:

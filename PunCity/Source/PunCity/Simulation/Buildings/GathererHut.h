@@ -1579,25 +1579,6 @@ public:
 };
 
 
-class MinorCityChild : public Building
-{
-public:
-//	virtual void Serialize(FArchive& Ar) override {
-//		Building::Serialize(Ar);
-//		Ar << _parentId;
-//	}
-//
-//	int32 parentId() { return _parentId; }
-//	
-//	void SetParentId(int32 parentIdIn) {
-//		_parentId = parentIdIn;
-//	}
-//
-//private:
-//	int32 _parentId = -1;
-};
-
-
 class MinorCity : public Building
 {
 public:
@@ -1605,6 +1586,7 @@ public:
 
 	virtual void OnDeinit() override;
 
+	
 };
 
 
@@ -1845,7 +1827,7 @@ public:
 
 	virtual std::vector<BonusPair> GetBonuses() override;
 
-	virtual int32 maxCardSlots() override { return 6; }
+	virtual int32 maxCardSlots() override { return 0; }
 };
 
 
@@ -1858,7 +1840,7 @@ public:
 
 	virtual void FinishConstruction() override;
 
-	virtual int32 maxCardSlots() override { return 6; }
+	virtual int32 maxCardSlots() override { return 0; }
 };
 
 
@@ -1911,9 +1893,9 @@ public:
 
 	virtual int32 influenceIncome100(int32 playerId) const override {
 		int32 income = 100;
-		if (IsUpgraded(0)) {
-			income += GetUpgrade(1).upgradeLevel * 20;
-		}
+		
+		income += GetUpgrade(0).upgradeLevel * 20;
+		
 		return income * 100;
 	}
 
@@ -1977,15 +1959,43 @@ public:
 	virtual int32 maxCardSlots() override { return 0; }
 };
 
+class WorldTradeOffice : public Building
+{
+public:
+	virtual void FinishConstruction() override;
+
+	virtual int32 maxCardSlots() override { return 0; }
+
+	virtual void OnTick1Sec() override;
+
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << resourceEnumToIncreasePrice;
+		Ar << resourceEnumToDecreasePrice;
+	}
+
+public:
+	ResourceEnum lastResourceEnumToIncreasePrice = ResourceEnum::None;
+	ResourceEnum lastResourceEnumToDecreasePrice = ResourceEnum::None;
+
+	ResourceEnum resourceEnumToIncreasePrice = ResourceEnum::None;
+	ResourceEnum resourceEnumToDecreasePrice = ResourceEnum::None;
+};
+
+class CardCombiner : public Building
+{
+public:
+	//virtual void FinishConstruction() override {
+	//	Building::FinishConstruction();
+	//}
+
+	virtual int32 maxCardSlots() override { return 0; }
+};
+
+
 class Caravansary final : public Building
 {
 public:
-	virtual void Serialize(FArchive& Ar) override {
-		Building::Serialize(Ar);
-		Ar << _targetTownId;
-		Ar << _cumulativeRouteMoney;
-	}
-
 	int32 targetTownId() { return _targetTownId; }
 
 	void SetTargetTownId(int32 targetTownId) {
@@ -2004,13 +2014,26 @@ public:
 	/*
 	 * Trade money depends on:
 	 *  - Distance
+	 *  - Wealth of two cities.. base
 	 *  - cumulative trade experience..
+	 *  - Penalty if more caravans going to the same city.. each caravan assign to the same trade route decreases yield by 10%
 	 */
 	int32 GetTradeMoney(WorldTile2 tradeTargetTile)
 	{
-		return WorldTile2::Distance(tradeTargetTile, centerTile());
+		return WorldTile2::Distance(tradeTargetTile, centerTile()) * 10 * efficiency() / 100;
 	}
 
+	virtual std::vector<BonusPair> GetBonuses() override;
+
+	
+
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << _targetTownId;
+		Ar << _cumulativeRouteMoney;
+	}
+
+public:
 	int32 lastTargetTownId = -1;
 
 private:

@@ -815,7 +815,8 @@ void TownManager::CollectRoundIncome()
 	globalResourceSys.ChangeMoney100(totalIncome100WithoutHouse);
 
 	// Change Influence
-	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100());
+	int32 totalInfluenceIncome100WithoutDiplomaticBuilding = totalInfluenceIncome100() - influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::DiplomaticBuildings)];
+	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100WithoutDiplomaticBuilding);
 	if (globalResourceSys.influence100() < 0)
 	{
 		FText influenceStr = INVTEXT("<img id=\"Influence\"/>");
@@ -917,9 +918,30 @@ void TownManager::Tick1Sec()
 	}
 
 
-	// Collect house income
+	//! Collect house income
 	CollectHouseIncome();
 
+	//! Collect Diplomatic Building Influence Income
+	const int32 secSkip = 5;
+	if (Time::Ticks() % secSkip == 0 && isCapital())
+	{
+		const std::vector<int32>& diplomaticBuildings = _simulation->GetDiplomaticBuildings(_playerId);
+		for (int32 diplomaticBuildingId : diplomaticBuildings) {
+			DiplomaticBuilding& bld = _simulation->building<DiplomaticBuilding>(diplomaticBuildingId);
+			int32 influenceIncome100 = bld.influenceIncome100(_playerId);
+
+			int32 influenceIncome_Sec = GameRand::RandRound(influenceIncome100 * secSkip, Time::SecondsPerRound * 100);
+			if (influenceIncome_Sec > 0) {
+				_simulation->ChangeInfluence(_playerId, influenceIncome_Sec);
+				
+				_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, bld.centerTile(), TEXT_NUMSIGNED(influenceIncome_Sec));
+				
+				if (bld.foreignBuilder() != _playerId) {
+					relationship().ChangeModifier(bld.foreignBuilder(), RelationshipModifierEnum::DiplomaticBuildings, GameRand::RandRound(influenceIncome_Sec, InfluenceToRelationship));
+				}
+			}
+		}
+	}
 
 	/*
 	 * Happiness update...
@@ -1543,6 +1565,10 @@ void TownManager::RecalculateTax(bool showFloatup)
 			totalTradeBuildings += _simulation->playerBuildingFinishedCount(playerId, CardEnum::TradingCompany);
 		}
 		sciences100[static_cast<int>(ScienceEnum::FreeThoughts)] += totalTradeBuildings * sumFromHouses * 5 / 1000;
+	}
+
+	if (factionEnum() == FactionEnum::Europe) {
+		sciences100[static_cast<int>(ScienceEnum::EuropeBonus)] += sumFromHouses * 5LL / 100LL;
 	}
 
 	/*

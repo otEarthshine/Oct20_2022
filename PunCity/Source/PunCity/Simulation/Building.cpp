@@ -112,8 +112,13 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 			_buildingEnum == CardEnum::HumanitarianAidCamp ||
 			IsDecorativeBuilding(_buildingEnum))
 		{
-			InstantClearArea();
-			FinishConstruction();
+			// Skip some building that doesn't work FastBuild
+			if (_buildingEnum != CardEnum::ForeignQuarter &&
+				_buildingEnum != CardEnum::Embassy) 
+			{
+				InstantClearArea();
+				FinishConstruction();
+			}
 		}
 	}
 
@@ -1402,6 +1407,10 @@ std::vector<BonusPair> Building::GetBonuses()
 			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 20 });
 		}
 
+		if (factionEnum() == FactionEnum::Arab) {
+			bonuses.push_back({ LOCTEXT("Faction Bonus", "Faction Bonus"), 10 });
+		}
+
 		if (int32 industrialTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::IndustrialTechnologies)) {
 			bonuses.push_back({ LOCTEXT("Industrial Technologies", "Industrial Technologies"), 3 * industrialTechUpgradeCount });
 		}
@@ -1812,7 +1821,7 @@ FactionEnum Building::factionEnum() const
 	if (foreignBuilder() != -1) {
 		return _simulation->playerOwned(foreignBuilder()).factionEnum();
 	}
-	TownManagerBase* townManagerBase = _simulation->townManagerBase(_townId);
+	TownManagerBase* townManagerBase = _simulation->townManagerBaseNullable(_townId);
 	return townManagerBase ? townManagerBase->factionEnum() : FactionEnum::Europe;
 }
 

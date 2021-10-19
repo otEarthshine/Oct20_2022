@@ -271,6 +271,17 @@ void SerializeVecVecObj(FArchive& Ar, std::vector<std::vector<TObj>>& vecVecObj)
 }
 
 template<typename TObj>
+void SerializeVecVecVecObj(FArchive& Ar, std::vector<std::vector<std::vector<TObj>>>& vecVecVecObj) {
+	SerializeVecLoop(Ar, vecVecVecObj, [&](std::vector<std::vector<TObj>>& vecVecObj) {
+		SerializeVecLoop(Ar, vecVecObj, [&](std::vector<TObj>& vecObj) {
+			SerializeVecLoop(Ar, vecObj, [&](TObj& obj) {
+				obj >> Ar;
+			});
+		});
+	});
+}
+
+template<typename TObj>
 void SerializeVecUE4(FArchive& Ar, std::vector<TObj>& v) {
 	SerializeVecLoop(Ar, v, [&](TObj& obj) {
 		Ar << obj;

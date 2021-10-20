@@ -3319,8 +3319,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					case CardEnum::HaulingServices: overlayType = OverlayType::HaulingServices; break;
 					case CardEnum::Granary: overlayType = OverlayType::Granary; break;
 
-					case CardEnum::Museum: overlayType = OverlayType::Museum; break;
-					case CardEnum::Zoo: overlayType = OverlayType::Zoo; break;
+					//case CardEnum::Museum: overlayType = OverlayType::Museum; break;
+					//case CardEnum::Zoo: overlayType = OverlayType::Zoo; break;
 					case CardEnum::Theatre: overlayType = OverlayType::Theatre; break;
 					case CardEnum::Tavern: overlayType = OverlayType::Tavern; break;
 				}

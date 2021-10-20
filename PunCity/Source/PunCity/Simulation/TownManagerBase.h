@@ -390,16 +390,19 @@ public:
 
 	void EndConquer(int32 provinceId)
 	{
-		// Return Military Units
-		for (int32 i = 0; i < _defendingClaimProgress.size(); i++)
+		if (_playerId != -1)
 		{
-			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
-			if (claimProgress.provinceId == provinceId) {
-				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
-				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
-				ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
-				ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
-				break;
+			// Return Military Units
+			for (int32 i = 0; i < _defendingClaimProgress.size(); i++)
+			{
+				ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
+				if (claimProgress.provinceId == provinceId) {
+					ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
+					ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
+					ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
+					ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
+					break;
+				}
 			}
 		}
 

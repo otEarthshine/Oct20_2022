@@ -158,7 +158,7 @@ public:
 		else if (isResearched(TechEnum::Knight)) infantryEnum = CardEnum::Knight;
 
 
-		CardEnum conscriptEnum = isResearched(TechEnum::Conscription) ? CardEnum::Conscript : CardEnum::None;
+		CardEnum conscriptEnum = isResearched(TechEnum::Infantry) ? CardEnum::Conscript : CardEnum::None;
 
 
 		CardEnum rangedEnum = CardEnum::None;

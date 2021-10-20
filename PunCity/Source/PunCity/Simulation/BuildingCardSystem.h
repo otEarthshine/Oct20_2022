@@ -815,7 +815,7 @@ public:
 		return false;
 	}
 
-	void MoveHandToCardSet(CardStatus cardStatus, CardSetTypeEnum cardSetTypeEnum, int32 targetCount)
+	void MoveHandToCardSet(CardStatus cardStatus, int32 targetCount, CardSetTypeEnum cardSetTypeEnum)
 	{
 		int32 removedCount = RemoveCardsFromBoughtHand(cardStatus, targetCount);
 		if (removedCount > 0)
@@ -829,7 +829,7 @@ public:
 					if (cardSet[j].cardEnum == cardStatus.cardEnum &&
 						cardSet[j].stackSize == 0) 
 					{
-						_cardsInventory[i].stackSize++;
+						cardSet[j].stackSize++;
 						removedCount--;
 						if (removedCount == 0) {
 							return;

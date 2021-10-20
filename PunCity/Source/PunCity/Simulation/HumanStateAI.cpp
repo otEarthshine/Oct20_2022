@@ -14,6 +14,8 @@
 #include "PlayerOwnedManager.h"
 #include "Buildings/StorageYard.h"
 
+#include "BuildingCardSystem.h"
+
 using namespace std;
 
 #define LOCTEXT_NAMESPACE "HumanStateAI"
@@ -3466,16 +3468,14 @@ void HumanStateAI::UpdateHappiness()
 		
 		// Zoo
 		{
-			const std::vector<int32>& zooIds = _simulation->buildingIds(_townId, CardEnum::Zoo);
-			TSet<CardEnum> uniqueAnimals;
-			for (int32 zooId : zooIds) {
-				Zoo& zoo = _simulation->building<Zoo>(zooId, CardEnum::Zoo);
-				const std::vector<CardStatus>& cardStatuses = zoo.slotCards();
-				for (const CardStatus& cardStatus : cardStatuses) {
-					uniqueAnimals.Add(cardStatus.cardEnum);
+			const std::vector<std::vector<CardStatus>>& cardSets = _simulation->cardSystem(_playerId).GetCardSets(CardSetTypeEnum::Zoo);
+			for (const std::vector<CardStatus>& cardSet : cardSets) {
+				for (const CardStatus& cardStatus : cardSet) {
+					if (cardStatus.stackSize > 0) {
+						targetHappiness += 5; // +5% city attractiveness when placed in Zoo (does not stack)
+					}
 				}
 			}
-			targetHappiness += 5 * uniqueAnimals.Num(); // +5% city attractiveness when placed in Zoo (does not stack)
 		}
 
 		// Policy Office

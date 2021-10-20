@@ -460,14 +460,14 @@ void UWorldSpaceUI::TickBuildings()
 			{
 				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
 			}
-			else if (isInOverlayRadiusHouse(OverlayType::Zoo, 1, Zoo::Radius))
-			{
-				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
-			}
-			else if (isInOverlayRadiusHouse(OverlayType::Museum, 1, Museum::Radius))
-			{
-				showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
-			}
+			//else if (isInOverlayRadiusHouse(OverlayType::Zoo, 1, Zoo::Radius))
+			//{
+			//	showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
+			//}
+			//else if (isInOverlayRadiusHouse(OverlayType::Museum, 1, Museum::Radius))
+			//{
+			//	showHoverIcon(assetLoader()->SmileIcon, FText(), FText());
+			//}
 
 
 			/*

@@ -442,6 +442,10 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Swordsman", "Swordsman"),
 		LOCTEXT("Swordsman Desc", ""),
 	} },
+	{ TechEnum::Knight, {
+		LOCTEXT("Knight", "Knight"),
+		LOCTEXT("Knight Desc", ""),
+	} },
 	{ TechEnum::MilitaryEngineering1, {
 		LOCTEXT("Military Engineering I", "Military Engineering I"),
 		LOCTEXT("Military Engineering I Desc", ""),
@@ -467,6 +471,10 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Artillery", "Artillery"),
 		LOCTEXT("Artillery Desc", ""),
 	} },
+	{ TechEnum::Tank, {
+		LOCTEXT("Tank", "Tank"),
+		LOCTEXT("Tank Desc", ""),
+	} },	
 	{ TechEnum::Battleship, {
 		LOCTEXT("Battleship", "Battleship"),
 		LOCTEXT("Battleship Desc", ""),
@@ -1305,7 +1313,7 @@ public:
 			AddTech_Building(TechEnum::SpyCenter, { TechEnum::Bank, TechEnum::Museum },
 				{ CardEnum::SpyCenter }
 			);
-			AddTech_Bonus(TechEnum::Fertilizers, { TechEnum::Zoo });
+			AddTech_Bonus(TechEnum::CropBreeding, { TechEnum::Zoo });
 
 
 			_columnIndex = 11;
@@ -1325,6 +1333,7 @@ public:
 				{ CardEnum::CardCombiner }
 			);
 
+			AddTech_Bonus(TechEnum::Fertilizers, { TechEnum::CropBreeding });
 			// TODO: ... Melon Gone
 			
 
@@ -1462,15 +1471,12 @@ public:
 			);
 
 			AddTech_Bonus(TechEnum::RanchingTechnologies, {});
-
 			AddTech_Building(TechEnum::Cathedral, { TechEnum::Combo },
 				CardEnum::Cathedral
 			);
 
-			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
-				{ CardEnum::BlueberrySeed }
-			);
 
+			AddTech_Bonus(TechEnum::Knight, { TechEnum::Swordsman });
 			AddTech_Bonus(TechEnum::MilitaryEngineering1, { TechEnum::Swordsman });
 			AddTech_Bonus(TechEnum::Vassalize, { TechEnum::Conquer });
 		
@@ -1479,16 +1485,13 @@ public:
 			//
 			_columnIndex = 6;
 			AddTech_Bonus(TechEnum::TaxAdjustment, { TechEnum::HouseAdjacency });
-
 			AddTech_Bonus(TechEnum::CardInventory2, {});
-			
 			AddTech_CardGiving(TechEnum::DesertPilgrim, {},
 				{ CardEnum::DesertPilgrim }
 			);
-			
-			AddTech_CardGiving(TechEnum::PumpkinFarming, { TechEnum::BlueberryFarming },
-				{ CardEnum::PumpkinSeed },
-				TechRequirements::ResourceProduced(ResourceEnum::Blueberries, 1000)
+
+			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
+				{ CardEnum::BlueberrySeed }
 			);
 			
 			AddTech_CardGiving(TechEnum::Motivation, {},
@@ -1503,6 +1506,25 @@ public:
 			AddTech_Bonus(TechEnum::IndustrialAdjacency, { TechEnum::TaxAdjustment });
 			AddTech_Bonus(TechEnum::ChocolateSnob, {});
 
+
+			AddTech_CardGiving(TechEnum::PumpkinFarming, { TechEnum::BlueberryFarming },
+				{ CardEnum::PumpkinSeed },
+				TechRequirements::ResourceProduced(ResourceEnum::Blueberries, 1000)
+			);
+
+
+			AddTech_CardGiving(TechEnum::Passion, { TechEnum::Motivation },
+				{ CardEnum::Passion }
+			);
+			AddTech_CardGiving(TechEnum::SlaveLabor, {},
+				CardEnum::SlaveLabor
+			);
+			AddTech_Bonus(TechEnum::MilitaryEngineering2, { TechEnum::Musketeer });
+
+
+			//
+			_columnIndex = 8;
+
 			AddTech_Building(TechEnum::Castle, {},
 				CardEnum::Castle
 			);
@@ -1513,20 +1535,6 @@ public:
 				{ CardEnum::AllYouCanEat }
 			);
 
-			AddTech_CardGiving(TechEnum::Passion, { TechEnum::Motivation },
-				{ CardEnum::Passion }
-			);
-
-			AddTech_CardGiving(TechEnum::SlaveLabor, {},
-				CardEnum::SlaveLabor
-			);
-			
-
-
-			//
-			_columnIndex = 8;
-
-
 			AddTech_Building(TechEnum::ResourceOutpost, {},
 				CardEnum::ResourceOutpost
 			);
@@ -1534,7 +1542,7 @@ public:
 			AddTech_CardGiving(TechEnum::Lockdown, { TechEnum::SlaveLabor },
 				{ CardEnum::Lockdown }
 			);
-			
+			AddTech_Bonus(TechEnum::MachineGun, { TechEnum::MilitaryEngineering2 });
 			
 			//
 			_columnIndex = 9;
@@ -1552,6 +1560,9 @@ public:
 			AddTech_CardGiving(TechEnum::BirthControl, {},
 				{ CardEnum::BirthControl }
 			);
+			
+			AddTech_Bonus(TechEnum::Artillery, {});
+			AddTech_Bonus(TechEnum::Infantry, {});
 
 
 			
@@ -1602,6 +1613,9 @@ public:
 			AddTech_CardGiving(TechEnum::SocialWelfare, {},
 				{ CardEnum::SocialWelfare }
 			);
+
+			AddTech_Bonus(TechEnum::Tank, {});
+			AddTech_Bonus(TechEnum::Battleship, {});
 		}
 	}
 	//virtual ~UnlockSystem() = default;

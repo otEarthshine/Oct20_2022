@@ -65,17 +65,24 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	if (IsTownSlotCard(buildingEnum)) {
 		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("town slot", "town slot"));
 	}
-	if (IsBuildingSlotCard(buildingEnum)) {
+	else if (IsZooAnimalCard(buildingEnum)) {
+		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("zoo slot", "zoo slot"));
+	}
+	else if (IsArtifactCard(buildingEnum)) {
+		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("museum slot", "museum slot"));
+	}
+	else if (IsBuildingSlotCard(buildingEnum)) {
 		ADDTEXT_(INVTEXT("\n<Gray>({0})</>"), LOCTEXT("building slot", "building slot"));
 	}
-	if (IsMilitaryCardEnum(buildingEnum)) {
+	else if (IsMilitaryCardEnum(buildingEnum)) {
 		args.Add(GetMilitaryInfoDescription(buildingEnum));
 	}
 
 	SetText(DescriptionRichText, args);
 
 	// Card Title
-	args.Add(FText::Format(INVTEXT("{0}{1}</>"), isFullCard ? INVTEXT("<CardNameLarge>") : INVTEXT("<CardName>"), info.name));
+	//args.Add(FText::Format(INVTEXT("{0}{1}</>"), isFullCard ? INVTEXT("<CardNameLarge>") : INVTEXT("<default>"), info.name));
+	args.Add(info.name);
 	
 	if (buildingEnum == CardEnum::House) {
 		ADDTEXT_INV_(" <Orange>[B-H]</>");
@@ -95,8 +102,12 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	else if (buildingEnum == CardEnum::Demolish) {
 		ADDTEXT_INV_(" <Orange>[X]</>");
 	}
-	SetText(BuildingNameRichText, args);
 
+	SetText(BuildingNameRichText, args);
+	FTextBlockStyle textBoxStyle = BuildingNameRichText->GetCurrentDefaultTextStyle();
+	textBoxStyle.SetFontSize(isFullCard ? 14 : 12);
+	BuildingNameRichText->SetDefaultTextStyle(textBoxStyle);
+	
 	CardGlow->SetVisibility(ESlateVisibility::Hidden);
 
 	if (cardStatus.stackSize > 1) {
@@ -107,7 +118,7 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 		Count->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	// 
+	//! 
 	if (IsUnboughtCard() ||
 		IsPermanentCard() ||
 		buildingEnum == CardEnum::Townhall ||
@@ -119,8 +130,8 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 		SellButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else if (isFullCard ||
-			cardHandEnum == CardHandEnum::CardInventorySlots
-		)
+			cardHandEnum == CardHandEnum::CardInventorySlots ||
+			cardHandEnum == CardHandEnum::CardSetSlots)
 	{
 		SellButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
@@ -129,14 +140,18 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 		BUTTON_ON_CLICK(SellButton, this, &UBuildingPlacementButton::OnSellButtonClicked);
 	}
 
-	if (IsTownSlotCard(buildingEnum)) {
-		CardSlotUnderneath->GetDynamicMaterial()->SetTextureParameterValue("CardSlot", assetLoader()->CardSlotRound);
-		CardSlotUnderneath->GetDynamicMaterial()->SetScalarParameterValue("IsBuildingSlotCard", false);
-		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
-	}
-	else if (IsBuildingSlotCard(buildingEnum)) {
+
+	//! 
+	if (cardHandEnum == CardHandEnum::CardSetSlots ||
+		IsBuildingSlotCard(buildingEnum))
+	{
 		CardSlotUnderneath->GetDynamicMaterial()->SetTextureParameterValue("CardSlot", assetLoader()->CardSlotBevel);
 		CardSlotUnderneath->GetDynamicMaterial()->SetScalarParameterValue("IsBuildingSlotCard", true);
+		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
+	}
+	else if (IsTownSlotCard(buildingEnum)) {
+		CardSlotUnderneath->GetDynamicMaterial()->SetTextureParameterValue("CardSlot", assetLoader()->CardSlotRound);
+		CardSlotUnderneath->GetDynamicMaterial()->SetScalarParameterValue("IsBuildingSlotCard", false);
 		CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 	else {
@@ -160,5 +175,123 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	initTime = 0;
 }
 
+void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isReservedForBuying, bool needResource, bool isRareCardHand, bool tryShowBuyText)
+{
+	CardEnum buildingEnum = cardStatus.cardEnum;
+
+	if (tryShowBuyText) {
+		BuyText->SetVisibility(isReservedForBuying && !isRareCardHand ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+	else {
+		BuyText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	/*
+	 * CardSetSlots
+	 *
+	 * CardBackgroundImage
+	 * BuildingNameRichText
+	 */
+	FTextBlockStyle textBoxStyle = BuildingNameRichText->GetCurrentDefaultTextStyle();
+	bool isEmptyCollectionSlot = (cardHandEnum == CardHandEnum::CardSetSlots) && cardStatus.stackSize == 0;
+	
+	if (isEmptyCollectionSlot)
+	{
+		CardBackgroundImage->SetVisibility(ESlateVisibility::Hidden);
+		textBoxStyle.SetColorAndOpacity(FLinearColor(0.2, 0.2, 0.2));
+	}
+	else
+	{
+		CardBackgroundImage->SetVisibility(ESlateVisibility::Visible);
+		textBoxStyle.SetColorAndOpacity(FLinearColor(1, 1, 1));
+
+		auto material = CardBackgroundImage->GetDynamicMaterial();
+		//material->SetScalarParameterValue("IsRare", isRareCardHand ? 1.0f : 0.0f);
+		material->SetScalarParameterValue("Highlight", isReservedForBuying ? 1.0f : 0.0f);
+
+		bool isGlobalSlotCard = IsTownSlotCard(buildingEnum);
+		bool isBuildingSlotCard = IsBuildingSlotCard(buildingEnum) ||
+									IsZooAnimalCard(buildingEnum) ||
+									IsArtifactCard(buildingEnum);
+
+		material->SetScalarParameterValue("IsBuildingCard", IsBuildingCard(buildingEnum) ? 1.0f : 0.0f);
+		material->SetScalarParameterValue("IsActionCard", IsActionCard(buildingEnum) ? 1.0f : 0.0f);
+		material->SetScalarParameterValue("IsGlobalSlotCard", isGlobalSlotCard ? 1.0f : 0.0f);
+		material->SetScalarParameterValue("IsBuildingSlotCard", isBuildingSlotCard ? 1.0f : 0.0f);
+		material->SetScalarParameterValue("IsPermanentBonus", IsPermanentBonus(buildingEnum) ? 1.0f : 0.0f);
+
+		//
+		if (isGlobalSlotCard) {
+			material->SetTextureParameterValue("CardTexture", assetLoader()->CardFrontRound);
+		}
+		else if (isBuildingSlotCard) {
+			material->SetTextureParameterValue("CardTexture", assetLoader()->CardFrontBevel);
+		}
+		else {
+			material->SetTextureParameterValue("CardTexture", assetLoader()->CardFront);
+		}
+	}
+
+	BuildingNameRichText->SetDefaultTextStyle(textBoxStyle);
+
+	/*
+	 * BuildingIcon
+	 */
+	{
+		// Don't show 
+		bool showNeedResourceUI = !isReservedForBuying && needResource;
+
+		//BuildingIcon->SetBrushFromMaterial(showNeedResourceUI ? grayMaterial : colorMaterial);
+		BuildingIcon->GetDynamicMaterial()->SetScalarParameterValue("IsGray", showNeedResourceUI || isEmptyCollectionSlot ? 1.0f : 0.0f);
+
+		NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
+		NeedResourcesText->SetVisibility(showNeedResourceUI ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
+	}
+
+	//! Exclamation
+	// Notify of the first time seeing permanent card..
+	needExclamation = false;
+	if (IsPermanentCard())
+	{
+		if (buildingEnum == CardEnum::Farm && !simulation().parameters(playerId())->FarmNoticed) {
+			needExclamation = true;
+		}
+		else if (buildingEnum == CardEnum::Bridge && !simulation().parameters(playerId())->BridgeNoticed) {
+			needExclamation = true;
+		}
+		else if (buildingEnum == CardEnum::House && simulation().NeedQuestExclamation(playerId(), QuestEnum::BuildHousesQuest)) {
+			needExclamation = true;
+		}
+		else if (buildingEnum == CardEnum::StorageYard && simulation().HasQuest(playerId(), QuestEnum::BuildStorageQuest) &&
+			simulation().buildingCount(playerId(), CardEnum::StorageYard) <= 2) {
+			needExclamation = true;
+		}
+	}
+	else
+	{
+		if (buildingEnum == CardEnum::Townhall) {
+			needExclamation = true;
+		}
+		else if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) &&
+			(IsAgricultureBuilding(buildingEnum) && buildingEnum != CardEnum::Forester))
+		{
+			needExclamation = true;
+		}
+
+		// First Seed Card
+		if (cardHandEnum == CardHandEnum::BoughtHand &&
+			IsSeedCard(buildingEnum) &&
+			!simulation().unlockSystem(playerId())->isUnlocked(CardEnum::Farm))
+		{
+			needExclamation = true;
+		}
+	}
+
+	//PlayAnimationIf("Flash", needExclamation);
+	//ExclamationIcon->SetShow(needExclamation);
+
+	SellButton->SetVisibility(cardHandEnum == CardHandEnum::BoughtHand ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+}
 
 #undef LOCTEXT_NAMESPACE

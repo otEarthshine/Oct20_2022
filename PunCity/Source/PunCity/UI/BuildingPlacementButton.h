@@ -51,17 +51,7 @@ public:
 
 	void PunInit(CardStatus cardStatusIn, int32 cardHandIndexIn, UPunWidget* callbackParent, CallbackEnum callbackEnum, CardHandEnum cardHandEnum);
 
-	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
-	void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override {
-		UPunWidget::NativeOnMouseEnter(InGeometry, InMouseEvent);
-		CardGlow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		dataSource()->Spawn2DSound("UI", "CardHover");
-	}
-	void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override {
-		UPunWidget::NativeOnMouseLeave(InMouseEvent);
-		CardGlow->SetVisibility(ESlateVisibility::Hidden);
-	}
+	void SetCardStatus(CardHandEnum cardHandEnum, bool isReservedForBuying, bool needResource, bool isRareCardHand = false, bool tryShowBuyText = true);
 
 	void RefreshBuildingIcon(UAssetLoaderComponent* assetLoader)
 	{
@@ -97,93 +87,6 @@ public:
 
 		BuildingIcon->SetBrushFromMaterial(colorMaterial);
 	}
-
-	void SetCardStatus(CardHandEnum cardHandEnum, bool isReservedForBuying, bool needResource, bool isRareCardHand = false, bool tryShowBuyText = true)
-	{
-		CardEnum buildingEnum = cardStatus.cardEnum;
-		
-		if (tryShowBuyText) {
-			BuyText->SetVisibility(isReservedForBuying && !isRareCardHand ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-		} else {
-			BuyText->SetVisibility(ESlateVisibility::Collapsed);
-		}
-
-		auto material = CardBackgroundImage->GetDynamicMaterial();
-		//material->SetScalarParameterValue("IsRare", isRareCardHand ? 1.0f : 0.0f);
-		material->SetScalarParameterValue("Highlight", isReservedForBuying ? 1.0f : 0.0f);
-
-		bool isGlobalSlotCard = IsTownSlotCard(buildingEnum);
-		bool isBuildingSlotCard = IsBuildingSlotCard(buildingEnum);
-		
-		material->SetScalarParameterValue("IsBuildingCard", IsBuildingCard(buildingEnum) ? 1.0f : 0.0f);
-		material->SetScalarParameterValue("IsActionCard", IsActionCard(buildingEnum) ? 1.0f : 0.0f);
-		material->SetScalarParameterValue("IsGlobalSlotCard", isGlobalSlotCard ? 1.0f : 0.0f);
-		material->SetScalarParameterValue("IsBuildingSlotCard", isBuildingSlotCard ? 1.0f : 0.0f);
-		material->SetScalarParameterValue("IsPermanentBonus", IsPermanentBonus(buildingEnum) ? 1.0f : 0.0f);
-
-		// Don't show 
-		bool showNeedResourceUI = !isReservedForBuying && needResource;
-
-
-		//BuildingIcon->SetBrushFromMaterial(showNeedResourceUI ? grayMaterial : colorMaterial);
-		BuildingIcon->GetDynamicMaterial()->SetScalarParameterValue("IsGray", showNeedResourceUI ? 1.0f : 0.0f);
-		
-		NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
-		NeedResourcesText->SetVisibility(showNeedResourceUI ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
-
-		//
-		if (isGlobalSlotCard) {
-			material->SetTextureParameterValue("CardTexture", assetLoader()->CardFrontRound);
-		} else if (isBuildingSlotCard) {
-			material->SetTextureParameterValue("CardTexture", assetLoader()->CardFrontBevel);
-		} else {
-			material->SetTextureParameterValue("CardTexture", assetLoader()->CardFront);
-		}
-
-		// Notify of the first time seeing permanent card..
-		needExclamation = false;
-		if (IsPermanentCard())
-		{
-			if (buildingEnum == CardEnum::Farm && !simulation().parameters(playerId())->FarmNoticed) {
-				needExclamation = true;
-			}
-			else if (buildingEnum == CardEnum::Bridge && !simulation().parameters(playerId())->BridgeNoticed) {
-				needExclamation = true;
-			}
-			else if (buildingEnum == CardEnum::House && simulation().NeedQuestExclamation(playerId(), QuestEnum::BuildHousesQuest)) {
-				needExclamation = true;
-			}
-			else if (buildingEnum == CardEnum::StorageYard && simulation().HasQuest(playerId(), QuestEnum::BuildStorageQuest) && 
-				simulation().buildingCount(playerId(), CardEnum::StorageYard) <= 2) {
-				needExclamation = true;
-			}
-		}
-		else
-		{
-			if (buildingEnum == CardEnum::Townhall) {
-				needExclamation = true;
-			}
-			else if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) && 
-					(IsAgricultureBuilding(buildingEnum) && buildingEnum != CardEnum::Forester)) 
-			{
-				needExclamation = true;
-			}
-
-			// First Seed Card
-			if (cardHandEnum == CardHandEnum::BoughtHand &&
-				IsSeedCard(buildingEnum) && 
-				!simulation().unlockSystem(playerId())->isUnlocked(CardEnum::Farm)) 
-			{
-				needExclamation = true;
-			}
-		}
-
-		//PlayAnimationIf("Flash", needExclamation);
-		//ExclamationIcon->SetShow(needExclamation);
-
-		SellButton->SetVisibility(cardHandEnum == CardHandEnum::BoughtHand ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	}
 	
 	void SetBoughtCardNeedResource(bool needResource) {
 		// Bought card need resource is just a warning, and is not grayed out.
@@ -192,6 +95,18 @@ public:
 		//NeedResourcesText->SetText(FText::FromString("Need resources"));
 
 		NeedResourcesText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override {
+		UPunWidget::NativeOnMouseEnter(InGeometry, InMouseEvent);
+		CardGlow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		dataSource()->Spawn2DSound("UI", "CardHover");
+	}
+	void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override {
+		UPunWidget::NativeOnMouseLeave(InMouseEvent);
+		CardGlow->SetVisibility(ESlateVisibility::Hidden);
 	}
 
 	/*

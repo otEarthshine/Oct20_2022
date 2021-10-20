@@ -2549,6 +2549,7 @@ enum class CardHandEnum : uint8
 	TradeDealOffer,
 
 	DeployMilitarySlots,
+	CardSetSlots,
 
 	None,
 };
@@ -3715,10 +3716,10 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Hotel, _LOCTEXT("Hotel", "Hotel"), LOCTEXT("Hotel (Plural)", "Hotels"), LOCTEXT("Hotel Desc", "Allow visitors from other towns to stay (for <img id=\"Coin\"/>)."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({})
 	),
-	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Increase visitor's Fun. Service Quality depends on slotted animals."),
+	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Slot Animal Cards to get bonuses."),
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100, 100 })
 	),
-	BldInfo(CardEnum::Museum, _LOCTEXT("Museum", "Museum"), LOCTEXT("Museum (Plural)", "Museums"), LOCTEXT("Museum Desc", ""),
+	BldInfo(CardEnum::Museum, _LOCTEXT("Museum", "Museum"), LOCTEXT("Museum (Plural)", "Museums"), LOCTEXT("Museum Desc", "Slot Artifact Cards to get bonuses"),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Embassy, _LOCTEXT("Embassy", "Embassy"), LOCTEXT("Embassy (Plural)", "Embassy"), LOCTEXT("Embassy Desc", "+50<img id=\"Influence\"/> income for builder and host player."),
@@ -3868,44 +3869,44 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::Cow,				_INVTEXT("Cow"), 300, INVTEXT("Spawn 3 Cows on a Ranch.")),
 
 	// Zoo animals
-	BldInfo(CardEnum::Boar,				_LOCTEXT("Boar", "Boar"), 1000, LOCTEXT("Boar Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::RedDeer,			_LOCTEXT("Red Deer", "Red Deer"), 1000, LOCTEXT("Red Deer Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::YellowDeer,		_LOCTEXT("Yellow Deer", "Yellow Deer"), 1000, LOCTEXT("Yellow Deer Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::DarkDeer,			_LOCTEXT("Dark Deer", "Dark Deer"), 1000, LOCTEXT("Dark Deer Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::Boar,				_LOCTEXT("Boar", "Boar"), 1000, LOCTEXT("Boar Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::RedDeer,			_LOCTEXT("Red Deer", "Red Deer"), 1000, LOCTEXT("Red Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::YellowDeer,		_LOCTEXT("Yellow Deer", "Yellow Deer"), 1000, LOCTEXT("Yellow Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::DarkDeer,			_LOCTEXT("Dark Deer", "Dark Deer"), 1000, LOCTEXT("Dark Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
 
-	BldInfo(CardEnum::BrownBear,		_LOCTEXT("Brown Bear", "Brown Bear"), 1000, LOCTEXT("Brown Bear Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::BlackBear,		_LOCTEXT("Black Bear", "Black Bear"), 1000, LOCTEXT("Black Bear Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::Panda,			_LOCTEXT("Panda", "Panda"), 1000, LOCTEXT("Panda Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::BrownBear,		_LOCTEXT("Brown Bear", "Brown Bear"), 1000, LOCTEXT("Brown Bear Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::BlackBear,		_LOCTEXT("Black Bear", "Black Bear"), 1000, LOCTEXT("Black Bear Desc", "+5% City Attractiveness when placed in Zoo Collection)")),
+	BldInfo(CardEnum::Panda,			_LOCTEXT("Panda", "Panda"), 1000, LOCTEXT("Panda Desc", "+5% City Attractiveness when placed in Zoo Collection")),
 
-	BldInfo(CardEnum::Moose,			_LOCTEXT("Moose", "Moose"), 1000, LOCTEXT("Moose Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::Hippo,			_LOCTEXT("Hippo", "Hippo"), 1000, LOCTEXT("Hippo Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::Penguin,			_LOCTEXT("Penguin", "Penguin"), 1000, LOCTEXT("Penguin Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
-	BldInfo(CardEnum::Bobcat,			_LOCTEXT("Bobcat", "Bobcat"), 1000, LOCTEXT("Bobcat Desc", "+5% city attractiveness when placed in Zoo (does not stack)")),
+	BldInfo(CardEnum::Moose,			_LOCTEXT("Moose", "Moose"), 1000, LOCTEXT("Moose Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::Hippo,			_LOCTEXT("Hippo", "Hippo"), 1000, LOCTEXT("Hippo Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::Penguin,			_LOCTEXT("Penguin", "Penguin"), 1000, LOCTEXT("Penguin Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::Bobcat,			_LOCTEXT("Bobcat", "Bobcat"), 1000, LOCTEXT("Bobcat Desc", "+5% City Attractiveness when placed in Zoo Collection")),
 
 	//! Artifacts
-	BldInfo(CardEnum::Codex,			_LOCTEXT("Codex", "Codex"), 1000,						LOCTEXT("Codex Desc","")),
-	BldInfo(CardEnum::SacrificialAltar,	_LOCTEXT("Sacrificial Altar", "Sacrificial Altar"), 1000, LOCTEXT("Sacrificial Altar Desc","")),
-	BldInfo(CardEnum::StoneStele,		_LOCTEXT("Stone Stele", "Stone Stele"), 1000,			LOCTEXT("Stone Stele Desc","")),
-	BldInfo(CardEnum::BallCourtGoals,	_LOCTEXT("Ball Court Goals", "Ball Court Goals"), 1000, LOCTEXT("Ball Court Goals Desc","")),
-	BldInfo(CardEnum::FeatherCrown,		_LOCTEXT("Feather Crown", "Feather Crown"), 1000,		LOCTEXT("Feather Crown Desc","")),
+	BldInfo(CardEnum::Codex,			_LOCTEXT("Codex", "Codex"), 1000,						LOCTEXT("Codex Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::SacrificialAltar,	_LOCTEXT("Sacrificial Altar", "Sacrificial Altar"), 1000, LOCTEXT("Sacrificial Altar Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::StoneStele,		_LOCTEXT("Stone Stele", "Stone Stele"), 1000,			LOCTEXT("Stone Stele Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::BallCourtGoals,	_LOCTEXT("Ball Court Goals", "Ball Court Goals"), 1000, LOCTEXT("Ball Court Goals Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::FeatherCrown,		_LOCTEXT("Feather Crown", "Feather Crown"), 1000,		LOCTEXT("Feather Crown Desc","+5% City Attractiveness when placed in Museum Collection")),
 
-	BldInfo(CardEnum::CanopicJars,		_LOCTEXT("Canopic Jars", "Canopic Jars"), 1000,			LOCTEXT("Canopic Jars Desc","")),
-	BldInfo(CardEnum::DepartureScrolls,	_LOCTEXT("Departure Scrolls", "Departure Scrolls"), 1000, LOCTEXT("Departure Scrolls Desc","")),
-	BldInfo(CardEnum::DeathMask,		_LOCTEXT("Death Mask", "Death Mask"), 1000,				LOCTEXT("Death Mask Desc","")),
-	BldInfo(CardEnum::SolarBarque,		_LOCTEXT("Solar Barque", "Solar Barque"), 1000,			LOCTEXT("Solar Barque Desc","")),
-	BldInfo(CardEnum::GoldCapstone,		_LOCTEXT("Gold Capstone", "Gold Capstone"), 1000,		LOCTEXT("Gold Capstone Desc","")),
+	BldInfo(CardEnum::CanopicJars,		_LOCTEXT("Canopic Jars", "Canopic Jars"), 1000,			LOCTEXT("Canopic Jars Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::DepartureScrolls,	_LOCTEXT("Departure Scrolls", "Departure Scrolls"), 1000, LOCTEXT("Departure Scrolls Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::DeathMask,		_LOCTEXT("Death Mask", "Death Mask"), 1000,				LOCTEXT("Death Mask Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::SolarBarque,		_LOCTEXT("Solar Barque", "Solar Barque"), 1000,			LOCTEXT("Solar Barque Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::GoldCapstone,		_LOCTEXT("Gold Capstone", "Gold Capstone"), 1000,		LOCTEXT("Gold Capstone Desc","+5% City Attractiveness when placed in Museum Collection")),
 
-	BldInfo(CardEnum::FeastRemains,		_LOCTEXT("Feast Remains", "Feast Remains"), 1000,		LOCTEXT("Feast Remains Desc","")),
-	BldInfo(CardEnum::ForeignTrinkets,	_LOCTEXT("Foreign Trinkets", "Foreign Trinkets"), 1000, LOCTEXT("Foreign Trinkets Desc","")),
-	BldInfo(CardEnum::ChalkPlaque,		_LOCTEXT("Chalk Plaque", "Chalk Plaque"), 1000,			LOCTEXT("Chalk Plaque Desc","")),
-	BldInfo(CardEnum::OfferingCup,		_LOCTEXT("Offering Cup", "Offering Cup"), 1000,		LOCTEXT("Offering Cup Desc","")),
-	BldInfo(CardEnum::OrnateTrinkets,	_LOCTEXT("Ornate Trinkets", "Ornate Trinkets"), 1000,		LOCTEXT("Ornate Trinkets Desc","")),
+	BldInfo(CardEnum::FeastRemains,		_LOCTEXT("Feast Remains", "Feast Remains"), 1000,		LOCTEXT("Feast Remains Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::ForeignTrinkets,	_LOCTEXT("Foreign Trinkets", "Foreign Trinkets"), 1000, LOCTEXT("Foreign Trinkets Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::ChalkPlaque,		_LOCTEXT("Chalk Plaque", "Chalk Plaque"), 1000,			LOCTEXT("Chalk Plaque Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::OfferingCup,		_LOCTEXT("Offering Cup", "Offering Cup"), 1000,		LOCTEXT("Offering Cup Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::OrnateTrinkets,	_LOCTEXT("Ornate Trinkets", "Ornate Trinkets"), 1000,		LOCTEXT("Ornate Trinkets Desc","+5% City Attractiveness when placed in Museum Collection")),
 
-	BldInfo(CardEnum::TatooingNeedles,	_LOCTEXT("Tatooing Needles", "Tatooing Needles"), 1000, LOCTEXT("Tatooing Needles Desc", "")),
-	BldInfo(CardEnum::Petroglyphs,		_LOCTEXT("Petroglyphs", "Petroglyphs"), 1000,			LOCTEXT("Petroglyphs Desc", "")),
-	BldInfo(CardEnum::StoneFishhooks,	_LOCTEXT("Stone Fishhooks", "Stone Fishhooks"), 1000, LOCTEXT("Stone Fishhooks Desc", "")),
-	BldInfo(CardEnum::CoralEyes,		_LOCTEXT("Coral Eyes", "Coral Eyes"), 1000,			LOCTEXT("Coral Eyes Desc", "")),
-	BldInfo(CardEnum::AncientStaff,		_LOCTEXT("Ancient Staff", "Ancient Staff"), 1000,		LOCTEXT("Ancient Staff Desc", "")),
+	BldInfo(CardEnum::TatooingNeedles,	_LOCTEXT("Tatooing Needles", "Tatooing Needles"), 1000, LOCTEXT("Tatooing Needles Desc", "+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::Petroglyphs,		_LOCTEXT("Petroglyphs", "Petroglyphs"), 1000,			LOCTEXT("Petroglyphs Desc", "+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::StoneFishhooks,	_LOCTEXT("Stone Fishhooks", "Stone Fishhooks"), 1000, LOCTEXT("Stone Fishhooks Desc", "+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::CoralEyes,		_LOCTEXT("Coral Eyes", "Coral Eyes"), 1000,			LOCTEXT("Coral Eyes Desc", "+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::AncientStaff,		_LOCTEXT("Ancient Staff", "Ancient Staff"), 1000,		LOCTEXT("Ancient Staff Desc", "+5% City Attractiveness when placed in Museum Collection")),
 
 	
 	//
@@ -4586,8 +4587,8 @@ static bool IsServiceBuilding(CardEnum buildingEnum)
 	{
 	case CardEnum::Tavern:
 	case CardEnum::Theatre:
-	case CardEnum::Zoo:
-	case CardEnum::Museum:
+	//case CardEnum::Zoo:
+	//case CardEnum::Museum:
 		
 	case CardEnum::Library:
 	case CardEnum::School:
@@ -6047,8 +6048,8 @@ enum class OverlayType
 	
 	Theatre,
 	Tavern,
-	Zoo,
-	Museum,
+	//Zoo,
+	//Museum,
 
 	BadAppeal,
 
@@ -9324,8 +9325,8 @@ static FText GetHappinessFace(int32 value)
  */
 enum class FunServiceEnum : uint8
 {
-	Museum,
-	Zoo,
+	//Museum,
+	//Zoo,
 	Theatre,
 	Tavern,
 	
@@ -9343,8 +9344,8 @@ struct FunServiceInfo
 
 const std::vector<FunServiceInfo> FunServiceToCardEnum
 {
-	{FunServiceEnum::Museum, CardEnum::Museum, 100, 95 },
-	{FunServiceEnum::Zoo, CardEnum::Zoo, 100, 95 },
+	//{FunServiceEnum::Museum, CardEnum::Museum, 100, 95 },
+	//{FunServiceEnum::Zoo, CardEnum::Zoo, 100, 95 },
 	{FunServiceEnum::Theatre, CardEnum::Theatre, 100, 95 },
 	{FunServiceEnum::Tavern, CardEnum::Tavern, 75, 70 },
 };
@@ -10528,22 +10529,22 @@ public:
 
 static const std::vector<CardSetInfo> ZooSetInfos
 {
-	CardSetInfo(LOCTEXT("Deer", "Deer"), LOCTEXT("", ""), { CardEnum::RedDeer, CardEnum::YellowDeer, CardEnum::DarkDeer }),
-	CardSetInfo(LOCTEXT("Boar", "Boar"), LOCTEXT("", ""), { CardEnum::Boar }),
-	CardSetInfo(LOCTEXT("Bear", "Bear"), LOCTEXT("", ""), { CardEnum::BrownBear, CardEnum::BlackBear, CardEnum::Panda }),
+	CardSetInfo(LOCTEXT("Deer Set", "Deer Set"), LOCTEXT("Deer Set Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::RedDeer, CardEnum::YellowDeer, CardEnum::DarkDeer }),
+	CardSetInfo(LOCTEXT("Boar Set", "Boar Set"), LOCTEXT("Boar Set Desc", "-5% food consumption"), { CardEnum::Boar }),
+	CardSetInfo(LOCTEXT("Bear Set", "Bear Set"), LOCTEXT("Bear Set Desc", "+50% City Attractiveness"), { CardEnum::BrownBear, CardEnum::BlackBear, CardEnum::Panda }),
 };
 
 static const std::vector<CardSetInfo> MuseumSetInfos
 {
-	CardSetInfo(LOCTEXT("Prosperity", "Prosperity"), LOCTEXT("", ""), { CardEnum::Codex, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
-	CardSetInfo(LOCTEXT("Mummification", "Mummification"), LOCTEXT("", ""), { CardEnum::CanopicJars, CardEnum::DepartureScrolls, CardEnum::DeathMask }),
-	CardSetInfo(LOCTEXT("Pilgrimage", "Pilgrimage"), LOCTEXT("", ""), { CardEnum::FeastRemains, CardEnum::ForeignTrinkets, CardEnum::ChalkPlaque }),
-	CardSetInfo(LOCTEXT("Islander Life", "Islander Life"), LOCTEXT("", ""), { CardEnum::TatooingNeedles, CardEnum::Petroglyphs, CardEnum::StoneFishhooks }),
+	CardSetInfo(LOCTEXT("Prosperity", "Prosperity"),		LOCTEXT("Prosperity Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::Codex, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
+	CardSetInfo(LOCTEXT("Mummification", "Mummification"), LOCTEXT("Mummification Desc", ""), { CardEnum::CanopicJars, CardEnum::DepartureScrolls, CardEnum::DeathMask }),
+	CardSetInfo(LOCTEXT("Pilgrimage", "Pilgrimage"),		LOCTEXT("Pilgrimage Desc", "Hotel gives +50% influence bonus"), { CardEnum::FeastRemains, CardEnum::ForeignTrinkets, CardEnum::ChalkPlaque }),
+	CardSetInfo(LOCTEXT("Islander Life", "Islander Life"), LOCTEXT("Islander Life Desc", "+50%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::TatooingNeedles, CardEnum::Petroglyphs, CardEnum::StoneFishhooks }),
 
-	CardSetInfo(LOCTEXT("A Fulfilled Life", "A Fulfilled Life"), LOCTEXT("", ""), { CardEnum::BallCourtGoals, CardEnum::SolarBarque }),
-	CardSetInfo(LOCTEXT("Remembrance", "Remembrance"), LOCTEXT("", ""), { CardEnum::OfferingCup, CardEnum::CoralEyes }),
+	CardSetInfo(LOCTEXT("A Fulfilled Life", "A Fulfilled Life"), LOCTEXT("A Fulfilled Life Desc", "Every 2% Happiness above 70%,\ngives +1% productivity (town)"), { CardEnum::BallCourtGoals, CardEnum::SolarBarque }),
+	CardSetInfo(LOCTEXT("Remembrance", "Remembrance"),		LOCTEXT("Remembrance Desc", "+1% City Attractiveness for each House Lv 8\n(per city, max 100%)"), { CardEnum::OfferingCup, CardEnum::CoralEyes }),
 
-	CardSetInfo(LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("", ""), { CardEnum::FeatherCrown, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
+	CardSetInfo(LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("Royal Heritage Desc", "Every 1% City Attractiveness gives \n+1%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::FeatherCrown, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
 };
 
 static const std::vector<CardSetInfo> CardCombinerSetInfos

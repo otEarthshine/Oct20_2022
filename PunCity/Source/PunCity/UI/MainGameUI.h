@@ -720,7 +720,10 @@ public:
 			auto cardSetsUITitleText = CastChecked<UTextBlock>(cardSetBox->GetChildAt(0));
 			cardSetsUITitleText->SetText(cardSetTypeInfos[cardSetTypeInfoIndex].name);
 
-			auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(1));
+			auto cardSetsUIDescriptionText = CastChecked<URichTextBlock>(cardSetBox->GetChildAt(1));
+			cardSetsUIDescriptionText->SetText(cardSetTypeInfos[cardSetTypeInfoIndex].description);
+
+			auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(2));
 			for (int32 i = 0; i < cardSetsUISlots->GetChildrenCount(); i++)
 			{
 				const std::vector<CardStatus>& cardSet = cardSets[cardSetTypeInfoIndex];
@@ -728,8 +731,8 @@ public:
 				auto cardButton = CastChecked<UBuildingPlacementButton>(cardSetsUISlots->GetChildAt(i));
 				if (i < cardSet.size()) {
 					cardButton->SetVisibility(ESlateVisibility::Visible);
-					cardButton->PunInit(cardSet[i], i, this, CallbackEnum::SelectDeployMilitarySlotCard, CardHandEnum::DeployMilitarySlots);
-					cardButton->SetCardStatus(CardHandEnum::DeployMilitarySlots, false, false);
+					cardButton->PunInit(cardSet[i], i, this, CallbackEnum::SelectCardSetSlotCard, CardHandEnum::CardSetSlots);
+					cardButton->SetCardStatus(CardHandEnum::CardSetSlots, false, false);
 					cardButton->RefreshBuildingIcon(assetLoader());
 				}
 				else {

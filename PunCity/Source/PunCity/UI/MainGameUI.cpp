@@ -2327,11 +2327,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	{
 		DescriptionUIState descriptionUIState = simulation().descriptionUIState();
 
-
-		// Move To Card Inventory
+		//! Move To Card Inventory
 		if (CardInventorySizeBox->IsVisible())
 		{
-			if (cardSystem.CanAddCardsToCardInventory(buildingEnum))
+			if (cardSystem.CanAddCardsToCardInventory(buildingEnum)) 
 			{
 				FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
 
@@ -2339,14 +2338,62 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				command->callbackEnum = CallbackEnum::CardInventorySlotting;
 				command->cardStatus = cardButton->cardStatus;
 				command->variable1 = dataSource()->isShiftDown() ? command->cardStatus.stackSize : 1;
-				
+
 				command->SetPosition(initialPosition);
 				networkInterface()->SendNetworkCommand(command);
 			}
-			
 			return;
 		}
+
+		//! Collection Cards
+		auto trySlotCard = [&](CallbackEnum callbackEnumIn, CardSetTypeEnum variable2)
+		{
+			FVector2D initialPosition = GetViewportPosition(cardButton->GetCachedGeometry());
+
+			auto command = make_shared<FUseCard>();
+			command->callbackEnum = callbackEnumIn;
+			command->cardStatus = cardButton->cardStatus;
+			command->variable1 = dataSource()->isShiftDown() ? command->cardStatus.stackSize : 1;
+			command->variable2 = static_cast<int32>(variable2);
+
+			command->SetPosition(initialPosition);
+			networkInterface()->SendNetworkCommand(command);
+		};
 		
+		if (IsZooAnimalCard(buildingEnum))
+		{
+			if (CardSetsUIOverlay->IsVisible()) {
+				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::Zoo);
+			}
+			else {
+				simulation().AddPopupToFront(playerId(),
+					LOCTEXT("ZooCardNeedZoo_Pop", "Animal Cards should be added to Zoo Slots."),
+					ExclusiveUIEnum::None, "PopupCannot"
+				);
+			}
+			return;
+		}
+		if (IsArtifactCard(buildingEnum))
+		{
+			if (CardSetsUIOverlay->IsVisible()) {
+				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::Museum);
+			}
+			else {
+				simulation().AddPopupToFront(playerId(),
+					LOCTEXT("ArtifactNeedMuseum_Pop", "Artifact Cards should be added to Museum Slots."),
+					ExclusiveUIEnum::None, "PopupCannot"
+				);
+			}
+			return;
+		}
+		if (CardSetsUIOverlay->IsVisible())
+		{
+			if (buildingEnum == CardEnum::ProductivityBook ||
+				buildingEnum == CardEnum::SustainabilityBook) 
+			{
+				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::CardCombiner);
+			}
+		}
 		
 
 		// Archive take any card

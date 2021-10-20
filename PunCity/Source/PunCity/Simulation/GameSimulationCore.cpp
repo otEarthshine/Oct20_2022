@@ -4928,12 +4928,12 @@ void GameSimulationCore::UseCard(FUseCard command)
 	// Card Set Slotting
 	if (command.callbackEnum == CallbackEnum::SelectCardSetSlotCard)
 	{
-		cardSys.MoveCardSetToHand(command.cardStatus, static_cast<CardSetTypeEnum>(command.variable1));
+		cardSys.MoveCardSetToHand(command.cardStatus, static_cast<CardSetTypeEnum>(command.variable2));
 		return;
 	}
 	if (command.callbackEnum == CallbackEnum::CardSetSlotting)
 	{
-		cardSys.MoveHandToCardSet(command.cardStatus, static_cast<CardSetTypeEnum>(command.variable1), command.variable2);
+		cardSys.MoveHandToCardSet(command.cardStatus, command.variable1, static_cast<CardSetTypeEnum>(command.variable2));
 		return;
 	}
 	

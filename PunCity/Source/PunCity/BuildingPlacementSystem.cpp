@@ -600,8 +600,8 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 		OverlayType overlayType = OverlayType::Tavern;
 		switch(buildingEnum)
 		{
-		case CardEnum::Museum: overlayType = OverlayType::Museum; break;
-		case CardEnum::Zoo: overlayType = OverlayType::Zoo; break;
+		//case CardEnum::Museum: overlayType = OverlayType::Museum; break;
+		//case CardEnum::Zoo: overlayType = OverlayType::Zoo; break;
 		case CardEnum::Theatre: overlayType = OverlayType::Theatre; break;
 		case CardEnum::Tavern: overlayType = OverlayType::Tavern; break;
 		default:
@@ -2024,16 +2024,16 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 					else if (IsAnimalCard(_buildingEnum))
 					{
-						if (buildingIdAtTile != -1)
-						{
-							Building& bld = simulation.building(buildingIdAtTile);
+						//if (buildingIdAtTile != -1)
+						//{
+						//	Building& bld = simulation.building(buildingIdAtTile);
 
-							// If center is Zoo..
-							if (bld.isEnum(CardEnum::Zoo)) {
-								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
-							}
-						}
-						else
+						//	// If center is Zoo..
+						//	if (bld.isEnum(CardEnum::Zoo)) {
+						//		_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+						//	}
+						//}
+						//else
 						{
 							if (simulation.IsWalkable(location)) {
 								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);

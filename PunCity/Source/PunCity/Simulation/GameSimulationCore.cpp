@@ -3430,7 +3430,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 						unit.Die();
 						AddPopupToFront(command.playerId,
 							FText::Format(
-								LOCTEXT("CapturedAnimal_Succeed", "Captured {0}."),
+								LOCTEXT("CapturedAnimal_Succeed", "Captured {0}.<space>Animal Cards can be slotted into the Zoo for Bonuses."),
 								GetUnitInfo(unit.unitEnum()).name
 							)
 						);
@@ -4990,7 +4990,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			if (bld.CanAddSlotCard())
 			{
 				// Don't allow slotting Mint with "SustainabilityBook"
-				if (commandCardEnum == CardEnum::SustainabilityBook &&
+				if ((commandCardEnum == CardEnum::SustainabilityBook || commandCardEnum == CardEnum::SustainabilityBook2) &&
 					bld.isEnum(CardEnum::Mint))
 				{
 					return;

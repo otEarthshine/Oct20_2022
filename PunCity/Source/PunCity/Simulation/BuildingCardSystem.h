@@ -831,14 +831,58 @@ public:
 					{
 						cardSet[j].stackSize++;
 						removedCount--;
-						if (removedCount == 0) {
-							return;
+						if (removedCount <= 0) {
+							goto endLoop;
 						}
 					}
 				}
 			}
+			endLoop:
+
+			// Not everything was slotted, return the rest to hand
 			if (removedCount > 0) {
 				TryAddCardToBoughtHand(cardStatus.cardEnum, removedCount);
+			}
+
+			// Card Combiner combines card
+			if (cardSetTypeEnum == CardSetTypeEnum::CardCombiner)
+			{
+				for (size_t i = cardSets.size(); i-- > 0;)
+				{
+					std::vector<CardStatus>& cardSet = cardSets[i];
+					if (cardSet.size() > 0)
+					{
+						bool hasEmptySlot = false;
+						for (size_t j = cardSet.size(); j-- > 0;) {
+							if (cardSet[j].stackSize == 0) {
+								hasEmptySlot = true;
+								break;
+							}
+						}
+
+						if (!hasEmptySlot)
+						{
+							// Remove collection cards
+							for (size_t j = cardSet.size(); j-- > 0;) {
+								cardSet[j].stackSize = 0;
+							}
+
+							// Add combined card
+							if (cardSet[0].cardEnum == CardEnum::ProductivityBook) {
+								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::ProductivityBook2, 1));
+							}
+							else if (cardSet[0].cardEnum == CardEnum::SustainabilityBook) {
+								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::SustainabilityBook2, 1));
+							}
+							else if (cardSet[0].cardEnum == CardEnum::Motivation) {
+								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::Motivation2, 1));
+							}
+							else if (cardSet[0].cardEnum == CardEnum::Passion) {
+								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::Passion2, 1));
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -869,7 +913,7 @@ public:
 				}
 			}
 		}
-
+		
 	}
 
 	

@@ -44,6 +44,8 @@ public:
 	float initTime = 0;
 	bool needExclamation = false;
 
+	CardHandEnum cardHandEnum = CardHandEnum::None;
+
 	CardEnum cardEnum() { return cardStatus.cardEnum; }
 
 	bool IsPermanentCard() { return cardHandIndex == -1; }
@@ -81,8 +83,9 @@ public:
 		} else {
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
 			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), buildingEnum));
-			
-			//grayMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconGrayMaterial, this);
+
+			bool isEmptyCollectionSlot = (cardHandEnum == CardHandEnum::CardSetSlots) && cardStatus.stackSize == 0;
+			colorMaterial->SetScalarParameterValue("IsGray", isEmptyCollectionSlot ? 1.0f : 0.0f);
 		}
 
 		BuildingIcon->SetBrushFromMaterial(colorMaterial);
@@ -101,8 +104,12 @@ public:
 	FReply NativeOnMouseButtonDoubleClick(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override {
 		UPunWidget::NativeOnMouseEnter(InGeometry, InMouseEvent);
-		CardGlow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		dataSource()->Spawn2DSound("UI", "CardHover");
+
+		if (cardHandEnum != CardHandEnum::CardSetSlots) 
+		{
+			CardGlow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			dataSource()->Spawn2DSound("UI", "CardHover");
+		}
 	}
 	void NativeOnMouseLeave(const FPointerEvent& InMouseEvent) override {
 		UPunWidget::NativeOnMouseLeave(InMouseEvent);

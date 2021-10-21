@@ -2364,14 +2364,15 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		{
 			if (CardSetsUIOverlay->IsVisible()) {
 				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::Zoo);
+				return;
 			}
-			else {
-				simulation().AddPopupToFront(playerId(),
-					LOCTEXT("ZooCardNeedZoo_Pop", "Animal Cards should be added to Zoo Slots."),
-					ExclusiveUIEnum::None, "PopupCannot"
-				);
-			}
-			return;
+			//else {
+			//	simulation().AddPopupToFront(playerId(),
+			//		LOCTEXT("ZooCardNeedZoo_Pop", "Animal Cards should be added to Zoo Slots."),
+			//		ExclusiveUIEnum::None, "PopupCannot"
+			//	);
+			//}
+			//return;
 		}
 		if (IsArtifactCard(buildingEnum))
 		{
@@ -2389,9 +2390,12 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		if (CardSetsUIOverlay->IsVisible())
 		{
 			if (buildingEnum == CardEnum::ProductivityBook ||
-				buildingEnum == CardEnum::SustainabilityBook) 
+				buildingEnum == CardEnum::SustainabilityBook ||
+				buildingEnum == CardEnum::Motivation ||
+				buildingEnum == CardEnum::Passion)
 			{
 				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::CardCombiner);
+				return;
 			}
 		}
 		
@@ -2616,7 +2620,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					
 					if (building.CanAddSlotCard()) 
 					{
-						if (buildingEnum == CardEnum::SustainabilityBook &&
+						if ((buildingEnum == CardEnum::SustainabilityBook || buildingEnum == CardEnum::SustainabilityBook2) &&
 							building.isEnum(CardEnum::Mint))
 						{
 							simulation().AddPopupToFront(playerId(), 
@@ -2815,6 +2819,21 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 		networkInterface()->SendNetworkCommand(command);
 		
+		return;
+	}
+
+	/*
+	 * SelectCardSetSlotCard
+	 */
+	if (callbackEnum == CallbackEnum::SelectCardSetSlotCard)
+	{
+		auto command = make_shared<FUseCard>();
+		command->callbackEnum = CallbackEnum::SelectCardSetSlotCard;
+		command->cardStatus = cardButton->cardStatus;
+		command->variable2 = cardButton->callbackVar1; // CardSetTypeEnum
+
+		networkInterface()->SendNetworkCommand(command);
+
 		return;
 	}
 

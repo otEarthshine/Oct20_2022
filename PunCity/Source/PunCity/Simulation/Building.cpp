@@ -1441,6 +1441,10 @@ std::vector<BonusPair> Building::GetBonuses()
 	if (slotCardCount(CardEnum::ProductivityBook) > 0) {
 		bonuses.push_back({ LOCTEXT("Productivity Book", "Productivity Book"), slotCardCount(CardEnum::ProductivityBook) * 20 });
 	}
+	if (slotCardCount(CardEnum::ProductivityBook2) > 0) {
+		bonuses.push_back({ LOCTEXT("Productivity+ Book", "Productivity+ Book"), slotCardCount(CardEnum::ProductivityBook2) * 30 });
+	}
+	
 	if (slotCardCount(CardEnum::Passion) > 0) {
 		int32 passionBonus = slotCardCount(CardEnum::Passion) * 15;
 		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism)) {
@@ -1448,12 +1452,27 @@ std::vector<BonusPair> Building::GetBonuses()
 		}
 		bonuses.push_back({ LOCTEXT("Passion", "Passion"), passionBonus });
 	}
+	if (slotCardCount(CardEnum::Passion2) > 0) {
+		int32 passionBonus = slotCardCount(CardEnum::Passion2) * 30;
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism)) {
+			passionBonus /= 2;
+		}
+		bonuses.push_back({ LOCTEXT("Passion+", "Passion+"), passionBonus });
+	}
+	
 	if (slotCardCount(CardEnum::Motivation) > 0) {
 		int32 motivationBonus = max(0, (_simulation->GetAverageHappiness(_townId) - 60) * slotCardCount(CardEnum::Motivation));
 		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism)) {
 			motivationBonus /= 2;
 		}
 		bonuses.push_back({ LOCTEXT("Motivation", "Motivation"), motivationBonus });
+	}
+	if (slotCardCount(CardEnum::Motivation2) > 0) {
+		int32 motivationBonus = max(0, (_simulation->GetAverageHappiness(_townId) - 75) * slotCardCount(CardEnum::Motivation2) * 2);
+		if (_simulation->HasGlobalBonus(_playerId, CardEnum::Communism)) {
+			motivationBonus /= 2;
+		}
+		bonuses.push_back({ LOCTEXT("Motivation+", "Motivation+"), motivationBonus });
 	}
 
 

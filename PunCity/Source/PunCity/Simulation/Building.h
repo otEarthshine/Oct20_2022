@@ -1264,9 +1264,17 @@ public:
 		
 		int32 result = baseInputPerBatch(resourceEnum);
 
-		int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
-		for (int32 i = 0; i < sustainabilityCount; i++) {
-			result = result * 60 / 100; // -40%
+		{
+			int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
+			for (int32 i = 0; i < sustainabilityCount; i++) {
+				result = result * 70 / 100; // -30%
+			}
+		}
+		{
+			int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook2);
+			for (int32 i = 0; i < sustainabilityCount; i++) {
+				result = result * 60 / 100; // -40%
+			}
 		}
 		
 		result = std::max(0, result);
@@ -1495,7 +1503,7 @@ public:
 		}
 		
 		jobHappiness += 20 * slotCardCount(CardEnum::Passion);
-		
+		jobHappiness += 50 * slotCardCount(CardEnum::Passion2);
 
 		jobHappiness = std::max(0, jobHappiness);
 		

@@ -132,7 +132,7 @@ void BuildingCardSystem::RollRareHandExecute()
 	//
 	else if (_rareHandData.rareHandEnum == RareHandEnum::BuildingSlotCards)
 	{
-		RandomInsertToRareHand(BuildingSlotCards);
+		RandomInsertToRareHand(BuildingSlotCards_NoUpgrade);
 	}
 	else if (_rareHandData.rareHandEnum == RareHandEnum::CratesCards)
 	{

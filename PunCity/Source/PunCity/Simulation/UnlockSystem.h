@@ -1086,6 +1086,7 @@ public:
 			
 			/*
 			*/
+			FactionEnum factionEnum = _simulation->GetFactionEnum(_playerId);
 
 			_isMainTree = true;
 			
@@ -1246,11 +1247,16 @@ public:
 			AddTech_Building(TechEnum::Theatre, { TechEnum::Winery },
 				CardEnum::Theatre
 			);
-			
-			AddTech_Building(TechEnum::ShroomFarm, { TechEnum::CoffeeRoaster },
-				CardEnum::MagicMushroomFarm, 
-				TechRequirements::HouseLvlCount(4, 80)
-			);
+
+			if (factionEnum == FactionEnum::Europe) {
+				AddTech_Building(TechEnum::ShroomFarm, { TechEnum::CoffeeRoaster },
+					CardEnum::MagicMushroomFarm,
+					TechRequirements::HouseLvlCount(4, 80)
+				);
+			}
+			else {
+				AddTech_Bonus(TechEnum::SpiceFarming, {});
+			}
 			
 				
 			//

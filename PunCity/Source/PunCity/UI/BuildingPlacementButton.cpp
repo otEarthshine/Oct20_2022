@@ -175,8 +175,10 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	initTime = 0;
 }
 
-void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isReservedForBuying, bool needResource, bool isRareCardHand, bool tryShowBuyText)
+void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnumIn, bool isReservedForBuying, bool needResource, bool isRareCardHand, bool tryShowBuyText)
 {
+	cardHandEnum = cardHandEnumIn;
+	
 	CardEnum buildingEnum = cardStatus.cardEnum;
 
 	if (tryShowBuyText) {
@@ -235,13 +237,12 @@ void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isR
 	BuildingNameRichText->SetDefaultTextStyle(textBoxStyle);
 
 	/*
-	 * BuildingIcon
+	 * 
 	 */
 	{
 		// Don't show 
 		bool showNeedResourceUI = !isReservedForBuying && needResource;
 
-		//BuildingIcon->SetBrushFromMaterial(showNeedResourceUI ? grayMaterial : colorMaterial);
 		BuildingIcon->GetDynamicMaterial()->SetScalarParameterValue("IsGray", showNeedResourceUI || isEmptyCollectionSlot ? 1.0f : 0.0f);
 
 		NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));

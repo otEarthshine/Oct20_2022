@@ -2325,10 +2325,14 @@ enum class CardEnum : uint16
 	CompaniesAct,
 
 	ProductivityBook,
+	ProductivityBook2,
 	SustainabilityBook,
+	SustainabilityBook2,
 	FrugalityBook,
 	Motivation,
+	Motivation2,
 	Passion,
+	Passion2,
 	
 	DesertPilgrim,
 
@@ -3367,7 +3371,8 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(10, 9), GetBldResourceInfoManual({ 50, 50 })
 	),
 	BldInfo(CardEnum::CardMaker, _LOCTEXT("Scholars Office", "Scholars Office"), LOCTEXT("Scholars Office (Plural)", "Scholars Offices"), LOCTEXT("Scholars Office Desc", "Craft a Card from Paper."),
-		WorldTile2(10, 8), GetBldResourceInfo(2, { ResourceEnum::Paper, ResourceEnum::None }, { 1, 1, 1, 1 }, 80)
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Paper, ResourceEnum::None }, { 1, 1, 1, 1 }, 80)
+		//Old: WorldTile2(10, 8)
 	),
 	BldInfo(CardEnum::ImmigrationOffice, _LOCTEXT("Immigration Office", "Immigration Office"), LOCTEXT("Immigration Office (Plural)", "Immigration Offices"), LOCTEXT("Immigration Office Desc", "Attract new immigrants."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({50}, 1)
@@ -3822,10 +3827,14 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::CompaniesAct,			_LOCTEXT("Companies Act", "Companies Act"), 200, LOCTEXT("Companies Act Desc", "-10% trade fees for Trading Companies.")),
 
 	BldInfo(CardEnum::ProductivityBook,	_LOCTEXT("Productivity Book", "Productivity Book"), 100, LOCTEXT("Productivity Book Desc", "+20% productivity")),
-	BldInfo(CardEnum::SustainabilityBook,_LOCTEXT("Sustainability Book", "Sustainability Book"), 100, LOCTEXT("Sustainability Book Desc","Consume 40% less input")),
+	BldInfo(CardEnum::ProductivityBook2,_LOCTEXT("Productivity+ Book", "Productivity+ Book"),	100, LOCTEXT("Productivity+ Book Desc", "+30% productivity")),
+	BldInfo(CardEnum::SustainabilityBook,_LOCTEXT("Sustainability Book", "Sustainability Book"), 100, LOCTEXT("Sustainability Book Desc","Consume 30% less input")),
+	BldInfo(CardEnum::SustainabilityBook2,_LOCTEXT("Sustainability+ Book", "Sustainability+ Book"), 100, LOCTEXT("Sustainability+ Book Desc","Consume 40% less input")),
 	BldInfo(CardEnum::FrugalityBook,		_LOCTEXT("Frugality Book", "Frugality Book"), 100, LOCTEXT("Frugality Book Desc",  "Decrease upkeep by 70%.")),
 	BldInfo(CardEnum::Motivation,	_LOCTEXT("Motivation", "Motivation"), 100, LOCTEXT("Motivation Desc", "Every 1% Happiness above 60%, gives +1% productivity")),
+	BldInfo(CardEnum::Motivation2,	_LOCTEXT("Motivation+", "Motivation+"), 100, LOCTEXT("Motivation+ Desc", "Every 1% Happiness above 75%, gives +2% productivity")),
 	BldInfo(CardEnum::Passion,		_LOCTEXT("Passion", "Passion"), 100, LOCTEXT("Passion Desc", "+20% Job Happiness, +15% Productivity")),
+	BldInfo(CardEnum::Passion2,		_LOCTEXT("Passion+", "Passion+"), 100, LOCTEXT("Passion+ Desc", "+50% Job Happiness, +30% Productivity")),
 
 	
 	BldInfo(CardEnum::DesertPilgrim,		_LOCTEXT("Desert Pilgrim", "Desert Pilgrim"), 200, LOCTEXT("Desert Pilgrim Desc", "Houses built on Desert get +10<img id=\"Coin\"/>.")),
@@ -4217,14 +4226,26 @@ static bool IsArtifactCard(CardEnum cardEnum) {
 	return IsCardEnumBetween(cardEnum, CardEnum::Codex, CardEnum::AncientStaff);
 }
 
-
-static const std::vector<CardEnum> BuildingSlotCards
+static const std::vector<CardEnum> BuildingSlotCards_NoUpgrade
 {
 	CardEnum::ProductivityBook,
 	CardEnum::SustainabilityBook,
 	CardEnum::FrugalityBook,
 	CardEnum::Motivation,
 	CardEnum::Passion,
+};
+
+static const std::vector<CardEnum> BuildingSlotCards
+{
+	CardEnum::ProductivityBook,
+	CardEnum::ProductivityBook2,
+	CardEnum::SustainabilityBook,
+	CardEnum::SustainabilityBook2,
+	CardEnum::FrugalityBook,
+	CardEnum::Motivation,
+	CardEnum::Motivation2,
+	CardEnum::Passion,
+	CardEnum::Passion2,
 };
 
 static bool IsBuildingSlotCard(CardEnum cardEnum)
@@ -4755,6 +4776,8 @@ static bool IsAutoEraUpgrade(CardEnum buildingEnumIn) { // Upgrade with era with
 	case CardEnum::TradingCompany:
 	case CardEnum::TradingPort:
 	case CardEnum::TradingPost:
+
+	case CardEnum::IrrigationPump:
 		return false;
 	default: break;
 	}
@@ -6319,6 +6342,7 @@ enum class TechEnum : uint8
 	BlueberryFarming,
 	MelonFarming,
 	PumpkinFarming,
+	SpiceFarming,
 	
 	Plantation,
 	
@@ -10549,8 +10573,11 @@ static const std::vector<CardSetInfo> MuseumSetInfos
 
 static const std::vector<CardSetInfo> CardCombinerSetInfos
 {
-	CardSetInfo(LOCTEXT("Productivity Book II", "Productivity Book II"), LOCTEXT("", ""), { CardEnum::ProductivityBook, CardEnum::ProductivityBook, CardEnum::ProductivityBook }),
-	CardSetInfo(LOCTEXT("Sustainanility Book II", "Sustainanility Book II"), LOCTEXT("", ""), { CardEnum::SustainabilityBook, CardEnum::SustainabilityBook, CardEnum::SustainabilityBook }),
+	CardSetInfo(LOCTEXT("Productivity+ Book", "Productivity+ Book"), LOCTEXT("", ""), { CardEnum::ProductivityBook, CardEnum::ProductivityBook, CardEnum::ProductivityBook }),
+	CardSetInfo(LOCTEXT("Sustainanility+ Book", "Sustainanility+ Book"), LOCTEXT("", ""), { CardEnum::SustainabilityBook, CardEnum::SustainabilityBook, CardEnum::SustainabilityBook }),
+	
+	CardSetInfo(LOCTEXT("Motivation+ Book", "Motivation+ Book"), LOCTEXT("", ""), { CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation }),
+	CardSetInfo(LOCTEXT("Passion+ Book", "Passion+ Book"), LOCTEXT("", ""), { CardEnum::Passion, CardEnum::Passion, CardEnum::Passion, CardEnum::Passion, CardEnum::Passion }),
 };
 
 #undef LOCTEXT_NAMESPACE

@@ -3171,9 +3171,8 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		}
 
 		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().moneyCap32(playerId)) {
-			_gameInterface->simulation().AddEventLog(playerId, 
-				LOCTEXT("PlacementNoMoney", "Not enough money."), 
-				true
+			_gameInterface->simulation().AddPopupToFront(playerId, 
+				LOCTEXT("PlacementNoMoney", "Not enough money.")
 			);
 			return;
 		}
@@ -3196,9 +3195,8 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 		}
 
 		if (goldNeeded > 0 && goldNeeded > _gameInterface->simulation().moneyCap32(playerId)) {
-			_gameInterface->simulation().AddEventLog(playerId,
-				LOCTEXT("PlacementNoMoney", "Not enough money."),
-				true
+			_gameInterface->simulation().AddPopupToFront(playerId,
+				LOCTEXT("PlacementNoMoney", "Not enough money.")
 			);
 			return;
 		}

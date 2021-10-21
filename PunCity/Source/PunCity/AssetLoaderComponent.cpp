@@ -220,10 +220,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost_Era", "TradingPost", 1);
 	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "", "TradingCompany", 2);
 
-	LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era", "ScholarsOffice_Era", "ScholarsOffice", 2);
-
-	
-	LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives_Era", "Archives", 2);
+	//LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era", "ScholarsOffice_Era", "ScholarsOffice", 2);
+	//LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives_Era", "Archives", 2);
+	LoadBuilding(CardEnum::CardMaker, "Archives_Era", "Archives_Era", "Archives", 2);
 
 	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice_Era", "ImmigrationOffice", 1);
 	

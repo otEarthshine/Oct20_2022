@@ -679,7 +679,7 @@ public:
 					cardSetBox->SetVisibility(ESlateVisibility::Collapsed);
 					cardSetBoxRow->GetChildAt(j - 1)->SetVisibility(ESlateVisibility::Collapsed);
 
-					auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(1));
+					auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(2));
 					for (int32 k = cardSetsUISlots->GetChildrenCount(); k-- > 0;) {
 						auto cardButton = CastChecked<UBuildingPlacementButton>(cardSetsUISlots->GetChildAt(k));
 						cardButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -720,7 +720,7 @@ public:
 			auto cardSetsUITitleText = CastChecked<UTextBlock>(cardSetBox->GetChildAt(0));
 			cardSetsUITitleText->SetText(cardSetTypeInfos[cardSetTypeInfoIndex].name);
 
-			auto cardSetsUIDescriptionText = CastChecked<URichTextBlock>(cardSetBox->GetChildAt(1));
+			auto cardSetsUIDescriptionText = CastChecked<URichTextBlock>(CastChecked<USizeBox>(cardSetBox->GetChildAt(1))->GetChildAt(0));
 			cardSetsUIDescriptionText->SetText(cardSetTypeInfos[cardSetTypeInfoIndex].description);
 
 			auto cardSetsUISlots = CastChecked<UHorizontalBox>(cardSetBox->GetChildAt(2));
@@ -734,6 +734,7 @@ public:
 					cardButton->PunInit(cardSet[i], i, this, CallbackEnum::SelectCardSetSlotCard, CardHandEnum::CardSetSlots);
 					cardButton->SetCardStatus(CardHandEnum::CardSetSlots, false, false);
 					cardButton->RefreshBuildingIcon(assetLoader());
+					cardButton->callbackVar1 = static_cast<int32>(cardSetTypeEnum);
 				}
 				else {
 					cardButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -772,6 +773,8 @@ public:
 
 			fillCardSet(0, 0, CardCombinerSetInfos);
 			fillCardSet(0, 1, CardCombinerSetInfos);
+			fillCardSet(1, 0, CardCombinerSetInfos);
+			fillCardSet(2, 0, CardCombinerSetInfos);
 		}
 	}
 

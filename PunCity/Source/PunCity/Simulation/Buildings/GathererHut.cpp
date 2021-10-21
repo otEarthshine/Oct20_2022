@@ -808,7 +808,7 @@ void Winery::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_Money(LOCTEXT("Wine Appreciation", "Wine Appreciation"), 50),
+		MakeProductionUpgrade_Money(LOCTEXT("Wine Appreciation", "Wine Appreciation"), 30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Wine Recipes", "Wine Recipes"), ResourceEnum::Paper, 5),
 		MakeComboUpgrade(LOCTEXT("Wine Town", "Wine Town"), ResourceEnum::Brick),
 	});
@@ -835,7 +835,7 @@ void CoffeeRoaster::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_Money(LOCTEXT("Coffee Appreciation", "Coffee Appreciation"), 50),
+		MakeProductionUpgrade_Money(LOCTEXT("Coffee Appreciation", "Coffee Appreciation"), 30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Improved Roasting Stage", "Improved Roasting Stage"), ResourceEnum::Paper, 5),
 		MakeComboUpgrade(LOCTEXT("Coffee Town", "Coffee Town"), ResourceEnum::Brick),
 	});
@@ -876,7 +876,7 @@ void Tailor::FinishConstruction() {
 	ChangeWorkMode(_workMode);
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Weaving Machine", "Weaving Machine"), ResourceEnum::Iron, 55),
+		MakeProductionUpgrade(LOCTEXT("Weaving Machine", "Weaving Machine"), ResourceEnum::Iron, 40),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Weaver Recipes", "Weaver Recipes"), ResourceEnum::Paper, 4),
 		MakeComboUpgrade(LOCTEXT("Tailor Town", "Tailor Town"), ResourceEnum::Iron),
 	});
@@ -1062,7 +1062,7 @@ void Jeweler::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Rigorous Training", "Rigorous Training"), ResourceEnum::Brick, 50),
+		MakeProductionUpgrade(LOCTEXT("Rigorous Training", "Rigorous Training"), ResourceEnum::Brick, 30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 7),
 		MakeComboUpgrade(LOCTEXT("Jeweler's Guild", "Jeweler's Guild"), ResourceEnum::Brick),
 	});
@@ -1075,7 +1075,7 @@ void Brickworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::Stone, 50),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::Stone, 30),
 		MakeComboUpgrade(LOCTEXT("Brickworks Town", "Brickworks Town"), ResourceEnum::Brick),
 	});
 }
@@ -1087,7 +1087,7 @@ void CandleMaker::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 50),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 30),
 		MakeComboUpgrade(LOCTEXT("Candle Maker Guild", "Candle Maker Guild"), ResourceEnum::Brick),
 	});
 }
@@ -1353,7 +1353,7 @@ void Mine::FinishConstruction() {
 	AddUpgrades({
 		MakeWorkerSlotUpgrade(100, 4),
 		MakeUpgrade(LOCTEXT("Improved shift", "Improved shift"), LOCTEXT("Mine with full worker slots get 20% productivity", "Mine with full worker slots get 20% productivity"), 40),
-		MakeProductionUpgrade(LOCTEXT("Wide Shaft", "Wide Shaft"), ResourceEnum::Stone, 50)
+		MakeProductionUpgrade(LOCTEXT("Wide Shaft", "Wide Shaft"), ResourceEnum::Stone, 30)
 	});
 
 }
@@ -1396,11 +1396,20 @@ void Mine::OnProduce(int32 productionAmount)
 		depletionMultiplier += 30;
 	}
 
-	int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
-	for (int32 i = 0; i < sustainabilityCount; i++) {
-		depletionMultiplier = depletionMultiplier * 50 / 100;
+	{
+		int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook);
+		for (int32 i = 0; i < sustainabilityCount; i++) {
+			depletionMultiplier = depletionMultiplier * 70 / 100;
+		}
+	}
+	{
+		int32 sustainabilityCount = slotCardCount(CardEnum::SustainabilityBook2);
+		for (int32 i = 0; i < sustainabilityCount; i++) {
+			depletionMultiplier = depletionMultiplier * 60 / 100;
+		}
 	}
 
+	
 	if (_simulation->HasGlobalBonus(_playerId, CardEnum::Geologist)) {
 		depletionMultiplier = depletionMultiplier * 50 / 100;
 	}
@@ -1820,7 +1829,7 @@ void Glassworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Glass Annealer", "Glass Annealer"), ResourceEnum::Brick, 55),
+		MakeProductionUpgrade(LOCTEXT("Glass Annealer", "Glass Annealer"), ResourceEnum::Brick, 30),
 		MakeComboUpgrade(LOCTEXT("Glassworks Town", "Glassworks Town"), ResourceEnum::Brick),
 	});
 }
@@ -1828,7 +1837,7 @@ void ConcreteFactory::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::Steel, 55),
+		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::Steel, 30),
 		MakeComboUpgrade(LOCTEXT("Concrete Factory Town", "Concrete Factory Town"), ResourceEnum::Concrete),
 	});
 }

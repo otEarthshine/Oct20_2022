@@ -361,6 +361,9 @@ public:
 		return playerId;
 	}
 
+	virtual FactionEnum GetFactionEnum(int32 playerId) override {
+		return _playerOwnedManagers[playerId].factionEnum();
+	}
 	
 	
 	bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) final {

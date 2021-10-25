@@ -588,10 +588,15 @@ public:
 	
 	virtual int32 resourceCountTown(int32 townId, ResourceEnum resourceEnum) = 0;
 	virtual int32 resourceCountTownSafe(int32 townId, ResourceEnum resourceEnum) = 0;
+
+	virtual int32 resourceCountTownWithMoney(int32 townId, ResourceEnum resourceEnum) = 0;
 	
 	virtual int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) = 0;
 
 	virtual void AddResourceGlobal(int32 townId, ResourceEnum resourceEnum, int32 amount) = 0;
+
+	virtual void AddResourceGlobal_WithMoney(int32 townId, ResourceEnum resourceEnum, int32 amount) = 0;
+	virtual void RemoveResourceGlobal_WithMoney(int32 townId, ResourceEnum resourceEnum, int32 amount) = 0;
 
 	virtual bool IsOutputTargetReached(int32 townId, ResourceEnum resourceEnum) = 0;
 	
@@ -685,7 +690,7 @@ public:
 
 	virtual WorldAtom2 homeAtom(int32 townId) = 0;
 
-	virtual void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,
+	virtual void CheckPortArea(BuildPlacement placement, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,
 								bool& setDockInstruction, int32 playerId = -1, int32 extraMinWaterCount = 0) = 0;
 
 	//! Snow

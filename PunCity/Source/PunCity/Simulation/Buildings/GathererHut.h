@@ -1576,6 +1576,8 @@ public:
 	}
 
 	virtual void OnDeinit() override;
+
+	int32 maxCardSlots() override { return 0; }
 };
 
 

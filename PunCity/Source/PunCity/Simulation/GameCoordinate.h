@@ -1049,23 +1049,6 @@ struct TileArea
 	}
 };
 
-struct BuildPlacement
-{
-public:
-	WorldTile2 centerTile = WorldTile2::Invalid;
-	WorldTile2 size = WorldTile2::Invalid;
-	Direction faceDirection = Direction::S;
-
-	bool isValid() const { return centerTile.isValid(); }
-
-	FArchive& operator>>(FArchive &Ar) {
-		centerTile >> Ar;
-		size >> Ar;
-		Ar << faceDirection;
-		return Ar;
-	}
-};
-
 
 struct WorldTile2x2
 {

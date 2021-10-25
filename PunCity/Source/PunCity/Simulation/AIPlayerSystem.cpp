@@ -676,11 +676,12 @@ void AIPlayerSystem::Tick1Sec()
 							for (int32 i = 0; i < DirectionCount; i++)
 							{
 								Direction faceDirection = static_cast<Direction>(i);
-								TileArea area = BuildingArea(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
+								BuildPlacement placement(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
+								//TileArea area = BuildingArea(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
 
 								std::vector<PlacementGridInfo> grids;
 								bool setDockInstruction;
-								_simulation->CheckPortArea(area, faceDirection, CardEnum::Fisher, grids, setDockInstruction, _aiPlayerId);
+								_simulation->CheckPortArea(placement, CardEnum::Fisher, grids, setDockInstruction, _aiPlayerId);
 
 								bool isBuildable = true;
 								for (const PlacementGridInfo& grid : grids) {

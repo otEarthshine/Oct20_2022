@@ -218,10 +218,10 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 				);
 			}
 
-			if (IsStorageTooLarge(TileArea(WorldTile2(0, 0), WorldTile2(sizeX, sizeY)))) {
-				//ss << "\n" << "<Red>Width and Height must be less than 8</>";
-				ADDTEXT_LOCTEXT("StorageYard_BuildInstructionTooLarge", "\n<Red>Width and Height must be less than 8</>");
-			}
+			//if (IsStorageTooLarge(TileArea(WorldTile2(0, 0), WorldTile2(sizeX, sizeY)))) {
+			//	//ss << "\n" << "<Red>Width and Height must be less than 8</>";
+			//	ADDTEXT_LOCTEXT("StorageYard_BuildInstructionTooLarge", "\n<Red>Width and Height must be less than 8</>");
+			//}
 		}
 		SetInstruction(PlacementInstructionEnum::DragStorageYard, true, JOINTEXT(args));
 	}
@@ -925,11 +925,11 @@ void ABuildingPlacementSystem::TickAreaDrag(WorldAtom2 cameraAtom, function<Plac
 			{
 				_canPlace = _placementGrid.IsDisplayCountZero(PlacementGridEnum::Red);
 
-				if (_buildingEnum == CardEnum::StorageYard) {
-					if (IsStorageTooLarge(_area)) {
-						_canPlace = false;
-					}
-				}
+			//	if (_buildingEnum == CardEnum::StorageYard) {
+			//		if (IsStorageTooLarge(_area)) {
+			//			_canPlace = false;
+			//		}
+			//	}
 			}
 		}
 	}
@@ -1719,19 +1719,22 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			
 			_area3 = _area;
 			
-			if (isOddX) {
-				if (_area.minX == _area2.minX)	{
-					_area3.maxX--;
-				} else {
-					_area3.minX++;
-				}
+			if (_area.minX == _area2.minX) { // Note: _area2 is the cached initial 2x2 area without drag
+				if (isOddX) _area3.maxX--;
+				_area3.maxX = std::min(static_cast<int32>(_area3.maxX), _area3.minX + 7);
 			}
-			if (isOddY) {
-				if (_area.minY == _area2.minY) {
-					_area3.maxY--;
-				} else {
-					_area3.minY++;
-				}
+			else {
+				if (isOddX) _area3.minX++;
+				_area3.minX = std::max(static_cast<int32>(_area3.minX), _area3.maxX - 7);
+			}
+			
+			if (_area.minY == _area2.minY) {
+				if (isOddY) _area3.maxY--;
+				_area3.maxY = std::min(static_cast<int32>(_area3.maxY), _area3.minY + 7);
+			}
+			else {
+				if (isOddY) _area3.minY++;
+				_area3.minY = std::max(static_cast<int32>(_area3.minY), _area3.maxY - 7);
 			}
 			
 			TickAreaDrag(cameraAtom, [&](WorldTile2 tile)
@@ -1739,6 +1742,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				if (IsPlayerBuildable(tile) && !isAllRed) {
 					return _area3.HasTile(tile) ? PlacementGridEnum::Green : PlacementGridEnum::Gray;
 				}
+				// Beyond _area3, show only gray
+				if (!_area3.HasTile(tile)) {
+					return PlacementGridEnum::Gray;
+				}
+				
 				return PlacementGridEnum::Red;
 			});
 
@@ -1851,7 +1859,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	 */
 	BldInfo buildingInfo = GetBuildingInfo(_buildingEnum);
 	WorldTile2 size = buildingInfo.size;
-	_area = BuildingArea(_mouseOnTile, size, _faceDirection);
+	BuildPlacement placement(_mouseOnTile, size, _faceDirection);
+	_area = placement.area();
 
 	bool useNormalPlacement = true;
 	bool isAllRed = false;
@@ -2036,12 +2045,12 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						//else
 						{
 							if (simulation.IsWalkable(location)) {
-								_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, location);
+								_placementGrid.SpawnGrid(simulation.IsWalkable(location) ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
 							}
 							else {
 								_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, location);
 							}
-							SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Animal should be placed in a Zoo", "Animal should be placed in a Zoo"));
+							SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Release Animal", "Release Animal"));
 						}
 						return;
 					}
@@ -2160,7 +2169,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			{
 				bool setDockInstruct = false;
 				std::vector<PlacementGridInfo> grids;
-				simulation.CheckPortArea(_area, _faceDirection, _buildingEnum, grids, setDockInstruct, portPlayerId);
+				simulation.CheckPortArea(placement, _buildingEnum, grids, setDockInstruct, portPlayerId);
 
 				for (PlacementGridInfo& gridInfo : grids) {
 					_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
@@ -2626,13 +2635,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					WorldTile2 portCenter = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
 					if (portCenter.isValid())
 					{
-						TileArea portArea = BuildingArea(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, auxFaceDirection);
-
-						portArea.EnforceWorldLimit();
+						BuildPlacement portPlacement(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, auxFaceDirection);
 
 						bool setDockInstruct = false;
 						std::vector<PlacementGridInfo> grids;
-						simulation.CheckPortArea(portArea, auxFaceDirection, CardEnum::IntercityLogisticsPort, grids, setDockInstruct);
+						simulation.CheckPortArea(portPlacement, CardEnum::IntercityLogisticsPort, grids, setDockInstruct);
 
 						for (PlacementGridInfo& gridInfo : grids) {
 							_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location, gridInfo.direction);
@@ -3174,6 +3181,8 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			_gameInterface->simulation().AddPopupToFront(playerId, 
 				LOCTEXT("PlacementNoMoney", "Not enough money.")
 			);
+			CancelPlacement();
+			networkInterface->OnCancelPlacement();
 			return;
 		}
 	}
@@ -3198,6 +3207,8 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 			_gameInterface->simulation().AddPopupToFront(playerId,
 				LOCTEXT("PlacementNoMoney", "Not enough money.")
 			);
+			CancelPlacement();
+			networkInterface->OnCancelPlacement();
 			return;
 		}
 	}

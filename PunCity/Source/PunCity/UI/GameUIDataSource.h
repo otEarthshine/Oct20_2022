@@ -190,6 +190,7 @@ struct FPlayerInfo
 	GENERATED_BODY();
 
 	UPROPERTY() FText name;
+	UPROPERTY() uint64 steamId64 = MAX_uint64;
 
 	UPROPERTY() int32 logoIndex = 0;
 	UPROPERTY() FLinearColor logoColorBackground = FLinearColor::Black;
@@ -197,11 +198,16 @@ struct FPlayerInfo
 	UPROPERTY() int32 characterIndex = 0;
 	UPROPERTY() int32 factionIndex = 0;
 
+	bool IsEmpty() { return steamId64 == MAX_uint64; }
+	
+
 	FactionEnum factionEnum() const { return static_cast<FactionEnum>(factionIndex); }
 
 	friend FArchive& operator<<(FArchive& Ar, FPlayerInfo& object)
 	{
 		Ar << object.name;
+		Ar << object.steamId64;
+		
 		Ar << object.logoIndex;
 		Ar << object.logoColorBackground;
 		Ar << object.logoColorForeground;

@@ -2362,7 +2362,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		
 		if (IsZooAnimalCard(buildingEnum))
 		{
-			if (CardSetsUIOverlay->IsVisible()) {
+			if (CardSetsUIOverlay->IsVisible() && cardSetTypeEnum == CardSetTypeEnum::Zoo) {
 				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::Zoo);
 				return;
 			}
@@ -2376,18 +2376,18 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		}
 		if (IsArtifactCard(buildingEnum))
 		{
-			if (CardSetsUIOverlay->IsVisible()) {
+			if (CardSetsUIOverlay->IsVisible() && cardSetTypeEnum == CardSetTypeEnum::Museum) {
 				trySlotCard(CallbackEnum::CardSetSlotting, CardSetTypeEnum::Museum);
 			}
 			else {
 				simulation().AddPopupToFront(playerId(),
 					LOCTEXT("ArtifactNeedMuseum_Pop", "Artifact Cards should be added to Museum Slots."),
-					ExclusiveUIEnum::None, "PopupCannot"
+					ExclusiveUIEnum::CardSetsUI, "PopupCannot"
 				);
 			}
 			return;
 		}
-		if (CardSetsUIOverlay->IsVisible())
+		if (CardSetsUIOverlay->IsVisible() && cardSetTypeEnum == CardSetTypeEnum::CardCombiner)
 		{
 			if (buildingEnum == CardEnum::ProductivityBook ||
 				buildingEnum == CardEnum::SustainabilityBook ||

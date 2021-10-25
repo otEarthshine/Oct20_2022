@@ -843,8 +843,11 @@ public:
 	virtual void SetOverlayProvince(bool showProvinceOverlay) final {
 		_showProvinceOverlay = showProvinceOverlay;
 	}
-	virtual void ToggleOverlayProvince() final {
+	virtual void ToggleOverlayProvince() override {
 		_showProvinceOverlay = !_showProvinceOverlay;
+	}
+	virtual void ToggleOverlayDefense() override {
+		_showDefenseOverlay = !_showDefenseOverlay;
 	}
 
 	virtual bool isShowingDefenseOverlay() override {
@@ -858,6 +861,9 @@ public:
 	
 	virtual void ToggleOverlayFertility() final {
 		SetOverlayType((GetOverlayType() == OverlayType::Farm) ? OverlayType::None : OverlayType::Farm, OverlaySetterType::OverlayToggler);
+	}
+	virtual void ToggleOverlayAppeal() override {
+		SetOverlayType((GetOverlayType() == OverlayType::Appeal) ? OverlayType::None : OverlayType::Appeal, OverlaySetterType::OverlayToggler);
 	}
 	
 

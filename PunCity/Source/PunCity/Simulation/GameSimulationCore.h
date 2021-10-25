@@ -419,6 +419,14 @@ public:
 		PUN_ENSURE(IsValidTown(townId), return 0);
 		return _resourceSystems[townId].resourceCount(resourceEnum);
 	}
+
+	virtual int32 resourceCountTownWithMoney(int32 townId, ResourceEnum resourceEnum) override
+	{
+		if (resourceEnum == ResourceEnum::Money) {
+			return moneyCap32(townPlayerId(townId));
+		}
+		return resourceCountTown(townId, resourceEnum);
+	}
 	
 	int32 resourceCountPlayer(int32 playerId, ResourceEnum resourceEnum) final {
 		const auto& townIds = GetTownIds(playerId);
@@ -449,6 +457,24 @@ public:
 	void AddResourceGlobal(int32 townId, ResourceEnum resourceEnum, int32 amount) final {
 		resourceSystem(townId).AddResourceGlobal(resourceEnum, amount, *this);
 	}
+
+	virtual void AddResourceGlobal_WithMoney(int32 townId, ResourceEnum resourceEnum, int32 amount) override
+	{
+		if (resourceEnum == ResourceEnum::Money) {
+			ChangeMoney(townPlayerId(townId), amount);
+		} else {
+			AddResourceGlobal(townId, resourceEnum, amount);
+		}
+	}
+	virtual void RemoveResourceGlobal_WithMoney(int32 townId, ResourceEnum resourceEnum, int32 amount) override
+	{
+		if (resourceEnum == ResourceEnum::Money) {
+			ChangeMoney(townPlayerId(townId), -amount);
+		} else {
+			resourceSystem(townId).RemoveResourceGlobal(resourceEnum, amount);
+		}
+	}
+	
 
 	bool IsOutputTargetReached(int32 townId, ResourceEnum resourceEnum) final {
 		if (resourceEnum == ResourceEnum::None) {
@@ -2325,7 +2351,7 @@ public:
 		}
 		check(nearestDistance < INT_MAX);
 
-		int32 result =  GetAnimalBaseCost(unitEnum) + nearestDistance;
+		int32 result =  GetAnimalBaseCost(unitEnum) + nearestDistance * 5;
 		return result / 10 * 10;
 	}
 
@@ -4165,9 +4191,22 @@ public:
 		return adjacentAttackerTownIds;
 	}
 	
-	virtual void CheckPortArea(TileArea area, Direction faceDirection, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids, 
+	virtual void CheckPortArea(BuildPlacement placement, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,
 						bool& setDockInstruction, int32 playerId = -1, int32 extraMinWaterCount = 0) override // player == -1 means no player check
 	{
+		TileArea area = placement.area();
+		
+		// If center not in player's territory
+		if (!GameMap::IsInGrid(placement.centerTile.x, placement.centerTile.y) ||
+			!IsTileBuildableForPlayer(placement.centerTile, playerId))
+		{
+			// Return all red tiles
+			area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+				grids.push_back({ PlacementGridEnum::Red, tile });
+			});
+			return;
+		}
+		
 		auto extraInfoPair = DockPlacementExtraInfo(buildingEnum);
 		int32 indexLandEnd = extraInfoPair.first;
 		int32 minWaterCount = extraInfoPair.second + extraMinWaterCount;
@@ -4179,7 +4218,7 @@ public:
 		{
 			if (GameMap::IsInGrid(tile.x, tile.y) && IsTileBuildableForPlayer(tile, playerId))
 			{
-				int steps = GameMap::GetFacingStep(faceDirection, area, tile);
+				int steps = GameMap::GetFacingStep(placement.faceDirection, area, tile);
 				if (steps <= indexLandEnd) { // 0,1
 					bool isGreen = IsPlayerBuildable(tile, playerId);
 					grids.push_back({ isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, tile });
@@ -4198,12 +4237,12 @@ public:
 		// Otherwise make it green on water, and gray on non-water
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
 		{
-			int steps = GameMap::GetFacingStep(faceDirection, area, tile);
+			int steps = GameMap::GetFacingStep(placement.faceDirection, area, tile);
 			if (steps > indexLandEnd) 
 			{
 				// Last step is water
 				if (useLastStep && 
-					GameMap::IsLastStep(faceDirection, area, tile) &&
+					GameMap::IsLastStep(placement.faceDirection, area, tile) &&
 					!IsWater(tile))
 				{
 					grids.push_back({ PlacementGridEnum::Red, tile });

@@ -630,13 +630,15 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					};
 
 					// Some building upgrade according to Town Lvl
-					int32 variationIndexShift = (sim.GetTownLvl(sim.tileOwnerTown(ditchTile.tile)) - 1) * 6;
+					//int32 townLvl = sim.GetTownLvl(sim.tileOwnerTown(ditchTile.tile));
+					//int32 variationIndexShift = (townLvl - 1) * 6;
+					int32 variationIndexShift = 0;
 
 					addMeshes(static_cast<int32_t>(connectInfo.first) + variationIndexShift);
 
 					// Ditch Road Bridge
-					if (sim.IsRoadTile(ditchTile.tile + variationIndexShift)) {
-						addMeshes(5);
+					if (sim.IsRoadTile(ditchTile.tile)) {
+						addMeshes(5 + variationIndexShift);
 					}
 				}
 			}

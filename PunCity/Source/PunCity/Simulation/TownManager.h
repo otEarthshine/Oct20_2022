@@ -656,14 +656,16 @@ public:
 		_pendingTrainCommands.push_back(command);
 	}
 
-	int32 GetTrainUnitCost(CardEnum cardEnum) {
-		return GetBuildingInfo(cardEnum).baseCardPrice;
+	ResourcePair GetTrainUnitCost(CardEnum cardEnum) {
+		return GetMilitaryInfo(cardEnum).resourceCost;
 	}
 	static int32 GetTrainingLengthTicks(CardEnum cardEnum)
 	{
-		int32 price = GetBuildingInfo(cardEnum).baseCardPrice;
-		const int32 moneyCostPerSec = 20;
-		return Time::TicksPerSecond * price / moneyCostPerSec;
+		if (SimSettings::IsOn("CheatFastBuild")) {
+			return Time::TicksPerSecond * 3;
+		}
+		int32 secsPerMoneyCost = 2;
+		return Time::TicksPerSecond * GetMilitaryInfo(cardEnum).allCostCombined() * secsPerMoneyCost;
 	}
 
 	float GetTrainingFraction()
@@ -678,98 +680,7 @@ public:
 		TrainUnits_Helper(command, _trainUnitsQueue, true);
 	}
 	
-	void TrainUnits_Helper(const FUseCard& command, std::vector<CardStatus>& trainUnitsQueue, bool isRealAction)
-	{
-		//check(_pendingTrainCommands.size() > 0);
-		//check(_pendingTrainCommands[0] == command);
-		if (isRealAction) {
-			// Remove the command if possible
-			CppUtils::TryRemove(_pendingTrainCommands, command);
-		}
-
-		CardEnum cardEnum = command.cardStatus.cardEnum;
-
-		/*
-		 * Cancel Train
-		 */
-		if (command.callbackEnum == CallbackEnum::CancelTrainUnit)
-		{
-			for (int32 i = trainUnitsQueue.size(); i-- > 0;)
-			{
-				if (trainUnitsQueue[i].cardBirthTicks == command.variable2) 
-				{
-					trainUnitsQueue[i].stackSize -= command.variable1;
-					trainUnitsQueue[i].stackSize = std::max(0, trainUnitsQueue[i].stackSize);
-
-					// Real Action: return the money
-					if (isRealAction) {
-						_simulation->ChangeMoney(_playerId, GetBuildingInfo(trainUnitsQueue[i].cardEnum).baseCardPrice);
-					}
-
-					// Remove stack if the size is 0
-					if (trainUnitsQueue[i].stackSize == 0) {
-						trainUnitsQueue.erase(trainUnitsQueue.begin() + i);
-
-						// Real Action: If this is the first stack, reset the timer
-						if (isRealAction && i == 0) {
-							_trainUnitsTicks100 = 0;
-						}
-					}
-					return;
-				}
-			}
-			return;
-		}
-
-		/*
-		 * Train
-		 */
-		// Real Action: pay money
-		int32 trainingCount = command.variable1;
-		if (isRealAction) 
-		{
-			int32 cardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
-
-			// Must be able to train at least one unit
-			if (_simulation->moneyCap32(_playerId) >= cardPrice) 
-			{
-				// Can't train more than money allows
-				int32 maxPossibleTraining = _simulation->moneyCap32(playerId()) / GetTrainUnitCost(command.cardStatus.cardEnum);
-				trainingCount = std::min(trainingCount, maxPossibleTraining);
-				trainingCount = std::max(1, trainingCount);
-
-				int32 moneyToSpend = cardPrice * trainingCount;
-				
-				_simulation->ChangeMoney(_playerId, -moneyToSpend);
-			}
-			else {
-				_simulation->AddPopupToFront(_playerId, 
-					NSLOCTEXT("TrainUnits", "NotEnoughMoneyToTrainUnit", "Not enough money to train this unit."), 
-					ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
-				);
-				return;
-			}
-		}
-
-		// Fill the old stack
-		if (trainUnitsQueue.size() > 0 &&
-			trainUnitsQueue.back().cardEnum == cardEnum)
-		{
-			trainUnitsQueue.back().stackSize += trainingCount;
-			return;
-		}
-
-		// Make a new stack
-		if (trainUnitsQueue.size() < 5)
-		{
-			CardStatus cardStatus;
-			cardStatus.cardEnum = cardEnum;
-			cardStatus.stackSize = trainingCount;
-			cardStatus.cardBirthTicks = Time::Ticks();
-
-			trainUnitsQueue.push_back(cardStatus);
-		}
-	}
+	void TrainUnits_Helper(const FUseCard& command, std::vector<CardStatus>& trainUnitsQueue, bool isRealAction);
 
 	/*
 	 * Auto Trade

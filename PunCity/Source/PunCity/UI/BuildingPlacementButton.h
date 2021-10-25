@@ -44,8 +44,6 @@ public:
 	float initTime = 0;
 	bool needExclamation = false;
 
-	CardHandEnum cardHandEnum = CardHandEnum::None;
-
 	CardEnum cardEnum() { return cardStatus.cardEnum; }
 
 	bool IsPermanentCard() { return cardHandIndex == -1; }
@@ -72,19 +70,16 @@ public:
 				colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIconNullable(buildingEnum));
 				colorMaterial->SetTextureParameterValue("DepthTexture", assetLoader->GetBuildingIconAlpha(buildingEnum));
 
-				if (assetLoader->IsBuildingUsingSpecialIcon(buildingEnum)) {
-					colorMaterial->SetScalarParameterValue("IsSpecial", 1.0f);
-				}
-				else {
-					colorMaterial->SetScalarParameterValue("IsSpecial", 0.0f);
-				}
+				bool usingSpecialIcon = assetLoader->IsBuildingUsingSpecialIcon(buildingEnum);
+				colorMaterial->SetScalarParameterValue("IsSpecial", usingSpecialIcon ? 1.0f : 0.0f);
 			}
 			
-		} else {
+		}
+		else {
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
 			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), buildingEnum));
 
-			bool isEmptyCollectionSlot = (cardHandEnum == CardHandEnum::CardSetSlots) && cardStatus.stackSize == 0;
+			bool isEmptyCollectionSlot = (_cardHandEnum == CardHandEnum::CardSetSlots) && cardStatus.stackSize == 0;
 			colorMaterial->SetScalarParameterValue("IsGray", isEmptyCollectionSlot ? 1.0f : 0.0f);
 		}
 
@@ -105,7 +100,7 @@ public:
 	void NativeOnMouseEnter(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override {
 		UPunWidget::NativeOnMouseEnter(InGeometry, InMouseEvent);
 
-		if (cardHandEnum != CardHandEnum::CardSetSlots) 
+		if (_cardHandEnum != CardHandEnum::CardSetSlots) 
 		{
 			CardGlow->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			dataSource()->Spawn2DSound("UI", "CardHover");
@@ -194,10 +189,12 @@ public:
 	}
 
 
-	void SetPrice(int32 price, int32 humanPrice = 0)
+	void SetPrice(int32 price, ResourceEnum resourceEnum = ResourceEnum::Money, int32 humanPrice = 0)
 	{
 		PriceText->SetText(TEXT_NUM(price));
 		PriceTextBox->SetVisibility(price > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+		PriceResourceIcon->SetBrushFromTexture(assetLoader()->GetResourceIcon_WithMoney(resourceEnum));
 
 		HumanPriceText->SetText(TEXT_NUM(humanPrice));
 		HumanPriceTextBox->SetVisibility(humanPrice > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
@@ -210,6 +207,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* DescriptionRichText;
 	UPROPERTY(meta = (BindWidget)) UImage* BuildingIcon;
 
+	UPROPERTY(meta = (BindWidget)) UImage* PriceResourceIcon;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PriceText;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* PriceTextBox;
 

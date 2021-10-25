@@ -2095,9 +2095,9 @@ int32 ProvinceRuin::GetDigDistanceFactor(int32 upgraderPlayerId) const
 
 void Zoo::FinishConstruction()
 {
-	AddUpgrades({
-		MakeUpgrade(LOCTEXT("ZooUpgrade_AnimalUniqueness", "Animal Uniqueness"), LOCTEXT("ZooUpgrade_AnimalUniqueness Desc", "Each unique kind of animal increases service quality by additional 10%"), ResourceEnum::Brick, 50),
-	});
+	//AddUpgrades({
+	//	MakeUpgrade(LOCTEXT("ZooUpgrade_AnimalUniqueness", "Animal Uniqueness"), LOCTEXT("ZooUpgrade_AnimalUniqueness Desc", "Each unique kind of animal increases service quality by additional 10%"), ResourceEnum::Brick, 50),
+	//});
 
 	Building::FinishConstruction();
 }

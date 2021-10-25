@@ -155,7 +155,7 @@ void TownManagerBase::Tick1Sec_TownBase()
 
 void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
 {
-	check(_simulation->IsValidPlayer(playerId >= 0));
+	check(_simulation->IsValidPlayer(playerId));
 	for (CardStatus& card : cards) {
 		if (forcedAll || playerId == card.cardStateValue1) {
 			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);

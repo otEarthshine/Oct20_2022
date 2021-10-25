@@ -2241,8 +2241,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		std::vector<PlacementGridInfo> grids;
 
 		int32 portPlayerId = tileOwnerPlayer(area.centerTile());
-		
-		CheckPortArea(area, faceDirection, cardEnum, grids, setDockInstruct, portPlayerId);
+
+		BuildPlacement placement(parameters.center, GetBuildingInfo(cardEnum).GetSize(FactionEnum::Europe), faceDirection);
+		CheckPortArea(placement, cardEnum, grids, setDockInstruct, portPlayerId);
 
 		canPlace = true;
 		for (PlacementGridInfo& gridInfo : grids) {

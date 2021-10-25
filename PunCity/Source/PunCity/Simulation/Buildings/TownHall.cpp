@@ -211,10 +211,10 @@ void TownHall::UpgradeTownhall()
 	{
 
 		{
-			_simulation->AddPopup(_playerId,
-				LOCTEXT("UnlockedSetTradeOffer_Pop", "Unlocked \"Set Trade Offer\" Button.<space>Use it to put up Trade Offers at the Townhall.\nOther players can examine your Trade Offers, and directly trade with you (0% Fee).")
-			);
-			unlockSys->unlockedSetTradeAmount = true;
+			//_simulation->AddPopup(_playerId,
+			//	LOCTEXT("UnlockedSetTradeOffer_Pop", "Unlocked \"Set Trade Offer\" Button.<space>Use it to put up Trade Offers at the Townhall.\nOther players can examine your Trade Offers, and directly trade with you (0% Fee).")
+			//);
+			//unlockSys->unlockedSetTradeAmount = true;
 		}
 	}
 

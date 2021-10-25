@@ -59,7 +59,10 @@ public:
 
 	virtual void ToggleOverlayHideTree() = 0;
 	virtual void ToggleOverlayProvince() = 0;
+	virtual void ToggleOverlayDefense() = 0;
+	
 	virtual void ToggleOverlayFertility() = 0;
+	virtual void ToggleOverlayAppeal() = 0;
 
 	virtual class ULineBatchComponent* lineBatch() = 0;
 

@@ -7,6 +7,25 @@
 #include "PunCity/PunPlayerController.h"
 #include "PunCity/MainMenuPlayerController.h"
 
+/*
+ * Steam API warning disable
+ */
+#ifdef PLATFORM_WINDOWS
+ // so vs2015 triggers depracated warnings from standard C functions within the steam api, this wrapper makes the output log just ignore these since its clearly on crack.
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996)
+
+#include <steam/steam_api.h>
+
+#pragma warning(pop)
+#endif
+
+#endif
+//#include "steam/isteamuser.h"
+//#include "steam/isteamutils.h"
+
+
 void APunGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
 {
 	if (_ConnectedControllers.Num() > 0)
@@ -51,8 +70,13 @@ APlayerController* APunGameMode::Login(UPlayer* NewPlayer, ENetRole InRemoteRole
 
 void APunGameMode::PostLogin(APlayerController* NewPlayer)
 {
-	FString playerName = NewPlayer->PlayerState ? NewPlayer->PlayerState->GetPlayerName() : "No State";
-	PUN_DEBUG2("PostLogin: %s", *playerName);
+	check(NewPlayer->PlayerState);
+	
+	FString playerName = NewPlayer->PlayerState->GetPlayerName();
+	//TSharedPtr<const FUniqueNetId> uniqueNetId = NewPlayer->PlayerState->GetUniqueId().GetUniqueNetId();
+	CSteamID steamId(*(uint64*)NewPlayer->PlayerState->GetUniqueId()->GetBytes());
+	
+	PUN_DEBUG2("PostLogin: %s steamId:%lu steamId64:%llu", *playerName, steamId.GetAccountID(), steamId.ConvertToUint64());
 
 	auto newController = CastChecked<APunBasePlayerController>(NewPlayer);
 	auto gameInst = newController->gameInstance();
@@ -82,7 +106,7 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 		gameInst->ResetPlayerCount();
 	}
 	
-	int32 newPlayerId = gameInst->ConnectPlayer(playerName);
+	int32 newPlayerId = gameInst->ConnectPlayer(playerName, steamId.ConvertToUint64());
 	newController->SetControllerPlayerId(newPlayerId);
 
 
@@ -145,8 +169,12 @@ void APunGameMode::Server_SyncPlayerStateToAllControllers()
 
 void APunGameMode::Logout(AController* Exiting)
 {
-	FString playerName = Exiting->PlayerState ? Exiting->PlayerState->GetPlayerName() : "No State";
-	PUN_DEBUG2("Logout: %s", *playerName);
+	check(Exiting->PlayerState);
+	FString playerName = Exiting->PlayerState->GetPlayerName();
+
+	CSteamID steamId(*(uint64*)Exiting->PlayerState->GetUniqueId()->GetBytes());
+	
+	PUN_DEBUG2("Logout: %s steamId:%lu", *playerName, steamId.GetAccountID());
 
 	auto exitingController = CastChecked<APunBasePlayerController>(Exiting);
 
@@ -159,7 +187,7 @@ void APunGameMode::Logout(AController* Exiting)
 	_ConnectedControllers.Remove(exitingController);
 
 	auto gameInst = exitingController->gameInstance();
-	gameInst->DisconnectPlayer(playerName);
+	gameInst->DisconnectPlayer(playerName, steamId.ConvertToUint64());
 	Server_SyncPlayerStateToAllControllers();
 
 	

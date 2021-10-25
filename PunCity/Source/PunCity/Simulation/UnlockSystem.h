@@ -96,7 +96,6 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 
 	{ TechEnum::HerbFarming , {LOCTEXT("Basic Medicine", "Basic Medicine")}},
 
-
 	{ TechEnum::Logistics1, { LOCTEXT("Logistics I", "Logistics I") }},
 	{ TechEnum::Logistics2, { LOCTEXT("Logistics II", "Logistics II") }},
 	{ TechEnum::Logistics3, { LOCTEXT("Logistics III", "Logistics III") }},
@@ -456,8 +455,8 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	} },
 
 	{ TechEnum::Musketeer, {
-		LOCTEXT("Guns", "Guns"),
-		LOCTEXT("Guns Desc", ""),
+		LOCTEXT("Musketeer", "Musketeer"),
+		LOCTEXT("Musketeer Desc", ""),
 	} },
 	{ TechEnum::Infantry, {
 		LOCTEXT("Infantry", "Infantry"),
@@ -480,6 +479,15 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 		LOCTEXT("Battleship Desc", ""),
 	} },
 
+	/*
+	 * Faction Specific
+	 */
+
+	{ TechEnum::SpiceFarming , {LOCTEXT("Spice Farming", "Spice Farming")} },
+	{ TechEnum::CarpetTrade , {
+		LOCTEXT("Carpet Trade", "Carpet Trade"),
+		LOCTEXT("Carpet Desc", "Carpet has 0% Trading Fee."),
+	} },
 };
 
 enum class TechClassEnum
@@ -1118,8 +1126,16 @@ public:
 			AddTech_Building(TechEnum::RanchSheep, { TechEnum::HerbFarming },
 				{ CardEnum::RanchSheep }
 			);
-			AddTech_Bonus(TechEnum::MushroomSubstrateSterilization, { TechEnum::HerbFarming });
-			
+
+			/// - Arab
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::Irrigation, { TechEnum::HerbFarming },
+					{ CardEnum::IrrigationPump }
+				);
+			}
+			else {
+				AddTech_Bonus(TechEnum::MushroomSubstrateSterilization, { TechEnum::HerbFarming });
+			}
 			
 			// Middle Age
 			_columnIndex = 3;
@@ -1171,10 +1187,20 @@ public:
 			AddTech_Building(TechEnum::VodkaDistillery, { TechEnum::PotatoFarming },
 				{ CardEnum::VodkaDistillery }
 			);
-			AddTech_Building(TechEnum::Beekeeper, { TechEnum::PotatoFarming },
-				CardEnum::Beekeeper
-			);
 
+			/// - Arab
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::CarpetWeaver, { TechEnum::PotatoFarming },
+					CardEnum::CarpetWeaver,
+					TechRequirements::HouseLvlCount(2, 30)
+				);
+			}
+			else {
+				AddTech_Building(TechEnum::Beekeeper, { TechEnum::PotatoFarming },
+					CardEnum::Beekeeper
+				);
+			}
+			
 			
 			//
 			_columnIndex = 5;
@@ -1199,10 +1225,17 @@ public:
 			AddTech_Building(TechEnum::Medicine, { TechEnum::VodkaDistillery, TechEnum::Beekeeper },
 				CardEnum::MedicineMaker
 			);
-			AddTech_Building(TechEnum::CandleMaker, { TechEnum::Beekeeper },
-				CardEnum::CandleMaker,
-				TechRequirements::HouseLvlCount(2, 30)
-			);
+
+			/// - Arab
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Bonus(TechEnum::CarpetTrade, { TechEnum::CarpetWeaver });
+			}
+			else {
+				AddTech_Building(TechEnum::CandleMaker, { TechEnum::Beekeeper },
+					CardEnum::CandleMaker,
+					TechRequirements::HouseLvlCount(2, 30)
+				);
+			}
 		
 			
 			// Enlightenment
@@ -1248,14 +1281,15 @@ public:
 				CardEnum::Theatre
 			);
 
-			if (factionEnum == FactionEnum::Europe) {
+			/// - Arab
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Bonus(TechEnum::SpiceFarming, { TechEnum::CoffeeRoaster });
+			}
+			else {
 				AddTech_Building(TechEnum::ShroomFarm, { TechEnum::CoffeeRoaster },
 					CardEnum::MagicMushroomFarm,
 					TechRequirements::HouseLvlCount(4, 80)
 				);
-			}
-			else {
-				AddTech_Bonus(TechEnum::SpiceFarming, {});
 			}
 			
 				
@@ -1492,10 +1526,18 @@ public:
 			_columnIndex = 6;
 			AddTech_Bonus(TechEnum::TaxAdjustment, { TechEnum::HouseAdjacency });
 			AddTech_Bonus(TechEnum::CardInventory2, {});
-			AddTech_CardGiving(TechEnum::DesertPilgrim, {},
-				{ CardEnum::DesertPilgrim }
-			);
 
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_CardGiving(TechEnum::DesertPilgrim, {},
+					{ CardEnum::DesertPilgrim }
+				);
+			}
+			else {
+				AddTech_Building(TechEnum::Irrigation, {},
+					{ CardEnum::IrrigationPump }
+				);
+			}
+				
 			AddTech_CardGiving(TechEnum::BlueberryFarming, {},
 				{ CardEnum::BlueberrySeed }
 			);

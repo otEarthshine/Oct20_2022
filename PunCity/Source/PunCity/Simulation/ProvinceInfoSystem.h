@@ -348,11 +348,12 @@ public:
 							auto checkPortSlotAvailable = [&](WorldTile2 centerTile, Direction faceDirection)
 							{
 								WorldTile2 portSize = GetBuildingInfo(CardEnum::MinorCityPort).size;
-								TileArea portArea = BuildingArea(centerTile, portSize, faceDirection);
+								BuildPlacement portPlacement(centerTile, portSize, faceDirection);
+								TileArea portArea = portPlacement.area();
 
 								bool setDockInstruct;
 								std::vector<PlacementGridInfo> grids;
-								_simulation->CheckPortArea(portArea, faceDirection, CardEnum::MinorCityPort, grids, setDockInstruct, -1, 5);
+								_simulation->CheckPortArea(portPlacement, CardEnum::MinorCityPort, grids, setDockInstruct, -1, 5);
 
 								// Main Port Area not buildable
 								for (PlacementGridInfo& gridInfo : grids) {

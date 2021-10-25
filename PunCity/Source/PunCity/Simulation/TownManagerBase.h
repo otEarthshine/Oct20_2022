@@ -31,7 +31,7 @@ struct ProvinceClaimProgress
 		return battleFinishCountdownSecs == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0;
 	}
 	bool attackerLost() const {
-		return battleFinishCountdownSecs == 0 && attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
+		return attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
 	}
 	bool isWaitingForBattleFinishCountdown() {
 		return (defenderFrontLine.size() == 0 && defenderBackLine.size() == 0) || 
@@ -390,19 +390,18 @@ public:
 
 	void EndConquer(int32 provinceId)
 	{
-		if (_playerId != -1)
+		// Return Military Units
+		for (int32 i = 0; i < _defendingClaimProgress.size(); i++)
 		{
-			// Return Military Units
-			for (int32 i = 0; i < _defendingClaimProgress.size(); i++)
-			{
-				ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
-				if (claimProgress.provinceId == provinceId) {
-					ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
-					ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
+			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
+			if (claimProgress.provinceId == provinceId) {
+				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
+				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
+				if (_playerId != -1) {
 					ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
 					ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
-					break;
 				}
+				break;
 			}
 		}
 

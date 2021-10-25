@@ -76,6 +76,10 @@ public:
 		
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
+
+		ReinforcementOverlay->SetVisibility(ESlateVisibility::Collapsed);
+		CardSetsUIOverlay->SetVisibility(ESlateVisibility::Collapsed);
+
 		CloseReinforcementUI();
 	}
 	

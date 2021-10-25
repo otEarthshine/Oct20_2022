@@ -1607,6 +1607,12 @@ public:
 			tradeFeePercent = 0;
 		}
 
+		if (_simulation->IsResearched(playerId(), TechEnum::CarpetTrade) &&
+			resourceEnum == ResourceEnum::Carpet)
+		{
+			tradeFeePercent = 0;
+		}
+
 		
 		return std::max(0, tradeFeePercent);
 	}

@@ -347,7 +347,7 @@ public:
 		);
 		setOverlayRowText(OverlayCheckBox_Appeal,
 			NSLOCTEXT("OverlayToggleUI", "Appeal", "Appeal"),
-			FText(),
+			INVTEXT("[Ctrl-G]"),
 			overlayIsNotGray
 		);
 		setOverlayRowText(OverlayCheckBox_Animals,

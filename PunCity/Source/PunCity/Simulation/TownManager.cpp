@@ -875,7 +875,7 @@ void TownManager::Tick()
 				std::vector<int32> childIdsTemp = childIds();
 				humanIds.insert(humanIds.end(), childIdsTemp.begin(), childIdsTemp.end());
 
-				int32 killCount = std::min(GetMilitaryHumanCost(_trainUnitsQueue[0].cardEnum), static_cast<int>(humanIds.size()));
+				int32 killCount = std::min(GetMilitaryInfo(_trainUnitsQueue[0].cardEnum).humanCost, static_cast<int>(humanIds.size()));
 				for (int32 i = 0; i < killCount; i++) {
 					_simulation->unitAI(humanIds[i]).Die();
 				}
@@ -1760,6 +1760,112 @@ void TownManager::DecreaseTourismHappinessByAction(int32 actionCost)
 		}
 	});
 
+}
+
+/*
+ * Training
+ */
+void TownManager::TrainUnits_Helper(const FUseCard& command, std::vector<CardStatus>& trainUnitsQueue, bool isRealAction)
+{
+	//check(_pendingTrainCommands.size() > 0);
+	//check(_pendingTrainCommands[0] == command);
+	if (isRealAction) {
+		// Remove the command if possible
+		CppUtils::TryRemove(_pendingTrainCommands, command);
+	}
+
+	CardEnum cardEnum = command.cardStatus.cardEnum;
+
+	/*
+	 * Cancel Train
+	 */
+	if (command.callbackEnum == CallbackEnum::CancelTrainUnit)
+	{
+		for (int32 i = trainUnitsQueue.size(); i-- > 0;)
+		{
+			if (trainUnitsQueue[i].cardBirthTicks == command.variable2)
+			{
+				trainUnitsQueue[i].stackSize -= command.variable1;
+				trainUnitsQueue[i].stackSize = std::max(0, trainUnitsQueue[i].stackSize);
+
+				// Real Action: return the money
+				if (isRealAction) {
+					ResourcePair resourceCost = GetMilitaryInfo(trainUnitsQueue[i].cardEnum).resourceCost;
+					_simulation->AddResourceGlobal_WithMoney(_townId, resourceCost.resourceEnum, resourceCost.count);
+				}
+
+				// Remove stack if the size is 0
+				if (trainUnitsQueue[i].stackSize == 0) {
+					trainUnitsQueue.erase(trainUnitsQueue.begin() + i);
+
+					// Real Action: If this is the first stack, reset the timer
+					if (isRealAction && i == 0) {
+						_trainUnitsTicks100 = 0;
+					}
+				}
+				return;
+			}
+		}
+		return;
+	}
+
+	/*
+	 * Train
+	 */
+	 // Real Action: pay money
+	int32 trainingCount = command.variable1;
+	if (isRealAction)
+	{
+		ResourcePair trainingCost = GetTrainUnitCost(cardEnum);
+
+		// Must be able to train at least one unit
+		int32 maxPossibleTraining = _simulation->resourceCountTownWithMoney(_townId, trainingCost.resourceEnum) / trainingCost.count;
+		if (maxPossibleTraining > 0)
+		{
+			// Can't train more than money allows
+			trainingCount = std::min(trainingCount, maxPossibleTraining);
+			trainingCount = std::max(1, trainingCount);
+
+			int32 resourceToSpend = trainingCost.count * trainingCount;
+
+			_simulation->RemoveResourceGlobal_WithMoney(_townId, trainingCost.resourceEnum, resourceToSpend);
+		}
+		else {
+			if (trainingCost.resourceEnum == ResourceEnum::Money) {
+				_simulation->AddPopupToFront(_playerId,
+					NSLOCTEXT("TrainUnits", "NotEnoughMoneyToTrainUnit", "Not enough money to train this unit."),
+					ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
+				);
+			}
+			else
+			{
+				_simulation->AddPopupToFront(_playerId,
+					NSLOCTEXT("TrainUnits", "NotEnoughResourceToTrainUnit", "Not enough resource to train this unit."),
+					ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
+				);
+			}
+			return;
+		}
+	}
+
+	// Fill the old stack
+	if (trainUnitsQueue.size() > 0 &&
+		trainUnitsQueue.back().cardEnum == cardEnum)
+	{
+		trainUnitsQueue.back().stackSize += trainingCount;
+		return;
+	}
+
+	// Make a new stack
+	if (trainUnitsQueue.size() < 5)
+	{
+		CardStatus cardStatus;
+		cardStatus.cardEnum = cardEnum;
+		cardStatus.stackSize = trainingCount;
+		cardStatus.cardBirthTicks = Time::Ticks();
+
+		trainUnitsQueue.push_back(cardStatus);
+	}
 }
 
 #undef LOCTEXT_NAMESPACE

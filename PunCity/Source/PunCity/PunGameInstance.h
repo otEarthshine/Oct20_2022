@@ -152,9 +152,9 @@ public:
 	}
 	void PrintPlayers()
 	{
-		TArray<FPlayerInfo> playerNames = playerInfoList();
-		for (int32 i = 0; i < playerNames.Num(); i++) {
-			PUN_DEBUG2(" -- %s connected:%d ready:%d", *(playerNames[i].name.ToString()), playerConnectedStates[i], IsPlayerReady(i));
+		TArray<FPlayerInfo> playerInfos = playerInfoList();
+		for (int32 i = 0; i < playerInfos.Num(); i++) {
+			PUN_DEBUG2(" -- %s steamId:%llu connected:%d ready:%d", *(playerInfos[i].name.ToString()), playerInfos[i].steamId64, playerConnectedStates[i], IsPlayerReady(i));
 		}
 		PUN_DEBUG2(" - PlayerCount: %d", playerCount());
 	}
@@ -494,6 +494,7 @@ public:
 		ss << message << ": ";
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			ss << "[" << ToStdString(_playerInfos[i].name.ToString());
+			ss << "," << _playerInfos[i].steamId64;
 			ss << "," << playerConnectedStates[i] << "," << _playerReadyStates[i] << "] ";
 		}
 		_LOG(PunSync, " %s", ToTChar(ss.str()));
@@ -550,18 +551,18 @@ public:
 		
 		return playerId < _playerInfos.Num() ? _playerInfos[playerId].name.ToString() : FString("None"); // Empty _playerNames may happen on Load
 	}
-	void SetPlayerNameF(int32 playerId, FString playerNameF) {
-		_LOG(PunSync, "SetPlayerNameF %d, %s", playerId, *playerNameF);
-		_playerInfos[playerId].name = FText::FromString(playerNameF);
-	}
+	//void SetPlayerNameF(int32 playerId, FString playerNameF) {
+	//	_LOG(PunSync, "SetPlayerNameF %d, %s", playerId, *playerNameF);
+	//	_playerInfos[playerId].name = FText::FromString(playerNameF);
+	//}
 
 	void CachePlayerInfos() {
 		_playerInfosCache = _playerInfos;
 	}
-	FPlayerInfo GetCachedPlayerInfo(FString playerNameF)
+	FPlayerInfo GetCachedPlayerInfo(uint64 steamId64)
 	{
 		for (const FPlayerInfo& playerInfo : _playerInfosCache) {
-			if (playerInfo.name.ToString() == playerNameF) {
+			if (playerInfo.steamId64 == steamId64) {
 				return playerInfo;
 			}
 		}
@@ -624,15 +625,30 @@ public:
 	/*
 	 * Connect/Disconnect
 	 */
-	 // Returns playerId
-	int32 ConnectPlayer(FString playerNameF)
+	void PrintPlayerInfos()
 	{
+		_LOG(PunSync, "PrintPlayerInfos:");
+		for (int32 i = 0; i < _playerInfos.Num(); i++) {
+			_LOG(PunSync, " - i:%d %s steamId:%llu ready:%d connected:%d", i, *_playerInfos[i].name.ToString(), _playerInfos[i].steamId64, _playerReadyStates[i], playerConnectedStates[i]);
+		}
+	}
+
+	
+	 // Returns playerId
+	int32 ConnectPlayer(FString playerNameF, uint64 steamId64)
+	{
+		_LOG(PunSync, "ConnectPlayer: %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
+		PrintPlayerInfos();
+		
 		auto setToExistingSlot = [&](int32 playerId)
 		{
 			_playerInfos[playerId].name = FText::FromString(playerNameF);
+			_playerInfos[playerId].steamId64 = steamId64;
 			_playerReadyStates[playerId] = false;
 			playerConnectedStates[playerId] = true;
 			clientPacketsReceived[playerId] = 0;
+
+			PrintPlayerInfos();
 		};
 
 		//! Load Saved Game
@@ -644,16 +660,15 @@ public:
 			SetPlayerCount(saveInfo.playerNames.Num());
 			
 			for (int32 i = 0; i < saveInfo.playerNames.Num(); i++) {
-				if (!IsPlayerConnected(i) && playerNameF == saveInfo.playerNames[i].name.ToString()) 
+				if (!IsPlayerConnected(i) && steamId64 == saveInfo.playerNames[i].steamId64)
 				{
 					// If this player was host, change hostPlayerId
-					if (playerNameF == _playerInfos[hostPlayerId].name.ToString()) {
+					if (steamId64 == _playerInfos[hostPlayerId].steamId64) {
 						hostPlayerId = i;
 					}
 
+					_LOG(PunSync, "ConnectPlayer Old Spot: %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
 					setToExistingSlot(i);
-
-					_LOG(PunSync, "ConnectPlayer Old Spot: %s pcount:%d size:%d", *playerNameF, playerCount(), playerInfoList().Num());
 					return i;
 				}
 			}
@@ -663,11 +678,10 @@ public:
 		// Try Add to the slot with same name first
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			if (!IsPlayerConnected(i) && 
-				playerNameF == _playerInfos[i].name.ToString())
+				steamId64 == _playerInfos[i].steamId64)
 			{
+				_LOG(PunSync, "ConnectPlayer (Same Id): %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
 				setToExistingSlot(i);
-
-				_LOG(PunSync, "ConnectPlayer (Same Name): %s pcount:%d size:%d", *playerNameF, playerCount(), playerInfoList().Num());
 				return i;
 			}
 		}
@@ -676,9 +690,8 @@ public:
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			if (!IsPlayerConnected(i))
 			{
+				_LOG(PunSync, "ConnectPlayer (Empty): %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
 				setToExistingSlot(i);
-
-				_LOG(PunSync, "ConnectPlayer (Empty): %s pcount:%d size:%d", *playerNameF, playerCount(), playerInfoList().Num());
 				return i;
 			}
 		}
@@ -686,9 +699,10 @@ public:
 		// Make new slot
 		FPlayerInfo playerInfo;
 		if (IsInGame()) {
-			playerInfo = GetCachedPlayerInfo(playerNameF);
+			playerInfo = GetCachedPlayerInfo(steamId64);
 		} else {
 			playerInfo.name = FText::FromString(playerNameF);
+			playerInfo.steamId64 = steamId64;
 		}
 		
 		_playerInfos.Add(playerInfo);
@@ -696,8 +710,9 @@ public:
 		playerConnectedStates.Add(true);
 		clientPacketsReceived.Add(0);
 
-		_LOG(PunSync, "ConnectPlayer (New slot): %s size:%d", *playerNameF, playerInfoList().Num());
-
+		_LOG(PunSync, "ConnectPlayer (New slot): %s steamId:%llu size:%d isInGame:%d", *playerNameF, steamId64, playerInfoList().Num(), IsInGame());
+		PrintPlayerInfos();
+		
 		return _playerInfos.Num() - 1;
 	}
 
@@ -717,7 +732,7 @@ public:
 		clientPacketsReceived[newId] = clientPacketsReceived[originalId];
 		
 		
-		_playerInfos[originalId].name = FText();
+		_playerInfos[originalId] = FPlayerInfo();
 		_playerReadyStates[originalId] = false;
 		playerConnectedStates[originalId] = false;
 
@@ -727,18 +742,23 @@ public:
 	}
 
 
-	void DisconnectPlayer(FString playerNameF)
+	void DisconnectPlayer(FString playerNameF, uint64 steamId64)
 	{
+		_LOG(PunSync, "DisconnectPlayer %s steamId64:%llu", *playerNameF, steamId64);
+		PrintPlayerInfos();
+		
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			if (_playerInfos[i].name.ToString() == playerNameF) 
+			if (_playerInfos[i].steamId64 == steamId64)
 			{
 				_playerInfos[i].name = FText();
+				_playerInfos[i].steamId64 = steamId64;
 				_playerReadyStates[i] = false;
 				playerConnectedStates[i] = false;
 
 				clientPacketsReceived[i] = 0;
 
-				_LOG(PunSync, "DisconnectPlayer %d, %s", i, *playerNameF);
+				_LOG(PunSync, "DisconnectPlayer index:%d, %s steamId64:%llu", i, *playerNameF, steamId64);
+				PrintPlayerInfos();
 				break;
 			}
 		}
@@ -788,7 +808,7 @@ public:
 		// Add players skipping any empty slot (that is empty from the beginning)
 		std::vector<int32> results;
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			if (!_playerInfos[i].name.IsEmpty()) {
+			if (!_playerInfos[i].IsEmpty()) {
 				results.push_back(i);
 			}
 		}
@@ -822,7 +842,7 @@ public:
 		// Add players with name but no connection
 		std::vector<int32> results;
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			if (!_playerInfos[i].name.IsEmpty() && !playerConnectedStates[i]) {
+			if (!_playerInfos[i].IsEmpty() && !playerConnectedStates[i]) {
 				results.push_back(i);
 			}
 		}

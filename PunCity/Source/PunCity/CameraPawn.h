@@ -78,12 +78,21 @@ public:
 	void KeyPressed_ToggleHideTree() {
 		_gameInterface->ToggleOverlayHideTree();
 	}
+	
 	void ToggleProvinceOverlay() {
 		_gameInterface->ToggleOverlayProvince();
 	}
+	void ToggleDefenseOverlay() {
+		_gameInterface->ToggleOverlayDefense();
+	}
+	
 	void KeyPressed_ToggleFertility() {
 		_gameInterface->ToggleOverlayFertility();
 	}
+	void ToggleAppeal() {
+		_gameInterface->ToggleOverlayAppeal();
+	}
+
 
 	void ToggleSinglePlayerChat() {
 		PunSettings::Toggle("SinglePlayerChat");

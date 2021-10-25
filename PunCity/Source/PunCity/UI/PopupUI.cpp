@@ -97,6 +97,9 @@ void UPopupUI::Tick()
 		else if (shouldShowExclusive(ExclusiveUIEnum::DeployMilitaryUI)) {
 			shouldPopup = true;
 		}
+		else if (shouldShowExclusive(ExclusiveUIEnum::CardSetsUI)) {
+			shouldPopup = true;
+		}
 	}
 	
 	if (!shouldPopup) {

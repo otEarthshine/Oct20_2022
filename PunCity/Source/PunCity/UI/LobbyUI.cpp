@@ -886,6 +886,24 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 
 	auto gameInst = gameInstance();
 	const TArray<FPlayerInfo>& names = gameInst->playerInfoList();
+
+	
+	element->PlayerName->SetVisibility(ESlateVisibility::Collapsed);
+
+	element->PlayerLogoForeground->SetVisibility(ESlateVisibility::Collapsed);
+	element->PlayerLogoBackground->SetVisibility(ESlateVisibility::Collapsed);
+	element->PlayerCharacterImage->SetVisibility(ESlateVisibility::Collapsed);
+
+	element->PlayerLogoChangeButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	element->PlayerKickButton->SetVisibility(ESlateVisibility::Collapsed);
+
+	element->PlayerHighlight->SetVisibility(ESlateVisibility::Collapsed); // TODO: Use Later???
+	element->ReadyParent->SetVisibility(ESlateVisibility::Collapsed);
+
+	element->SaveGameTransferBar->SetVisibility(ESlateVisibility::Collapsed);
+	element->SaveGameTransferText->SetVisibility(ESlateVisibility::Collapsed);
+	
 	
 	if (gameInst->playerConnectedStates[i])
 	{
@@ -900,21 +918,25 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		element->FactionName->SetText(GetFactionInfo(names[i].factionEnum()).name);
 
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[names[i].logoIndex]);
-		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", names[i].logoColorBackground);
-		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", names[i].logoColorForeground);
+		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", names[i].logoColorForeground);
+		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", names[i].logoColorBackground);
 		element->PlayerCharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[names[i].characterIndex]);
 
 		element->PlayerLogoForeground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerLogoBackground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerCharacterImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
+
 		// if this is the ui controlling player, allow clicking too ready from this button
 		// Note:  GetFirstController()->PlayerState doesn't work on clients
-		if (i == GetFirstController()->controllerPlayerId()) {
+		if (i == GetFirstController()->controllerPlayerId()) 
+		{
 			element->PlayerReadyButton->OnClicked.RemoveAll(this);
 			element->PlayerReadyButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickReadyButton);
 			element->PlayerReadyButton->SetColorAndOpacity(FLinearColor(1, 1, 1, 1));
 			element->PlayerReadyButton->SetVisibility(ESlateVisibility::Visible);
+
+			element->PlayerLogoChangeButton->SetVisibility(ESlateVisibility::Visible);
 		}
 		else {
 			element->PlayerReadyButton->OnClicked.RemoveAll(this);
@@ -926,10 +948,7 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		element->PlayerKickButton->SetVisibility(showKicker ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		// Show player
-		element->PlayerHighlight->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
-		element->EmptyText->SetVisibility(ESlateVisibility::Collapsed);
-		element->EmptySelectButton->SetVisibility(ESlateVisibility::Collapsed);
+		//element->PlayerHighlight->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 
 		if (gameInst->isMultiplayer())
@@ -966,9 +985,6 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 					//int32 percentLoaded = gameInst->clientPacketsReceived[i] * 100 / gameInst->saveSystem().totalPackets();
 					element->SaveGameTransferBar->GetDynamicMaterial()->SetScalarParameterValue("Fraction", percentLoaded / 100.0f);
 					SetText(element->SaveGameTransferText, TEXT_PERCENT(percentLoaded));
-
-					element->ReadyParent->SetVisibility(ESlateVisibility::Collapsed);
-					element->PlayerReadyFill->SetVisibility(ESlateVisibility::Collapsed);
 				}
 			}
 			else
@@ -977,42 +993,15 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 			}
 
 		}
-		else
-		{
-			element->ReadyParent->SetVisibility(ESlateVisibility::Collapsed);
-			element->PlayerReadyFill->SetVisibility(ESlateVisibility::Collapsed);
-			element->SaveGameTransferBar->SetVisibility(ESlateVisibility::Collapsed);
-			element->SaveGameTransferText->SetVisibility(ESlateVisibility::Collapsed);
-		}
-		
 
-		//setLastPlayerName();
-		element->EmptyText->SetVisibility(ESlateVisibility::Collapsed);
+		element->EmptySelectButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else
 	{
 		// Hide player
 		element->playerName = "";
-		element->PlayerName->SetVisibility(ESlateVisibility::Collapsed);
-
-		element->PlayerLogoForeground->SetVisibility(ESlateVisibility::Collapsed);
-		element->PlayerLogoBackground->SetVisibility(ESlateVisibility::Collapsed);
-		element->PlayerCharacterImage->SetVisibility(ESlateVisibility::Collapsed);
-
-		element->PlayerKickButton->SetVisibility(ESlateVisibility::Collapsed);
-
-		element->PlayerHighlight->SetVisibility(ESlateVisibility::Collapsed);
-		element->ReadyParent->SetVisibility(ESlateVisibility::Collapsed);
-
-		element->SaveGameTransferBar->SetVisibility(ESlateVisibility::Collapsed);
-		element->SaveGameTransferText->SetVisibility(ESlateVisibility::Collapsed);
 
 		element->EmptySelectButton->SetVisibility(ESlateVisibility::Visible);
-
-
-
-		//bool lastPlayerNameShown = setLastPlayerName();
-		//element->EmptyText->SetVisibility(lastPlayerNameShown ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	}
 }
 

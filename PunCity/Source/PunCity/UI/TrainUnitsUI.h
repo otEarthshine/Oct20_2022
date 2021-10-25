@@ -52,7 +52,17 @@ public:
 			cardButton->SetCardStatus(CardHandEnum::TrainUnits, false, false);
 			cardButton->RefreshBuildingIcon(assetLoader());
 			cardButton->SellButton->SetVisibility(ESlateVisibility::Collapsed);
-			cardButton->SetPrice(cardEnum != CardEnum::None ? GetBuildingInfo(cardEnum).baseCardPrice : 0, GetMilitaryHumanCost(cardEnum));
+
+			if (cardEnum == CardEnum::None) {
+				cardButton->SetPrice(0, ResourceEnum::Money, 0);
+			}
+			else if (IsMilitaryCardEnum(cardEnum)) {
+				MilitaryCardInfo info = GetMilitaryInfo(cardEnum);
+				cardButton->SetPrice(info.resourceCost.count, info.resourceCost.resourceEnum, info.humanCost);
+			}
+			else {
+				cardButton->SetPrice(GetBuildingInfo(cardEnum).baseCardPrice);
+			}
 			cardButton->SetVisibility(ESlateVisibility::Visible);
 		}
 		
@@ -94,12 +104,22 @@ public:
 			// Warn if there isn't enough money
 			if (callbackEnum == CallbackEnum::TrainUnit)
 			{
-				int32 maxPossibleTraining = simulation().moneyCap32(playerId()) / townManager->GetTrainUnitCost(command->cardStatus.cardEnum);
-				if (maxPossibleTraining <= 0) {
-					simulation().AddPopupToFront(playerId(),
-						NSLOCTEXT("TrainUnits", "NotEnoughMoneyToTrainUnit", "Not enough money to train this unit."),
-						ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
-					);
+				ResourcePair resourceCost = townManager->GetTrainUnitCost(command->cardStatus.cardEnum);
+				int32 maxPossibleTraining = simulation().resourceCountTownWithMoney(townId, resourceCost.resourceEnum) / resourceCost.count;
+				if (maxPossibleTraining <= 0) 
+				{
+					if (resourceCost.resourceEnum == ResourceEnum::Money) {
+						simulation().AddPopupToFront(playerId(),
+							NSLOCTEXT("TrainUnits", "NotEnoughMoneyToTrainUnit", "Not enough money to train this unit."),
+							ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
+						);
+					}
+					else {
+						simulation().AddPopupToFront(playerId(),
+							NSLOCTEXT("TrainUnits", "NotEnoughResourceToTrainUnit", "Not enough resource to train this unit."),
+							ExclusiveUIEnum::TrainUnitsUI, "PopupCannot"
+						);
+					}
 					return;
 				}
 				if (command->variable1 > maxPossibleTraining) {
@@ -154,8 +174,8 @@ public:
 
 
 		CardEnum cavalryEnum = CardEnum::None;
-		if (isResearched(TechEnum::Tank)) infantryEnum = CardEnum::Tank;
-		else if (isResearched(TechEnum::Knight)) infantryEnum = CardEnum::Knight;
+		if (isResearched(TechEnum::Tank)) cavalryEnum = CardEnum::Tank;
+		else if (isResearched(TechEnum::Knight)) cavalryEnum = CardEnum::Knight;
 
 
 		CardEnum conscriptEnum = isResearched(TechEnum::Infantry) ? CardEnum::Conscript : CardEnum::None;
@@ -173,9 +193,9 @@ public:
 
 
 		CardEnum navyEnum = CardEnum::None;
-		if (isResearched(TechEnum::Battleship)) siegeEnum = CardEnum::Battleship;
-		else if (isResearched(TechEnum::MilitaryEngineering2)) siegeEnum = CardEnum::Frigate;
-		else if (isResearched(TechEnum::MilitaryEngineering1)) siegeEnum = CardEnum::Galley;
+		if (isResearched(TechEnum::Battleship)) navyEnum = CardEnum::Battleship;
+		else if (isResearched(TechEnum::MilitaryEngineering2)) navyEnum = CardEnum::Frigate;
+		else if (isResearched(TechEnum::MilitaryEngineering1)) navyEnum = CardEnum::Galley;
 
 
 		SetupButton(FrontlineUnitsBox, 0, infantryEnum);

@@ -1335,6 +1335,9 @@ inline ResourceInfo GetResourceInfo(ResourceEnum resourceEnum) {
 inline ResourceInfo GetResourceInfo(int32 resourceEnumInt) {
 	return ResourceInfos[resourceEnumInt];
 }
+inline int32 GetResourceCostWithMoney(ResourceEnum resourceEnum) {
+	return resourceEnum == ResourceEnum::Money ? 1 : ResourceInfos[static_cast<int>(resourceEnum)].basePrice;
+}
 
 inline ResourceInfo GetResourceInfoSafe(ResourceEnum resourceEnum) {
 	if (!IsResourceValid(resourceEnum)) {
@@ -3115,6 +3118,36 @@ struct BldInfo
 TileArea BuildingArea(WorldTile2 centerTile, WorldTile2 size, Direction faceDirection);
 WorldTile2 GetBuildingCenter(TileArea area, Direction faceDirection);
 
+
+struct BuildPlacement
+{
+public:
+	WorldTile2 centerTile;
+	WorldTile2 size;
+	Direction faceDirection;
+
+	bool isValid() const { return centerTile.isValid(); }
+
+	BuildPlacement() : centerTile(WorldTile2::Invalid), size(WorldTile2::Invalid), faceDirection(Direction::S) {}
+	
+	BuildPlacement(WorldTile2 centerTile, WorldTile2 size, Direction faceDirection)
+		: centerTile(centerTile), size(size), faceDirection(faceDirection)
+	{}
+
+	TileArea area() {
+		return BuildingArea(centerTile, size, faceDirection);
+	}
+
+	FArchive& operator>>(FArchive &Ar) {
+		centerTile >> Ar;
+		size >> Ar;
+		Ar << faceDirection;
+		return Ar;
+	}
+};
+
+
+
 // percentDiff is for base cost
 //
 static int32 BldResourceInfoCount = 0;
@@ -3792,19 +3825,6 @@ static const BldInfo BuildingInfo[]
 	// Imperialist
 };
 
-static const int32 MilitaryEraCostMultiplier = 150;
-static const int32 MilitaryEraPowerMultiplier = 200;
-
-static int32 GetMilitaryCost(int32 baseCost, int32 era)
-{
-	int32 cost = baseCost;
-	for (int32 i = 1; i < era; i++) {
-		cost = cost * MilitaryEraCostMultiplier / 100;
-	}
-
-	return cost;
-}
-
 
 static const BldInfo CardInfos[]
 {
@@ -4009,27 +4029,27 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::PopulationScoreMultiplier, _LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population and Happiness.")),
 
 
-		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 300, LOCTEXT("Militia Desc", "")),
-		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 300, LOCTEXT("Conscript Desc", "")),
+		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 0, LOCTEXT("Militia Desc", "")),
+		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 0, LOCTEXT("Conscript Desc", "")),
 	
-		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		GetMilitaryCost(1000, 1), LOCTEXT("Warrior Desc", "")),
-		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"),	GetMilitaryCost(1000, 2), LOCTEXT("Swordsman Desc", "")),
-		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), GetMilitaryCost(1000, 3), LOCTEXT("Musketeer Desc", "")),
-		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), GetMilitaryCost(1000, 4), LOCTEXT("Infantry Desc", "")), // (Trench Warfare = Defense Bonus for Infantry)
+		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		0, LOCTEXT("Warrior Desc", "")),
+		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"), 0, LOCTEXT("Swordsman Desc", "")),
+		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), 0, LOCTEXT("Musketeer Desc", "")),
+		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), 0, LOCTEXT("Infantry Desc", "")), // (Trench Warfare = Defense Bonus for Infantry)
 
-		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), GetMilitaryCost(1500, 2), LOCTEXT("Knight Desc", "")), // Attack Bonus
-		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		GetMilitaryCost(3000, 4), LOCTEXT("Tank Desc", "")), // Attack Bonus
+		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), 0, LOCTEXT("Knight Desc", "")), // Attack Bonus
+		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		0, LOCTEXT("Tank Desc", "")), // Attack Bonus
 
-		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				GetMilitaryCost(1000, 2), LOCTEXT("Archer Desc", "")),
-		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), GetMilitaryCost(1500, 3), LOCTEXT("Machine Gun Desc", "")), // Defense Bonus
+		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				0, LOCTEXT("Archer Desc", "")),
+		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), 0, LOCTEXT("Machine Gun Desc", "")), // Defense Bonus
 
-		BldInfo(CardEnum::Catapult, _LOCTEXT("Catapult", "Catapult"), GetMilitaryCost(1700, 2), LOCTEXT("Catapult Desc", "")),
-		BldInfo(CardEnum::Cannon, _LOCTEXT("Cannon", "Cannon"),			GetMilitaryCost(1700, 3), LOCTEXT("Cannon Desc", "")),
-		BldInfo(CardEnum::Artillery, _LOCTEXT("Artillery", "Artillery"), GetMilitaryCost(1700, 4), LOCTEXT("Artillery Desc", "")), // Defense Bonus
+		BldInfo(CardEnum::Catapult, _LOCTEXT("Catapult", "Catapult"), 0, LOCTEXT("Catapult Desc", "")),
+		BldInfo(CardEnum::Cannon, _LOCTEXT("Cannon", "Cannon"),			0, LOCTEXT("Cannon Desc", "")),
+		BldInfo(CardEnum::Artillery, _LOCTEXT("Artillery", "Artillery"), 0, LOCTEXT("Artillery Desc", "")), // Defense Bonus
 
-		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			GetMilitaryCost(1500, 2), LOCTEXT("Galley Desc", "")),
-		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		GetMilitaryCost(2500, 3), LOCTEXT("Frigate Desc", "")),
-		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), GetMilitaryCost(2500, 4), LOCTEXT("Battleship Desc", "")),
+		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			0, LOCTEXT("Galley Desc", "")),
+		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		0, LOCTEXT("Frigate Desc", "")),
+		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), 0, LOCTEXT("Battleship Desc", "")),
 };
 
 #undef _LOCTEXT
@@ -4777,7 +4797,6 @@ static bool IsAutoEraUpgrade(CardEnum buildingEnumIn) { // Upgrade with era with
 	case CardEnum::TradingPort:
 	case CardEnum::TradingPost:
 
-	case CardEnum::IrrigationPump:
 		return false;
 	default: break;
 	}
@@ -6342,7 +6361,6 @@ enum class TechEnum : uint8
 	BlueberryFarming,
 	MelonFarming,
 	PumpkinFarming,
-	SpiceFarming,
 	
 	Plantation,
 	
@@ -6583,6 +6601,11 @@ enum class TechEnum : uint8
 	SpyCenter,
 	CardCombiner,
 	MarketInfluence,
+
+	//! Faction
+	SpiceFarming,
+	CarpetWeaver,
+	CarpetTrade,
 	
 	Count,
 };
@@ -7143,6 +7166,15 @@ public:
 
 struct MilitaryCardInfo
 {
+	CardEnum cardEnum;
+	int32 baseMoneyCost;
+
+	ResourcePair resourceCost;
+	
+	int32 humanCost;
+
+	int32 allCostCombined() { return humanCost + resourceCost.count * GetResourceCostWithMoney(resourceCost.resourceEnum); }
+	
 	int32 hp100;
 	int32 defense100; // attack / def = damage
 	int32 attack100;
@@ -7150,26 +7182,80 @@ struct MilitaryCardInfo
 	int32 strength() { return hp100 * defense100 / MilitaryConstants::BaseDefense100 * attack100 / MilitaryConstants::BaseAttack100; }
 };
 
-static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum)
+static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 {
-	int32 cost = GetBuildingInfo(cardEnum).baseCardPrice;
-	
-	const int32 baseCost = 1000;
-
 	MilitaryCardInfo result;
-	result.hp100 = MilitaryConstants::BaseHP100 * cost * cost / (baseCost * baseCost);
-	result.defense100 = MilitaryConstants::BaseDefense100 * cost * cost / (baseCost * baseCost);
-	result.attack100 = MilitaryConstants::BaseAttack100 * cost * cost / (baseCost * baseCost);
+	result.cardEnum = cardEnum;
+
+	const int32 MilitaryEraCostMultiplier = 150;
+
+	auto setMilitaryCost = [&](int32 baseCost, ResourceEnum resourceEnum = ResourceEnum::Money)
+	{
+		result.baseMoneyCost = baseCost;
+
+		int32 moneyCost = baseCost;
+		for (int32 i = 1; i < era; i++) {
+			moneyCost = moneyCost * MilitaryEraCostMultiplier / 100;
+		}
+		
+		result.resourceCost = ResourcePair(resourceEnum, moneyCost / GetResourceCostWithMoney(resourceEnum));
+	};
+	
 
 	if (IsConscriptMilitaryCardEnum(cardEnum)) {
-		result.hp100 = MilitaryConstants::BaseHP100 * (cardEnum == CardEnum::Conscript ? 100 : 50) / 100; // conscript meat shield...
-		result.defense100 = MilitaryConstants::BaseDefense100;
+		setMilitaryCost(200); // 675 era 4
+	}
+	else if (IsInfantryMilitaryCardEnum(cardEnum)) {
+		setMilitaryCost(1000); // 3375 era 4
+	}
+	else if (cardEnum == CardEnum::Knight) {
+		setMilitaryCost(2000, ResourceEnum::Iron);
+	}
+	else if (cardEnum == CardEnum::Tank) {
+		setMilitaryCost(3000, ResourceEnum::Steel);
+	}
+	else if (IsRangedMilitaryCardEnum(cardEnum)) {
+		setMilitaryCost(1000);
+	}
+	else if (IsArtilleryMilitaryCardEnum(cardEnum)) {
+		setMilitaryCost(1500, cardEnum == CardEnum::Artillery ? ResourceEnum::Steel : ResourceEnum::Money);
+	}
+	else if (IsNavyCardEnum(cardEnum)) {
+		setMilitaryCost(3000, cardEnum == CardEnum::Battleship ? ResourceEnum::Steel : ResourceEnum::Money);
+	}
+	
+
+	// Human Cost
+	result.humanCost = 3;
+	if (cardEnum == CardEnum::Conscript) {
+		result.humanCost = 10;
+	}
+	
+
+	// x y z
+	result.hp100 = MilitaryConstants::BaseHP100;
+	result.attack100 = MilitaryConstants::BaseAttack100;
+	result.defense100 = MilitaryConstants::BaseDefense100;
+
+	const int32 MilitaryEraStatMultiplier = 120; // 1.7^(1/3)
+
+	for (int32 i = 1; i < era; i++) {
+		result.hp100 = result.hp100 * MilitaryEraStatMultiplier / 100;
+		result.attack100 = result.attack100 * MilitaryEraStatMultiplier / 100;
+		result.defense100 = result.defense100 * MilitaryEraStatMultiplier / 100;
+	}
+	
+
+	if (IsConscriptMilitaryCardEnum(cardEnum)) {
+		result.attack100 = result.attack100 * 50 / 100;
+		result.hp100 = result.hp100 * 150 / 100;
+		//result.hp100 = MilitaryConstants::BaseHP100 * (cardEnum == CardEnum::Conscript ? 100 : 50) / 100; // conscript meat shield...
 	}
 	else if (IsInfantryMilitaryCardEnum(cardEnum)) {
 		result.hp100 = result.hp100 * 150 / 100;
 	}
 	else if (IsCavalryMilitaryCardEnum(cardEnum)) {
-		result.attack100 = result.attack100 * 150 / 100;
+		result.attack100 = result.attack100 * 200 / 100; // 1500... high attack pay extra cost since it allows faster war end (225 -> 200)
 	}
 	else if (IsRangedMilitaryCardEnum(cardEnum)) {
 		result.hp100 = result.hp100 * 50 / 100;
@@ -7177,22 +7263,49 @@ static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum)
 	}
 	else if (IsArtilleryMilitaryCardEnum(cardEnum)) {
 		result.hp100 = result.hp100 * 20 / 100;
-		result.attack100 = result.attack100 * 170 / 100;
+		result.attack100 = result.attack100 * 220 / 100; // 1500
 	}
+	else if (IsNavyCardEnum(cardEnum)) {
+		result.hp100 = result.hp100 * 150 / 100;
+		result.attack100 = result.attack100 * 150 / 100;
+	}
+
+	check(result.hp100 > 0);
+	check(result.defense100 > 0);
+	check(result.attack100 > 0);
 	
 	return result;
 }
 
-static int32 GetMilitaryHumanCost(CardEnum cardEnum)
+static const std::vector<MilitaryCardInfo> MilitaryCardInfoBaseList
 {
-	if (IsMilitaryCardEnum(cardEnum)) {
-		if (cardEnum == CardEnum::Conscript) {
-			return 5;
-		}
-		return 3;
-	}
-	return 0;
+	CreateMilitaryInfo(CardEnum::Militia, 1),
+	CreateMilitaryInfo(CardEnum::Conscript, 4),
+
+	CreateMilitaryInfo(CardEnum::Warrior, 1),
+	CreateMilitaryInfo(CardEnum::Swordsman, 2),
+	CreateMilitaryInfo(CardEnum::Musketeer, 3),
+	CreateMilitaryInfo(CardEnum::Infantry, 4),
+
+	CreateMilitaryInfo(CardEnum::Knight, 2),
+	CreateMilitaryInfo(CardEnum::Tank, 4),
+
+	CreateMilitaryInfo(CardEnum::Archer, 2),
+	CreateMilitaryInfo(CardEnum::MachineGun, 3),
+
+	CreateMilitaryInfo(CardEnum::Catapult, 2),
+	CreateMilitaryInfo(CardEnum::Cannon, 3),
+	CreateMilitaryInfo(CardEnum::Artillery, 4),
+
+	CreateMilitaryInfo(CardEnum::Galley, 2),
+	CreateMilitaryInfo(CardEnum::Frigate, 3),
+	CreateMilitaryInfo(CardEnum::Battleship, 4),
+};
+
+static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum) {
+	return MilitaryCardInfoBaseList[static_cast<int>(cardEnum) - static_cast<int>(CardEnum::Militia)];
 }
+
 
 static int32 GetMilitaryUpkeep(CardEnum cardEnum)
 {
@@ -8048,6 +8161,7 @@ enum class ExclusiveUIEnum : uint8
 	ProsperityUI,
 
 	DeployMilitaryUI,
+	CardSetsUI,
 
 	Count,
 

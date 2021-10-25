@@ -27,7 +27,7 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 	tooltipBox->AddSpacer();
 	
 	if (IsMilitaryCardEnum(buildingEnum)) {
-		tooltipBox->AddRichTextWrap(GetMilitaryInfoDescription(buildingEnum));
+		tooltipBox->AddRichTextParsed(GetMilitaryInfoDescription(buildingEnum));
 	}
 	else {
 		tooltipBox->AddRichTextWrap(info.GetDescription());

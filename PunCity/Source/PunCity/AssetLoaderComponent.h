@@ -407,6 +407,10 @@ public:
 	UTexture2D* GetResourceIconAlpha(ResourceEnum resourceEnum) { return _resourceIconsAlpha[static_cast<int>(resourceEnum)]; }
 	UMaterialInstanceDynamic* GetResourceIconMaterial(ResourceEnum resourceEnum);
 
+	UTexture2D* GetResourceIcon_WithMoney(ResourceEnum resourceEnum) {
+		return resourceEnum == ResourceEnum::Money ? CoinIcon : _resourceIcons[static_cast<int>(resourceEnum)];
+	}
+
 	UTexture2D* GetGeoresourceIcon(ResourceEnum resourceEnum) {
 		if (_georesourceIcons.find(resourceEnum) == _georesourceIcons.end()) {
 			return nullptr;

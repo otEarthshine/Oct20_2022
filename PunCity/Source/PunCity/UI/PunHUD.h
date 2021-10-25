@@ -370,6 +370,8 @@ public:
 
 		case ExclusiveUIEnum::TownAutoTradeUI: return _townAutoTradeUI->IsVisible();
 		case ExclusiveUIEnum::DeployMilitaryUI: return _mainGameUI->ReinforcementOverlay->IsVisible();
+
+		case ExclusiveUIEnum::CardSetsUI: return _mainGameUI->CardSetsUIOverlay->IsVisible();
 			
 		default:
 			UE_DEBUG_BREAK();

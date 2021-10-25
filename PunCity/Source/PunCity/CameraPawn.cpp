@@ -56,7 +56,10 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("KeyPressed_ToggleHideTree", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleHideTree);
 	PlayerInputComponent->BindAction("ToggleProvinceOverlay", IE_Pressed, this, &ACameraPawn::ToggleProvinceOverlay);
+	PlayerInputComponent->BindAction("ToggleDefenseOverlay", IE_Pressed, this, &ACameraPawn::ToggleDefenseOverlay);
+	
 	PlayerInputComponent->BindAction("KeyPressed_ToggleFertility", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleFertility);
+	PlayerInputComponent->BindAction("ToggleAppeal", IE_Pressed, this, &ACameraPawn::ToggleAppeal);
 	
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Pressed, this, &ACameraPawn::LeftMouseDown);
 	PlayerInputComponent->BindAction("LeftMouseButton", IE_Released, this, &ACameraPawn::LeftMouseUp);
@@ -906,17 +909,17 @@ void ACameraPawn::TickInputSystem(AGameManager* gameInterface, float DeltaTime, 
 		if (mouseLocation.X >= 0.0f && mouseLocation.Y >= 0.0f)  // ensure validity
 		{
 			if (mouseLocation.X < 10) {
-				_cameraEdgeMovementInput.Y = -1.0f;
+				_cameraEdgeMovementInput.Y = -1.5f;
 			}
 			else if (viewportSize.X - mouseLocation.X < 10) {
-				_cameraEdgeMovementInput.Y = 1.0f;
+				_cameraEdgeMovementInput.Y = 1.5f;
 			}
 
 			if (mouseLocation.Y < 10) {
-				_cameraEdgeMovementInput.X = 1.0f;
+				_cameraEdgeMovementInput.X = 1.5f;
 			}
 			else if (viewportSize.Y - mouseLocation.Y < 10) {
-				_cameraEdgeMovementInput.X = -1.0f;
+				_cameraEdgeMovementInput.X = -1.5f;
 			}
 		}
 

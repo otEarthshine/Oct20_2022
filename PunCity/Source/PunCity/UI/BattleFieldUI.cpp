@@ -74,16 +74,6 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	}
 	
 
-	SetText(LeftDefenseBonus, FText::Format(INVTEXT("<img id=\"Shield\"/><Shadowed>{0}</>"), TEXT_NUM(0)));
-
-	AddToolTip(LeftDefenseBonus,
-		LOCTEXT("Attack Bonus: 0%", "Attack Bonus: 0%")
-	);
-
-	std::string defenderDefenseBonus = (isDeclaringIndependence ? to_string(0) : to_string(sim.GetProvinceAttackCostPercent(provinceId))) + "%</>";
-	SetText(RightDefenseBonus, "<img id=\"Shield\"/><Shadowed>" + defenderDefenseBonus);
-	AddToolTip(LeftDefenseBonus, sim.GetProvinceDefenseBonusTip(provinceId));
-
 	// Fight at home province = Vassalize
 	{
 		TArray<FText> args;
@@ -197,15 +187,22 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 				auto unitIcon = GetBoxChild<UBattleFieldUnitIcon>(armyColumn->ArmyBox, unitIndex, UIEnum::WG_BattlefieldUnitIcon, true);
 				unitIcon->UnitCountText->SetText(TEXT_NUM(simUnit.stackSize));
 
-				PunUIUtils::SetPlayerLogo(unitIcon->UnitImage->GetDynamicMaterial(), dataSource()->playerInfo(unitPlayerId), assetLoader());
+				//LogoImage
+				PunUIUtils::SetPlayerLogo(unitIcon->LogoImage, unitIcon->UnitImage, dataSource()->playerInfo(unitPlayerId), assetLoader());
 
 				MilitaryCardInfo militaryInfo = GetMilitaryInfo(simUnit.cardEnum);
+
+				int32 currentHP = simUnit.cardStateValue2 / 100;
+				int32 unitHP = militaryInfo.hp100 / 100;
 				
 				AddToolTip(unitIcon, FText::Format(
-					LOCTEXT("UnitIcon_Tip", "{0} {1}/{2}"),
+					LOCTEXT("UnitIcon_Tip", "{0}<space>Unit HP: {1}/{2}\nUnit Count: {3}<space>Army HP: {4}/{5}"),
 					GetBuildingInfo(simUnit.cardEnum).name,
-					TEXT_NUM(simUnit.cardStateValue2),
-					TEXT_NUM(militaryInfo.hp100)
+					TEXT_NUM(currentHP),
+					TEXT_NUM(unitHP),
+					TEXT_NUM(simUnit.stackSize),
+					TEXT_NUM(currentHP + unitHP * (simUnit.stackSize - 1)),
+					TEXT_NUM(unitHP * simUnit.stackSize)
 				));
 
 				/*
@@ -233,7 +230,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 					damageFloatup->startTime = UGameplayStatics::GetTimeSeconds(this);
 					
 					damageOverlay->AddChild(damageFloatup);
-					damageFloatup->DamageText->SetText(TEXT_NUM(lastDamage));
+					damageFloatup->DamageText->SetText(TEXT_NUM(lastDamage / 100));
 					unitIcon->lastDamageTick = lastDamageTick;
 
 					auto animation = GetAnimation(damageFloatup, FString("Floatup"));
@@ -269,9 +266,50 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 
 	//! Battle Bar
 	{
-		LeftDefenseBonus->SetText(TEXT_PERCENT(claimProgress.attackerDefenseBonus));
-		RightDefenseBonus->SetText(TEXT_PERCENT(claimProgress.defenderDefenseBonus));
+		// Bonuses
+		auto fillBonusText = [&](URichTextBlock* bonusText, int32 bonusPercent, bool isAttackBonus, int32 bonusTownId)
+		{
+			// Text
+			FText iconText;
+			FText tagText;
+			if (bonusPercent >= 0) {
+				iconText = isAttackBonus ? INVTEXT("<img id=\"Sword\"/>") : INVTEXT("<img id=\"Shield\"/>");
+				tagText = INVTEXT("<Shadowed>");
+			} else {
+				iconText = isAttackBonus ? INVTEXT("<img id=\"SwordRed\"/>") : INVTEXT("<img id=\"ShieldRed\"/>");
+				tagText = INVTEXT("<Red>");
+			}
+			
+			SetText(bonusText, FText::Format(INVTEXT("{0}{1}{2}</>"), iconText, tagText, TEXT_PERCENT(bonusPercent)));
+
+			
+			// Tip
+			std::vector<BonusPair> bonuses = isAttackBonus ? sim.GetAttackBonuses(provinceId, bonusTownId) : sim.GetDefenseBonuses(provinceId, bonusTownId);
+
+			TArray<FText> args;
+			if (isAttackBonus) {
+				args.Add(FText::Format(LOCTEXT("Player Attack Bonus", "{0}'s Attack Bonuses:"), sim.townOrPlayerNameT(bonusTownId)));
+			} else {
+				args.Add(FText::Format(LOCTEXT("Player Defense Bonus", "{0}'s Defense Bonuses:"), sim.townOrPlayerNameT(bonusTownId)));
+			}
+			args.Add(INVTEXT(":\n"));
+			for (const BonusPair& bonus : bonuses) {
+				args.Add(FText::Format(INVTEXT("  {0} {1}"), TEXT_PERCENT(bonus.value), bonus.name));
+			}
+			if (bonuses.size() == 0) {
+				args.Add(LOCTEXT("No Bonus", "No Bonus"));
+			}
+			
+			AddToolTip(bonusText, args);
+		};
+
+		fillBonusText(LeftAttackBonus, claimProgress.attacker_attackBonus, true, claimProgress.attackerPlayerId);
+		fillBonusText(LeftDefenseBonus, claimProgress.attacker_defenseBonus, false, claimProgress.attackerPlayerId);
+		fillBonusText(RightAttackBonus, claimProgress.defender_attackBonus, true, claimProgress.defenderTownId);
+		fillBonusText(RightDefenseBonus, claimProgress.defender_defenseBonus, false, claimProgress.defenderTownId);
 		
+		
+		// Army Strength
 		int32 attackerArmyStrength = GetArmyStrength(claimProgress.attackerFrontLine) + GetArmyStrength(claimProgress.attackerBackLine);
 		int32 defenderArmyStrength = GetArmyStrength(claimProgress.defenderFrontLine) + GetArmyStrength(claimProgress.defenderBackLine);
 		

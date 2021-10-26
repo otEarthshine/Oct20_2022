@@ -36,14 +36,14 @@ public:
 		{
 			rewardBuildingIcon->SetVisibility(ESlateVisibility::Visible);
 			auto material = rewardBuildingIcon->GetDynamicMaterial();
-			if (IsBuildingCard(buildingEnum)) {
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(buildingEnum));
-			}
-			else {
-				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(CardEnum::House));
-				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(CardEnum::House));
-			}
+			//if (IsBuildingCard(buildingEnum)) {
+			//	material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(buildingEnum));
+			//	material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(buildingEnum));
+			//}
+			//else {
+			//	material->SetTextureParameterValue("ColorTexture", assetLoader()->GetBuildingIcon(CardEnum::House));
+			//	material->SetTextureParameterValue("DepthTexture", assetLoader()->GetBuildingIconAlpha(CardEnum::House));
+			//}
 
 			// Add Tooltip
 			UPunBoxWidget::AddBuildingTooltip(rewardBuildingIcon, buildingEnum, this, isPermanent);

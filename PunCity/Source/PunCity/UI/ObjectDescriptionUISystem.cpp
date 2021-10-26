@@ -5386,22 +5386,23 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 				);
 			}
 		}
-		
+
+		// Defense Bonus
+		int32 defenseBonus = sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe ? 200 : 0;
 		auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 			LOCTEXT("Defense Bonus", "Defense Bonus"),
-			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
+			TEXT_PERCENT(defenseBonus)
 		);
-		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 	// Other player's Home Province
 	else if (provincePlayerId != -1 && sim.homeProvinceId(provincePlayerId) == provinceIdClean)
 	{
+		// Defense Bonus
+		int32 defenseBonus = sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe ? 200 : 0;
 		auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-			LOCTEXT("VassalizeDefenseBonus", "Vassalize Defense Bonus"),
-			TEXT_PERCENT(sim.GetProvinceVassalizeDefenseBonus(provinceIdClean))
+			LOCTEXT("Defense Bonus", "Defense Bonus"),
+			TEXT_PERCENT(defenseBonus)
 		);
-		
-		AddToolTip(widget, sim.GetProvinceVassalizeDefenseBonusTip(provinceIdClean));
 	}
 	else 
 	{
@@ -5419,11 +5420,12 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 			);
 		}
 		
+		// Defense Bonus
+		int32 defenseBonus = sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe ? 200 : 0;
 		auto widget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-			LOCTEXT("DefenseBonus", "Defense Bonus"),
-			TEXT_PERCENT(sim.GetProvinceAttackCostPercent(provinceIdClean))
+			LOCTEXT("Defense Bonus", "Defense Bonus"),
+			TEXT_PERCENT(defenseBonus)
 		);
-		AddToolTip(widget, sim.GetProvinceDefenseBonusTip(provinceIdClean));
 	}
 
 

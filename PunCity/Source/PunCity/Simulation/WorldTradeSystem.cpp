@@ -34,7 +34,7 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 	tradeRoutePair.distance = WorldTile2::Distance(building1.centerTile(), building2.centerTile());
 	
 	int32 playerId1 = building1.playerId();
-	check(playerId1 != -1);
+	check(building1.townId() != -1);
 	int32 playerId2 = building2.playerId();
 
 	int32 popupPlayerId = command.playerId != -1 ? command.playerId : playerId1;

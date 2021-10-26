@@ -456,6 +456,11 @@ public:
 	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
 
 	virtual int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) = 0;
+
+
+	virtual std::vector<BonusPair> GetAttackBonuses(int32 provinceId, int32 capitalTownId) = 0;
+	virtual std::vector<BonusPair> GetDefenseBonuses(int32 provinceId, int32 capitalTownId) = 0;
+	
 	
 	//virtual bool HasOutpostAt(int32 playerId, int32 provinceId) = 0;
 	virtual bool IsProvinceNextToTown(int32 provinceId, int32 townId) = 0;
@@ -673,6 +678,7 @@ public:
 
 	virtual void RefreshHeightForestColorTexture(TileArea area, bool isInstant) = 0;
 	virtual void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) = 0;
+	virtual void SetHoleWorldTexture(WorldTile2 tile, bool isHole) = 0;
 	virtual void RefreshHeightForestRoadTexture() = 0;
 
 	virtual void TryRemoveDescriptionUI(ObjectTypeEnum type, int32_t objectId) = 0;

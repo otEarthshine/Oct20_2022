@@ -14,6 +14,7 @@ class PROTOTYPECITY_API UBattleFieldUnitIcon : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UImage* UnitImage;
+	UPROPERTY(meta = (BindWidget)) UImage* LogoImage;
 	UPROPERTY(meta = (BindWidget)) UOverlay* DamageFloatupOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* UnitCountText;

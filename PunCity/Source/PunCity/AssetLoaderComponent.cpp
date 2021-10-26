@@ -102,6 +102,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	ResourceIconMaterial = Load<UMaterial>("/Game/UI/ResourceIcons/ResourceIconMaterial");
 	NoResourceIconMaterial = Load<UMaterial>("/Game/UI/UIMaterials/NoResourceIconMaterial");
 	//M_HoverIcon = Load<UMaterial>("/Game/UI/UIMaterials/M_HoverIcon");
+	M_Icon = Load<UMaterial>("/Game/UI/ResourceIcons/M_Icon");
 
 	HouseIcon = Load<UTexture2D>("/Game/UI/MiscIcons/HousePNG");
 	SmileIcon = Load<UTexture2D>("/Game/UI/MiscIcons/SmilingPNG");
@@ -790,50 +791,50 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	/*
 	 * Building Icons
 	 */
-	auto addBuildIcon = [&](CardEnum cardEnum, FString iconName, FString iconAlphaName, bool isSpecial)
-	{
-		if (isSpecial) {
-			_buildingsUsingSpecialIcon.Add(cardEnum);
-		}
-		_buildingIcons.Add(LoadF<UTexture2D>(FString("/Game/UI/GeneratedIcons/") + iconName));
-		_buildingIconsAlpha.Add(LoadF<UTexture2D>(FString("/Game/UI/GeneratedIcons/") + iconAlphaName));
-	};
-
-	// TODO: Icons for all Cards...
-	for (int i = 0; i < BuildingEnumCount; i++) 
-	{
-		// Special cases
-		FString fileName = FString("BuildingIcon");
-		FString fileNameAlpha = FString("BuildingIcon");
-
-		CardEnum buildingEnum = static_cast<CardEnum>(i);
-		switch(buildingEnum)
-		{
-#define CASE(enumName)	case CardEnum::##enumName: addBuildIcon(CardEnum::##enumName, FString(TO_STR(enumName##Icon)), FString("SpecialIconAlpha"), true); break;
-			CASE(Farm);
-			CASE(DirtRoad);
-			CASE(StoneRoad);
-			CASE(Fence);
-			CASE(FenceGate);
-			CASE(Bridge);
-			CASE(Tunnel);
-			CASE(StorageYard);
-
-			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
-			case CardEnum::IntercityBridge: addBuildIcon(CardEnum::IntercityBridge, FString(TO_STR(BridgeIcon)), FString("SpecialIconAlpha"), true); break;
-
-#undef CASE
-		default:
-			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
-			if (static_cast<int32>(CardEnum::PitaBakery) >= buildingEnumInt && buildingEnumInt >= static_cast<int32>(CardEnum::MinorCity)) {
-				// Temp
-				addBuildIcon(buildingEnum, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true);
-			} else {
-				addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
-			}
-			break;
-		}
-	}
+//	auto addBuildIcon = [&](CardEnum cardEnum, FString iconName, FString iconAlphaName, bool isSpecial)
+//	{
+//		if (isSpecial) {
+//			_buildingsUsingSpecialIcon.Add(cardEnum);
+//		}
+//		_buildingIcons.Add(LoadF<UTexture2D>(FString("/Game/UI/GeneratedIcons/") + iconName));
+//		_buildingIconsAlpha.Add(LoadF<UTexture2D>(FString("/Game/UI/GeneratedIcons/") + iconAlphaName));
+//	};
+//
+//	// TODO: Icons for all Cards...
+//	for (int i = 0; i < BuildingEnumCount; i++) 
+//	{
+//		// Special cases
+//		FString fileName = FString("BuildingIcon");
+//		FString fileNameAlpha = FString("BuildingIcon");
+//
+//		CardEnum buildingEnum = static_cast<CardEnum>(i);
+//		switch(buildingEnum)
+//		{
+//#define CASE(enumName)	case CardEnum::##enumName: addBuildIcon(CardEnum::##enumName, FString(TO_STR(enumName##Icon)), FString("SpecialIconAlpha"), true); break;
+//			CASE(Farm);
+//			CASE(DirtRoad);
+//			CASE(StoneRoad);
+//			CASE(Fence);
+//			CASE(FenceGate);
+//			CASE(Bridge);
+//			CASE(Tunnel);
+//			CASE(StorageYard);
+//
+//			case CardEnum::IntercityRoad: addBuildIcon(CardEnum::IntercityRoad, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true); break;
+//			case CardEnum::IntercityBridge: addBuildIcon(CardEnum::IntercityBridge, FString(TO_STR(BridgeIcon)), FString("SpecialIconAlpha"), true); break;
+//
+//#undef CASE
+//		default:
+//			int32 buildingEnumInt = static_cast<int32>(buildingEnum);
+//			if (static_cast<int32>(CardEnum::PitaBakery) >= buildingEnumInt && buildingEnumInt >= static_cast<int32>(CardEnum::MinorCity)) {
+//				// Temp
+//				addBuildIcon(buildingEnum, FString(TO_STR(DirtRoadIcon)), FString("SpecialIconAlpha"), true);
+//			} else {
+//				addBuildIcon(buildingEnum, FString("BuildingIcon") + FString::FromInt(i), FString("BuildingIconAlpha") + FString::FromInt(i), false);
+//			}
+//			break;
+//		}
+//	}
 
 	// Resource Icon
 	for (int i = 0; i < ResourceEnumCount; i++) 

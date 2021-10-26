@@ -108,6 +108,9 @@ public:
 	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) override {
 		_terrainMap->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
 	}
+	virtual void SetHoleWorldTexture(WorldTile2 tile, bool isHole) override {
+		_terrainMap->SetHoleWorldTexture(tile, isHole);
+	}
 	void RefreshHeightForestRoadTexture() override {
 		_terrainMap->RefreshHeightForestRoadTexture();
 	}

@@ -2124,6 +2124,52 @@ public:
 		return 10 * buildingFinishedCount(townId, provinceId);
 	}
 
+	/*
+	 * Defense/Attack Bonus
+	 */
+
+	virtual std::vector<BonusPair> GetAttackBonuses(int32 provinceId, int32 capitalTownId) override
+	{
+		std::vector<BonusPair> bonuses;
+
+		// How far from the capital
+		const int32 maxDistance = 2000;
+		const int32 maxPenalty = 70;
+		int32 distance = WorldTile2::Distance(GetProvinceCenterTile(provinceId), GetTownhallGate_All(capitalTownId));
+		int32 distancePenalty = std::min(maxPenalty, maxPenalty * distance / maxDistance);
+		if (distancePenalty > 0) {
+			bonuses.push_back({ NSLOCTEXT("MilitaryBonus", "Distance from Capital", "Distance from Capital"), distancePenalty });
+		}
+		
+		return bonuses;
+	}
+	
+	virtual std::vector<BonusPair> GetDefenseBonuses(int32 provinceId, int32 capitalTownId) override
+	{
+		std::vector<BonusPair> bonuses;
+
+		// Protected
+		bool isOwner;
+		if (IsMajorTown(capitalTownId)) {
+			isOwner = (townPlayerId(provinceOwnerTownSafe(provinceId)) == capitalTownId);
+		} else {
+			isOwner = (provinceOwnerTownSafe(provinceId) == capitalTownId);
+		}
+		
+		if (isOwner && provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe) {
+			bonuses.push_back({ NSLOCTEXT("MilitaryBonus", "Protected by Fort", "Protected by Fort"), 200 });
+		}
+
+		return bonuses;
+	}
+
+
+	
+
+	/*
+	 * 
+	 */
+
 	void ChangeTownOwningPlayer(int32 townId, int32 newPlayerId)
 	{
 		const std::vector<int32>& provinceIds = _townManagers[townId]->provincesClaimed();
@@ -2871,6 +2917,9 @@ public:
 	}
 	void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) override {
 		_gameManager->SetRoadWorldTexture(tile, isRoad, isDirtRoad);
+	}
+	virtual void SetHoleWorldTexture(WorldTile2 tile, bool isHole) override {
+		_gameManager->SetHoleWorldTexture(tile, isHole);
 	}
 	void RefreshHeightForestRoadTexture() override {
 		_gameManager->RefreshHeightForestRoadTexture();
@@ -3795,16 +3844,8 @@ public:
 		{
 			SERIALIZE_TIMER("Flood", data, crcs, crcLabels);
 			_floodSystem.Serialize(Ar);
-		}
 
-		//if (checkChunkEnum(GameSaveChunkEnum::Debug))
-		//{}
-
-		//if (checkChunkEnum(GameSaveChunkEnum::Debug2))
-		//{}
-		
-		if (checkChunkEnum(GameSaveChunkEnum::Others))
-		{
+			// Note: When Debugging, Just put stuff here to separate out bad Serialize Function
 			{
 				SERIALIZE_TIMER("Regions", data, crcs, crcLabels);
 
@@ -3894,6 +3935,32 @@ public:
 				LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
 				LOOP("Popup", _popupSystems[i].Serialize(Ar));
 				LOOP("Cards", _cardSystem[i].Serialize(Ar));
+
+				//LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
+				//LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
+				//LOOP("CallOnceAction", SerializeVecValue(Ar, _playerIdToCallOnceActionWasCalled[i]));
+#undef LOOP
+			}
+		}
+		
+		if (checkChunkEnum(GameSaveChunkEnum::Others))
+		{
+
+			//! Per Player
+			{
+#define LOOP(sysName, func) {\
+								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
+								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\
+							}
+
+				//LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
+				//LOOP("GlobalResource", _globalResourceSystems[i].Serialize(Ar));
+				//LOOP("Quest", _questSystems[i].Serialize(Ar));
+
+				//LOOP("Unlock", _unlockSystems[i].Serialize(Ar));
+				//LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
+				//LOOP("Popup", _popupSystems[i].Serialize(Ar));
+				LOOP("Cards", _cardSystem[i].Serialize2(Ar));
 
 				LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
 				LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));

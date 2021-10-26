@@ -19,26 +19,26 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 55 // 3 digit
+#define MINOR_VERSION 56 // 3 digit
 
-#define VERSION_DAY 5
-#define VERSION_MONTH 8
+#define VERSION_DAY 26
+#define VERSION_MONTH 10
 #define VERSION_YEAR 21
-#define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 
+#define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
 
 #define GAME_VERSION COMBINE_VERSION
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 34 // 3 digit
+#define MINOR_SAVE_VERSION 36 // 3 digit
 
-#define VERSION_SAVE_DAY 14
-#define VERSION_SAVE_MONTH 9
+#define VERSION_SAVE_DAY 26
+#define VERSION_SAVE_MONTH 10
 #define VERSION_SAVE_YEAR 21
-#define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 
+#define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 #define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
 
 
@@ -1363,6 +1363,17 @@ inline FText ResourceNameT(ResourceEnum resourceEnum) {
 		return NSLOCTEXT("GameSimulationInfo", "Influence", "Influence");
 	}
 	return ResourceInfos[static_cast<int>(resourceEnum)].name;
+}
+
+inline FText ResourceNameT_WithSpaceIcons(ResourceEnum resourceEnum) {
+	PUN_CHECK(resourceEnum != ResourceEnum::None);
+	if (resourceEnum == ResourceEnum::Money) {
+		return INVTEXT("<img id=\"Coin\"/>");
+	}
+	if (resourceEnum == ResourceEnum::Influence) {
+		return INVTEXT("<img id=\"Influence\"/>");
+	}
+	return FText::Format(INVTEXT(" {0}"), ResourceInfos[static_cast<int>(resourceEnum)].name);
 }
 
 inline FText ResourceName_WithNone(ResourceEnum resourceEnum) {
@@ -3528,7 +3539,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Warehouse, _LOCTEXT("Warehouse", "Warehouse"),	LOCTEXT("Warehouse (Plural)", "Warehouses"), LOCTEXT("Warehouse Desc", "Advanced storage with 30 storage slots."),
 		WorldTile2(6, 4), GetBldResourceInfoManual({ 50, 0, 0, 50 })
 	),
-	BldInfo(CardEnum::Fort, _LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), LOCTEXT("Fort Desc", "+100% province's defense."),
+	BldInfo(CardEnum::Fort, _LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), LOCTEXT("Fort Desc", "Place on choke point for raid protection. +200% defense on protected provinces."),
 		WorldTile2(9, 9), GetBldResourceInfoMoney(3000)
 	),
 	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Camp", "Resource Camp"),	LOCTEXT("Resource Camp (Plural)", "Resource Camps"), LOCTEXT("Resource Camp Desc", "Extract resource from province."),
@@ -7159,9 +7170,9 @@ public:
 	static const int32 RoundsToWinAtEqualStrength = 4;
 	static const int32 SecondsPerAttack = 8;
 
-	static const int32 BaseAttack100 = 10000 / (Time::SecondsPerRound * RoundsToWinAtEqualStrength / SecondsPerAttack);
+	static const int32 BaseHP100 = 100000;
+	static const int32 BaseAttack100 = BaseHP100 / (Time::SecondsPerRound * RoundsToWinAtEqualStrength / SecondsPerAttack);
 	static const int32 BaseDefense100 = 100;
-	static const int32 BaseHP100 = 10000;
 };
 
 struct MilitaryCardInfo
@@ -7172,6 +7183,8 @@ struct MilitaryCardInfo
 	ResourcePair resourceCost;
 	
 	int32 humanCost;
+
+	int32 upkeep;
 
 	int32 allCostCombined() { return humanCost + resourceCost.count * GetResourceCostWithMoney(resourceCost.resourceEnum); }
 	
@@ -7270,9 +7283,16 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 		result.attack100 = result.attack100 * 150 / 100;
 	}
 
+	// HP rounding
+	result.hp100 = result.hp100 / 10000 * 10000;
+
 	check(result.hp100 > 0);
 	check(result.defense100 > 0);
 	check(result.attack100 > 0);
+
+	// Upkeep
+	int32 roundsToEqualUpfrontCost = 200;
+	result.upkeep = result.allCostCombined() / roundsToEqualUpfrontCost + 5;
 	
 	return result;
 }
@@ -7306,20 +7326,16 @@ static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum) {
 	return MilitaryCardInfoBaseList[static_cast<int>(cardEnum) - static_cast<int>(CardEnum::Militia)];
 }
 
-
-static int32 GetMilitaryUpkeep(CardEnum cardEnum)
-{
-	int32 roundsToEqualUpfrontCost = 200;
-	return (GetBuildingInfo(cardEnum).baseCardPrice + 500) / roundsToEqualUpfrontCost;
-}
-
 static FText GetMilitaryInfoDescription(CardEnum cardEnum)
 {
 	MilitaryCardInfo militaryInfo = GetMilitaryInfo(cardEnum);
 	return FText::Format(
-		NSLOCTEXT("Military", "Military Description", "Upkeep: -{0}<img id=\"Coin\"/><space>HP: {1}\nDefense: {2}\nAttack: {3}"),
-		TEXT_NUM(GetMilitaryUpkeep(cardEnum)),
-		TEXT_100(militaryInfo.hp100),
+		NSLOCTEXT("Military", "Military Description", "Cost: {0}{1} \nUpkeep: -{2}<img id=\"Coin\"/><space>HP: {3}\nDefense: {4}\nAttack: {5}"),
+		TEXT_NUM(GetMilitaryInfo(cardEnum).resourceCost.count),
+		ResourceNameT_WithSpaceIcons(GetMilitaryInfo(cardEnum).resourceCost.resourceEnum),
+		TEXT_NUM(GetMilitaryInfo(cardEnum).upkeep),
+
+		TEXT_NUM(militaryInfo.hp100 / 100),
 		TEXT_100(militaryInfo.defense100),
 		TEXT_100(militaryInfo.attack100)
 	);

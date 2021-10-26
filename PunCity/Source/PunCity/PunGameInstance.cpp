@@ -17,6 +17,22 @@
 //#include "Steam/steam_api.h"
 
 
+/*
+ * Steam API warning disable
+ */
+#ifdef PLATFORM_WINDOWS
+ // so vs2015 triggers depracated warnings from standard C functions within the steam api, this wrapper makes the output log just ignore these since its clearly on crack.
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996)
+
+#include <steam/steam_api.h>
+
+#pragma warning(pop)
+#endif
+
+#endif
+
 
 // Achievements
 #include "Interfaces/OnlineAchievementsInterface.h"
@@ -933,6 +949,174 @@ void UPunGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type F
 	mainMenuPopup = FText::FormatNamed(LOCTEXT("TravelFailure", "{ErrorString} ({FailureType})"),
 		"ErrorString", FText::FromString(ErrorString),
 		"FailureType", FText::FromString(ETravelFailure::ToString(FailureType)));
+}
+
+/*
+ * Connect/Disconnect Players
+ */
+
+static bool SteamID64Equals(uint64 steamId64A, uint64 steamId64B) {
+	return  CSteamID(steamId64A).GetAccountID() == CSteamID(steamId64B).GetAccountID();
+}
+
+void UPunGameInstance::PrintPlayers()
+{
+	_LOG(PunSync, "PrintPlayerInfos (%d):", _playerInfos.Num());
+	for (int32 i = 0; i < _playerInfos.Num(); i++) {
+		_LOG(PunSync, " - i:%d %s steamId:%llu id:%lu ready:%d connected:%d", i, *_playerInfos[i].name.ToString(),
+			_playerInfos[i].steamId64, CSteamID(_playerInfos[i].steamId64).GetAccountID(),
+			_playerReadyStates[i], playerConnectedStates[i]);
+	}
+	_LOG(PunSync, "--");
+}
+
+// Returns playerId
+int32 UPunGameInstance::ConnectPlayer(FString playerNameF, uint64 steamId64)
+{
+	_LOG(PunSync, "ConnectPlayer: %s steamId:%llu id:%lu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID(), playerCount(), playerInfoList().Num(), IsInGame());
+	PrintPlayers();
+
+	auto setToExistingSlot = [&](int32 playerId)
+	{
+		_playerInfos[playerId].name = FText::FromString(playerNameF);
+		_playerInfos[playerId].steamId64 = steamId64;
+		_playerReadyStates[playerId] = false;
+		playerConnectedStates[playerId] = true;
+		clientPacketsReceived[playerId] = 0;
+
+		PrintPlayers();
+	};
+
+	//! Load Saved Game
+	// If we are loading a save, try to put the player in the old spot
+	//GameSaveInfo saveInfo = GetSavedGameToLoad();
+	if (saveSystem().HasSyncData())
+	{
+		GameSaveInfo saveInfo = saveSystem().GetSyncSaveInfo();
+		SetPlayerCount(saveInfo.playerNames.Num());
+
+		for (int32 i = 0; i < saveInfo.playerNames.Num(); i++) {
+			if (!IsPlayerConnected(i) && SteamID64Equals(steamId64, saveInfo.playerNames[i].steamId64))
+			{
+				// If this player was host, change hostPlayerId
+				if (SteamID64Equals(steamId64, _playerInfos[hostPlayerId].steamId64)) {
+					hostPlayerId = i;
+				}
+
+				_LOG(PunSync, "ConnectPlayer Old Spot: %s steamId:%llu id:%lu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID(), playerCount(), playerInfoList().Num(), IsInGame());
+				setToExistingSlot(i);
+				return i;
+			}
+		}
+	}
+
+	//!
+	// Try Add to the slot with same name first
+	for (int32 i = 0; i < _playerInfos.Num(); i++) {
+		if (!IsPlayerConnected(i) &&
+			SteamID64Equals(steamId64, _playerInfos[i].steamId64))
+		{
+			_LOG(PunSync, "ConnectPlayer (Same Id): %s steamId:%llu id:%lu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID(), playerCount(), playerInfoList().Num(), IsInGame());
+			setToExistingSlot(i);
+			return i;
+		}
+	}
+
+	// Add to empty slot
+	for (int32 i = 0; i < _playerInfos.Num(); i++) {
+		if (!IsPlayerConnected(i))
+		{
+			_LOG(PunSync, "ConnectPlayer (Empty): %s steamId:%llu id%lu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID(), playerCount(), playerInfoList().Num(), IsInGame());
+			setToExistingSlot(i);
+			return i;
+		}
+	}
+
+	// Make new slot
+	FPlayerInfo playerInfo;
+	if (IsInGame()) {
+		playerInfo = GetCachedPlayerInfo(steamId64);
+	}
+	else {
+		playerInfo.name = FText::FromString(playerNameF);
+		playerInfo.steamId64 = steamId64;
+	}
+
+	_playerInfos.Add(playerInfo);
+	_playerReadyStates.Add(false);
+	playerConnectedStates.Add(true);
+	clientPacketsReceived.Add(0);
+
+	_LOG(PunSync, "ConnectPlayer (New slot): %s steamId:%llu id:%lu size:%d isInGame:%d", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID(), playerInfoList().Num(), IsInGame());
+	PrintPlayers();
+
+	return _playerInfos.Num() - 1;
+}
+
+bool UPunGameInstance::TryChangePlayerId(int32 originalId, int32 newId)
+{
+	// Don't take the slot if someone already took it
+	if (playerConnectedStates[newId]) {
+		return false;
+	}
+
+	_LOG(PunSync, "TryChangePlayerId[start] %d, %d", originalId, newId);
+	PrintPlayers();
+
+	_playerInfos[newId] = _playerInfos[originalId];
+	_playerReadyStates[newId] = _playerReadyStates[originalId];
+	playerConnectedStates[newId] = playerConnectedStates[originalId];
+
+	clientPacketsReceived[newId] = clientPacketsReceived[originalId];
+
+
+	_playerInfos[originalId] = FPlayerInfo();
+	_playerReadyStates[originalId] = false;
+	playerConnectedStates[originalId] = false;
+
+	clientPacketsReceived[originalId] = 0;
+
+
+	_LOG(PunSync, "TryChangePlayerId[end] %d, %d", originalId, newId);
+	PrintPlayers();
+
+	return true;
+}
+
+
+void UPunGameInstance::DisconnectPlayer(FString playerNameF, uint64 steamId64)
+{
+	_LOG(PunSync, "DisconnectPlayer[start] %s steamId64:%llu steamId:%lu", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID());
+	PrintPlayers();
+
+	for (int32 i = 0; i < _playerInfos.Num(); i++) {
+		if (SteamID64Equals(_playerInfos[i].steamId64, steamId64))
+		{
+			_playerInfos[i].name = FText();
+			_playerInfos[i].steamId64 = steamId64;
+			_playerReadyStates[i] = false;
+			playerConnectedStates[i] = false;
+
+			clientPacketsReceived[i] = 0;
+
+			_LOG(PunSync, "DisconnectPlayer[end] index:%d, %s steamId64:%llu steamId:%lu", i, *playerNameF, steamId64, CSteamID(steamId64).GetAccountID());
+			PrintPlayers();
+			return;
+		}
+	}
+
+	PrintPlayers();
+	UE_DEBUG_BREAK();
+}
+
+FPlayerInfo UPunGameInstance::GetCachedPlayerInfo(uint64 steamId64)
+{
+	for (const FPlayerInfo& playerInfo : _playerInfosCache) {
+		if (SteamID64Equals(playerInfo.steamId64, steamId64)) {
+			return playerInfo;
+		}
+	}
+	return FPlayerInfo();
 }
 
 #undef LOCTEXT_NAMESPACE

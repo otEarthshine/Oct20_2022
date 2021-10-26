@@ -94,6 +94,7 @@ public:
 	// Display
 	virtual void RefreshHeightForestColorTexture(TileArea area, bool isInstant) = 0;
 	virtual void SetRoadWorldTexture(WorldTile2 tile, bool isRoad, bool isDirtRoad) = 0;
+	virtual void SetHoleWorldTexture(WorldTile2 tile, bool isHole) = 0;
 	virtual void RefreshHeightForestRoadTexture() = 0;
 
 	virtual void RefreshMapAnnotation() = 0;

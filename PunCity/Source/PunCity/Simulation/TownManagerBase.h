@@ -12,6 +12,7 @@ struct ProvinceClaimProgress
 
 	int32 provinceId = -1;
 	int32 attackerPlayerId = -1;
+	int32 defenderTownId = -1;
 
 	std::vector<CardStatus> attackerFrontLine;
 	std::vector<CardStatus> attackerBackLine;
@@ -21,8 +22,10 @@ struct ProvinceClaimProgress
 
 	bool isCrossingRiver = false;
 
-	int32 attackerDefenseBonus = 0;
-	int32 defenderDefenseBonus = 0;
+	int32 attacker_attackBonus = 0;
+	int32 attacker_defenseBonus = 0;
+	int32 defender_attackBonus = 0;
+	int32 defender_defenseBonus = 0;
 
 	int32 battleFinishCountdownSecs = -1; // Countdown after Finishing battle
 	
@@ -65,7 +68,7 @@ struct ProvinceClaimProgress
 	}
 	
 
-	void Retreat(int32 unitPlayerId);
+	void Retreat_DeleteUnits(int32 unitPlayerId);
 
 	void Tick1Sec(IGameSimulationCore* simulation);
 
@@ -77,6 +80,7 @@ struct ProvinceClaimProgress
 
 		Ar << provinceId;
 		Ar << attackerPlayerId;
+		Ar << defenderTownId;
 
 		SerializeVecObj(Ar, attackerFrontLine);
 		SerializeVecObj(Ar, attackerBackLine);
@@ -84,8 +88,10 @@ struct ProvinceClaimProgress
 		SerializeVecObj(Ar, defenderBackLine);
 
 		Ar << isCrossingRiver;
-		Ar << attackerDefenseBonus;
-		Ar << defenderDefenseBonus;
+		Ar << attacker_attackBonus;
+		Ar << attacker_defenseBonus;
+		Ar << defender_attackBonus;
+		Ar << defender_defenseBonus;
 
 		Ar << battleFinishCountdownSecs;
 
@@ -342,6 +348,7 @@ public:
 		claimProgress.attackEnum = provinceAttackEnum;
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
+		claimProgress.defenderTownId = _townId;
 		claimProgress.battleFinishCountdownSecs = Time::SecondsPerRound;
 
 		//! Fill Attacker Military Units
@@ -358,6 +365,20 @@ public:
 
 		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
 
+		//! Fill Attacker/Defender Bonus
+		auto getBonus = [&](std::vector<BonusPair> bonuses)
+		{
+			int32 value = 0;
+			for (const BonusPair& bonus : bonuses) {
+				value += bonus.value;
+			}
+			return value;
+		};
+		
+		claimProgress.attacker_attackBonus = getBonus(_simulation->GetAttackBonuses(provinceId, attackerPlayerId));
+		claimProgress.attacker_defenseBonus = getBonus(_simulation->GetDefenseBonuses(provinceId, attackerPlayerId));
+		claimProgress.defender_attackBonus = getBonus(_simulation->GetAttackBonuses(provinceId, claimProgress.defenderTownId));
+		claimProgress.defender_defenseBonus = getBonus(_simulation->GetDefenseBonuses(provinceId, claimProgress.defenderTownId));
 
 		_defendingClaimProgress.push_back(claimProgress);
 	}

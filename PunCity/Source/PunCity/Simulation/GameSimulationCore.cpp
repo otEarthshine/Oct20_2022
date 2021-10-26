@@ -309,6 +309,7 @@ void GameSimulationCore::InitOasis()
 			if (isHole[index]) {
 				_terrainGenerator->SetWaterTile(tile);
 				_terrainChanges.AddHole(tile);
+				SetHoleWorldTexture(tile, true);
 			}
 		});
 
@@ -5677,7 +5678,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId, false);
 			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId, false);
 
-			claimProgress->Retreat(command.playerId);
+			claimProgress->Retreat_DeleteUnits(command.playerId);
 		}
 	}
 	//else if (command.claimEnum == CallbackEnum::DefendProvinceMoney)

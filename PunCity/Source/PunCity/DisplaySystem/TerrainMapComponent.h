@@ -100,6 +100,30 @@ public:
 
 		heightForestColor[tileId] = color.ToPackedARGB();
 	}
+
+	static void SetHoleWorldTexture(WorldTile2 tile, bool isHole)
+	{
+		//PUN_LOG("SetHoleWorldTexture %s", *tile.To_FString());
+
+		if (heightForestColor.size() == 0) {
+			return;
+		}
+
+		isHeightForestColorDirty = true;
+
+		int32 tileId = tile.tileId();
+
+		FColor color(heightForestColor[tileId]);
+		if (isHole) {
+			color = FColor(color.R / 2, 0, 0, 0);
+		} else {
+			color = FColor(color.R * 2, 0, 0, 0);
+		}
+
+		heightForestColor[tileId] = color.ToPackedARGB();
+	}
+
+	
 	void RefreshHeightForestRoadTexture() {
 		PunUnrealUtils::SetTextureData(_assetLoader->heightTexture, heightForestColor);
 	}

@@ -987,11 +987,17 @@ public:
 	{
 		Ar << justRerollButtonPressed;
 
+		PUN_LOG("justRerolledRareHand[before]:%d isLoading:%d", justRerolledRareHand, Ar.IsLoading());
 		Ar << justRerolledRareHand;
+		PUN_LOG("justRerolledRareHand[after]:%d", justRerolledRareHand);
 
 		Ar << converterCardState;
 		Ar << wildCardEnumUsed;
 
+	}
+
+	void Serialize2(FArchive& Ar)
+	{
 		/*
 		 * Private
 		 */
@@ -1063,7 +1069,7 @@ public:
 	 */
 	bool justRerollButtonPressed = false;
 
-	bool justRerolledRareHand = false;
+	int32 justRerolledRareHand = false;
 	bool justRerolledClaimLandHand = false;
 
 	ConverterCardUseState converterCardState = ConverterCardUseState::None;

@@ -251,7 +251,7 @@ void UWorldSpaceUI::TickBuildings()
 						hoverIcon->SetPair(hoverIcon->IconPair3);
 					}
 				}
-				else if (dataSource()->GetOverlayType() == OverlayType::Fort)
+				else if (dataSource()->isShowingDefenseOverlay())
 				{
 					UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
 						_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},

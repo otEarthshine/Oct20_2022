@@ -15,6 +15,7 @@
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/HorizontalBox.h"
+#include "Components/Image.h"
 
 #include "GameUIDataSource.generated.h"
 
@@ -415,5 +416,12 @@ public:
 		material->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
 		material->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
 		material->SetTextureParameterValue("Logo", assetLoader->GetPlayerLogo(playerInfo.logoIndex));
+	}
+
+	static void SetPlayerLogo(UImage* foregroundImage, UImage* backgroundImage, const FPlayerInfo& playerInfo, UAssetLoaderComponent* assetLoader)
+	{
+		backgroundImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
+		foregroundImage->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
+		foregroundImage->GetDynamicMaterial()->SetTextureParameterValue("Logo", assetLoader->GetPlayerLogo(playerInfo.logoIndex));
 	}
 };

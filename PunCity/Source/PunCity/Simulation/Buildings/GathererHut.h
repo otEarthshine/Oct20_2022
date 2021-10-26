@@ -1613,72 +1613,74 @@ class ProvinceOasis : public Building
 public:
 	virtual FactionEnum factionEnum() const override { return FactionEnum::Arab; }
 
-	template<typename Func>
-	void DigArea(Func func)
-	{
-		WorldTile2 size = buildingInfo().size;
-		std::vector<uint8> isHole = {
-			// Front Side... (-y)
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, // Y
-			0, 0, 0, 0, 1,   1, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
-			0, 0, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0, 0, 0,   0, 0, 0,
-			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0, 0, 0,   0, 0, 0,
-			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   0, 0, 0,
+	//template<typename Func>
+	//void DigArea(Func func)
+	//{
+	//	WorldTile2 size = buildingInfo().size;
+	//	std::vector<uint8> isHole = {
+	//		// Front Side... (-y)
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, // Y
+	//		0, 0, 0, 0, 1,   1, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
+	//		0, 0, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0, 0, 0,   0, 0, 0,
+	//		0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0, 0, 0,   0, 0, 0,
+	//		0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   0, 0, 0,
 
-			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   0, 0, 0,
-			0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
-			0, 0, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
-			0, 0, 0, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0,
-			0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0,
+	//		0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   0, 0, 0,
+	//		0, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 1, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0,
+	//		0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 1, 0,
 
-			0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
-			0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 0, 0,
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   1, 1, 1, 1, 1,   1, 0, 0,
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 1,   1, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   1, 1, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 1, 1, 1, 1,   1, 0, 0,
 
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 1, 1, 1,   1, 0, 0,
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
-			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
-			// X
-		};
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 1, 1, 1,   1, 0, 0,
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
+	//		0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0,
+	//		// X
+	//	};
 
-		for (int32 j = 0; j < size.x; j++) {
-			for (int32 i = 0; i < size.y / 2; i++) {
-				std::swap(isHole[i + j * size.y], isHole[(size.y - 1 - i) + j * size.y]);
-			}
-		}
+	//	for (int32 j = 0; j < size.x; j++) {
+	//		for (int32 i = 0; i < size.y / 2; i++) {
+	//			std::swap(isHole[i + j * size.y], isHole[(size.y - 1 - i) + j * size.y]);
+	//		}
+	//	}
 
-		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
-		{
-			WorldTile2 bldTileBeforeRotation = UndoRotateBuildingTileByDirection(tile - centerTile());
-			bldTileBeforeRotation = bldTileBeforeRotation + (size - 1) / 2;
-			check(bldTileBeforeRotation.x >= 0);
-			check(bldTileBeforeRotation.x < 18);
-			check(bldTileBeforeRotation.y >= 0);
-			check(bldTileBeforeRotation.y < 18);
-			PUN_LOG("bldTileBeforeRotation %d %d", bldTileBeforeRotation.x, bldTileBeforeRotation.y);
-			int32 index = bldTileBeforeRotation.y + bldTileBeforeRotation.x * size.y;
-			check(isHole.size() > index && index >= 0);
-			if (isHole[index]) {
-				func(tile);
-			}
-		});
-	}
+	//	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+	//	{
+	//		WorldTile2 bldTileBeforeRotation = UndoRotateBuildingTileByDirection(tile - centerTile());
+	//		bldTileBeforeRotation = bldTileBeforeRotation + (size - 1) / 2;
+	//		check(bldTileBeforeRotation.x >= 0);
+	//		check(bldTileBeforeRotation.x < 18);
+	//		check(bldTileBeforeRotation.y >= 0);
+	//		check(bldTileBeforeRotation.y < 18);
+	//		PUN_LOG("bldTileBeforeRotation %d %d", bldTileBeforeRotation.x, bldTileBeforeRotation.y);
+	//		int32 index = bldTileBeforeRotation.y + bldTileBeforeRotation.x * size.y;
+	//		check(isHole.size() > index && index >= 0);
+	//		if (isHole[index]) {
+	//			func(tile);
+	//		}
+	//	});
+	//}
 
-	virtual void OnPreInit_IncludeNonPlayer() override
-	{
-		DigArea([&](WorldTile2 tile) {
-			_simulation->terrainChanges().AddHole(tile);
-		});
-	}
+	//virtual void OnPreInit_IncludeNonPlayer() override
+	//{
+	//	DigArea([&](WorldTile2 tile) {
+	//		_simulation->terrainChanges().AddHole(tile);
+	//		_simulation->SetHoleWorldTexture(tile, true);
+	//	});
+	//}
 
-	virtual void OnDeinit() override
-	{
-		DigArea([&](WorldTile2 tile) {
-			_simulation->terrainChanges().RemoveHole(tile);
-		});
-	}
+	//virtual void OnDeinit() override
+	//{
+	//	DigArea([&](WorldTile2 tile) {
+	//		_simulation->terrainChanges().RemoveHole(tile);
+	//		_simulation->SetHoleWorldTexture(tile, false);
+	//	});
+	//}
 
 };
 

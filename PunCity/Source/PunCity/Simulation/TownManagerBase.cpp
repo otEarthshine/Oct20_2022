@@ -23,7 +23,7 @@ void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bo
 	}
 }
 
-void ProvinceClaimProgress::Retreat(int32 unitPlayerId)
+void ProvinceClaimProgress::Retreat_DeleteUnits(int32 unitPlayerId)
 {
 	auto retreat = [&](std::vector<CardStatus>& line) {
 		for (int32 i = line.size(); i-- > 0;) {
@@ -48,7 +48,7 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 	 * displayCardStateValue2 = last damage tick
 	 */
 
-	auto doDamage = [&](std::vector<CardStatus>& lineCards, std::vector<CardStatus>& damageTakerLine)
+	auto doDamage = [&](std::vector<CardStatus>& lineCards, std::vector<CardStatus>& damageTakerLine, int32 attackBonusPercent, int32 defenseBonusPercent)
 	{
 		int32 randomIndex = GameRand::Rand() % damageTakerLine.size();
 		CardStatus& damageTaker = damageTakerLine[randomIndex];
@@ -58,8 +58,14 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 			attack += GetMilitaryInfo(card.cardEnum).attack100 * card.stackSize;
 		}
 
+		// Damage Bonus
+		attack = attack * (100 + attackBonusPercent) / 100;
+
 		MilitaryCardInfo damageTakerInfo = GetMilitaryInfo(damageTaker.cardEnum);
-		int32 damage = attack * 100 / (100 + damageTakerInfo.defense100);
+
+		int32 defense100 = damageTakerInfo.defense100 * (100 + defenseBonusPercent) / 100;
+		
+		int32 damage = attack * 100 / std::max(1, defense100);
 		damageTaker.displayCardStateValue1 = damage;
 		damageTaker.displayCardStateValue2 = Time::Ticks();
 
@@ -80,33 +86,33 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 		}
 	};
 
-	auto doDamageToArmy = [&](std::vector<CardStatus>& attackerLine, std::vector<CardStatus>& damageTakerFrontLine, std::vector<CardStatus>& damageTakerBackLine)
+	auto doDamageToArmy = [&](std::vector<CardStatus>& attackerLine, std::vector<CardStatus>& damageTakerFrontLine, std::vector<CardStatus>& damageTakerBackLine, int32 attackBonus, int32 defenseBonus)
 	{
 		if (damageTakerFrontLine.size() > 0) {
-			doDamage(attackerLine, damageTakerFrontLine);
+			doDamage(attackerLine, damageTakerFrontLine, attackBonus, defenseBonus);
 		}
 		else if (damageTakerBackLine.size() > 0) {
-			doDamage(attackerLine, damageTakerBackLine);
+			doDamage(attackerLine, damageTakerBackLine, attackBonus, defenseBonus);
 		}
 	};
 
 	//! Defender Turn
 	if (Time::Seconds() % 8 == 0)
 	{
-		doDamageToArmy(defenderBackLine, attackerFrontLine, attackerBackLine);
+		doDamageToArmy(defenderBackLine, attackerFrontLine, attackerBackLine, defender_attackBonus, attacker_defenseBonus);
 	}
 	else if (Time::Seconds() % 8 == 1)
 	{
-		doDamageToArmy(defenderFrontLine, attackerFrontLine, attackerBackLine);
+		doDamageToArmy(defenderFrontLine, attackerFrontLine, attackerBackLine, defender_attackBonus, attacker_defenseBonus);
 	}
 	//! Attacker Turn
 	else if (Time::Seconds() % 8 == 4)
 	{
-		doDamageToArmy(attackerBackLine, defenderFrontLine, defenderBackLine);
+		doDamageToArmy(attackerBackLine, defenderFrontLine, defenderBackLine, attacker_attackBonus, defender_defenseBonus);
 	}
 	else if (Time::Seconds() % 8 == 5)
 	{
-		doDamageToArmy(attackerFrontLine, defenderFrontLine, defenderBackLine);
+		doDamageToArmy(attackerFrontLine, defenderFrontLine, defenderBackLine, attacker_attackBonus, defender_defenseBonus);
 	}
 
 	//! Battle Countdown once it is done

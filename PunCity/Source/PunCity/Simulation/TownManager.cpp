@@ -1474,7 +1474,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		std::vector<CardStatus> cards = cardSystem.GetCardsBoughtAndInventory();
 		for (const CardStatus& card : cards) {
 			if (IsMilitaryCardEnum(card.cardEnum)) {
-				incomes100[static_cast<int>(IncomeEnum::ArmyUpkeep)] -= card.stackSize * GetMilitaryUpkeep(card.cardEnum) * 100;
+				incomes100[static_cast<int>(IncomeEnum::ArmyUpkeep)] -= card.stackSize * GetMilitaryInfo(card.cardEnum).upkeep * 100;
 			}
 		}
 	}

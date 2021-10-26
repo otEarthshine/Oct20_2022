@@ -65,15 +65,6 @@ public:
 				colorMaterial->SetTextureParameterValue("ColorTexture", cardIcon);
 				colorMaterial->SetTextureParameterValue("DepthTexture", nullptr);
 			}
-			else
-			{
-				colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetBuildingIconNullable(buildingEnum));
-				colorMaterial->SetTextureParameterValue("DepthTexture", assetLoader->GetBuildingIconAlpha(buildingEnum));
-
-				bool usingSpecialIcon = assetLoader->IsBuildingUsingSpecialIcon(buildingEnum);
-				colorMaterial->SetScalarParameterValue("IsSpecial", usingSpecialIcon ? 1.0f : 0.0f);
-			}
-			
 		}
 		else {
 			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
@@ -194,7 +185,7 @@ public:
 		PriceText->SetText(TEXT_NUM(price));
 		PriceTextBox->SetVisibility(price > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
-		PriceResourceIcon->SetBrushFromTexture(assetLoader()->GetResourceIcon_WithMoney(resourceEnum));
+		PriceResourceIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial_WithMoney(resourceEnum));
 
 		HumanPriceText->SetText(TEXT_NUM(humanPrice));
 		HumanPriceTextBox->SetVisibility(humanPrice > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);

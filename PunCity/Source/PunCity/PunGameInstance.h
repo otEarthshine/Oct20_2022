@@ -150,14 +150,7 @@ public:
 			PUN_DEBUG2("%s", ToTChar(ss.str()));
 		}
 	}
-	void PrintPlayers()
-	{
-		TArray<FPlayerInfo> playerInfos = playerInfoList();
-		for (int32 i = 0; i < playerInfos.Num(); i++) {
-			PUN_DEBUG2(" -- %s steamId:%llu connected:%d ready:%d", *(playerInfos[i].name.ToString()), playerInfos[i].steamId64, playerConnectedStates[i], IsPlayerReady(i));
-		}
-		PUN_DEBUG2(" - PlayerCount: %d", playerCount());
-	}
+	void PrintPlayers();
 
 	/*
 	 * Save Game
@@ -559,15 +552,7 @@ public:
 	void CachePlayerInfos() {
 		_playerInfosCache = _playerInfos;
 	}
-	FPlayerInfo GetCachedPlayerInfo(uint64 steamId64)
-	{
-		for (const FPlayerInfo& playerInfo : _playerInfosCache) {
-			if (playerInfo.steamId64 == steamId64) {
-				return playerInfo;
-			}
-		}
-		return FPlayerInfo();
-	}
+	FPlayerInfo GetCachedPlayerInfo(uint64 steamId64);
 
 
 	// Player Connected
@@ -625,144 +610,14 @@ public:
 	/*
 	 * Connect/Disconnect
 	 */
-	void PrintPlayerInfos()
-	{
-		_LOG(PunSync, "PrintPlayerInfos:");
-		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			_LOG(PunSync, " - i:%d %s steamId:%llu ready:%d connected:%d", i, *_playerInfos[i].name.ToString(), _playerInfos[i].steamId64, _playerReadyStates[i], playerConnectedStates[i]);
-		}
-	}
-
 	
 	 // Returns playerId
-	int32 ConnectPlayer(FString playerNameF, uint64 steamId64)
-	{
-		_LOG(PunSync, "ConnectPlayer: %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
-		PrintPlayerInfos();
-		
-		auto setToExistingSlot = [&](int32 playerId)
-		{
-			_playerInfos[playerId].name = FText::FromString(playerNameF);
-			_playerInfos[playerId].steamId64 = steamId64;
-			_playerReadyStates[playerId] = false;
-			playerConnectedStates[playerId] = true;
-			clientPacketsReceived[playerId] = 0;
+	int32 ConnectPlayer(FString playerNameF, uint64 steamId64);
 
-			PrintPlayerInfos();
-		};
-
-		//! Load Saved Game
-		// If we are loading a save, try to put the player in the old spot
-		//GameSaveInfo saveInfo = GetSavedGameToLoad();
-		if (saveSystem().HasSyncData())
-		{
-			GameSaveInfo saveInfo = saveSystem().GetSyncSaveInfo();
-			SetPlayerCount(saveInfo.playerNames.Num());
-			
-			for (int32 i = 0; i < saveInfo.playerNames.Num(); i++) {
-				if (!IsPlayerConnected(i) && steamId64 == saveInfo.playerNames[i].steamId64)
-				{
-					// If this player was host, change hostPlayerId
-					if (steamId64 == _playerInfos[hostPlayerId].steamId64) {
-						hostPlayerId = i;
-					}
-
-					_LOG(PunSync, "ConnectPlayer Old Spot: %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
-					setToExistingSlot(i);
-					return i;
-				}
-			}
-		}
-
-		//!
-		// Try Add to the slot with same name first
-		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			if (!IsPlayerConnected(i) && 
-				steamId64 == _playerInfos[i].steamId64)
-			{
-				_LOG(PunSync, "ConnectPlayer (Same Id): %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
-				setToExistingSlot(i);
-				return i;
-			}
-		}
-		
-		// Add to empty slot
-		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			if (!IsPlayerConnected(i))
-			{
-				_LOG(PunSync, "ConnectPlayer (Empty): %s steamId:%llu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, playerCount(), playerInfoList().Num(), IsInGame());
-				setToExistingSlot(i);
-				return i;
-			}
-		}
-
-		// Make new slot
-		FPlayerInfo playerInfo;
-		if (IsInGame()) {
-			playerInfo = GetCachedPlayerInfo(steamId64);
-		} else {
-			playerInfo.name = FText::FromString(playerNameF);
-			playerInfo.steamId64 = steamId64;
-		}
-		
-		_playerInfos.Add(playerInfo);
-		_playerReadyStates.Add(false);
-		playerConnectedStates.Add(true);
-		clientPacketsReceived.Add(0);
-
-		_LOG(PunSync, "ConnectPlayer (New slot): %s steamId:%llu size:%d isInGame:%d", *playerNameF, steamId64, playerInfoList().Num(), IsInGame());
-		PrintPlayerInfos();
-		
-		return _playerInfos.Num() - 1;
-	}
-
-	bool TryChangePlayerId(int32 originalId, int32 newId)
-	{
-		// Don't take the slot if someone already took it
-		if (playerConnectedStates[newId]) {
-			return false;
-		}
-
-		_LOG(PunSync, "TryChangePlayerId %d, %d", originalId, newId);
-		
-		_playerInfos[newId] = _playerInfos[originalId];
-		_playerReadyStates[newId] = _playerReadyStates[originalId];
-		playerConnectedStates[newId] = playerConnectedStates[originalId];
-
-		clientPacketsReceived[newId] = clientPacketsReceived[originalId];
-		
-		
-		_playerInfos[originalId] = FPlayerInfo();
-		_playerReadyStates[originalId] = false;
-		playerConnectedStates[originalId] = false;
-
-		clientPacketsReceived[originalId] = 0;
-		
-		return true;
-	}
+	bool TryChangePlayerId(int32 originalId, int32 newId);
 
 
-	void DisconnectPlayer(FString playerNameF, uint64 steamId64)
-	{
-		_LOG(PunSync, "DisconnectPlayer %s steamId64:%llu", *playerNameF, steamId64);
-		PrintPlayerInfos();
-		
-		for (int32 i = 0; i < _playerInfos.Num(); i++) {
-			if (_playerInfos[i].steamId64 == steamId64)
-			{
-				_playerInfos[i].name = FText();
-				_playerInfos[i].steamId64 = steamId64;
-				_playerReadyStates[i] = false;
-				playerConnectedStates[i] = false;
-
-				clientPacketsReceived[i] = 0;
-
-				_LOG(PunSync, "DisconnectPlayer index:%d, %s steamId64:%llu", i, *playerNameF, steamId64);
-				PrintPlayerInfos();
-				break;
-			}
-		}
-	}
+	void DisconnectPlayer(FString playerNameF, uint64 steamId64);
 
 	/*
 	 * Server Tick

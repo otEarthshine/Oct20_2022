@@ -389,26 +389,31 @@ public:
 		return NiagaraByEnum[static_cast<int>(particleEnum) - static_cast<int>(ParticleEnum::DemolishDust) - 1];
 	}
 
-	UTexture2D* GetBuildingIcon(CardEnum buildingEnum) { return _buildingIcons[static_cast<int>(buildingEnum)]; }
-	UTexture2D* GetBuildingIconAlpha(CardEnum buildingEnum) { return _buildingIconsAlpha[static_cast<int>(buildingEnum)]; }
-	bool IsBuildingUsingSpecialIcon(CardEnum buildingEnum) {
-		return _buildingsUsingSpecialIcon.Contains(buildingEnum);
-	}
+	//UTexture2D* GetBuildingIcon(CardEnum buildingEnum) { return _buildingIcons[static_cast<int>(buildingEnum)]; }
+	//UTexture2D* GetBuildingIconAlpha(CardEnum buildingEnum) { return _buildingIconsAlpha[static_cast<int>(buildingEnum)]; }
+	//bool IsBuildingUsingSpecialIcon(CardEnum buildingEnum) {
+	//	return _buildingsUsingSpecialIcon.Contains(buildingEnum);
+	//}
 
-	UTexture2D* GetBuildingIconNullable(CardEnum buildingEnum) {
-		if (static_cast<int32>(buildingEnum) >= _buildingIcons.Num()) {
-			return nullptr;
-		}
-		return _buildingIcons[static_cast<int>(buildingEnum)];
-	}
-	
+	//UTexture2D* GetBuildingIconNullable(CardEnum buildingEnum) {
+	//	if (static_cast<int32>(buildingEnum) >= _buildingIcons.Num()) {
+	//		return nullptr;
+	//	}
+	//	return _buildingIcons[static_cast<int>(buildingEnum)];
+	//}
+	//
 	
 	UTexture2D* GetResourceIcon(ResourceEnum resourceEnum) { return _resourceIcons[static_cast<int>(resourceEnum)]; }
 	UTexture2D* GetResourceIconAlpha(ResourceEnum resourceEnum) { return _resourceIconsAlpha[static_cast<int>(resourceEnum)]; }
 	UMaterialInstanceDynamic* GetResourceIconMaterial(ResourceEnum resourceEnum);
 
-	UTexture2D* GetResourceIcon_WithMoney(ResourceEnum resourceEnum) {
-		return resourceEnum == ResourceEnum::Money ? CoinIcon : _resourceIcons[static_cast<int>(resourceEnum)];
+	UMaterialInstanceDynamic* GetResourceIconMaterial_WithMoney(ResourceEnum resourceEnum) {
+		if (_coinIconMaterial == nullptr) {
+			UMaterialInstanceDynamic* materialInstance = UMaterialInstanceDynamic::Create(M_Icon, this);
+			materialInstance->SetTextureParameterValue("ColorTexture", CoinIcon);
+			_coinIconMaterial = materialInstance;
+		}
+		return resourceEnum == ResourceEnum::Money ? _coinIconMaterial : GetResourceIconMaterial(resourceEnum);
 	}
 
 	UTexture2D* GetGeoresourceIcon(ResourceEnum resourceEnum) {
@@ -584,6 +589,7 @@ public:
 	UPROPERTY(EditAnywhere) UMaterial* ResourceIconMaterial;
 	UPROPERTY(EditAnywhere) UMaterial* NoResourceIconMaterial;
 	//UPROPERTY(EditAnywhere) UMaterial* M_HoverIcon;
+	UPROPERTY(EditAnywhere) UMaterial* M_Icon;
 
 	UPROPERTY(EditAnywhere) UTexture2D* HouseIcon;
 	UPROPERTY(EditAnywhere) UTexture2D* SmileIcon;
@@ -950,16 +956,18 @@ private:
 
 	std::vector<UStaticMesh*> _plantToMesh;
 
-	UPROPERTY() TArray<UTexture2D*> _buildingIcons;
-	UPROPERTY() TArray<UTexture2D*> _buildingIconsAlpha;
+	//UPROPERTY() TArray<UTexture2D*> _buildingIcons;
+	//UPROPERTY() TArray<UTexture2D*> _buildingIconsAlpha;
 	UPROPERTY() TArray<UTexture2D*> _resourceIcons;
 	UPROPERTY() TArray<UTexture2D*> _resourceIconsAlpha;
+	
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> _resourceIconMaterials;
+	UPROPERTY() UMaterialInstanceDynamic* _coinIconMaterial;
 
 	std::unordered_map<ResourceEnum, UTexture2D*> _georesourceIcons;
 	std::unordered_map<BiomeEnum, UTexture2D*> _biomeIcons;
 
-	TSet<CardEnum> _buildingsUsingSpecialIcon;
+	//TSet<CardEnum> _buildingsUsingSpecialIcon;
 
 	UPROPERTY() TArray<UTexture2D*> _cardIcons;
 

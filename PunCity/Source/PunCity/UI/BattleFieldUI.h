@@ -21,7 +21,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoRight;
 	UPROPERTY(meta = (BindWidget)) UImage* BattleBarImage;
 
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftAttackBonus;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftDefenseBonus;
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightAttackBonus;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightDefenseBonus;
 
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftArmyStrength;

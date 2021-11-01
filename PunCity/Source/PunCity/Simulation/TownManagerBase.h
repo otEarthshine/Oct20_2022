@@ -407,7 +407,7 @@ public:
 	}
 
 
-	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll = true);
+	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerIdToReturn, bool forcedAll = true, bool isRetreating = false);
 
 	void EndConquer(int32 provinceId)
 	{
@@ -488,6 +488,12 @@ public:
 		if (_lordPlayerId != -1) {
 			return _lordPlayerId;
 		}
+		if (IsMinorTown(_townId)) {
+			int32 mainAllyId = _relationships.GetMainAllyId();
+			if (mainAllyId != -1) {
+				return mainAllyId;
+			}
+		}
 		return _playerId;
 	}
 
@@ -509,6 +515,7 @@ public:
 	/*
 	 * Ally
 	 */
+	// TODO: deprecate this???
 	const std::vector<int32>& allyPlayerIds() { return _allyPlayerIds; }
 	void GainAlly(int32 allyPlayerId) {
 		_allyPlayerIds.push_back(allyPlayerId);

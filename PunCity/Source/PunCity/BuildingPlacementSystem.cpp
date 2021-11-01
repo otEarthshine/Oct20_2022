@@ -1654,7 +1654,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		_placementType == PlacementType::Fence ||
 		_placementType == PlacementType::Bridge)
 	{
-		bool isFastBuild = SimSettings::IsOn("CheatFastBuild");
+		bool isFastBuild = PunSettings::IsOn("CheatFastBuild");
 		
 		TickLineDrag(cameraAtom, [&](WorldTile2 tile) {
 			if (isFastBuild) {
@@ -2222,7 +2222,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			auto isCorrectResource = [&](WorldTile2 tile)
 			{
 				// FastBuild doesn't need correct resource
-				if (SimSettings::IsOn("CheatFastBuild")) {
+				if (PunSettings::IsOn("CheatFastBuild")) {
 					return true;
 				}
 				return _buildingEnum == CardEnum::Quarry || 
@@ -2284,7 +2284,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			GeoresourceSystem& georesourceSystem = simulation.georesourceSystem();
 			auto isCorrectResource = [&](WorldTile2 tile) {
 				// FastBuild doesn't need correct resource
-				if (SimSettings::IsOn("CheatFastBuild")) {
+				if (PunSettings::IsOn("CheatFastBuild")) {
 					return true;
 				}
 				return _buildingEnum == CardEnum::Quarry ||
@@ -2306,18 +2306,44 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		else if (_buildingEnum == CardEnum::ClayPit ||
 				_buildingEnum == CardEnum::IrrigationReservoir)
 		{
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				if (IsPlayerBuildable(tile)) {
-					if (terrainGenerator.riverFraction(tile) > GetRiverFractionPercentThreshold(_buildingEnum) / 100.0f ||
-						PunSettings::IsOn("CheatFastBuild")) 
-					{
-						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
-						return;
-					}
-					SetInstruction(PlacementInstructionEnum::MustBeNearRiver, true);
-				}
-				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-			});
+			std::vector<PlacementGridInfo> grids;
+			bool setMustBeNearRiverOasisInstruction;
+			_simulation->CheckClaypitArea(_buildingEnum, _area, _gameInterface->playerId(), grids, setMustBeNearRiverOasisInstruction);
+
+			for (const PlacementGridInfo& gridInfo : grids) {
+				_placementGrid.SpawnGrid(gridInfo.gridEnum, cameraAtom, gridInfo.location);
+			}
+
+			if (setMustBeNearRiverOasisInstruction) {
+				SetInstruction(PlacementInstructionEnum::MustBeNearRiver, true);
+			}
+			
+			//const std::vector<int32>& oasisSlotIds = _simulation->provinceInfoSystem().oasisSlotProvinceIds();
+			//
+			//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+			//{
+			//	if (IsPlayerBuildable(tile)) 
+			//	{
+			//		bool hasOasis = false;
+			//		for (int32 i = 0; i < oasisSlotIds.size(); i++) {
+			//			const ProvinceBuildingSlot& slot = _simulation->provinceInfoSystem().provinceBuildingSlot(oasisSlotIds[i]);
+			//			if (slot.oasisSlot.isValid() && WorldTile2::Distance(slot.oasisSlot.centerTile, tile) < 20) {
+			//				hasOasis = true;
+			//				break;
+			//			}
+			//		}
+			//		
+			//		if (hasOasis ||
+			//			terrainGenerator.riverFraction(tile) > GetRiverFractionPercentThreshold(_buildingEnum) / 100.0f ||
+			//			PunSettings::IsOn("CheatFastBuild")) 
+			//		{
+			//			_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
+			//			return;
+			//		}
+			//		SetInstruction(PlacementInstructionEnum::MustBeNearRiver, true);
+			//	}
+			//	_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+			//});
 		}
 		// Logistics Office
 		else if (_buildingEnum == CardEnum::ShippingDepot)
@@ -2948,7 +2974,17 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			return;
 		}
 
-		FactionEnum factionEnum = /*(townId != -1) ? _simulation->townManagerBase(townId)->factionEnum() :*/ FactionEnum::Europe;
+		FactionEnum factionEnum = _simulation->playerFactionEnum(_gameInterface->playerId());
+		int32 tileOwnerTown = _simulation->tileOwnerTown(_mouseOnTile);
+
+		
+		// Show our faction's building unless it is a vassal town with different culture
+		if (tileOwnerTown != -1 &&
+			tileOwnerTown != _gameInterface->playerId() && // Not capital
+			_simulation->townPlayerId(tileOwnerTown) == _gameInterface->playerId()) // Owned by player
+		{
+			factionEnum = _simulation->townManagerBase(tileOwnerTown)->factionEnum();
+		}
 
 		std::vector<ModuleTransform> modules = _gameInterface->displayInfo().GetDisplayModules(factionEnum, _buildingEnum, 0).transforms;
 		_gameInterface->ShowBuildingMesh(_mouseOnTile, _faceDirection, modules, 0, false);

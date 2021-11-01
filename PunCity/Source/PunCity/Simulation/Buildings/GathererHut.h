@@ -742,6 +742,11 @@ class PitaBakery final : public Bakery
 	
 };
 
+class CarpetWeaver final : public IndustrialBuilding
+{
+	virtual void FinishConstruction() override;
+};
+
 
 class Brickworks final : public IndustrialBuilding
 {
@@ -969,7 +974,8 @@ public:
 class PaperMill final : public Building
 {
 public:
-	void FinishConstruction() override;
+	virtual void OnInit() override;
+	virtual void FinishConstruction() override;
 
 	virtual int32 inputPerBatch(ResourceEnum resourceEnum) final {
 		return Building::inputPerBatch(resourceEnum) * (IsUpgraded_InitialIndex(0) ? 5 : 10) / 10;
@@ -1052,6 +1058,11 @@ class GrandMuseum final : public WorldWonder
 public:
 };
 class ExhibitionHall final : public WorldWonder
+{
+public:
+};
+
+class GreatMosque final : public WorldWonder
 {
 public:
 };
@@ -1588,7 +1599,11 @@ public:
 
 	virtual void OnDeinit() override;
 
-	
+	virtual int32 displayVariationIndex() override;
+
+	virtual FactionEnum factionEnum() const override {
+		return FactionEnum::Europe;
+	}
 };
 
 
@@ -2014,6 +2029,19 @@ public:
 	}
 
 	// Use Modulus to get level??
+	
+
+	virtual bool RefreshHoverWarning() override
+	{
+		if (Building::RefreshHoverWarning()) {
+			return true;
+		}
+
+		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
+
+		hoverWarning = tradeRoutes.size() > 0 ? HoverWarning::NeedSetup : HoverWarning::None;
+		return true;
+	}
 
 	/*
 	 * Trade money depends on:

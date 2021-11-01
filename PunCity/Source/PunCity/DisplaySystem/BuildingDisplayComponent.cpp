@@ -330,7 +330,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				// Add burned frame
 				for (size_t i = 0; i < modules.size(); i++) {
 					FString& moduleName = modules[i].moduleName;
-					if (moduleName.Len() > 5 && moduleName.Right(5) == FString("Frame")) {
+					if (moduleName.Len() > 5 && FStringCompareRight(moduleName, FString("Frame"), 1)) {
 						_moduleMeshes[meshId]->Add(moduleName + FString("Burnt"), instanceKey, transform, constructionPercent, buildingId);
 						break;
 					}

@@ -4,6 +4,7 @@
 
 #include "LobbySettingsUI.h"
 #include "PunButtonImage.h"
+#include "W_PlayerCharacterInfo.h"
 
 #include "LobbyUI.generated.h"
 
@@ -86,10 +87,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* LobbyChooseLogoOverlay;
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyChooseLogoDoneButton;
 
-	UPROPERTY(meta = (BindWidget)) UImage* LogoPreviewImage;
-	UPROPERTY(meta = (BindWidget)) UImage* CharacterPreviewImage;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerSettingsPreviewFactionName;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerSettingsPreviewPlayerName;
+	UPROPERTY(meta = (BindWidget)) UW_PlayerCharacterInfo* PlayerCharacterInfoUI;
+	//UPROPERTY(meta = (BindWidget)) UImage* LogoPreviewImage;
+	//UPROPERTY(meta = (BindWidget)) UImage* CharacterPreviewImage;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerSettingsPreviewFactionName;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerSettingsPreviewPlayerName;
 	
 	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionSectionButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ChooseIconSectionButton;

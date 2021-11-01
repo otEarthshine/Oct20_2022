@@ -81,9 +81,9 @@ void PlayerOwnedManager::Tick1Sec()
 	}
 
 	/*
-	 * Spy Nest every 2 secs
+	 * Spy Nest every X secs
 	 */
-	if (Time::Seconds() % 2 == 0)
+	if (Time::Seconds() % GameConstants::BaseFloatupIntervalSec == 0)
 	{
 		for (int32 spyNestId : _spyNestIds)
 		{
@@ -94,7 +94,7 @@ void PlayerOwnedManager::Tick1Sec()
 				
 				int32 spyInfluenceGainPerRound = _simulation->GetSpyNestInfluenceGainPerRound(spyPlayerId, nest->townId());
 
-				int32 spyInfluenceGainPer2Sec = GameRand::RandRound(spyInfluenceGainPerRound * 2, Time::TicksPerSecond);
+				int32 spyInfluenceGainPer2Sec = GameRand::RandRound(spyInfluenceGainPerRound * GameConstants::BaseFloatupIntervalSec, Time::TicksPerSecond);
 
 				_simulation->ChangeInfluence(nest->playerId(), -spyInfluenceGainPer2Sec);
 				_simulation->ChangeInfluence(_playerId, spyInfluenceGainPer2Sec);
@@ -230,11 +230,11 @@ void PlayerOwnedManager::AddInfluenceIncomeToString(TArray<FText>& args)
 	//	);
 	//};
 
-	ADDTEXT_INV_("<space>");
-	ADDTEXT_(LOCTEXT("MaxStoredInfluence_Tip",
-		"Max Stored Influence: {0}<img id=\"Influence\"/>\n"),
-		TEXT_100(maxStoredInfluence100())
-	);
+	//ADDTEXT_INV_("<space>");
+	//ADDTEXT_(LOCTEXT("MaxStoredInfluence_Tip",
+	//	"Max Stored Influence: {0}<img id=\"Influence\"/>\n"),
+	//	TEXT_100(maxStoredInfluence100())
+	//);
 
 	//addStoredInfluenceRow(InfluenceIncomeEnum::Townhall);
 	//addStoredInfluenceRow(InfluenceIncomeEnum::Population);

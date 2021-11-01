@@ -952,6 +952,38 @@ void UPunGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type F
 }
 
 /*
+ * SetPlayerInfo
+ */
+void UPunGameInstance::SetPlayerInfos(TArray<FPlayerInfo> playerInfosIn) {
+	_LOG(PunSync, "SetPlayerInfos[start] isInGame:%d", IsInGame());
+	PrintPlayers();
+
+	_playerInfos = playerInfosIn;
+
+	_LOG(PunSync, "SetPlayerInfos[end]");
+	PrintPlayers();
+}
+void UPunGameInstance::SetPlayerInfo(int32 playerId, const FPlayerInfo& playerInfo) {
+	_LOG(PunSync, "SetPlayerInfo[start] isInGame:%d playerId:%d %s ", IsInGame(), playerId, *playerInfo.name.ToString());
+	PrintPlayers();
+
+	_playerInfos[playerId] = playerInfo;
+
+	// Check for possible duplicate
+	TSet<uint32> steamIds;
+	for (const FPlayerInfo& info : _playerInfos) {
+		if (!info.IsEmpty()) {
+			uint32 id = CSteamID(info.steamId64).GetAccountID();
+			check(!steamIds.Contains(id));
+			steamIds.Add(id);
+		}
+	}
+
+	_LOG(PunSync, "SetPlayerInfo[end]");
+	PrintPlayers();
+}
+
+/*
  * Connect/Disconnect Players
  */
 
@@ -961,11 +993,12 @@ static bool SteamID64Equals(uint64 steamId64A, uint64 steamId64B) {
 
 void UPunGameInstance::PrintPlayers()
 {
-	_LOG(PunSync, "PrintPlayerInfos (%d):", _playerInfos.Num());
+	_LOG(PunSync, "PrintPlayerInfos (%d, inGame:%d):", _playerInfos.Num(), IsInGame());
 	for (int32 i = 0; i < _playerInfos.Num(); i++) {
 		_LOG(PunSync, " - i:%d %s steamId:%llu id:%lu ready:%d connected:%d", i, *_playerInfos[i].name.ToString(),
 			_playerInfos[i].steamId64, CSteamID(_playerInfos[i].steamId64).GetAccountID(),
-			_playerReadyStates[i], playerConnectedStates[i]);
+			IsPlayerReady(i), (i < playerConnectedStates.Num() ? playerConnectedStates[i] : false)
+		);
 	}
 	_LOG(PunSync, "--");
 }
@@ -1093,7 +1126,7 @@ void UPunGameInstance::DisconnectPlayer(FString playerNameF, uint64 steamId64)
 		if (SteamID64Equals(_playerInfos[i].steamId64, steamId64))
 		{
 			_playerInfos[i].name = FText();
-			_playerInfos[i].steamId64 = steamId64;
+			_playerInfos[i].steamId64 = FPlayerInfo::InvalidSteamId64;
 			_playerReadyStates[i] = false;
 			playerConnectedStates[i] = false;
 
@@ -1105,8 +1138,11 @@ void UPunGameInstance::DisconnectPlayer(FString playerNameF, uint64 steamId64)
 		}
 	}
 
-	PrintPlayers();
-	UE_DEBUG_BREAK();
+	if (IsInGame() && isMultiplayer())
+	{
+		PrintPlayers();
+		UE_DEBUG_BREAK();
+	}
 }
 
 FPlayerInfo UPunGameInstance::GetCachedPlayerInfo(uint64 steamId64)

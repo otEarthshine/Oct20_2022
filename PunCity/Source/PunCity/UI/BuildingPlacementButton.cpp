@@ -276,7 +276,7 @@ void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isR
 			needExclamation = true;
 		}
 		else if (simulation().HasQuest(playerId(), QuestEnum::FoodBuildingQuest) &&
-			(IsAgricultureBuilding(buildingEnum) && buildingEnum != CardEnum::Forester))
+			IsFoodBuilding(buildingEnum))
 		{
 			needExclamation = true;
 		}

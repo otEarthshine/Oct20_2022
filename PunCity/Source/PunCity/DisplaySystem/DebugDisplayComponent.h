@@ -475,8 +475,8 @@ protected:
 					drawAreaBox(area, FLinearColor::Blue);
 					drawAreaBox(area.GetFrontArea(slot.portSlot.faceDirection), FLinearColor::Blue);
 				}
-				if (slot.landSlot.isValid()) {
-					TileArea area = BuildingArea(slot.landSlot.centerTile, GetBuildingInfo(CardEnum::MinorCity).size, slot.landSlot.faceDirection);
+				if (slot.portLandSlot.isValid()) {
+					TileArea area = BuildingArea(slot.portLandSlot.centerTile, GetBuildingInfo(CardEnum::MinorCity).size, slot.portLandSlot.faceDirection);
 					drawAreaBox(area, FLinearColor::Yellow);
 					drawAreaBox(area.GetExpandedArea(), FLinearColor::Yellow, false);
 				}

@@ -2221,7 +2221,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							auto& bld = building.subclass<WorldTradeOffice>();
 
-							focusBox->AddRichText(LOCTEXT("WorldTradeOffice Description", "Every 10 secs:\n- spend 10<img id=\"Influence\"/>\n- increase price of goods by 1%"));
+							focusBox->AddRichText(LOCTEXT("WorldTradeOffice Description", "Every 30 secs:\n- spend 30<img id=\"Influence\"/>\n- increase price of goods by 1%"));
 							focusBox->AddSpacer(24);
 							
 							// targetAmount
@@ -3169,7 +3169,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						bonusIcon->SetVisibility(ESlateVisibility::Visible);
 						SetChildHUD(bonusIcon);
 						bonusIcon->BuildingIcon->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), bonusEnum));
-
+						
 						const BldInfo& info = GetBuildingInfo(bonusEnum);
 						UToolTipWidgetBase* tooltip = UPunBoxWidget::AddToolTip(bonusIcon, bonusIcon);
 

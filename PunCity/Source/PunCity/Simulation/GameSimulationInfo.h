@@ -1312,7 +1312,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::PitaBread, LOCTEXT("Pita Bread", "Pita Bread"), FoodCost, LOCTEXT("Pita Bread Desc", "Delicious food baked from Wheat Flour")),
 	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 50, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
 	ResourceInfo(ResourceEnum::DateFruit, LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
-	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 38, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
 	
 };
 
@@ -2319,7 +2319,7 @@ enum class CardEnum : uint16
 	BathHouse,
 	Caravansary,
 	PitaBakery,
-	
+	GreatMosque,
 	
 	
 	//! Non-Building Cards
@@ -2598,8 +2598,9 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::CardMaker, 20 },
 	{ CardEnum::ImmigrationOffice, 10 },
 
+	{ CardEnum::ImmigrationOffice, 10 },
 
-	{ CardEnum::AdventurersGuild, 50 },
+	{ CardEnum::Fort, 50 },
 };
 
 // Building upkeep per round
@@ -2625,6 +2626,8 @@ static const std::vector<CardEnum> WorldWonders
 	CardEnum::Castle,
 	CardEnum::GrandPalace,
 	CardEnum::ExhibitionHall,
+
+	CardEnum::GreatMosque,
 };
 static bool IsWorldWonder(CardEnum cardEnumIn) {
 	for (CardEnum cardEnum : WorldWonders) {
@@ -3754,7 +3757,7 @@ static const BldInfo BuildingInfo[]
 
 	// Aug 25 additions
 	BldInfo(CardEnum::MinorCity, _LOCTEXT("Minor City", "Minor City"), LOCTEXT("Minor City (Plural)", "Minor Cities"), LOCTEXT("Minor City Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::MinorCityPort, _LOCTEXT("Minor City Port", "Minor City Port"), LOCTEXT("Minor City Port (Plural)", "Minor City Ports"), LOCTEXT("Minor City Port Desc", ""),
 		WorldTile2(10, 9), GetBldResourceInfoManual({})
@@ -3763,22 +3766,22 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Hotel, _LOCTEXT("Hotel", "Hotel"), LOCTEXT("Hotel (Plural)", "Hotels"), LOCTEXT("Hotel Desc", "Allow visitors from other towns to stay (for <img id=\"Coin\"/>)."),
-		WorldTile2(6, 6), GetBldResourceInfoManual({})
+		WorldTile2(8, 12), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Slot Animal Cards to get bonuses."),
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100, 100 })
 	),
 	BldInfo(CardEnum::Museum, _LOCTEXT("Museum", "Museum"), LOCTEXT("Museum (Plural)", "Museums"), LOCTEXT("Museum Desc", "Slot Artifact Cards to get bonuses"),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(10, 8), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Embassy, _LOCTEXT("Embassy", "Embassy"), LOCTEXT("Embassy (Plural)", "Embassy"), LOCTEXT("Embassy Desc", "+50<img id=\"Influence\"/> income for builder and host player."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({ 200 })
 	),
 	BldInfo(CardEnum::ForeignQuarter, _LOCTEXT("Foreign Quarter", "Foreign Quarter"), LOCTEXT("Foreign Quarter (Plural)", "Foreign Quarters"), LOCTEXT("Foreign Quarter Desc", "+100<img id=\"Influence\"/> income for builder and host player."),
-		WorldTile2(12, 12), GetBldResourceInfoManual({ 500 })
+		WorldTile2(12, 18), GetBldResourceInfoManual({ 500 })
 	),
 	BldInfo(CardEnum::ForeignPort, _LOCTEXT("Foreign Port", "Foreign Port"), LOCTEXT("Foreign Port (Plural)", "Foreign Ports"), LOCTEXT("Foreign Port Desc", "+100<img id=\"Coin\"/> if this town has our Foreign Quarters"),
-		WorldTile2(10, 9), GetBldResourceInfoManual({ 300 })
+		WorldTile2(10, 12), GetBldResourceInfoManual({ 300 })
 	),
 	BldInfo(CardEnum::SpyCenter, _LOCTEXT("Spy Center", "Spy Center"), LOCTEXT("Spy Center (Plural)", "Spy Center"), LOCTEXT("Spy Center Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
@@ -3810,25 +3813,27 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(18, 18), GetBldResourceInfoManual({})
 	),
 
-	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", "TODO:TEXT"),
+	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", "Pump water to increase soil Fertility."),
 		WorldTile2(6, 4), GetBldResourceInfoManual({})
 	),
-	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", "TODO:TEXT"),
+	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", "Distribute water from Irrigation Pump to increase soil fertility (radius 5)."),
 		WorldTile2(1, 1), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({})
+		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Wool, ResourceEnum::Dye, ResourceEnum::Carpet }, { 0, 0, 0, 5, 10, 5, 0 }, 0, 130)
 	),
 	BldInfo(CardEnum::BathHouse, _LOCTEXT("Bath House", "Bath House"), LOCTEXT("Bath House (Plural)", "Bath Houses"), LOCTEXT("Bath House Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
 	),
-	BldInfo(CardEnum::Caravansary, _LOCTEXT("Caravansary", "Caravansary"), LOCTEXT("Caravansary (Plural)", "Caravansaries"), LOCTEXT("Caravansary Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({ 100, 50 }, 1)
+	BldInfo(CardEnum::Caravansary, _LOCTEXT("Caravansary", "Caravansary"), LOCTEXT("Caravansary (Plural)", "Caravansaries"), LOCTEXT("Caravansary Desc", "Send Caravan on a Land Trade Route. Give profit to both destinations."),
+		WorldTile2(8, 8), GetBldResourceInfoManual({ 100, 50 }, 1)
 	),
 	BldInfo(CardEnum::PitaBakery, _LOCTEXT("Pita Bakery", "Pita Bakery"), LOCTEXT("Pita Bakery (Plural)", "Pita Bakeries"), LOCTEXT("Pita Bakery Desc", "Bakes Bread with Wheat Flour and heat."),
 		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::PitaBread }, { 0, 1, 0, 2 })
 	),
-
+	BldInfo(CardEnum::GreatMosque, _LOCTEXT("Great Mosque", "Great Mosque"), LOCTEXT("Great Mosque (Plural)", "Great Mosques"), LOCTEXT("Great Mosque Desc", ""),
+		WorldTile2(36, 24), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 2, 1, 5 }, 20000, 100, -999)
+	),
 	
 	
 	// Can no longer pickup cards
@@ -4600,6 +4605,7 @@ static std::vector<CardEnum> FoodBuildings // Change to AgricultureBuildings
 	CardEnum::Fisher,
 	CardEnum::MushroomFarm,
 	CardEnum::Bakery,
+	CardEnum::PitaBakery,
 	CardEnum::Beekeeper,
 	
 	CardEnum::RanchBarn,
@@ -4611,10 +4617,13 @@ static std::vector<CardEnum> NonFoodAgricultureBuildings // Change to Agricultur
 {
 	CardEnum::Windmill,
 	CardEnum::Forester,
-};
+}; // Gets 
+
+
 static bool IsFoodBuilding(CardEnum cardEnum) {
 	return std::find(FoodBuildings.begin(), FoodBuildings.end(), cardEnum) != FoodBuildings.end();
 }
+
 static bool IsAgricultureBuilding(CardEnum cardEnum) {
 	if (std::find(NonFoodAgricultureBuildings.begin(), NonFoodAgricultureBuildings.end(), cardEnum) != NonFoodAgricultureBuildings.end()) {
 		return true;
@@ -6463,6 +6472,8 @@ enum class TechEnum : uint8
 	GrandPalace,
 	ExhibitionHall,
 
+	GreatMosque,
+
 	SocialScience,
 
 	// CardGiving
@@ -8249,6 +8260,7 @@ enum class PopupReceiverEnum : uint8
 	ShowTradeDeal,
 
 	RaidHandleDecision,
+	RetreatConfirmDecision,
 };
 
 struct PopupInfo
@@ -10178,6 +10190,9 @@ enum class HoverWarning : uint8 {
 
 	DeliveryTargetTooFar,
 	OutputInventoryFull,
+
+	NeedTradeRoute,
+	AwaitingApproval,
 };
 
 static const std::vector<FText> HoverWarningString = {
@@ -10204,6 +10219,9 @@ static const std::vector<FText> HoverWarningString = {
 
 	LOCTEXT("Delivery Target Too Far", "Delivery Target\nToo Far"),
 	LOCTEXT("Output Inventory Full", "Output Inventory\nFull"),
+
+	LOCTEXT("Need Trade Route", "Need Trade Route"),
+	LOCTEXT("Awaiting Approval", "Awaiting\nApproval"),
 };
 static const std::vector<FText> HoverWarningDescription = {
 	FText(),
@@ -10229,6 +10247,9 @@ static const std::vector<FText> HoverWarningDescription = {
 
 	LOCTEXT("Delivery Target Too Far Desc", "Delivery Target is too far (maximum 150 tiles)"), // TODO: For now only Logistics Office
 	LOCTEXT("Output Inventory Full Desc", "Output Resource Inventory is full causing the production to pause."),
+
+	LOCTEXT("Need Trade Route Desc", "Need Trade Route"),
+	LOCTEXT("Awaiting Approval Desc", "Waiting for another player to approve foreign building."),
 };
 static FText GetHoverWarningName(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 static FText GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }
@@ -10353,6 +10374,17 @@ public:
 		return maxRelationship;
 	}
 
+	int32 GetMainAllyId()
+	{
+		for (int32 i = 0; i < _isAlly.Num(); i++) {
+			if (_isAlly[i]) {
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+
 	bool isEnemy(int32 askingPlayerId) { return GetTotalRelationship(askingPlayerId) < 0; }
 	
 
@@ -10378,12 +10410,12 @@ enum class TradeDealStageEnum : uint8
 {
 	None,
 	
-	Gifting,
+	Gifting, // Instant
 	CreateDeal,
 	ExamineDeal,
 	PrepareCounterOfferDeal,
 	ExamineCounterOfferDeal,
-	AcceptDeal,
+	AcceptDeal, // Instant
 };
 
 struct TradeDealSideInfo

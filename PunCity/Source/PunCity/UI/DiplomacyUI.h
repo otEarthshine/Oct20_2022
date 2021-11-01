@@ -3,6 +3,8 @@
 #pragma once
 
 #include "PunBoxWidget.h"
+#include "W_PlayerCharacterInfo.h"
+
 #include "DiplomacyUI.generated.h"
 
 /**
@@ -13,8 +15,11 @@ class PROTOTYPECITY_API UDiplomacyUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(meta = (BindWidget)) UImage* LogoPreviewImage;
-	UPROPERTY(meta = (BindWidget)) UImage* CharacterPreviewImage;
+	UPROPERTY(meta = (BindWidget)) UW_PlayerCharacterInfo* PlayerCharacterInfoUI;
+	
+	//UPROPERTY(meta = (BindWidget)) UImage* LogoPreviewImage;
+	//UPROPERTY(meta = (BindWidget)) UImage* CharacterPreviewImage;
+	//UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoBackground;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerNameText;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RelationshipText;
@@ -38,6 +43,13 @@ public:
 	{
 		targetTownId = targetTownIdIn;
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+		int32 townPlayerId = simulation().townPlayerId(targetTownIdIn);
+		PlayerCharacterInfoUI->UpdatePlayerInfo(
+			dataSource()->playerInfo(townPlayerId != -1 ? townPlayerId : targetTownId),
+			assetLoader()->GetPlayerLogos(),
+			assetLoader()->GetPlayerCharacters()
+		);
 	}
 
 	UFUNCTION() void CloseUI() {

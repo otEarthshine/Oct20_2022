@@ -64,6 +64,10 @@ struct TradeRoutePair
 	}
 
 	bool operator==(const TradeRoutePair& a) const {
+		if (townId1 == a.townId2 &&
+			townId2 == a.townId1) {
+			return true;
+		}
 		return townId1 == a.townId1 &&
 			townId2 == a.townId2;
 	}

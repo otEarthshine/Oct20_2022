@@ -54,10 +54,9 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 		// Connect both players
 		_tradeRoutePairs.push_back(tradeRoutePair);
 
-		_simulation->RecalculateTaxDelayedPlayer(playerId1);
-		if (playerId2 != -1) {
-			_simulation->RecalculateTaxDelayedPlayer(playerId2);
-		}
+		if (playerId1 != -1) _simulation->RecalculateTaxDelayedPlayer(playerId1);
+		if (playerId2 != -1) _simulation->RecalculateTaxDelayedPlayer(playerId2);
+
 
 		// TODO: Get Proper name for single building that can be traded with
 		FText text = FText::Format(
@@ -66,9 +65,7 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 			GetTradeRouteNodeName2(tradeRoutePair)
 		);
 		_simulation->AddPopupToFront(playerId1, text, ExclusiveUIEnum::TownAutoTradeUI, "");
-		if (playerId2 != -1) {
-			_simulation->AddPopupToFront(playerId2, text, ExclusiveUIEnum::TownAutoTradeUI, "");
-		}
+		_simulation->AddPopupToFront(playerId2, text, ExclusiveUIEnum::TownAutoTradeUI, "");
 
 		SortTradeRoutes();
 

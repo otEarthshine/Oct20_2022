@@ -14,9 +14,6 @@ void ArmyNode::MarchStart(ArmyGroup group, const ArmyNode& originNode, WorldTile
 	WorldTile2 endTile = _simulation->buildingCenter(nodeId);
 
 	int32 marchTimeTicks = WorldTile2::Distance(startTile, endTile) * Time::TicksPerSecond;
-	if (SimSettings::IsOn("CheatFastBuild")) {
-		marchTimeTicks = marchTimeTicks / 10;
-	}
 
 	group.marchStartNodeId = originNode.nodeId;
 	group.marchEndNodeId = nodeId;
@@ -80,10 +77,6 @@ void ArmyNode::DealDamage(std::vector<ArmyGroup>& group_Attacker, std::vector<Ar
 
 		//		//// Randomize attack
 		//		//attack = attack * (GameRand::Rand() % 100 + 50) / 100;
-
-		//		//if (SimSettings::IsOn("CheatFastBuild")) {
-		//		//	attack *= 10;
-		//		//}
 		//		
 		//		int32 attack = dealerGroup.AttackDamage(dealerEnumInt);
 

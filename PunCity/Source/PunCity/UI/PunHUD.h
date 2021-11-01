@@ -340,11 +340,11 @@ public:
 	{
 		switch (exclusiveUIEnum)
 		{
-		case ExclusiveUIEnum::CardHand1:		return _mainGameUI->CardHand1Overlay->IsVisible();;
+		case ExclusiveUIEnum::CardHand1:		return _mainGameUI->CardHand1Overlay->IsVisible();
 		case ExclusiveUIEnum::CardInventory:	return _mainGameUI->CardInventorySizeBox->IsVisible();
 			
-		case ExclusiveUIEnum::RareCardHand:		return _mainGameUI->RareCardHandOverlay->IsVisible();;
-		case ExclusiveUIEnum::ConverterCardHand:return _mainGameUI->ConverterCardHandOverlay->IsVisible();;
+		case ExclusiveUIEnum::RareCardHand:		return _mainGameUI->RareCardHandOverlay->IsVisible();
+		case ExclusiveUIEnum::ConverterCardHand:return _mainGameUI->ConverterCardHandOverlay->IsVisible();
 		case ExclusiveUIEnum::BuildMenu:		return _mainGameUI->BuildMenuOverlay->IsVisible();
 		case ExclusiveUIEnum::Placement:		return inputSystemInterface()->placementState() != PlacementType::None;
 		case ExclusiveUIEnum::ConfirmingAction: return _mainGameUI->ConfirmationOverlay->IsVisible();

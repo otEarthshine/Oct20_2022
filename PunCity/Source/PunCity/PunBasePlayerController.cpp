@@ -38,7 +38,7 @@ void APunBasePlayerController::SyncPlayersState_ToClient_Implementation(const TA
 	// Sync State if this isn't server. Also don't sync if this is in main menu (leftover queued sync when hitting GoToMainMenu)
 	if (!IsServer() && !mainMenuHUD)
 	{
-		gameInstance()->SetPlayerNamesF(playerNamesF);
+		gameInstance()->SetPlayerInfos(playerNamesF);
 		gameInstance()->SetPlayerReadyStates(playerReadyStates);
 		gameInstance()->playerConnectedStates = playerConnectedStates;
 		gameInstance()->clientPacketsReceived = clientDataReceived;

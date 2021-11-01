@@ -251,10 +251,6 @@ public:
 
 		// Randomize attack
 		attack = attack * (GameRand::Rand() % 100 + 50) / 100;
-
-		if (SimSettings::IsOn("CheatFastBuild")) {
-			attack *= 3;
-		}
 		
 		return attack;
 	}

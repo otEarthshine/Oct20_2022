@@ -657,11 +657,14 @@ public:
 	}
 
 	ResourcePair GetTrainUnitCost(CardEnum cardEnum) {
+		if (cardEnum == CardEnum::Raid) {
+			return ResourcePair(ResourceEnum::Money, GetBuildingInfo(cardEnum).baseCardPrice);
+		}
 		return GetMilitaryInfo(cardEnum).resourceCost;
 	}
 	static int32 GetTrainingLengthTicks(CardEnum cardEnum)
 	{
-		if (SimSettings::IsOn("CheatFastBuild")) {
+		if (PunSettings::IsOn("CheatFastBuild")) {
 			return Time::TicksPerSecond * 3;
 		}
 		int32 secsPerMoneyCost = 2;

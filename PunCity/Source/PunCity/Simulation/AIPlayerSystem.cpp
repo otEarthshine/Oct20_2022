@@ -303,9 +303,12 @@ void AIPlayerSystem::Tick1Sec()
 			auto command = make_shared<FGenericCommand>();
 			command->genericCommandType = FGenericCommand::Type::SendGift;
 			command->playerId = _aiPlayerId;
-			command->intVar1 = maxRelationshipPlayerId;
-			command->intVar2 = static_cast<int>(ResourceEnum::Money);
+			command->intVar1 = _aiPlayerId;
+			command->intVar2 = maxRelationshipPlayerId;
 			command->intVar3 = std::min(100, _simulation->moneyCap32(_aiPlayerId) - 500);
+
+			command->intVar5 = static_cast<int32>(TradeDealStageEnum::Gifting);
+			
 
 			check(_simulation->IsValidPlayer(maxRelationshipPlayerId));
 

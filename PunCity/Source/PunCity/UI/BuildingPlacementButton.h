@@ -57,22 +57,14 @@ public:
 	{
 		CardEnum buildingEnum = cardStatus.cardEnum;
 		
-		if (IsBuildingCard(buildingEnum)) 
-		{
-			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->BuildingIconMaterial, this);
+		colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
+		
+		colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), buildingEnum));
+		colorMaterial->SetScalarParameterValue("HasFadeBottom", IsBuildingCard(buildingEnum));
+		colorMaterial->SetScalarParameterValue("HasFadeBorder", assetLoader->HasFadeBorder(playerFactionEnum(), buildingEnum));
 
-			if (UTexture2D* cardIcon = assetLoader->GetCardIconNullable(playerFactionEnum(), buildingEnum)) {
-				colorMaterial->SetTextureParameterValue("ColorTexture", cardIcon);
-				colorMaterial->SetTextureParameterValue("DepthTexture", nullptr);
-			}
-		}
-		else {
-			colorMaterial = UMaterialInstanceDynamic::Create(assetLoader->CardIconMaterial, this);
-			colorMaterial->SetTextureParameterValue("ColorTexture", assetLoader->GetCardIcon(playerFactionEnum(), buildingEnum));
-
-			bool isEmptyCollectionSlot = (_cardHandEnum == CardHandEnum::CardSetSlots) && cardStatus.stackSize == 0;
-			colorMaterial->SetScalarParameterValue("IsGray", isEmptyCollectionSlot ? 1.0f : 0.0f);
-		}
+		bool isEmptyCollectionSlot = (_cardHandEnum == CardHandEnum::CardSetSlots) && cardStatus.stackSize == 0;
+		colorMaterial->SetScalarParameterValue("IsGray", isEmptyCollectionSlot);
 
 		BuildingIcon->SetBrushFromMaterial(colorMaterial);
 	}

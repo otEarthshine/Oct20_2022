@@ -309,7 +309,9 @@ void GameSimulationCore::InitOasis()
 			if (isHole[index]) {
 				_terrainGenerator->SetWaterTile(tile);
 				_terrainChanges.AddHole(tile);
-				SetHoleWorldTexture(tile, true);
+
+				// TODO: remove?? SetHoleWorldTexture doesn't work
+				//SetHoleWorldTexture(tile, true);
 			}
 		});
 
@@ -405,20 +407,14 @@ void GameSimulationCore::InitProvinceBuildings()
 		return -1;
 	};
 
-	auto createMinorCity = [&](int32 provinceId)
-	{
-		check(provinceSys.IsProvinceValid(provinceId));
-		const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
-		check(slot.landSlot.isValid());
-
-		if (slot.hasBuilding()) {
-			return -1;
-		}
+	auto createMinorCity = [&](int32 provinceId, BuildPlacement placement)
+	{	
+		check(placement.isValid());
 
 		int32 townId = AddMinorTown(provinceId);
 		SetProvinceOwner(provinceId, townId, true);
 
-		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, slot.landSlot.centerTile, slot.landSlot.faceDirection, 7);
+		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, placement.centerTile, placement.faceDirection, 7);
 		if (minorCityBuildingId != -1) {
 			townManagerBase(townId)->townhallId = minorCityBuildingId;
 			provinceInfoSys.SetSlotBuildingId(provinceId, minorCityBuildingId);
@@ -446,14 +442,17 @@ void GameSimulationCore::InitProvinceBuildings()
 			int32 provinceId = portSlotProvinceIds[j];
 
 			// Create Minor City
-			int32 minorCityBuildingId = createMinorCity(provinceId);
+			check(provinceSys.IsProvinceValid(provinceId));
+			const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
+			if (slot.hasBuilding()) {
+				continue;
+			}
+			int32 minorCityBuildingId = createMinorCity(provinceId, slot.portLandSlot);
 
 			PUN_LOG("portSlotProvinceIds provinceId:%d minorCityBuildingId:%d", provinceId, minorCityBuildingId);
 
 			if (minorCityBuildingId != -1)
 			{
-				const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
-
 				// Create Port
 				int32 minorCityPortId = createBuilding(provinceInfoSys.provinceOwnerTown(provinceId), CardEnum::MinorCityPort, slot.portSlot.centerTile, slot.portSlot.faceDirection, 7);
 
@@ -528,15 +527,20 @@ void GameSimulationCore::InitProvinceBuildings()
 	/*
 	 * Minor City
 	 */
-	const std::vector<int32>& landSlotProvinceIds = provinceInfoSys.landSlotProvinceIds();
 	
 	for (int32 i = 0; i < skipCount; i++) {
-		for (int32 j = i; j < landSlotProvinceIds.size(); j += skipCount)
+		for (int32 j = i; j < largeLandSlotProvinceIds.size(); j += skipCount)
 		{
-			check(j < landSlotProvinceIds.size());
-			int32 minorCityBuildingId = createMinorCity(landSlotProvinceIds[j]);
+			check(j < largeLandSlotProvinceIds.size());
+			int32 provinceId = largeLandSlotProvinceIds[j];
+			check(provinceSys.IsProvinceValid(provinceId));
+			const ProvinceBuildingSlot& slot = provinceInfoSys.provinceBuildingSlot(provinceId);
+			if (slot.hasBuilding()) {
+				continue;
+			}
+			int32 minorCityBuildingId = createMinorCity(provinceId, slot.largeLandSlot);
 
-			PUN_LOG("landSlotProvinceIds provinceId:%d minorCityBuildingId:%d", landSlotProvinceIds[j], minorCityBuildingId);
+			PUN_LOG("largeLandSlotProvinceIds provinceId:%d minorCityBuildingId:%d", largeLandSlotProvinceIds[j], minorCityBuildingId);
 
 			if (minorCityBuildingId != -1) {
 				minorCityCount++;
@@ -553,6 +557,7 @@ void GameSimulationCore::InitProvinceBuildings()
 	 * Crates/Shrines
 	 *  - Fill whatever is left
 	 */
+	const std::vector<int32>& landSlotProvinceIds = provinceInfoSys.landSlotProvinceIds();
 
 	for (int32 j = 0; j < landSlotProvinceIds.size(); j += 1)
 	{
@@ -563,7 +568,7 @@ void GameSimulationCore::InitProvinceBuildings()
 		if (!slot.hasBuilding())
 		{
 			CardEnum buildingEnum = GameRand::Rand(j) % 3 == 0 ? CardEnum::RegionShrine : CardEnum::RegionCrates;
-			int32 buildingId = createBuilding(-1, buildingEnum, slot.landSlot.centerTile, Direction::S, 7);
+			int32 buildingId = createBuilding(-1, buildingEnum, slot.portLandSlot.centerTile, Direction::S, 7);
 			if (buildingId != -1) {
 				provinceInfoSys.SetSlotBuildingId(provinceId, buildingId);
 			}
@@ -1205,8 +1210,17 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 									LoseVassalHelper(oldLordPlayerId, provincePlayerId);
 								}
 
+								//! Declare Independence
+								if (provinceAttackEnum == ProvinceAttackEnum::DeclareIndependence)
+								{
+									// The lord just lose vassal, no action here
+									
+									AddPopupAll(PopupInfo(-1,
+										FText::Format(LOCTEXT("XhasConqueredMinorTownY", "{0} has liberated {1}."), playerNameT(claimProgress.attackerPlayerId), townNameT(provinceTownId))
+									), -1);
+								}
 								//! Raze
-								if (provinceAttackEnum == ProvinceAttackEnum::Raze)
+								else if (provinceAttackEnum == ProvinceAttackEnum::Raze)
 								{
 									int32 totalWealth = provinceTownManager->totalWealth_MinorCity();
 									int32 razeWealth = totalWealth / 4;
@@ -1224,9 +1238,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 
 									ChangeMoney(claimProgress.attackerPlayerId, razeWealth);
 								}
+								//! Vassalize
 								else
 								{
-									//! Vassalize
 									int32 lordId = claimProgress.attackerPlayerId;
 									townManagerBase(lordId)->GainVassal(provinceTownManager->townId());
 									provinceTownManager->SetLordPlayerId(lordId);
@@ -2260,11 +2274,16 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	else if (cardEnum == CardEnum::ClayPit ||
 			cardEnum == CardEnum::IrrigationReservoir)
 	{
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			if (!(IsBuildable(tile) && _terrainGenerator->riverFraction(tile) > GetRiverFractionPercentThreshold(cardEnum) / 100.0f)) {
+		std::vector<PlacementGridInfo> grids;
+		bool setMustBeNearRiverOasisInstruction;
+		CheckClaypitArea(cardEnum, area, playerId, grids, setMustBeNearRiverOasisInstruction);
+
+		for (const PlacementGridInfo& gridInfo : grids) {
+			if (gridInfo.gridEnum == PlacementGridEnum::Red) {
 				canPlace = false;
 			}
-		});
+		}
+
 	}
 	// Farm
 	else if (cardEnum == CardEnum::Farm) 
@@ -2322,7 +2341,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	// FastBuild should be able to place outside player's territory
 	else if (cardEnum != CardEnum::BoarBurrow &&
 			!IsRegionalBuilding(cardEnum) &&
-			SimSettings::IsOn("CheatFastBuild"))
+			PunSettings::IsOn("CheatFastBuild"))
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			if (!IsBuildable(tile)) {
@@ -2678,7 +2697,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					auto& cardSys = cardSystem(parameters.playerId);
 					if (bld.isEnum(CardEnum::Townhall))
 					{
-						if (!SimSettings::IsOn("CheatFastBuild")) {
+						if (!PunSettings::IsOn("CheatFastBuild")) {
 							AddPopupToFront(parameters.playerId, LOCTEXT("CannotDemolishTownhall", "Cannot demolish the Townhall."), ExclusiveUIEnum::None, "PopupCannot");
 							return;
 						}
@@ -3271,6 +3290,12 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 					LOCTEXT("ProposeAlliance_AcceptedPopup", "{0} accepted your alliance request"),
 					townNameT(command.intVar1)
 				), ExclusiveUIEnum::DiplomacyUI, "");
+
+				AddPopupAll(PopupInfo(command.playerId, FText::Format(
+					LOCTEXT("ProposeAlliance_AcceptedPopup", "Minor Town {0} is now allied to {1}."),
+					townNameT(command.intVar1),
+					playerNameT(command.playerId)
+				)), command.playerId);
 			}
 		}
 		else if (command.callbackEnum == CallbackEnum::EditableNumberSetOutputTarget) {
@@ -3328,7 +3353,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 						if (roadTilesBuilt < roadIds.size()) {
 							// Not enough money to finish all the road warn about it
 							AddPopup(command.playerId,
-								FText::Format(LOCTEXT("QuickBuildAllNotEnoughMoney_Pop", "Not enough money to build all Road Construction of this type. Only {0} Road Tiles was built with {1}<img id=\"Coin\"/>."), 
+								FText::Format(LOCTEXT("QuickBuildAllNotEnoughMoney_Pop", "Only {0} Road Tiles was built with {1}<img id=\"Coin\"/>.<space>Not enough money to finish the rest."), 
 									TEXT_NUM(roadTilesBuilt),
 									TEXT_NUM(quickBuildAllCost)
 								)
@@ -3469,7 +3494,8 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		int32 targetPlayerId = townPlayerId(targetTownId);
 		TradeDealStageEnum dealStageEnum = static_cast<TradeDealStageEnum>(command.intVar5);
 		
-		
+
+		// Note: only creates popupInfo, doesn't do AddPopup() until the very end if needed
 		PopupInfo popupInfo(targetPlayerId,
 			FText::Format(
 				LOCTEXT("TradeDeal_TakerPop", "{0} offered you a deal."), 
@@ -3554,77 +3580,6 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 
 		
 		AddPopup(popupInfo);
-
-		
-		
-		//AddPopup(townPlayerId(targetTownId), 
-		//	FText::Format(
-		//		LOCTEXT("Gifted_GiverPop", "You gifted {0} with {1} {2}."), playerNameT(targetPlayerId), TEXT_NUM(amount), ResourceNameT(resourceEnum)
-		//	),
-
-		//);
-
-		
-		
-		//ResourceEnum resourceEnum = static_cast<ResourceEnum>(command.intVar2);
-		//int32 amount = command.intVar3;
-
-		//if (resourceEnum == ResourceEnum::Money)
-		//{
-		//	if (moneyCap32(giverPlayerId) < amount) {
-		//		AddPopupToFront(giverPlayerId, 
-		//			LOCTEXT("NotEnoughMoneyToGive", "Not enough <img id=\"Coin\"/> to give out."), 
-		//			ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
-		//		return;
-		//	}
-
-		//	ChangeMoney(giverPlayerId, -amount);
-		//	ChangeMoney(targetPlayerId, amount);
-		//	AddPopup(giverPlayerId, 
-		//		FText::Format(LOCTEXT("GiftedMoney_GiverPop", "You gifted {0} with {1}<img id=\"Coin\"/>."), playerNameT(targetPlayerId), TEXT_NUM(amount))
-		//	);
-
-		//	// To Gift Receiver
-		//	if (IsAIPlayer(giverPlayerId)) {
-		//		AddPopup(targetPlayerId, 
-		//			FText::Format(LOCTEXT("GiftedMoneyAI_TargetPop", "{0} gifted you with {1}<img id=\"Coin\"/> for good relationship."), playerNameT(giverPlayerId), TEXT_NUM(amount))
-		//		);
-		//	}
-		//	else {
-		//		AddPopup(targetPlayerId, 
-		//			FText::Format(LOCTEXT("GiftedMoney_TargetPop", "{0} gifted you with {1}<img id=\"Coin\"/>."), playerNameT(giverPlayerId), TEXT_NUM(amount))
-		//		);
-		//	}
-
-		//	ChangeRelationshipModifier(targetPlayerId, giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, amount / GoldToRelationship);
-		//}
-		//else
-		//{
-		//	if (resourceCountTown(giverPlayerId, resourceEnum) < amount) {
-		//		AddPopupToFront(giverPlayerId, 
-		//			LOCTEXT("NotEnoughResourceToGive", "Not enough resource to give out."), 
-		//			ExclusiveUIEnum::GiftResourceUI, "PopupCannot");
-		//		return;
-		//	}
-
-		//	if (!resourceSystem(targetPlayerId).CanAddResourceGlobal(resourceEnum, amount)) {
-		//		AddPopup(giverPlayerId, 
-		//			LOCTEXT("NotEnoughStorageAtTarget_Pop", "Not enough storage space in target city.")
-		//		);
-		//		return;
-		//	}
-		//
-		//	resourceSystem(giverPlayerId).RemoveResourceGlobal(resourceEnum, amount);
-		//	resourceSystem(targetPlayerId).AddResourceGlobal(resourceEnum, amount, *this);
-		//	AddPopup(giverPlayerId, 
-		//		FText::Format(LOCTEXT("Gifted_GiverPop", "You gifted {0} with {1} {2}."), playerNameT(targetPlayerId), TEXT_NUM(amount), ResourceNameT(resourceEnum))
-		//	);
-		//	AddPopup(targetPlayerId, 
-		//		FText::Format(LOCTEXT("Gifted_TargetPop", "{0} gifted you with {1} {2}."), playerNameT(giverPlayerId), TEXT_NUM(amount), ResourceNameT(resourceEnum))
-		//	);
-
-		//	ChangeRelationshipModifier(targetPlayerId, giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, (amount * price(resourceEnum)) / GoldToRelationship);
-		//}
 		
 		return;
 	}
@@ -4189,10 +4144,13 @@ void GameSimulationCore::PopupInstantReply(const PopupInfo& popupInfo, int32 cho
 			);
 		}
 	}
-
 	else if (replyReceiver == PopupReceiverEnum::ShowTradeDeal)
 	{
 		if (choiceIndex == 0) {
+			// Note: this only gets here if player is examining deal
+			TradeDealStageEnum dealStageEnum = static_cast<TradeDealStageEnum>(popupInfo.replyVar5);
+			check(dealStageEnum == TradeDealStageEnum::ExamineDeal || 
+					dealStageEnum == TradeDealStageEnum::ExamineCounterOfferDeal);
 			ProcessTradeDeal(popupInfo);
 		}
 	}
@@ -4660,6 +4618,23 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		}
 		else if (command.choiceIndex == 1) {
 			_uiInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
+		}
+	}
+	else if (replyReceiver == PopupReceiverEnum::RetreatConfirmDecision)
+	{
+		int32 provinceId = command.replyVar1;
+		
+		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(provinceId));
+		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(provinceId);
+
+		if (claimProgress) {
+			// Return Military Units owned by command.playerId from any army
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, command.playerId, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerBackLine, command.playerId, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId, false, true);
+
+			claimProgress->Retreat_DeleteUnits(command.playerId);
 		}
 	}
 	
@@ -5461,27 +5436,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		if (canAttack &&
 			!provinceTownManager->GetDefendingClaimProgress(command.provinceId).isValid())
 		{
-			
-			//int32 conquerPrice = 0;
-			//switch (attackEnum)
-			//{
-			//case ProvinceAttackEnum::ConquerProvince: conquerPrice = GetProvinceAttackStartPrice(provinceId, GetProvinceClaimConnectionEnumPlayer(command.provinceId, command.playerId)); break;
-			//case ProvinceAttackEnum::Vassalize: conquerPrice = GetProvinceVassalizeStartPrice(provinceId); break;
-			//case ProvinceAttackEnum::DeclareIndependence: conquerPrice = BattleInfluencePrice; break; // Declare Independence has no defense/attack advantage...
-			//case ProvinceAttackEnum::ConquerColony: conquerPrice = GetProvinceConquerColonyStartPrice(provinceId); break;
-			//default: break;
-			//}
 
-			//TODO: special AI
-			//if (IsAIPlayer(command.playerId)) {
-			//	globalResourceSys.ChangeInfluence(conquerPrice * 2);
-			//}
-			
-			//if (influence(command.playerId) >= conquerPrice) 
-			//{
-			//globalResourceSys.ChangeInfluence(-conquerPrice);
-
-			attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
+			//attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
 
 			/*
 			 * Military Part !!!
@@ -5501,7 +5457,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					int32 raidInfluence100 = raidMoney100 / 2;
 
 					AddPopup(provincePlayerId, FText::Format(
-							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</>If you fight, you may lose your army.<bullet></>"),
+							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<space><bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</><bullet> If you fight, you may lose your army.</>"),
 							playerNameT(attackerPlayerId),
 							TEXT_100(raidMoney100),
 							TEXT_100(raidInfluence100)
@@ -5598,22 +5554,22 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			}
 			else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) 
 			{
-				int32 lordId = lordPlayerId(provincePlayerId);
+				int32 lordId = lordPlayerId(provinceTownId);
 				
 				if (command.claimEnum == CallbackEnum::Liberate)
 				{
 					AddPopup(lordId,
 						FText::Format(
-							LOCTEXT("LiberatePlayer_LordPop", "{0} is trying to liberate {1} from you.<space>If you lose this battle, you will lose control of the vassal."),
+							LOCTEXT("LiberatePlayer_LordPop", "{0} is trying to liberate {1} from you.<space>If they succeed, you will lose control of the vassal."),
 							playerNameT(command.playerId),
-							playerNameT(provincePlayerId)
+							townNameT(provinceTownId)
 						)
 					);
 
 					AddPopup(command.playerId,
 						FText::Format(
 							LOCTEXT("LiberatePlayer_SelfPop", "You attempt to liberate {0} from {1}."),
-							playerNameT(provincePlayerId),
+							townNameT(provinceTownId),
 							playerNameT(lordId)
 						)
 					);
@@ -5668,18 +5624,14 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	
 	else if (command.claimEnum == CallbackEnum::BattleRetreat)
 	{
-		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
-		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
+		PopupInfo popupInfo(command.playerId,
+			LOCTEXT("RetreatConfirm_Pop", "Are you sure you want to retreat?<space>1/3 of your troops will be lost as a result"),
+			{ LOCTEXT("Yes", "Yes"), LOCTEXT("No", "No") }, PopupReceiverEnum::RetreatConfirmDecision
+		);
+		popupInfo.replyVar1 = command.provinceId;
 		
-		if (claimProgress) {
-			// Return Military Units
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, command.playerId, false);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerBackLine, command.playerId, false);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId, false);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId, false);
-
-			claimProgress->Retreat_DeleteUnits(command.playerId);
-		}
+		AddPopup(popupInfo);
+		
 	}
 	//else if (command.claimEnum == CallbackEnum::DefendProvinceMoney)
 	//{
@@ -5925,10 +5877,10 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 		case CheatEnum::Influence: ChangeInfluence(command.playerId, 10000); break;
 		
-		case CheatEnum::FastBuild: SimSettings::Toggle("CheatFastBuild"); break;
+		case CheatEnum::FastBuild: PunSettings::Toggle("CheatFastBuild"); break;
 		
 		case CheatEnum::Cheat:
-			SimSettings::Set("CheatFastBuild", 1);
+			PunSettings::Set("CheatFastBuild", 1);
 			ChangeMoney(command.playerId, 100000);
 
 			GetTownhallCapital(command.playerId).AddImmigrants(50);
@@ -6189,7 +6141,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		 */
 		case CheatEnum::TestCity:
 		{
-			SimSettings::Set("CheatFastBuild", 1);
+			PunSettings::Set("CheatFastBuild", 1);
 				
 			//SimSettings::Set("CheatHouseLevel", command.var1);
 			WorldTile2 curTile = GetMajorTownhallGate(command.playerId);

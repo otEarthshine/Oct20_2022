@@ -96,7 +96,8 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			}
 
 			// TrainUnits
-			if (sim.unlockSystem(playerId())->unlockState(UnlockStateEnum::TrainUnits))
+			if (sim.unlockSystem(playerId())->unlockState(UnlockStateEnum::TrainUnits) &&
+				dataSource()->ZoomDistanceBelow(WorldZoomTransition_GameToMap))
 			{
 				TrainUnitsRow->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(TrainUnitsButton, this, &UTownhallHoverInfo::OnClickTrainUnitsButton);

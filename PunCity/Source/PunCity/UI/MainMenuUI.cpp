@@ -178,7 +178,13 @@ void UMainMenuUI::Tick()
 					
 
 					FString hostName = session.OwningUserName;
-					lobbyListElements[i]->SessionName->SetText(FText::FromString(hostName.Left(15)));
+					//FString hostName;
+					//sessionSettings.Get(SESSION_HOSTNAME, hostName);
+					if (hostName.Len() > 5 && hostName.Left(5) == "?????") {
+						lobbyListElements[i]->SessionName->SetText(FText::FromString(session.OwningUserId->ToDebugString()));
+					} else {
+						lobbyListElements[i]->SessionName->SetText(FText::FromString(hostName.Left(15)));
+					}
 
 					// Note:
 					// value of "sessions[i].Session.SessionSettings.NumPublicConnections + 1" represents the max number of players (public connections + self)

@@ -106,7 +106,7 @@ void Building::Init(IGameSimulationCore& simulation, int32 objectId, int32 townI
 	else
 	{
 		// Instant build HumanitarianAidCamp
-		bool cheatBuild = SimSettings::IsOn("CheatFastBuild") && (!IsRoad(_buildingEnum) && _buildingEnum != CardEnum::Townhall);
+		bool cheatBuild = PunSettings::IsOn("CheatFastBuild") && (!IsRoad(_buildingEnum) && _buildingEnum != CardEnum::Townhall);
 
 		if (cheatBuild ||
 			_buildingEnum == CardEnum::HumanitarianAidCamp ||
@@ -744,10 +744,10 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	{
 		// Remove Resource or Money
 		if (resourceNeeded.resourceEnum == ResourceEnum::Money) {
-			globalResourceSystem().ChangeMoney(-resourceNeeded.count);
+			_simulation->globalResourceSystem(upgraderPlayerId).ChangeMoney(-resourceNeeded.count);
 		}
 		else if (resourceNeeded.resourceEnum == ResourceEnum::Influence) {
-			globalResourceSystem().ChangeInfluence(-resourceNeeded.count);
+			_simulation->globalResourceSystem(upgraderPlayerId).ChangeInfluence(-resourceNeeded.count);
 		}
 		else {
 			resourceSystem().RemoveResourceGlobal(resourceNeeded.resourceEnum, resourceNeeded.count);
@@ -1428,7 +1428,7 @@ std::vector<BonusPair> Building::GetBonuses()
 	}
 
 	// Agriculture
-	if (IsAgricultureBuilding(_buildingEnum))
+	if (IsFoodBuilding(_buildingEnum))
 	{
 		int32 radiusBonus = GetRadiusBonus(CardEnum::Granary, Windmill::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, 25);

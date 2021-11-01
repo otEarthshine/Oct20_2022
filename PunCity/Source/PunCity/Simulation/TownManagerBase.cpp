@@ -136,11 +136,11 @@ void TownManagerBase::Tick1Sec_TownBase()
 	 */
 	if (IsMinorTown(_townId))
 	{
-		//! Income every 2 secs
-		if (Time::Seconds() % 2 == 0)
+		//! Income every X secs
+		if (Time::Seconds() % GameConstants::BaseFloatupIntervalSec == 0)
 		{
 			int32 incomePerRound = GetMinorCityMoneyIncome();
-			int32 incomePer2Sec = GameRand::RandRound(incomePerRound * 2, Time::SecondsPerRound);
+			int32 incomePer2Sec = GameRand::RandRound(incomePerRound * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound);
 
 			if (incomePer2Sec > 0) {
 				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, _simulation->building(townhallId).centerTile(), TEXT_NUMSIGNED(incomePer2Sec));
@@ -159,12 +159,18 @@ void TownManagerBase::Tick1Sec_TownBase()
 	Tick1SecRelationship();
 }
 
-void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId, bool forcedAll)
+void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerIdToReturn, bool forcedAll, bool isRetreating)
 {
-	check(_simulation->IsValidPlayer(playerId));
-	for (CardStatus& card : cards) {
-		if (forcedAll || playerId == card.cardStateValue1) {
-			_simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(card);
+	check(_simulation->IsValidPlayer(playerIdToReturn));
+	for (CardStatus card : cards) {
+		if (forcedAll || playerIdToReturn == card.cardStateValue1) 
+		{
+			// Retreating death
+			if (isRetreating) {
+				card.stackSize = (card.stackSize + 1) * 2 / 3;
+			}
+			
+			_simulation->cardSystem(playerIdToReturn).AddCards_BoughtHandAndInventory(card);
 		}
 	}
 }
@@ -426,10 +432,10 @@ void TownManagerBase::Tick1SecRelationship()
 			 */
 			auto addInfluenceReward = [&](int32 influencePerRound)
 			{
-				//! Income every 5 secs
-				if (Time::Seconds() % 5 == 0)
+				//! Income every X secs
+				if (Time::Seconds() % GameConstants::BaseFloatupIntervalSec == 0)
 				{
-					int32 incomePerXSec = GameRand::RandRound(influencePerRound * 5, Time::SecondsPerRound);
+					int32 incomePerXSec = GameRand::RandRound(influencePerRound * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound);
 					if (incomePerXSec > 0) {
 						_simulation->uiInterface()->ShowFloatupInfo(playerId, FloatupEnum::GainInfluence, _simulation->building(townhallId).centerTile(), TEXT_NUMSIGNED(incomePerXSec));
 						_simulation->ChangeInfluence(playerId, incomePerXSec);
@@ -462,7 +468,7 @@ void TownManagerBase::ProposeAlliance(int32 askingPlayerId)
 		{
 			for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
 				if (_relationships.isAlly(i)) {
-					_relationships.SetAlliance(askingPlayerId, false);
+					_relationships.SetAlliance(i, false);
 
 					_simulation->AddPopup(i, FText::Format(
 						NSLOCTEXT("TownManagerBase", "MinorTownChangeAlly_Popup", "{0} now considers {1} their main ally instead of you.<space>This is due to their improved relationship with {1}."),

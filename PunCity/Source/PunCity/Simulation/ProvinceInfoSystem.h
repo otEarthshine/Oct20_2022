@@ -33,7 +33,7 @@ struct ProvinceBuildingSlot
 	std::vector<WorldTile2> mountainTiles;
 	
 	BuildPlacement portSlot; // Slots are center tiles
-	BuildPlacement landSlot;
+	BuildPlacement portLandSlot;
 	BuildPlacement largeLandSlot;
 	BuildPlacement oasisSlot;
 
@@ -51,7 +51,7 @@ struct ProvinceBuildingSlot
 		SerializeVecObj(Ar, mountainTiles);
 		
 		portSlot >> Ar;
-		landSlot >> Ar;
+		portLandSlot >> Ar;
 		largeLandSlot >> Ar;
 		oasisSlot >> Ar;
 		
@@ -274,7 +274,7 @@ public:
 		{
 			return !provinceBuildingSlot.largeLandSlot.isValid() &&
 				!provinceBuildingSlot.portSlot.isValid() &&
-				!provinceBuildingSlot.landSlot.isValid() &&
+				!provinceBuildingSlot.portLandSlot.isValid() &&
 				!provinceBuildingSlot.oasisSlot.isValid();
 		};
 
@@ -299,7 +299,7 @@ public:
 				const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
 				bool hasNearbyFilledSlot = false;
 				for (const ProvinceConnection& connection : connections) {
-					if (_provinceBuildingSlots[connection.provinceId].landSlot.isValid()) {
+					if (_provinceBuildingSlots[connection.provinceId].portLandSlot.isValid()) {
 						hasNearbyFilledSlot = true;
 						break;
 					}
@@ -331,7 +331,9 @@ public:
 						_largeLandSlotProvinceIds.push_back(provinceId);
 					}
 				};
-				if (GameRand::Rand(provinceId) % 5 == 0) {
+				if (provinceBuildingSlot.coastalTiles.size() == 0 &&
+					GameRand::Rand(provinceId) % 5 == 0) 
+				{
 					findLargeLandSlot();
 				}
 
@@ -393,7 +395,7 @@ public:
 								provinceBuildingSlot.portSlot = { centerTile, portSize, faceDirection };
 								_portSlotProvinceIds.push_back(provinceId);
 
-								provinceBuildingSlot.landSlot = { minorCityCenterTile, minorCitySize, faceDirection };
+								provinceBuildingSlot.portLandSlot = { minorCityCenterTile, minorCitySize, faceDirection };
 								_landSlotProvinceIds.push_back(provinceId);
 
 								return true;
@@ -425,15 +427,19 @@ public:
 
 				
 				/*
-				 * Land Slot
+				 * Large Land Slot
 				 */
-				if (isSlotEmpty(provinceBuildingSlot))
+				if (isSlotEmpty(provinceBuildingSlot) && 
+					provinceBuildingSlot.coastalTiles.size() == 0)
 				{
 					findLargeLandSlot();
 				}
 
-				
-				if (isSlotEmpty(provinceBuildingSlot))
+				/*
+				 * Land Slot
+				 */
+				if (isSlotEmpty(provinceBuildingSlot) &&
+					provinceBuildingSlot.coastalTiles.size() == 0)
 				{
 					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
 					
@@ -447,8 +453,9 @@ public:
 					});
 					if (!isCityNotBuildable)
 					{
-						provinceBuildingSlot.landSlot = { centerTile, minorCitySize, faceDirection };
-						_landSlotProvinceIds.push_back(provinceId);
+						// TODO: smaller size for non Minor City
+						//provinceBuildingSlot.portLandSlot = { centerTile, minorCitySize, faceDirection };
+						//_landSlotProvinceIds.push_back(provinceId);
 					}
 				}
 			}
@@ -474,7 +481,7 @@ public:
 	const std::vector<int32>& oasisSlotProvinceIds() { return _oasisSlotProvinceIds; }
 
 	void SetSlotBuildingId(int32 provinceId, int32 buildingId) {
-		check(_provinceBuildingSlots[provinceId].landSlot.isValid() ||
+		check(_provinceBuildingSlots[provinceId].portLandSlot.isValid() ||
 			_provinceBuildingSlots[provinceId].largeLandSlot.isValid() ||
 			_provinceBuildingSlots[provinceId].oasisSlot.isValid());
 		

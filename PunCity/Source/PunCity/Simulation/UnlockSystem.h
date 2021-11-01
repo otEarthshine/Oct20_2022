@@ -587,6 +587,8 @@ public:
 			TechEnum::Castle,
 			TechEnum::GrandPalace,
 			TechEnum::ExhibitionHall,
+
+			TechEnum::GreatMosque,
 		};
 		for (TechEnum wonderTechEnum : wonderTechs) {
 			if (techEnum == wonderTechEnum)
@@ -603,7 +605,7 @@ public:
 					simulation->AddPopup(playerId, {
 						LOCTEXT("UnlockedFirstWonder_Pop1", "You have unlocked your first World Wonder!"),
 						LOCTEXT("UnlockedFirstWonder_Pop2", "<space>World Wonders grant Victory Score. First World Wonder of its kind that gets built grants its owner its full score, while each subsequent wonders grants half as much score."),
-						LOCTEXT("UnlockedFirstWonder_Pop3", "<space>The game ends once every type of World Wonder gets built."),
+						LOCTEXT("UnlockedFirstWonder_Pop3", "<space>The game ends once all types of World Wonder gets built."),
 					});
 				}
 			}
@@ -1094,7 +1096,7 @@ public:
 			
 			/*
 			*/
-			FactionEnum factionEnum = _simulation->GetFactionEnum(_playerId);
+			FactionEnum factionEnum = _simulation->playerFactionEnum(_playerId);
 
 			_isMainTree = true;
 			
@@ -1113,12 +1115,25 @@ public:
 			AddTech_Building(TechEnum::StoneToolsShop, { TechEnum::TradingPost },
 				CardEnum::StoneToolsShop
 			);
-			AddTech_Building(TechEnum::Pottery, { TechEnum::TradingPost },
-				{ CardEnum::Potter, CardEnum::ClayPit }
-			);
-			AddTech_Building(TechEnum::FurnitureWorkshop, { TechEnum::TradingPost },
-				CardEnum::FurnitureWorkshop
-			);
+			
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::Pottery, { TechEnum::TradingPost },
+					{ CardEnum::Potter }
+				);
+				AddTech_Building(TechEnum::FurnitureWorkshop, { TechEnum::TradingPost },
+					{ CardEnum::FurnitureWorkshop, CardEnum::Forester }
+				);
+			}
+			else {
+				AddTech_Building(TechEnum::Pottery, { TechEnum::TradingPost },
+					{ CardEnum::Potter, CardEnum::ClayPit }
+				);
+				AddTech_Building(TechEnum::FurnitureWorkshop, { TechEnum::TradingPost },
+					CardEnum::FurnitureWorkshop
+				);
+			}
+
+			
 			AddTech_Building(TechEnum::BeerBrewery, { TechEnum::TradingPost },
 				CardEnum::BeerBrewery
 			);
@@ -1128,13 +1143,15 @@ public:
 			);
 
 			/// - Arab
+			TechEnum techLinkEnum_MushroomSubstrateSterilization = TechEnum::MushroomSubstrateSterilization;
 			if (factionEnum == FactionEnum::Arab) {
-				AddTech_Building(TechEnum::Irrigation, { TechEnum::HerbFarming },
+				techLinkEnum_MushroomSubstrateSterilization = TechEnum::Irrigation;
+				AddTech_Building(techLinkEnum_MushroomSubstrateSterilization, { TechEnum::HerbFarming },
 					{ CardEnum::IrrigationPump }
 				);
 			}
 			else {
-				AddTech_Bonus(TechEnum::MushroomSubstrateSterilization, { TechEnum::HerbFarming });
+				AddTech_Bonus(techLinkEnum_MushroomSubstrateSterilization, { TechEnum::HerbFarming });
 			}
 			
 			// Middle Age
@@ -1154,10 +1171,10 @@ public:
 			AddTech_Building(TechEnum::Logistics1, {},
 				CardEnum::HaulingServices
 			);
-			AddTech_Building(TechEnum::AgriculturalRevolution, { TechEnum::BeerBrewery, TechEnum::RanchSheep, TechEnum::MushroomSubstrateSterilization },
+			AddTech_Building(TechEnum::AgriculturalRevolution, { TechEnum::BeerBrewery, TechEnum::RanchSheep, techLinkEnum_MushroomSubstrateSterilization },
 				CardEnum::Granary
 			);
-			AddTech_Building(TechEnum::PotatoFarming, { TechEnum::MushroomSubstrateSterilization },
+			AddTech_Building(TechEnum::PotatoFarming, { techLinkEnum_MushroomSubstrateSterilization },
 				{ CardEnum::PotatoSeed }
 			);
 
@@ -1181,22 +1198,33 @@ public:
 				{ CardEnum::Market }
 			);
 
-			AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, TechEnum::PotatoFarming },
-				{ CardEnum::Windmill, CardEnum::Bakery }
-			);
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, TechEnum::PotatoFarming },
+					{ CardEnum::Windmill, CardEnum::PitaBakery }
+				);
+			} else {
+				AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, TechEnum::PotatoFarming },
+					{ CardEnum::Windmill, CardEnum::Bakery }
+				);
+			}
+
+			
 			AddTech_Building(TechEnum::VodkaDistillery, { TechEnum::PotatoFarming },
 				{ CardEnum::VodkaDistillery }
 			);
 
 			/// - Arab
+			TechEnum techLinkEnum_Beekeeper = TechEnum::Beekeeper;
 			if (factionEnum == FactionEnum::Arab) {
-				AddTech_Building(TechEnum::CarpetWeaver, { TechEnum::PotatoFarming },
+				techLinkEnum_Beekeeper = TechEnum::CarpetWeaver;
+				
+				AddTech_Building(techLinkEnum_Beekeeper, { TechEnum::PotatoFarming },
 					CardEnum::CarpetWeaver,
 					TechRequirements::HouseLvlCount(2, 30)
 				);
 			}
 			else {
-				AddTech_Building(TechEnum::Beekeeper, { TechEnum::PotatoFarming },
+				AddTech_Building(techLinkEnum_Beekeeper, { TechEnum::PotatoFarming },
 					CardEnum::Beekeeper
 				);
 			}
@@ -1222,16 +1250,18 @@ public:
 				CardEnum::Winery,
 				TechRequirements::HouseLvlCount(4, 15)
 			);
-			AddTech_Building(TechEnum::Medicine, { TechEnum::VodkaDistillery, TechEnum::Beekeeper },
+			AddTech_Building(TechEnum::Medicine, { TechEnum::VodkaDistillery, techLinkEnum_Beekeeper },
 				CardEnum::MedicineMaker
 			);
 
 			/// - Arab
+			TechEnum techLinkEnum_CandleMaker = TechEnum::CandleMaker;
 			if (factionEnum == FactionEnum::Arab) {
-				AddTech_Bonus(TechEnum::CarpetTrade, { TechEnum::CarpetWeaver });
+				techLinkEnum_CandleMaker = TechEnum::CarpetTrade;
+				AddTech_Bonus(techLinkEnum_CandleMaker, { techLinkEnum_Beekeeper });
 			}
 			else {
-				AddTech_Building(TechEnum::CandleMaker, { TechEnum::Beekeeper },
+				AddTech_Building(techLinkEnum_CandleMaker, { techLinkEnum_Beekeeper },
 					CardEnum::CandleMaker,
 					TechRequirements::HouseLvlCount(2, 30)
 				);
@@ -1259,7 +1289,7 @@ public:
 				{ CardEnum::StoneRoad }
 			);
 			
-			AddTech_Building(TechEnum::CoffeeRoaster, { TechEnum::Medicine, TechEnum::CandleMaker },
+			AddTech_Building(TechEnum::CoffeeRoaster, { TechEnum::Medicine, techLinkEnum_CandleMaker },
 				CardEnum::CoffeeRoaster,
 				TechRequirements::HouseLvlCount(4, 40)
 			);
@@ -1282,11 +1312,13 @@ public:
 			);
 
 			/// - Arab
+			TechEnum techLinkEnum_ShroomFarm = TechEnum::ShroomFarm;
 			if (factionEnum == FactionEnum::Arab) {
-				AddTech_Bonus(TechEnum::SpiceFarming, { TechEnum::CoffeeRoaster });
+				techLinkEnum_ShroomFarm = TechEnum::SpiceFarming;
+				AddTech_Bonus(techLinkEnum_ShroomFarm, { TechEnum::CoffeeRoaster });
 			}
 			else {
-				AddTech_Building(TechEnum::ShroomFarm, { TechEnum::CoffeeRoaster },
+				AddTech_Building(techLinkEnum_ShroomFarm, { TechEnum::CoffeeRoaster },
 					CardEnum::MagicMushroomFarm,
 					TechRequirements::HouseLvlCount(4, 80)
 				);
@@ -1312,7 +1344,7 @@ public:
 				TechRequirements::HouseLvlCount(6, 50)
 			);
 			
-			AddTech_Building(TechEnum::RanchCow, { TechEnum::ShroomFarm },
+			AddTech_Building(TechEnum::RanchCow, { techLinkEnum_ShroomFarm },
 				{ CardEnum::RanchCow }
 			);
 
@@ -1395,6 +1427,7 @@ public:
 			
 			AddTech_Bonus(TechEnum::EconomicTheories, { TechEnum::Printing, TechEnum::MarketInfluence });
 			AddTech_Bonus(TechEnum::SocialScience, { TechEnum::MarketInfluence });
+
 			AddTech_Building(TechEnum::ExhibitionHall, { TechEnum::MarketInfluence },
 				{ CardEnum::ExhibitionHall },
 				TechRequirements::HouseLvlCount(8, 100)
@@ -1485,7 +1518,7 @@ public:
 			
 			//
 			_columnIndex = 4;
-			AddTech_Bonus(TechEnum::TradeRelations, { TechEnum::Archives });
+			AddTech_Bonus(TechEnum::TradeRelations, { TechEnum::CardInventory1 });
 			AddTech_CardGiving(TechEnum::CoalPipeline, { TechEnum::SmelterCombo },
 				CardEnum::CoalPipeline
 			);
@@ -1658,6 +1691,11 @@ public:
 			AddTech_Building(TechEnum::GrandPalace, {},
 				CardEnum::GrandPalace
 			);
+			AddTech_Building(TechEnum::GreatMosque, {},
+				{ CardEnum::GreatMosque },
+				TechRequirements::HouseLvlCount(8, 100)
+			);
+			
 			AddTech_CardGiving(TechEnum::SocialWelfare, {},
 				{ CardEnum::SocialWelfare }
 			);

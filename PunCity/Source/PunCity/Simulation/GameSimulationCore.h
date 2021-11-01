@@ -360,10 +360,6 @@ public:
 		UE_DEBUG_BREAK();
 		return playerId;
 	}
-
-	virtual FactionEnum GetFactionEnum(int32 playerId) override {
-		return _playerOwnedManagers[playerId].factionEnum();
-	}
 	
 	
 	bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) final {
@@ -1011,7 +1007,7 @@ public:
 			return false;
 		}
 		if (tileOwnerPlayer(tile) != playerId) {
-			return SimSettings::IsOn("CheatFastBuild") ||
+			return PunSettings::IsOn("CheatFastBuild") ||
 					IsResearched(playerId, TechEnum::ForeignInvestment) ||
 					IsAIPlayer(playerId);
 		}
@@ -2138,7 +2134,7 @@ public:
 		int32 distance = WorldTile2::Distance(GetProvinceCenterTile(provinceId), GetTownhallGate_All(capitalTownId));
 		int32 distancePenalty = std::min(maxPenalty, maxPenalty * distance / maxDistance);
 		if (distancePenalty > 0) {
-			bonuses.push_back({ NSLOCTEXT("MilitaryBonus", "Distance from Capital", "Distance from Capital"), distancePenalty });
+			bonuses.push_back({ NSLOCTEXT("MilitaryBonus", "Distance from Capital", "Distance from Capital"), -distancePenalty });
 		}
 		
 		return bonuses;
@@ -3846,6 +3842,11 @@ public:
 			_floodSystem.Serialize(Ar);
 
 			// Note: When Debugging, Just put stuff here to separate out bad Serialize Function
+			
+		}
+		
+		if (checkChunkEnum(GameSaveChunkEnum::Others))
+		{
 			{
 				SERIALIZE_TIMER("Regions", data, crcs, crcLabels);
 
@@ -3934,33 +3935,8 @@ public:
 				LOOP("Unlock", _unlockSystems[i].Serialize(Ar));
 				LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
 				LOOP("Popup", _popupSystems[i].Serialize(Ar));
+				
 				LOOP("Cards", _cardSystem[i].Serialize(Ar));
-
-				//LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
-				//LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
-				//LOOP("CallOnceAction", SerializeVecValue(Ar, _playerIdToCallOnceActionWasCalled[i]));
-#undef LOOP
-			}
-		}
-		
-		if (checkChunkEnum(GameSaveChunkEnum::Others))
-		{
-
-			//! Per Player
-			{
-#define LOOP(sysName, func) {\
-								SERIALIZE_TIMER(sysName, data, crcs, crcLabels)\
-								for (size_t i = 0; i < GameConstants::MaxPlayersAndAI; i++) { func; }\
-							}
-
-				//LOOP("PlayerOwned", _playerOwnedManagers[i].Serialize(Ar));
-				//LOOP("GlobalResource", _globalResourceSystems[i].Serialize(Ar));
-				//LOOP("Quest", _questSystems[i].Serialize(Ar));
-
-				//LOOP("Unlock", _unlockSystems[i].Serialize(Ar));
-				//LOOP("PlayerParam", _playerParameters[i].Serialize(Ar));
-				//LOOP("Popup", _popupSystems[i].Serialize(Ar));
-				LOOP("Cards", _cardSystem[i].Serialize2(Ar));
 
 				LOOP("AI", _aiPlayerSystem[i].Serialize(Ar));
 				LOOP("NonRepeatAction", SerializeVecValue(Ar, _playerIdToNonRepeatActionToAvailableTick[i]));
@@ -4159,7 +4135,7 @@ public:
 		//	}
 		//}
 
-		SimSettings::Set("CheatFastBuild", 1);
+		PunSettings::Set("CheatFastBuild", 1);
 
 		// Build buildings
 		for (const TSharedPtr<FJsonValue>& buildingJsonValue : buildingListJson)
@@ -4330,6 +4306,38 @@ public:
 					}
 				}
 			}
+		});
+	}
+
+	virtual void CheckClaypitArea(CardEnum buildingEnum, TileArea area, int32 playerId, std::vector<PlacementGridInfo>& grids, bool& setMustBeNearRiverOasisInstruction) override
+	{
+		const std::vector<int32>& oasisSlotIds = provinceInfoSystem().oasisSlotProvinceIds();
+		setMustBeNearRiverOasisInstruction = false;
+
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+		{
+			if (IsPlayerBuildable(tile, playerId))
+			{
+				bool hasOasis = false;
+				for (int32 i = 0; i < oasisSlotIds.size(); i++) {
+					const ProvinceBuildingSlot& slot = provinceInfoSystem().provinceBuildingSlot(oasisSlotIds[i]);
+					if (slot.oasisSlot.isValid() && WorldTile2::Distance(slot.oasisSlot.centerTile, tile) < 20) {
+						hasOasis = true;
+						break;
+					}
+				}
+
+				if (hasOasis ||
+					terrainGenerator().riverFraction(tile) > GetRiverFractionPercentThreshold(buildingEnum) / 100.0f ||
+					PunSettings::IsOn("CheatFastBuild"))
+				{
+					grids.push_back({ PlacementGridEnum::Green, tile });
+					return true;
+				}
+				setMustBeNearRiverOasisInstruction = true;
+			}
+			grids.push_back({ PlacementGridEnum::Red, tile });
+			return false;
 		});
 	}
 

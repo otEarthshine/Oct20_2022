@@ -103,8 +103,8 @@ static std::wstring StringEnvelopImgTag(std::wstring str, std::wstring envelopTa
 	return str;
 }
 
-static bool FStringCompareRight(const FString& str, FString rightStr) {
-	return str.Right(rightStr.Len()) == rightStr;
+static bool FStringCompareRight(const FString& str, FString rightStr, int32 endChop = 0) {
+	return str.LeftChop(endChop).Right(rightStr.Len()) == rightStr;
 }
 
 

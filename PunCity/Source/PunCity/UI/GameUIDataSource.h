@@ -190,16 +190,18 @@ struct FPlayerInfo
 {
 	GENERATED_BODY();
 
+	static const uint64 InvalidSteamId64 = MAX_uint64;
+
 	UPROPERTY() FText name;
-	UPROPERTY() uint64 steamId64 = MAX_uint64;
+	UPROPERTY() uint64 steamId64 = InvalidSteamId64;
 
 	UPROPERTY() int32 logoIndex = 0;
 	UPROPERTY() FLinearColor logoColorBackground = FLinearColor::Black;
 	UPROPERTY() FLinearColor logoColorForeground = FLinearColor::Yellow;
 	UPROPERTY() int32 characterIndex = 0;
 	UPROPERTY() int32 factionIndex = 0;
-
-	bool IsEmpty() { return steamId64 == MAX_uint64; }
+	
+	bool IsEmpty() const { return steamId64 == InvalidSteamId64; }
 	
 
 	FactionEnum factionEnum() const { return static_cast<FactionEnum>(factionIndex); }

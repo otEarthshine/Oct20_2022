@@ -469,7 +469,8 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 											moduleTypeEnum == ModuleTypeEnum::RotateRollMine ||
 											moduleTypeEnum == ModuleTypeEnum::RotateRollMine2 ||
 											moduleTypeEnum == ModuleTypeEnum::RotateRollQuarry ||
-											moduleTypeEnum == ModuleTypeEnum::RotateRollFurniture) &&
+											moduleTypeEnum == ModuleTypeEnum::RotateRollFurniture ||
+											moduleTypeEnum == ModuleTypeEnum::RotateZAxis) &&
 											building.shouldDisplayParticles();
 
 						float targetDegreePerSec = 90;
@@ -530,6 +531,9 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 						moduleTypeEnum == ModuleTypeEnum::RotateRollMine2 ||
 						moduleTypeEnum == ModuleTypeEnum::RotateRollFurniture) {
 						rotator = FRotator(rotation.rotationFloat, 0, 0);
+					}
+					else if (moduleTypeEnum == ModuleTypeEnum::RotateZAxis) {
+						rotator = FRotator(0, rotation.rotationFloat, 0);
 					}
 					
 					FTransform localTransform = FTransform(rotator, modules[i].transform.GetTranslation(), scale);

@@ -55,6 +55,7 @@ public:
 	static const int32 QuickBuildMultiplier_Resource = 3;
 	static const int32 QuickBuildMultiplier_Work = 2;
 
+	static const int32 BaseFloatupIntervalSec = 5;
 };
 
 static const int32 ModuleMeshCount = 416; // 407

@@ -1374,6 +1374,7 @@ public:
 	}
 
 	int32 foreignBuilder() const { return _foreignBuilder; }
+	bool isForeignBuilding() { return _foreignBuilder != -1; }
 	void SetForeignBuilder(int32 foreignBuilder) {
 		_foreignBuilder = foreignBuilder;
 		_isForeignBuildingApproved = false;
@@ -1924,6 +1925,15 @@ public:
 
 	virtual bool RefreshHoverWarning()
 	{
+		//! Foreign Building Awaiting Approval
+		if (isForeignBuilding() && 
+			!isForeignBuildingApproved())
+		{
+			hoverWarning = HoverWarning::AwaitingApproval;
+			return true;
+		}
+
+		
 		if (_playerId == -1) {
 			hoverWarning = HoverWarning::None;
 			return true;
@@ -1994,7 +2004,7 @@ public:
 		}
 		
 		// StorageTooFar Warning
-		if (IsAgricultureBuilding(_buildingEnum))
+		if (IsFoodBuilding(_buildingEnum))
 		{
 			if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::StorageYard) &&
 				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Warehouse) &&

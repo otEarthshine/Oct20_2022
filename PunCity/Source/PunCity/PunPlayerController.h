@@ -1280,7 +1280,7 @@ public:
 			}
 		}
 		
-		SimSettings::Set("CheatFastBuild", 1);
+		PunSettings::Set("CheatFastBuild", 1);
 		for (int32 i = 0; i < 4; i++) {
 			AutoBuildHouse(3);
 			AutoBuildFarm(3);
@@ -1299,7 +1299,7 @@ public:
 		auto& sim = gameManager->simulation();
 		
 		PunSettings::TrailerSession = true;
-		SimSettings::Set("CheatFastBuild", 1);
+		PunSettings::Set("CheatFastBuild", 1);
 		SetLightAngle(225);
 		sim.unlockSystem(playerId())->UnlockAll();
 		sim.ClearPopups(playerId());

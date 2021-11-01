@@ -922,15 +922,14 @@ void TownManager::Tick1Sec()
 	CollectHouseIncome();
 
 	//! Collect Diplomatic Building Influence Income
-	const int32 secSkip = 5;
-	if (Time::Ticks() % secSkip == 0 && isCapital())
+	if (Time::Ticks() % GameConstants::BaseFloatupIntervalSec == 0 && isCapital())
 	{
 		const std::vector<int32>& diplomaticBuildings = _simulation->GetDiplomaticBuildings(_playerId);
 		for (int32 diplomaticBuildingId : diplomaticBuildings) {
 			DiplomaticBuilding& bld = _simulation->building<DiplomaticBuilding>(diplomaticBuildingId);
 			int32 influenceIncome100 = bld.influenceIncome100(_playerId);
 
-			int32 influenceIncome_Sec = GameRand::RandRound(influenceIncome100 * secSkip, Time::SecondsPerRound * 100);
+			int32 influenceIncome_Sec = GameRand::RandRound(influenceIncome100 * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound * 100);
 			if (influenceIncome_Sec > 0) {
 				_simulation->ChangeInfluence(_playerId, influenceIncome_Sec);
 				
@@ -1611,10 +1610,18 @@ void TownManager::RecalculateTax(bool showFloatup)
 	int32 tradeClusterTotalPopulation = 0;
 	for (const TradeRoutePair& route : tradeRoutesTo) 
 	{
-		int32 counterPartTownId = route.GetCounterpartTownId(townhallId);
-		if (counterPartTownId != -1) {
-			tradeClusterTotalPopulation += _simulation->populationTown(counterPartTownId);
-		}
+		auto addPopulation = [&](int32 townIdLocal)
+		{
+			if (IsMajorTown(townIdLocal)) {
+				tradeClusterTotalPopulation += _simulation->populationTown(townIdLocal);
+			}
+			else if (IsMinorTown(townIdLocal)) {
+				tradeClusterTotalPopulation += _simulation->townManagerBase(townIdLocal)->GetMinorCityLevel();
+			}
+		};
+		
+		addPopulation(route.townId1);
+		addPopulation(route.townId2);
 	}
 	
 	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * tradeClusterTotalPopulation / 2;
@@ -1672,7 +1679,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::UnsafeProvinceUpkeep)] -= territoryUpkeep100 * numberOfUnprotectedProvinces / _provincesClaimed.size(); // double upkeep per unprotected province
 
 		// Fort/Colony
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;
+		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_townId, CardEnum::ResourceOutpost) * ResourceOutpost::GetColonyUpkeep() * 100;
 	}
 	else

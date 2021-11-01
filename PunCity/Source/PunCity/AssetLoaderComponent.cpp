@@ -83,8 +83,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	ReferenceTerrainMaterial = Load<UMaterial>("/Game/Models/WorldMap/M_ReferenceTerrain");
 
 
-	BuildingIconMaterial = Load<UMaterial>("/Game/UI/UIMaterials/M_BuildingIcon");
-	BuildingIconGrayMaterial = Load<UMaterial>("/Game/UI/UIMaterials/M_BuildingIconGray");
+	//BuildingIconMaterial = Load<UMaterial>("/Game/UI/UIMaterials/M_BuildingIcon");
 
 	CardIconMaterial = Load<UMaterial>("/Game/UI/UIMaterials/M_CardIcon");
 	CardIconGrayMaterial = Load<UMaterial>("/Game/UI/UIMaterials/M_CardIconGray");
@@ -187,7 +186,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::BeerBrewery, "Brewery_Era", "BeerBrewery", "BeerBrewery", 1);
 	
-	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "", "Chocolatier", 3);
+	LoadBuilding(CardEnum::Chocolatier, "Chocolatier_Era", "Chocolatier", "Chocolatier", 3);
 
 	LoadBuilding(CardEnum::MushroomFarm, "Mushroom_FarmEra", "", "MushroomFarm", 1, 4);
 
@@ -198,7 +197,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::Fisher, "Fishing_Lodge_Era_", "FishingLodge_Era", "FishingLodge", 1);
 
-	LoadBuilding(CardEnum::Winery, "Winery_Era_", "", "Winery", 2);
+	LoadBuilding(CardEnum::Winery, "Winery", 2);
 
 	LoadBuilding(CardEnum::Library, "Library_Era", "Library_Era", "Library", 2);
 	LoadBuilding(CardEnum::School, "College_Era", "College_Era", "College", 3);
@@ -209,21 +208,23 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Tavern, "TavernEra", "TavernEra", "Tavern", 1);
 	LoadBuilding(CardEnum::Tailor, "TailorEra", "Tailor_Era", "Tailor", 2);
 
-	LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "", "ClayPit", 1, 1);
+	//LoadBuilding(CardEnum::ClayPit, "ClayPit_Era", "", "ClayPit");
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::ClayPit, "ClayPit", "ClayPit", 1, 1);
+	LinkBuildingEras(FactionEnum::Arab, FactionEnum::Europe, CardEnum::ClayPit, "ClayPit", 1, 1);
+	
 	LoadBuilding(CardEnum::Potter, "potterEra", "DesertPotte", "Potter", 1);
 
 	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort_Era", "TradingPort", 1);
 
 	// TODO:
 	LinkBuildingEras(FactionEnum::Europe, CardEnum::MinorCityPort, "TradingPort_Era", 1);
-	LinkBuildingEras(FactionEnum::Europe, CardEnum::ForeignPort, "TradingPort_Era", 1);
 	
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost_Era", "TradingPost", 1);
 	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "", "TradingCompany", 2);
 
 	//LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era", "ScholarsOffice_Era", "ScholarsOffice", 2);
 	//LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives_Era", "Archives", 2);
-	LoadBuilding(CardEnum::CardMaker, "Archives_Era", "Archives_Era", "Archives", 2);
+	LoadBuilding(CardEnum::CardMaker, "Archives", 2);
 
 	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice_Era", "ImmigrationOffice", 1);
 	
@@ -250,9 +251,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::VodkaDistillery, "Vodka_DistilleryERA", "Vodka", "VodkaDistillery", 2);
 
-	LoadBuilding(CardEnum::CoffeeRoaster, "CoffeeRoaster_Era", "", "CoffeeRoaster", 3);
+	LoadBuilding(CardEnum::CoffeeRoaster, "CoffeeRoaster_Era", "CoffeeRoaster", "CoffeeRoaster", 3);
 
-	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "", "Granary", 2);
+	LoadBuilding(CardEnum::Granary, "GRANARY_ERA", "Granary", "Granary", 2);
 
 	LoadBuilding(CardEnum::SandMine, "SandMine_Era", "SandMine_Era", "SandMine", 3);
 	LoadBuilding(CardEnum::GlassSmelter, "GlassSmelter_Era", "GlassSmelter_Era", "GlassSmelter", 3);
@@ -264,7 +265,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Steelworks, "SteelworksEra", "SteelWork_Era", "Steelworks", 4);
 	LoadBuilding(CardEnum::OilRig, "OilWell_Era", "OilWell_Era", "OilWell", 4);
 	LoadBuilding(CardEnum::OilPowerPlant, "OilPowerPlantERA", "OilPowerPlant_Era", "OilPowerPlant", 4);
-	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era", "PeperMill_Era", "PaperMill", 4);
+	LoadBuilding(CardEnum::PaperMill, "PaperMill_PaperMill_Era", "PaperMill", "PaperMill", 4);
 	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker_ClockMakerEra", "ClockMaker", 4);
 
 	LoadBuilding(FactionEnum::Europe, CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
@@ -281,6 +282,32 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticBureau_Era", "StatisticsBureau", 1);
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau_Era", "EmploymentBureau", 1);
 
+
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub", "IntercityLogisticsHub", 1);
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort", "IntercityLogisticsPort", 1);
+	
+	LoadBuilding(CardEnum::ForeignQuarter, "ForeignQuarter", 3);
+	LoadBuilding(CardEnum::ForeignPort, "ForeignPort", 3);
+	LoadBuilding(CardEnum::SpyCenter, "SpyCenter", 4);
+
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Caravansary, "Caravansary", "Caravansary", 2);
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Hotel, "Hotel", "Hotel", 3);
+
+	LoadBuilding(CardEnum::Museum, "ScholarsOffice", 3);
+
+
+	LoadBuilding(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity/Era0", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+		},
+		{}, {},
+		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+	));
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 3);
+
+	
+	
 	/*
 	 * Townhall
 	 */
@@ -498,40 +525,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		}
 	}
 
-	//
-
-	//set(CardEnum::CharcoalMaker, {
-	//ModuleTransformGroup::CreateSet("CharcoalMaker", {},
-	//{
-	//	{ParticleEnum::BlackSmoke,  TransformFromPosition(9.8, 5.9, 5.6)},
-	//	{ParticleEnum::TorchFire,  FTransform(FRotator::ZeroRotator, FVector(9.11, 5.27, 8.2), FVector(1, 1, 1))},
-	//})
-	//	});
+	/*
+	 * Load Unique Buildings
+	 */
 	
-	// -
-	//
-		//
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::CarpetWeaver, "CarpetWeaver", "CarpetWeaver", 3);
+	
 
-		//
-		//	//
-		//
-
-	// OCT 6 remove
-	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Quarry", "Quarry");
-	//LoadAnimModule("QuarrySpecialToggle", "Quarry/QuarrySpecialToggle");
-	//
-	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "OreMine", "OreMine");
-	////LoadAnimModule("OreMineSpecial_Stone", "OreMine/OreMineSpecial_Stone");
-	//LoadAnimModule("OreMineSpecial_Coal", "OreMine/OreMineSpecial_Coal");
-	//LoadAnimModule("OreMineSpecial_Iron", "OreMine/OreMineSpecial_Iron");
-	//LoadAnimModule("OreMineSpecial_Gold", "OreMine/OreMineSpecial_Gold");
-	//LoadAnimModule("OreMineSpecial_Gemstone", "OreMine/OreMineSpecial_Gemstone");
-	//
-	//LoadTogglableModule("OreMineWorkStatic_Stone", "OreMine/StoneSpecial");
-	//LoadTogglableModule("OreMineWorkStatic_Coal", "OreMine/CoalSpecial");
-	//LoadTogglableModule("OreMineWorkStatic_Iron", "OreMine/IronOreSpecial");
-	//LoadTogglableModule("OreMineWorkStatic_Gold", "OreMine/GoldOreSpecial");
-	//LoadTogglableModule("OreMineWorkStatic_Gemstone", "OreMine/GemstoneSpecial");
 
 	// ---
 	
@@ -544,8 +544,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "GardenCypress", "GardenCypress");
 	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "GardenShrubbery1", "GardenShrubbery1");
 
-	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "IntercityLogisticsHub", "IntercityLogisticsHub");
-	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "IntercityLogisticsPort", "IntercityLogisticsPort");
+	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "IntercityLogisticsHub", "IntercityLogisticsHub");
+	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "IntercityLogisticsPort", "IntercityLogisticsPort");
 	
 
 
@@ -730,7 +730,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//TryLoadBuildingModuleSet("IrrigationReservoir", "IrrigationReservoir");
 	
 
-	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "TribalVillage", "RegionTribalVillage");
+	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "TribalVillage", "RegionTribalVillage");
 	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "AncientShrine", "RegionShrine");
 	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "PortVillage", "RegionPortVillage");
 	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "RegionCratePile", "RegionCratePile");
@@ -870,11 +870,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	 * Card Icons
 	 */
 	_cardIcons.SetNum(FactionEnumCount * CardEnumCount_WithNone);
+	_cardIconHasFadeBorder.SetNum(FactionEnumCount * CardEnumCount_WithNone);
 	
 	int32 addCardIconCount = 0;
-	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName) {
+	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName, bool isScreenShot = false)
+	{
+		FString folderName = isScreenShot ? "CardImages_Screenshot/" : "CardImages_BleGood/";
 		for (int32 i = 0; i < FactionEnumCount; i++) {
-			SetCardIcon(i, cardEnum, LoadF<UTexture2D>(FString("/Game/UI/Images/CardImages_BleGood/") + iconFileName + FString("_1024")));
+			SetCardIcon(i, cardEnum, LoadF<UTexture2D>(FString("/Game/UI/Images/") + folderName + iconFileName + (isScreenShot ? "" : "_1024")), isScreenShot);
 		}
 		addCardIconCount++;
 	};
@@ -970,6 +973,18 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::Snatch, "StealCard");
 	addCardIcon(CardEnum::Steal, "SnatchCard");
 
+	// Screenshot images
+	addCardIcon(CardEnum::Farm, "FarmIcon", true);
+	addCardIcon(CardEnum::DirtRoad, "DirtRoadIcon", true);
+	addCardIcon(CardEnum::StoneRoad, "StoneRoadIcon", true);
+	
+	addCardIcon(CardEnum::Bridge, "BridgeIcon", true);
+	addCardIcon(CardEnum::Tunnel, "TunnelIcon", true);
+	addCardIcon(CardEnum::StorageYard, "StorageYardIcon", true);
+
+	addCardIcon(CardEnum::IntercityRoad, "DirtRoadIcon", true);
+	addCardIcon(CardEnum::IntercityBridge, "BridgeIcon", true);
+
 	
 
 	/*
@@ -993,7 +1008,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 				UTexture2D* cardIconTexture = Cast<UTexture2D>(cardIconTextureObj);
 
 				if (cardIconTexture) {
-					SetCardIcon(static_cast<int32>(factionEnum), buildingEnum, cardIconTexture);
+					SetCardIcon(static_cast<int32>(factionEnum), buildingEnum, cardIconTexture, false);
 					addCardIconCount++;
 				}
 			}
@@ -1003,7 +1018,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addBuildingCardIcons(FactionEnum::Europe, "UI/BuildingSnapshots/");
 	addBuildingCardIcons(FactionEnum::Arab, "UI/BuildingSnapshotsArab/");
 	
-	check(addCardIconCount == 119);
+	//check(addCardIconCount == 126);
+
+
 	
 	
 	//BorealFishing
@@ -1228,10 +1245,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Glassware, "Glassware/Glassware");
 	LoadResource2(ResourceEnum::PocketWatch, "PocketWatch/Pocketwatch");
 
-	LoadResource2(ResourceEnum::PitaBread, "Bread/BreadBasket");
+	LoadResource2(ResourceEnum::PitaBread, "PitaBread/PitaBread");
 	LoadResource2(ResourceEnum::Carpet, "PocketWatch/Pocketwatch");
-	LoadResource2(ResourceEnum::DateFruit, "Coconut/Coconut");
-	LoadResource2(ResourceEnum::ToiletPaper, "PocketWatch/Pocketwatch");
+	LoadResource2(ResourceEnum::DateFruit, "Dates/Dates");
+	LoadResource2(ResourceEnum::ToiletPaper, "ToiletPaper/ToiletPaper");
 	
 	
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
@@ -1719,6 +1736,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 	int32 bodyMainIndex = 1;
 	int32 bodySpecialIndex = 1;
 	int32 alwaysOnIndex = 1;
+	int32 frameIndex = 1;
+	int32 workStaticIndex = 1;
 
 	auto loadMesh = [&](int32 fileIndex)
 	{
@@ -1746,11 +1765,20 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				const auto mesh = loadMesh(i);
 				check(mesh);
 
-				// Use Lightmap Resolution 100 to mark
-				if (moduleTypeName != "Frame" &&
-					moduleTypeName != "AlwaysOn" &&
-					(mesh->LightMapResolution == 100 || mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase))
-					&& bodyMainIndex <= 3)
+				// Use Lightmap Resolution 100 to mark things to display when zoomed out
+				// - "Body" will display when zoomed out...
+				// - see IsMiniModule() for all tags that will displayed in outer map
+				if (moduleTypeName == "Frame")
+				{
+					moduleName = moduleSetName + moduleTypeName + FString::FromInt(frameIndex);
+					frameIndex++;
+				}
+				else if (moduleTypeName == "AlwaysOn")
+				{
+					
+				}
+				else if ((mesh->LightMapResolution == 100 || (mesh->GetMaterial(0) && mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase)))
+						&& bodyMainIndex <= 3)
 				{
 					moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
 					bodyMainIndex++;
@@ -1815,6 +1843,10 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				else if (buildingEnum == CardEnum::IrrigationPump) {
 					transform = TransformFromPosition(0, 4.76, 6.64);
 				}
+				else if (buildingEnum == CardEnum::CoffeeRoaster) {
+					transform = era == 3 ? TransformFromPosition(-6.8, 9, 0) : TransformFromPosition(-7.2, 9, 0);
+					moduleTypeEnum = ModuleTypeEnum::RotateZAxis;
+				}
 				else {
 					UE_DEBUG_BREAK();
 				}
@@ -1838,7 +1870,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 
 				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
 			}
-			else if (foundFiles[i].Contains("_Scaffolding_")) {
+			else if (foundFiles[i].Contains("_Scaffolding_")) 
+			{
 				FString meshName = addMesh("Frame");
 
 				_modulesNeedingPaintConstruction.Add(meshName);
@@ -1860,7 +1893,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 			else if (foundFiles[i].Contains("_WorkStatic"))
 			{
 				const auto mesh = loadMesh(i);
-				FString moduleName = moduleSetName + "WorkStatic";
+				FString moduleName = moduleSetName + "WorkStatic" + FString::FromInt(workStaticIndex);
+				workStaticIndex++;
 
 				AddBuildingModule(moduleName, mesh, _togglableModuleNames);
 

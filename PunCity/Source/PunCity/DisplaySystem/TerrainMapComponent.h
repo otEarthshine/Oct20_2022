@@ -101,6 +101,7 @@ public:
 		heightForestColor[tileId] = color.ToPackedARGB();
 	}
 
+	// TODO: remove?? doesn't work..
 	static void SetHoleWorldTexture(WorldTile2 tile, bool isHole)
 	{
 		//PUN_LOG("SetHoleWorldTexture %s", *tile.To_FString());
@@ -115,9 +116,10 @@ public:
 
 		FColor color(heightForestColor[tileId]);
 		if (isHole) {
-			color = FColor(color.R / 2, 0, 0, 0);
+			color = FColor(0, 0, 0, 0);
 		} else {
-			color = FColor(color.R * 2, 0, 0, 0);
+			// TODO: put back old color.R???
+			color = FColor(color.R, 0, 0, 0);
 		}
 
 		heightForestColor[tileId] = color.ToPackedARGB();

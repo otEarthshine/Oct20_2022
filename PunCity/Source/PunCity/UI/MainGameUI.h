@@ -72,6 +72,7 @@ public:
 		ConverterCardHandOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 		CardInventorySizeBox->SetVisibility(ESlateVisibility::Collapsed);
+		
 		BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
 		
 		ConfirmationOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -215,8 +216,9 @@ private:
 
 	// Card Inventory
 	UPROPERTY(meta = (BindWidget)) UButton* CardInventoryToggleButton;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* CardInventoryUIWrap;
+	UPROPERTY(meta = (BindWidget)) UImage* CardInventoryLinkImage;
 	
+	UPROPERTY(meta = (BindWidget)) UWrapBox* CardInventoryUIWrap;
 	
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* PopulationBox;

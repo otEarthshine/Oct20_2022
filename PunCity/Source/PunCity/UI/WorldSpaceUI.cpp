@@ -1261,7 +1261,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	PlacementInfo placementInfo = inputSystemInterface()->PlacementBuildingInfo();
 	FVector displayLocation = dataSource()->DisplayLocation(placementInfo.mouseOnTile.worldAtom2());
 
-	int32 townId = simulation().tileOwnerTown(placementInfo.mouseOnTile);
+	int32 tileTownId = simulation().tileOwnerTown(placementInfo.mouseOnTile);
 
 	if (IsPointerOnUI() || 
 		placementInfo.placementType == PlacementType::None) 
@@ -1322,8 +1322,8 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::DragRoadStone)) {
 		int32 stoneNeeded = getInstruction(PlacementInstructionEnum::DragRoadStone).intVar1;
 		int32 resourceCount = 0;
-		if (townId != -1) {
-			resourceCount = simulation().resourceCountTown(townId, ResourceEnum::Stone);
+		if (IsValidMajorTown(tileTownId)) {
+			resourceCount = simulation().resourceCountTown(tileTownId, ResourceEnum::Stone);
 		}
 		punBox->AddRichText(
 			TextRed(to_string(stoneNeeded), resourceCount < stoneNeeded) + "<img id=\"Stone\"/>"
@@ -1391,7 +1391,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (needInstruction(PlacementInstructionEnum::MustBeNearRiver))
 	{
-		punBox->AddRichTextCenter(LOCTEXT("MustBeNearRiver_Instruct", "<Red>Must be built near a river</>"));
+		punBox->AddRichTextCenter(LOCTEXT("MustBeNearRiver_Instruct", "<Red>Must be built near river or oasis</>"));
 	}
 	else if (needInstruction(PlacementInstructionEnum::LogisticsOffice))
 	{
@@ -1472,7 +1472,7 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	 * Secondary instructions
 	 */
 
-	bool showResource = placementInfo.buildingEnum != CardEnum::None && !hasPrimaryInstruction;
+	bool showResource = placementInfo.buildingEnum != CardEnum::None && !hasPrimaryInstruction && IsValidMajorTown(tileTownId);
 
 	if (!hasPrimaryInstruction && IsBuildingCard(placementInfo.buildingEnum)) 
 	{
@@ -1519,14 +1519,14 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
-		int32 efficiency = Windmill::WindmillBaseEfficiency(townId, placementInfo.mouseOnTile, &simulation());
+		int32 efficiency = Windmill::WindmillBaseEfficiency(tileTownId, placementInfo.mouseOnTile, &simulation());
 		//ss << "Efficiency: " << efficiency << "%";
 		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Beekeeper)
 	{
-		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(townId, placementInfo.mouseOnTile, &simulation());
+		int32 efficiency = Beekeeper::BeekeeperBaseEfficiency(tileTownId, placementInfo.mouseOnTile, &simulation());
 		//ss << "Efficiency: " << efficiency << "%";
 		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
@@ -1582,10 +1582,8 @@ void UWorldSpaceUI::TickPlacementInstructions()
 				ResourceEnum resourceEnum = ConstructionResources[i];
 				int32 neededCount = constructionResources[i];
 				
-				bool isRed = true;
-				if (townId != -1) {
-					isRed = simulation().resourceSystem(townId).resourceCountWithDrops(resourceEnum) < neededCount;
-				}
+				bool isRed = simulation().resourceSystem(tileTownId).resourceCountWithDrops(resourceEnum) < neededCount;
+				
 				punBox->AddIconPair(FText(), resourceEnum, TEXT_NUM(neededCount), isRed);
 			}
 		}

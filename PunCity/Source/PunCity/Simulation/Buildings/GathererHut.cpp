@@ -1080,6 +1080,20 @@ void Brickworks::FinishConstruction() {
 	});
 }
 
+
+/*
+ * CarpetWeaver
+ */
+void CarpetWeaver::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 30),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Craftmanship", "Craftmanship"), ResourceEnum::Money, 4),
+		MakeComboUpgrade(LOCTEXT("Carpet Weaver Guild", "Carpet Weaver Guild"), ResourceEnum::Brick),
+	});
+}
+
 /*
  * CandleMaker
  */
@@ -1861,8 +1875,20 @@ void OilRig::FinishConstruction() {
 	});
 }
 
+void PaperMill::OnInit()
+{
+	SetupWorkMode({
+		{ LOCTEXT("Printing Paper", "Printing Paper"), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::Paper },
+		{ LOCTEXT("Toilet Paper", "Toilet Paper"), ResourceEnum::Wood, ResourceEnum::None, ResourceEnum::ToiletPaper },
+	});
+}
+
 void PaperMill::FinishConstruction() {
 	Building::FinishConstruction();
+
+	AddResourceHolder(ResourceEnum::Wood, ResourceHolderType::Requester, 0);
+	AddResourceHolder(ResourceEnum::Paper, ResourceHolderType::Provider, 0);
+	AddResourceHolder(ResourceEnum::ToiletPaper, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Drying Cylinder PaperMill", "Drying Cylinder"), LOCTEXT("Uses 50% less wood to produce paper.", "Uses 50% less wood to produce paper."), ResourceEnum::Steel, 50),
@@ -1870,6 +1896,8 @@ void PaperMill::FinishConstruction() {
 		MakeComboUpgrade(LOCTEXT("Paper Mill Town", "Paper Mill Town"), ResourceEnum::Steel),
 	});
 }
+
+
 
 void ClockMakers::FinishConstruction() {
 	Building::FinishConstruction();
@@ -2032,6 +2060,11 @@ void MinorCity::OnDeinit()
 		_simulation->unitAI(occupantId).Die();
 	}
 	
+}
+
+int32 MinorCity::displayVariationIndex()
+{
+	return std::max(0, _simulation->townManagerBase(_townId)->GetMinorCityLevel() - 1);
 }
 
 /*
@@ -2381,9 +2414,9 @@ void WorldTradeOffice::FinishConstruction()
 }
 void WorldTradeOffice::OnTick1Sec()
 {
-	if (Time::Ticks() % (Time::TicksPerSecond * 10) == 0)
+	if (Time::Ticks() % (Time::TicksPerSecond * 30) == 0)
 	{
-		const int32 influenceUsagePerManipulation = 10;
+		const int32 influenceUsagePerManipulation = 30;
 
 		if (_simulation->influence(_playerId) >= influenceUsagePerManipulation)
 		{

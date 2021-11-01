@@ -237,6 +237,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::Castle, Castle);
 		CASE_BUILDING(CardEnum::GrandPalace, GrandMuseum);
 		CASE_BUILDING(CardEnum::ExhibitionHall, ExhibitionHall);
+		CASE_BUILDING(CardEnum::GreatMosque, GreatMosque);
 
 
 		// Others
@@ -337,6 +338,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		  CASE_BUILDING(CardEnum::CardCombiner, CardCombiner);
 
 		  CASE_BUILDING(CardEnum::PitaBakery, PitaBakery);
+		  CASE_BUILDING(CardEnum::CarpetWeaver, CarpetWeaver);
 
 		  CASE_BUILDING(CardEnum::IrrigationPump, IrrigationPump);
 

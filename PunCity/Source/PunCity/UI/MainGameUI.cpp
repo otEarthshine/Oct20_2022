@@ -1603,6 +1603,7 @@ void UMainGameUI::Tick()
 
 		int32 maxCardInventorySlots = cardSys.maxCardInventorySlots();
 		CardInventoryToggleButton->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		CardInventoryLinkImage->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		const std::vector<CardStatus>& cardInventory = cardSys.cardInventory();
 

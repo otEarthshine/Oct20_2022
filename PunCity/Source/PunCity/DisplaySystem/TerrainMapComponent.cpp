@@ -737,10 +737,7 @@ void UTerrainMapComponent::InitAnnotations()
 		for (int i = 0; i < moduleNames.Num(); i++) {
 			UStaticMesh* protoMesh = _assetLoader->moduleMesh(moduleNames[i]);
 			if (protoMesh) {
-				if (moduleNames[i].Right(4) == FString("Body") ||
-					moduleNames[i].Right(4) == FString("Roof") ||
-					FStringCompareRight(moduleNames[i], FString("AlwaysOn")))
-				{
+				if (GameDisplayInfo::IsMiniModule( moduleNames[i])) {
 					_buildingsMeshes->AddProtoMesh(moduleNames[i], protoMesh, nullptr);
 				}
 			}
@@ -799,7 +796,7 @@ void UTerrainMapComponent::RefreshAnnotations()
 					//_dataSource->DisplayLocation(centerTile.worldAtom2())
 
 					const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(factionEnum, buildingEnum, displayVariationIndex);
-					std::vector<ModuleTransform> modules = modulePrototype.transforms;
+					std::vector<ModuleTransform> modules = modulePrototype.miniModules;
 
 					auto showMesh = [&](int32 i) {
 						int32 instanceKey = centerTile.tileId() + i * GameMapConstants::TilesPerWorld;
@@ -812,33 +809,16 @@ void UTerrainMapComponent::RefreshAnnotations()
 					};
 
 					// Special buildings
-					if (buildingEnum == CardEnum::RegionCrates ||
-						buildingEnum == CardEnum::RegionShrine)
+					for (int32 i = 0; i < modules.size(); i++)
 					{
-						for (int32 i = 0; i < modules.size(); i++) {
-							if (modules[i].moduleName.Right(4) == FString("Special")) {
-								showMesh(i);
-							}
-						}
-					}
-					else
-					{
-						for (int32 i = 0; i < modules.size(); i++)
-						{
-							if (modules[i].moduleName.Right(4) == FString("Body") ||
-								modules[i].moduleName.Right(4) == FString("Roof") ||
-								FStringCompareRight(modules[i].moduleName, FString("AlwaysOn")))
-							{
-								showMesh(i);
-								//int32 instanceKey = centerTile.tileId() + i * GameMapConstants::TilesPerWorld;
-
-								//FTransform finalTransform;
-								//FTransform::Multiply(&finalTransform, &modules[i].transform, &transform);
-
-								////PUN_LOG("ModuleDisplay %s, %s", *finalTransform.GetRotation().Rotator().ToString(), *modules[i].transform.GetRotation().Rotator().ToString());
-								//_buildingsMeshes->Add(modules[i].moduleName, instanceKey, finalTransform, 0, buildingId);
-							}
-						}
+						showMesh(i);
+						
+						//if (modules[i].moduleName.Right(4) == FString("Body") ||
+						//	modules[i].moduleName.Right(4) == FString("Roof") ||
+						//	FStringCompareRight(modules[i].moduleName, FString("AlwaysOn")))
+						//{
+						//	showMesh(i);
+						//}
 					}
 
 				}
@@ -847,6 +827,26 @@ void UTerrainMapComponent::RefreshAnnotations()
 
 		
 	});
+
+	// Oasis
+	const std::vector<int32>& oasisSlotProvinceIds = sim.provinceInfoSystem().oasisSlotProvinceIds();
+	for (int32 oasisProvinceId : oasisSlotProvinceIds)
+	{
+		const ProvinceBuildingSlot& slot = sim.provinceInfoSystem().provinceBuildingSlot(oasisProvinceId);
+		if (slot.isValid() && slot.oasisSlot.isValid())
+		{
+			WorldTile2 centerTile = slot.oasisSlot.centerTile;
+			FVector displayLocation(centerTile.x * CoordinateConstants::DisplayUnitPerTile, centerTile.y * CoordinateConstants::DisplayUnitPerTile, 10);
+
+			const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(FactionEnum::Arab, CardEnum::Oasis, 0);
+			FTransform transform(FRotator::ZeroRotator, displayLocation);
+
+			std::vector<ModuleTransform> modules = modulePrototype.transforms;
+			_buildingsMeshes->Add(modules[0].moduleName, centerTile.tileId(), transform, 0); // Oasis MiniMesh
+			_buildingsMeshes->Add(modules[1].moduleName, centerTile.tileId(), transform, 0); // Oasis MiniMeshWater
+		}
+	}
+	
 #endif
 
 	_buildingsMeshes->AfterAdd();

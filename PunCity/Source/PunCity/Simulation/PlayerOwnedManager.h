@@ -126,13 +126,13 @@ public:
 
 	// TODO: rethink max stored influence, needs to be more intentional, allow for more choices
 	//int32 storedToInfluenceRevenue = 20;
-	int32 maxStoredInfluence100()
-	{
-		return 1000000;
-		//return (influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] +
-		//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] +
-		//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)]) * storedToInfluenceRevenue;
-	}
+	//int32 maxStoredInfluence100()
+	//{
+	//	return 1000000;
+	//	//return (influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Townhall)] +
+	//	//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] +
+	//	//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Luxury)]) * storedToInfluenceRevenue;
+	//}
 
 	std::vector<int32> GetPlotStatVec(PlotStatEnum roundStatEnum) const
 	{

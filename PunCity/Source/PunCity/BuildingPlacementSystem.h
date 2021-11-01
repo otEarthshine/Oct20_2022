@@ -200,7 +200,7 @@ public:
 private:
 	UInstancedStaticMeshComponent* CreateInstancedStaticMeshComponent(FString name);
 
-	uint8 buildingEnumInt() { return static_cast<uint8>(_buildingEnum); }
+	uint16 buildingEnumInt() { return static_cast<uint16>(_buildingEnum); }
 
 	void ShowRadius(int radius, OverlayType overlayType, bool isRed = false);
 

@@ -501,9 +501,20 @@ public:
 		if (playerId == -1) {
 			return FPlayerInfo();
 		}
-		if (playerId >= GameConstants::MaxPlayersPossible) {
+		
+		if (IsMinorTown(playerId))
+		{
+			FPlayerInfo info;
+			info.name = simulation().townNameT(playerId);
+
+			return info;
+		}
+		
+		if (playerId >= GameConstants::MaxPlayersPossible) 
+		{	
 			PUN_CHECK(playerId < GameConstants::MaxPlayersAndAI);
 
+			// TODO: separate 
 			const AIArchetypeInfo& archetypeInfo = simulation().aiPlayerSystem(playerId).aiArchetypeInfo();
 
 			FPlayerInfo info;

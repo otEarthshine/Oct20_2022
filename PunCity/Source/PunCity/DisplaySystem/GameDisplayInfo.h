@@ -52,7 +52,7 @@ public:
 			"Body2",
 			"Body3",
 			"Roof",
-			"Frame",
+			//"Frame",
 			"WindowFrame",
 			"WindowGlass",
 			"Special",
@@ -124,27 +124,27 @@ private:
 
 		setName(CardEnum::HumanitarianAidCamp, WithFactionName("StorageYard"));
 
-		set(CardEnum::RegionTribalVillage, {
-			ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
-				{
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
-			),
-		});
+		//set(CardEnum::RegionTribalVillage, {
+		//	ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
+		//		{
+		//			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+		//		},
+		//		{}, {},
+		//		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+		//	),
+		//});
 
 		setName(CardEnum::RegionShrine, WithFactionName("AncientShrine"));
 		//setName(CardEnum::RegionPort, "PortVillage");
 		setName(CardEnum::RegionCrates, WithFactionName("RegionCratePile"));
 
-		set(CardEnum::MinorCity, {
-				ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
-					{
-						{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
-					}
-				),
-		});
+		//set(CardEnum::MinorCity, {
+		//		ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
+		//			{
+		//				{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+		//			}
+		//		),
+		//});
 
 		
 
@@ -170,13 +170,13 @@ private:
 		setName(CardEnum::IrrigationReservoir, WithFactionName("IrrigationReservoir"));
 
 		set(CardEnum::Tunnel, {
-			ModuleTransformGroup({ ModuleTransform(WithFactionName("Tunnel"), FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
+			ModuleTransformGroup({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
 		});
 
 
 
-		setName(CardEnum::IntercityLogisticsHub, WithFactionName("IntercityLogisticsHub"));
-		setName(CardEnum::IntercityLogisticsPort, WithFactionName("IntercityLogisticsPort"));
+		//setName(CardEnum::IntercityLogisticsHub, WithFactionName("IntercityLogisticsHub"));
+		//setName(CardEnum::IntercityLogisticsPort, WithFactionName("IntercityLogisticsPort"));
 
 		set(CardEnum::IntercityBridge, {
 			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
@@ -191,15 +191,15 @@ private:
 		//! Trailer
 		setName(CardEnum::FakeTownhall, WithFactionName("Townhall0"));
 		
-		set(CardEnum::FakeTribalVillage, {
-			ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
-				{
-					{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
-				},
-				{}, {},
-				{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
-			)
-		});
+		//set(CardEnum::FakeTribalVillage, {
+		//	ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
+		//		{
+		//			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+		//		},
+		//		{}, {},
+		//		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
+		//	)
+		//});
 		
 
 
@@ -250,9 +250,12 @@ private:
 						// Such as clay pit's hole...
 						//FString subMeshName = setName + FString("SpecialInstant");
 						//if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 0.0f));
-
-						FString subMeshName = setName + FString("Frame");
-						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::Frame));
+						FString subMeshName;
+						
+						for (int32 i = 1; i <= 3; i++) {
+							subMeshName = setName + FString("Frame") + FString::FromInt(i);
+							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::Frame));
+						}
 
 						//subMeshName = setName + FString("FrameConstructionOnly");
 						//if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::FrameConstructionOnly));
@@ -314,9 +317,12 @@ private:
 					// Togglables
 					{
 						std::vector<ModuleTransform>& togglableTransforms = moduleTransforms.togglableTransforms;
-
-						FString subMeshName = setName + FString("WorkStatic");
-						if (assetLoader->moduleMesh(subMeshName)) togglableTransforms.push_back(ModuleTransform(subMeshName));
+						FString subMeshName;
+						
+						for (int32 i = 1; i <= 3; i++) {
+							subMeshName = setName + FString("WorkStatic") + FString::FromInt(i);
+							if (assetLoader->moduleMesh(subMeshName)) togglableTransforms.push_back(ModuleTransform(subMeshName));
+						}
 
 						// Window
 						subMeshName = setName + FString("WindowGlass");
@@ -340,7 +346,7 @@ private:
 					std::vector<ModuleTransform>& curEraModules = moduleGroups[era].transforms;
 					bool hasFrame = false;
 					for (int32 i = 0; i < curEraModules.size(); i++) {
-						if (FStringCompareRight(curEraModules[i].moduleName, FString("Frame"))) {
+						if (FStringCompareRight(curEraModules[i].moduleName, FString("Frame"), 1)) {
 							hasFrame = true;
 							break;
 						}
@@ -348,7 +354,7 @@ private:
 					if (!hasFrame) {
 						const std::vector<ModuleTransform>& firstEraModules = moduleGroups[0].transforms;
 						for (int32 i = 0; i < firstEraModules.size(); i++) {
-							if (FStringCompareRight(firstEraModules[i].moduleName, FString("Frame"))) {
+							if (FStringCompareRight(firstEraModules[i].moduleName, FString("Frame"), 1)) {
 								ModuleTransform moduleTransform = firstEraModules[i];
 								moduleTransform.moduleTypeEnum = ModuleTypeEnum::FrameConstructionOnly;
 								curEraModules.insert(curEraModules.begin(), moduleTransform);

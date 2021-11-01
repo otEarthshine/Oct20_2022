@@ -207,12 +207,14 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "TrailerShipTime", 300 },
 	{ "TrailerNoTreeRefresh", 0 },
 	{ "TrailerRoadPerTick", 3 },
+
+	//! Cheat
+	{ "CheatFastBuild", 0 },
 };
 
 
 std::unordered_map<std::string, int32> SimSettings::Settings =
 {
-	{ "CheatFastBuild", 0 },
 	{ "CheatUndead", 0 },
 	{ "CheatFastTech", 0},
 

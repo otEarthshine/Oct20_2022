@@ -123,7 +123,7 @@ public:
 		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobBldStatus);
 
 		auto isOwnedOrFastBuild = [&]() {
-			return building.ownedBy(playerId()) || SimSettings::IsOn("CheatFastBuild");
+			return building.ownedBy(playerId()) || PunSettings::IsOn("CheatFastBuild");
 		};
 
 		if (building.isEnum(CardEnum::StatisticsBureau)) {

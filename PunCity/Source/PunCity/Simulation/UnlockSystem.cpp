@@ -65,7 +65,7 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 						GetBuildingInfo(buildingEnum).name,
 						TEXT_NUM(cardSystem.GetCardPrice(buildingEnum))
 					),
-					{ LOCTEXT("Buy", "Buy"), LOCTEXT("Refuse", "Refuse") },
+					{ LOCTEXT("Buy", "Buy"), LOCTEXT("No, Thanks", "No, Thanks") },
 					PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt
 				)
 			);

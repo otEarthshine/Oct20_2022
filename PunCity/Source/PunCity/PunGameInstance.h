@@ -18,6 +18,7 @@
 
 #include "PunGameInstance.generated.h"
 
+//#define SESSION_HOSTNAME FName(TEXT("HOST_NAME"))
 #define SESSION_TICK FName(TEXT("SETTING_TEST"))
 #define SESSION_GAME_VERSION FName(TEXT("GAME_VERSION"))
 #define SESSION_NUM_PLAYERS FName(TEXT("NUM_PLAYERS"))
@@ -151,6 +152,7 @@ public:
 		}
 	}
 	void PrintPlayers();
+
 
 	/*
 	 * Save Game
@@ -428,8 +430,9 @@ public:
 		}
 
 
-		//FName(TEXT("MAPNAME"))
-		sessionSettings.Set(SETTING_MAPNAME, FString("Game Name"), EOnlineDataAdvertisementType::ViaOnlineService);
+		FString nickName = IOnlineSubsystem::Get()->GetIdentityInterface()->GetPlayerNickname(0);
+
+		//sessionSettings.Set(SESSION_HOSTNAME, nickName, EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set(SESSION_TICK, sessionTickCount/120, EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set(SESSION_NUM_PLAYERS, playerCount(), EOnlineDataAdvertisementType::ViaOnlineService);
 		sessionSettings.Set(SESSION_GAME_VERSION, GAME_VERSION, EOnlineDataAdvertisementType::ViaOnlineService);
@@ -497,11 +500,16 @@ public:
 	
 	void SetPlayerCount(int32 count)
 	{
+		_LOG(PunSync, "SetPlayerCount");
+		PrintPlayers();
+		
 		_playerInfos.SetNum(count);
 		_playerReadyStates.SetNum(count);
 		playerConnectedStates.SetNum(count);
 
 		clientPacketsReceived.SetNum(count);
+
+		PrintPlayers();
 	}
 
 	// This is done upon:
@@ -510,27 +518,33 @@ public:
 	// - Go to singleplayer mode
 	void ResetPlayerCount()
 	{
+		_LOG(PunSync, "ResetPlayerCount");
+		PrintPlayers();
+		
 		_playerInfos.SetNum(0);
 		_playerReadyStates.SetNum(0);
 		playerConnectedStates.SetNum(0);
 
 		clientPacketsReceived.SetNum(0);
+
+		PrintPlayers();
 	}
 	void ResetPlayers()
 	{
+		_LOG(PunSync, "ResetPlayers");
+		PrintPlayers();
+		
 		for (int32 i = 0; i < _playerInfos.Num(); i++) {
 			_playerInfos[i] = FPlayerInfo();
 			_playerReadyStates[i] = false;
 			playerConnectedStates[i] = false;
 			clientPacketsReceived[i] = 0;
 		}
+
+		PrintPlayers();
 	}
 
 	// Player Name
-	void SetPlayerNamesF(TArray<FPlayerInfo> playerInfosIn) {
-		_playerInfos = playerInfosIn;
-	}
-	
 	const TArray<FPlayerInfo>& playerInfoList() {
 		return _playerInfos;
 	}
@@ -550,6 +564,9 @@ public:
 	//}
 
 	void CachePlayerInfos() {
+		_LOG(PunSync, "CachePlayerInfos");
+		PrintPlayers();
+		
 		_playerInfosCache = _playerInfos;
 	}
 	FPlayerInfo GetCachedPlayerInfo(uint64 steamId64);
@@ -568,7 +585,7 @@ public:
 		return _playerReadyStates;
 	}
 	bool IsPlayerReady(int32 playerId) {
-		return _playerReadyStates[playerId];
+		return playerId < _playerReadyStates.Num() ? _playerReadyStates[playerId] : false;
 	}
 	void SetPlayerReady(int32 playerId, bool isReady) 	{
 		_playerReadyStates[playerId] = isReady;
@@ -588,10 +605,8 @@ public:
 		return readyCount;
 	}
 
-	void SetPlayerInfo(int32 playerId, const FPlayerInfo& playerInfo)
-	{
-		_playerInfos[playerId] = playerInfo;
-	}
+	void SetPlayerInfos(TArray<FPlayerInfo> playerInfosIn);
+	void SetPlayerInfo(int32 playerId, const FPlayerInfo& playerInfo);
 	
 
 	bool IsAllPlayersReady() {

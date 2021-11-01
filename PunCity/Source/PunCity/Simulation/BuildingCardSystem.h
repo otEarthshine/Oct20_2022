@@ -47,12 +47,19 @@ public:
 
 		if (!simulation->isLoadingFromFile())
 		{
-			AddDrawCards(CardEnum::HuntingLodge, 2);
 			AddDrawCards(CardEnum::FruitGatherer, 2);
 			AddDrawCards(CardEnum::Fisher, 2);
-			AddDrawCards(CardEnum::MushroomFarm, 2);
 			AddDrawCards(CardEnum::RanchPig, 1);
-			AddDrawCards(CardEnum::Forester, 1);
+
+			if (_simulation->playerFactionEnum(_playerId) == FactionEnum::Arab) {
+				AddDrawCards(CardEnum::ClayPit, 1);
+			}
+			else {
+				AddDrawCards(CardEnum::Forester, 1);
+				AddDrawCards(CardEnum::HuntingLodge, 2);
+				AddDrawCards(CardEnum::MushroomFarm, 2);
+			}
+			
 
 			AddDrawCards(CardEnum::Tavern, 1);
 
@@ -987,17 +994,14 @@ public:
 	{
 		Ar << justRerollButtonPressed;
 
-		PUN_LOG("justRerolledRareHand[before]:%d isLoading:%d", justRerolledRareHand, Ar.IsLoading());
-		Ar << justRerolledRareHand;
-		PUN_LOG("justRerolledRareHand[after]:%d", justRerolledRareHand);
+		// Note justRerolledRareHand sometimes causes checksum check to fail...
+		//PUN_LOG("justRerolledRareHand[before]:%d isLoading:%d", justRerolledRareHand, Ar.IsLoading());
+		//Ar << justRerolledRareHand;
+		//PUN_LOG("justRerolledRareHand[after]:%d", justRerolledRareHand);
 
 		Ar << converterCardState;
 		Ar << wildCardEnumUsed;
 
-	}
-
-	void Serialize2(FArchive& Ar)
-	{
 		/*
 		 * Private
 		 */
@@ -1069,15 +1073,14 @@ public:
 	 */
 	bool justRerollButtonPressed = false;
 
-	int32 justRerolledRareHand = false;
-	bool justRerolledClaimLandHand = false;
-
 	ConverterCardUseState converterCardState = ConverterCardUseState::None;
 	CardEnum wildCardEnumUsed = CardEnum::None;
 
 	/*
 	 * Non-Serialize
 	 */
+	bool justRerolledRareHand = false;
+	
 	bool allowMaxCardHandQueuePopup = true;
 
 	bool needHand1Refresh = false;

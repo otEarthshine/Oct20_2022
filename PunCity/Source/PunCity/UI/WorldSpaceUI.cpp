@@ -567,16 +567,31 @@ void UWorldSpaceUI::TickBuildings()
 				//	//iconTextPair->SetImage(floatupInfo.resourceEnum, dataSource()->assetLoader());
 				//}
 				else if (floatupInfo.floatupEnum == FloatupEnum::GainMoney ||
-						floatupInfo.floatupEnum == FloatupEnum::GainScience ||
-						floatupInfo.floatupEnum == FloatupEnum::GainInfluence ||
-						floatupInfo.floatupEnum == FloatupEnum::GainResource)
+					floatupInfo.floatupEnum == FloatupEnum::GainScience ||
+					floatupInfo.floatupEnum == FloatupEnum::GainInfluence ||
+					floatupInfo.floatupEnum == FloatupEnum::GainInfluence_With0 ||
+					floatupInfo.floatupEnum == FloatupEnum::GainResource)
 				{
 					auto assetLoader = dataSource()->assetLoader();
-					
+
 					UIconTextPair2Lines* iconTextPair3Lines = _floatupUIs.AddHoverUI<UIconTextPair2Lines>(UIEnum::HoverTextIconPair3Lines, worldAtom);
-					if (!floatupInfo.text.IsEmpty() && 
-						floatupInfo.text.ToString() != TEXT("0") && 
-						floatupInfo.text.ToString() != TEXT("+0"))
+
+
+					auto showFloatup = [&](FText text)
+					{
+						if (text.IsEmpty()) return false;
+						
+						if (floatupInfo.floatupEnum != FloatupEnum::GainInfluence_With0)
+						{
+							if (text.ToString() == TEXT("0") ||
+								text.ToString() == TEXT("+0")) {
+								return false;
+							}
+						}
+						return true;
+					};
+					
+					if (showFloatup(floatupInfo.text))
 					{
 						iconTextPair3Lines->IconPair1->SetText(floatupInfo.text, FText());
 
@@ -584,7 +599,9 @@ void UWorldSpaceUI::TickBuildings()
 							iconTextPair3Lines->IconPair1->SetImage(assetLoader->CoinIcon);
 						} else if (floatupInfo.floatupEnum == FloatupEnum::GainScience) {
 							iconTextPair3Lines->IconPair1->SetImage(assetLoader->ScienceIcon);
-						} else if (floatupInfo.floatupEnum == FloatupEnum::GainInfluence) {
+						}
+						else if (floatupInfo.floatupEnum == FloatupEnum::GainInfluence ||
+								floatupInfo.floatupEnum == FloatupEnum::GainInfluence_With0) {
 							iconTextPair3Lines->IconPair1->SetImage(assetLoader->InfluenceIcon);
 						} else {
 							iconTextPair3Lines->IconPair1->SetImage(floatupInfo.resourceEnum, assetLoader);
@@ -594,9 +611,7 @@ void UWorldSpaceUI::TickBuildings()
 					else {
 						iconTextPair3Lines->IconPair1->SetVisibility(ESlateVisibility::Collapsed);
 					}
-					if (!floatupInfo.text2.IsEmpty() &&
-						floatupInfo.text2.ToString() != TEXT("0") &&
-						floatupInfo.text.ToString() != TEXT("+0"))
+					if (showFloatup(floatupInfo.text2))
 					{
 						iconTextPair3Lines->IconPair2->SetText(floatupInfo.text2, FText());
 
@@ -645,7 +660,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 	auto setForeignLogo = [&](UBuildingJobUI* buildingJobUI)
 	{
-		int32 foreignBuilderId = building.foreignBuilder();
+		int32 foreignBuilderId = building.foreignBuilderId();
 		if (foreignBuilderId != -1)
 		{
 			buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Visible);
@@ -751,7 +766,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->SetShowBar(true);
 				buildingJobUI->SetBarFraction(building.constructionFraction());
 
-				if (building.foreignBuilder() == -1)
+				if (building.foreignBuilderId() == -1)
 				{
 					std::vector<int32> constructionResourceCounts;
 					std::vector<int32> constructionResourceRequired = building.GetConstructionResourceCost();
@@ -841,32 +856,18 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Visible);
 				buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
 
-				//std::vector<BonusPair> bonuses = simulation().GetSpyBonuses(playerId(), house.townId());
-
 				buildingJobUI->LargeWhiteText->SetText(LOCTEXT("Spy Nest", "Spy Nest"));
 
-				//TArray<FText> args;
-				//int32 bonusValue = 0;
-				//for (BonusPair bonus : bonuses) {
-				//	if (bonus.value > 0) {
-				//		ADDTEXT(args, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
-				//		bonusValue += bonus.value;
-				//	}
-				//}
-
-				//args.Insert(FText::Format(
-				//	LOCTEXT("Spy Bonus:", "Spy Bonus: {0}%"),
-				//	FText::AsNumber(bonusValue)
-				//), 0);
-				//
-				//FText bonusText = JOINTEXT(args);
-				//AddToolTip(buildingJobUI->LargeWhiteText, bonusText);
-				//AddToolTip(buildingJobUI->MediumGrayText, bonusText);
-				//
-				buildingJobUI->MediumGrayText->SetText(FText::Format(
-					LOCTEXT("+{0}<img id=\"Influence\"/> per round", "+{0}<img id=\"Influence\"/> per round"),
-					TEXT_NUM(simulation().GetSpyNestInfluenceGainPerRound(house.spyPlayerId(), house.townId()))
-				));
+				if (simulation().influence(house.playerId()) > 0)
+				{
+					buildingJobUI->MediumGrayText->SetText(FText::Format(
+						LOCTEXT("+{0}<img id=\"Influence\"/> per round", "+{0}<img id=\"Influence\"/> per round"),
+						TEXT_NUM(simulation().GetSpyNestInfluenceGainPerRound(house.spyPlayerId(), house.townId()))
+					));
+				}
+				else {
+					buildingJobUI->MediumGrayText->SetText(LOCTEXT("Target has 0 influence", "Target has 0<img id=\"Influence\"/>"));
+				}
 			}
 			
 			return;
@@ -1037,7 +1038,7 @@ void UWorldSpaceUI::TickUnits()
 		}
 	}
 
-	int32 countLeft = 100;
+	int32 countLeft = 100; // Don't show more than 100 hover icons
 
 	if (!PunSettings::IsOn("SuppressHoverIcon"))
 	{
@@ -1069,25 +1070,36 @@ void UWorldSpaceUI::TickUnits()
 				}
 				HumanStateAI& human = unitAI.subclass<HumanStateAI>();
 
+				std::vector<bool> warningToShow(static_cast<int32>(UAssetLoaderComponent::HoverWarningEnum::Count), false);
 
-				bool needHousing = unitAI.needHouse();
-				bool needFood = unitAI.showNeedFood() && !hasLotsOfFood;
-				bool needHeat = unitAI.showNeedHeat() && !hasLotsOfFuel;
-				bool needHappiness = human.needHappiness();
-				bool needHealthcare = human.needHealthcare() && !hasLotsOfMedicine;
-				bool needTools = human.needTools() && !hasLotsOfTools;
-				bool idling = false;// unitAI.unitState() == UnitState::Idle;
-				// Don't forget to add this in DespawnUnusedUIs too...
+				warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::Housing)] = unitAI.needHouse();
+				warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::Starving)] = unitAI.showNeedFood() && !hasLotsOfFood;
+				warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::Freezing)] = unitAI.showNeedHeat() && !hasLotsOfFuel;
+				if (human.needHappiness()) {
+					if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
+						warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::UnhappyRed)] = true;
+					} else {
+						warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::UnhappyOrange)] = true;
+					}
+				}
+				warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::Sick)] = human.needHealthcare() && !hasLotsOfMedicine;
+				warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::Tools)] = human.needTools() && !hasLotsOfTools;
 
-				if (needHousing ||
-					needFood ||
-					needHeat ||
-					needHappiness ||
-					needHealthcare ||
-					needTools ||
-					idling)
+				// Foreign Caravan
+				if (human.playerId() != playerId() &&
+					human.workplace() && 
+					human.workplace()->buildingEnum() == CardEnum::Caravansary) 
 				{
-					if (unitAI.animationEnum() != UnitAnimationEnum::Invisible)
+					warningToShow[static_cast<int>(UAssetLoaderComponent::HoverWarningEnum::Logo)] = true;
+				}
+				
+				// Don't forget to add this in DespawnUnusedUIs too... ???
+
+				
+
+				if (unitAI.animationEnum() != UnitAnimationEnum::Invisible)
+				{
+					for (int32 i = 0; i < warningToShow.size(); i++)
 					{
 						if (countLeft-- <= 0) {
 							break;
@@ -1099,37 +1111,43 @@ void UWorldSpaceUI::TickUnits()
 						UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
 							[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
 
-						auto setMaterial = [&](UAssetLoaderComponent::HoverWarningEnum hoverWarningEnum) {
-							hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->GetHoverWarningMaterial(hoverWarningEnum));
-						};
+						if (warningToShow[i])
+						{
+							hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->GetHoverWarningMaterial(static_cast<UAssetLoaderComponent::HoverWarningEnum>(i)));
+							break;
+						}
 
-						// Set the right image
-						if (needHousing) {
-							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Housing);
+						// Special case: Logo
+						if (static_cast<UAssetLoaderComponent::HoverWarningEnum>(i) == UAssetLoaderComponent::HoverWarningEnum::Logo) {
+							FPlayerInfo playerInfo = dataSource()->playerInfo(human.playerId());
+							hoverIcon->IconImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
+							hoverIcon->IconImage->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
+							hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("Logo", assetLoader()->GetPlayerLogo(playerInfo.logoIndex));
 						}
-						else if (needFood) {
-							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Starving);
-						}
-						else if (needHeat) {
-							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Freezing);
-						}
-						else if (needHealthcare) {
-							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Sick);
-						}
-						else if (needTools) {
-							setMaterial(UAssetLoaderComponent::HoverWarningEnum::Tools);
-						}
-						else if (needHappiness) {
-							if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
-								setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyRed);
-							}
-							else {
-								setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyOrange);
-							}
-						}
-						//else if (idling) {
-						//	//PUN_LOG("PUN: idling Style");
-						//	hoverIcon->IconImage->SetBrush(*_brushes["Idling"]);
+
+						//// Set the right image
+						//if (needHousing) {
+						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Housing);
+						//}
+						//else if (needFood) {
+						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Starving);
+						//}
+						//else if (needHeat) {
+						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Freezing);
+						//}
+						//else if (needHealthcare) {
+						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Sick);
+						//}
+						//else if (needTools) {
+						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Tools);
+						//}
+						//else if (needHappiness) {
+						//	if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
+						//		setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyRed);
+						//	}
+						//	else {
+						//		setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyOrange);
+						//	}
 						//}
 					}
 				}
@@ -1248,8 +1266,12 @@ void UWorldSpaceUI::TickMap()
 			}
 		});
 
-		
-
+		/*
+		 * Minor Towns
+		 */
+		simulation.ExecuteOnMinorTowns([&](int32 townId) {
+			TickMinorTownInfo(townId, true);
+		});
 	}
 	
 	_mapHoverIcons.AfterAdd();

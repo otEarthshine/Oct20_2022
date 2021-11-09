@@ -448,15 +448,30 @@ public:
 	{
 		check(command.playerId != _playerId);
 		
-		if (command.callbackEnum == CallbackEnum::SpyEstablishNest) {
-			if (_spyPlayerId == -1) {
-				_spyPlayerId = command.playerId;
-				_isConcealed = false;
-				_simulation->playerOwned(_spyPlayerId).AddSpyNestId(buildingId());
+		if (command.callbackEnum == CallbackEnum::SpyEstablishNest) 
+		{
+			if (_spyPlayerId == -1) 
+			{
+				int32 spyNestPrice = _simulation->GetSpyNestPrice(command.playerId, townId());
 
-				_simulation->AddPopupToFront(command.playerId,
-					NSLOCTEXT("HouseSpy", "SpyEstablishNest_Succeed", "Established a Spy Nest.<space>Spy Nest gives you influence gain that scales with the city's population.")
-				);
+				if (_simulation->moneyCap32(command.playerId) >= spyNestPrice)
+				{
+					_simulation->ChangeMoney(command.playerId, -spyNestPrice);
+
+					_spyPlayerId = command.playerId;
+					_isConcealed = false;
+					_simulation->playerOwned(_spyPlayerId).AddSpyNestId(buildingId());
+
+					_simulation->AddPopupToFront(command.playerId,
+						NSLOCTEXT("HouseSpy", "SpyEstablishNest_Succeed", "Established a Spy Nest.<space>Spy Nest gives you influence gain that scales with the city's population.")
+					);
+				}
+				else
+				{
+					_simulation->AddPopupToFront(command.playerId,
+						NSLOCTEXT("HouseSpy", "SpyEstablishNest_NotEnoughMoney", "Not enough money to establish Spy Nest.")
+					);
+				}
 			}
 			else {
 				_simulation->AddPopupToFront(command.playerId,
@@ -464,12 +479,27 @@ public:
 				);
 			}
 		}
-		else if (command.callbackEnum == CallbackEnum::SpyEnsureAnonymity) {
-			if (_spyPlayerId == command.playerId) {
-				_isConcealed = true;
-				_simulation->AddPopupToFront(command.playerId,
-					NSLOCTEXT("HouseSpy", "SpyEnsureAnonymity_Succeed", "We have ensured the anonymity of this Spy Nest.<space>If this Spy Nest is found, they won't know you are behind this.")
-				);
+		else if (command.callbackEnum == CallbackEnum::SpyEnsureAnonymity) 
+		{
+			if (_spyPlayerId == command.playerId) 
+			{
+				int32 spyNestPrice = _simulation->GetSpyNestPrice(command.playerId, townId());
+
+				if (_simulation->moneyCap32(command.playerId) >= spyNestPrice)
+				{
+					_simulation->ChangeMoney(command.playerId, -spyNestPrice);
+
+					_isConcealed = true;
+					_simulation->AddPopupToFront(command.playerId,
+						NSLOCTEXT("HouseSpy", "SpyEnsureAnonymity_Succeed", "We have ensured the anonymity of this Spy Nest.<space>If this Spy Nest is found, they won't know you are behind this.")
+					);
+				}
+				else
+				{
+					_simulation->AddPopupToFront(command.playerId,
+						NSLOCTEXT("HouseSpy", "SpyEnsureAnonymity_NotEnoughMoney", "Not enough money to upgrade Spy Nest.")
+					);
+				}
 			}
 		}
 		else {
@@ -498,9 +528,9 @@ public:
 			));
 		}
 
+		_simulation->playerOwned(_spyPlayerId).RemoveSpyNestId(buildingId());
 		_spyPlayerId = -1;
 		_isConcealed = false;
-		_simulation->playerOwned(_spyPlayerId).RemoveSpyNestId(buildingId());
 	}
 
 private:
@@ -756,7 +786,12 @@ public:
 	}
 
 	int32 animalCost() {
-		return buildingInfo().constructionCostAsMoney() / 3;
+		int32 cost = 0;
+		const std::vector<ResourcePair>& pairs = GetUnitInfo(GetAnimalEnum()).resourceDrops100;
+		for (ResourcePair pair : pairs) {
+			cost += pair.count * GetResourceInfo(pair.resourceEnum).basePrice * 3 / 100;
+		}
+		return cost;
 	}
 	
 public:

@@ -919,12 +919,14 @@ void TreeSystem::EmitSeed(int32 originId, TileObjInfo info)
 			if (!treeShade(tile.tileId()) &&
 				terrainGenerator.resourcePerlin(tile) < FD0_XX(59))
 			{
-				// Check to ensure there is no nearby building
+				// Check to ensure there is no nearby building or road
 				bool hasNoNearbyBuilding = true;
 				for (int32 y = -1; y <= 1; y++) {
 					for (int32 x = -1; x <= 1; x++) {
 						WorldTile2 curTile(tile.x + x, tile.y + y);
-						if (curTile.isValid() && _simulation->HasBuilding(curTile.tileId())) {
+						if (curTile.isValid() && 
+							(_simulation->HasBuilding(curTile.tileId()) || _simulation->IsRoadTile(curTile)))
+						{
 							hasNoNearbyBuilding = false;
 							break;
 						}

@@ -24,20 +24,22 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* HomeTownIcon;
 
-	void PunInit(int32 playerIdIn) {
-		_playerId = playerIdIn;
+	int32 uiPlayerId = -1;
+	int32 population = -1;
+
+	void PunInit(int32 playerIdIn, int32 populationIn)
+	{
+		uiPlayerId = playerIdIn;
+		population = populationIn;
+		
 		PlayerZoomButton->OnClicked.Clear();
 		PlayerZoomButton->OnClicked.AddDynamic(this, &UPlayerCompareElement::OnClickPlayerZoomButton);
 	}
 
 	UFUNCTION() void OnClickPlayerZoomButton() {
-		if (simulation().HasTownhall(_playerId)) {
-			networkInterface()->SetCameraAtom(simulation().GetTownhallGateCapital(_playerId).worldAtom2());
+		if (simulation().HasTownhall(uiPlayerId)) {
+			networkInterface()->SetCameraAtom(simulation().GetTownhallGateCapital(uiPlayerId).worldAtom2());
 		}
 	}
 
-	int32 GetElementPlayerId() { return _playerId; }
-
-private:
-	int32 _playerId = -1;
 };

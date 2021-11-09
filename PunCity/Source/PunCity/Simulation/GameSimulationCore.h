@@ -937,6 +937,12 @@ public:
 		return townManager(townId).playerId();
 	}
 
+	virtual bool IsTileOwnedByForeignPlayer(int32 playerId, WorldTile2 tile) override
+	{
+		int32 ownerPlayer = tileOwnerPlayer(tile);
+		return ownerPlayer != -1 && ownerPlayer != playerId;
+	}
+
 	bool HasBuilding(int32 tileId) final {
 		return _buildingSystem->HasBuilding(tileId);
 	}
@@ -945,7 +951,8 @@ public:
 		int32 tileId = tile.tileId();
 		return terraintileType(tileId) == TerrainTileType::None &&
 				_buildingSystem->HasNoBuildingOrFront(tileId) &&
-				!overlaySystem().IsRoad(tile);
+				!overlaySystem().IsRoad(tile) &&
+				!overlaySystem().IsIrrigationDitch(tile);
 	}
 
 	
@@ -1269,7 +1276,7 @@ public:
 		std::vector<int32> bldIds = buildingIds(townId, buildingEnum);
 		for (int32 bldId : bldIds) {
 			Building& bld = building(bldId);
-			if (bld.foreignBuilder() == foreignBuilderId) {
+			if (bld.foreignBuilderId() == foreignBuilderId) {
 				return true;
 			}
 		}
@@ -1280,7 +1287,7 @@ public:
 		std::vector<int32> bldIds = buildingIds(townId, buildingEnum);
 		for (int32 bldId : bldIds) {
 			Building& bld = building(bldId);
-			if (bld.foreignBuilder() == foreignBuilderId &&
+			if (bld.foreignBuilderId() == foreignBuilderId &&
 				bld.IsUpgraded(upgradeIndex)) 
 			{
 				return true;
@@ -1798,7 +1805,7 @@ public:
 		
 		
 		//! Player
-		int32 totalRaidIncome100 = 0;
+		int64 totalRaidIncome100 = 0;
 
 		TSet<int32> visitedProvinceIds;
 		std::function<void(int32)> flood = [&](int32 provinceId)
@@ -1816,9 +1823,13 @@ public:
 					// Raid is less effective if done before recently
 					int32 lastRaidedTick = provinceInfoSystem().provinceOwnerInfo(provinceId).lastRaidedTick;
 
-					totalRaidIncome100 += GetProvinceIncome100(provinceId) * Clamp(Time::Ticks() - lastRaidedTick, 0, Time::TicksPerYear) / Time::TicksPerYear;
+					int64 provinceIncome100 = GetProvinceIncome100(provinceId);
+					int64 clampedTicks = Clamp(Time::Ticks() - lastRaidedTick, 0, Time::TicksPerYear);
+					
+					int32 raidIncome100 = provinceIncome100 * clampedTicks / Time::TicksPerYear;
+					raidIncome100 *= Time::RoundsPerYear; // Raid money equals to province income per year
 
-					totalRaidIncome100 *= Time::RoundsPerYear; // Raid money equals to province income per year
+					totalRaidIncome100 += raidIncome100;
 
 					// Flood to same town's flat or river connections
 					const auto& connections = GetProvinceConnections(provinceId);
@@ -2394,10 +2405,16 @@ public:
 		check(nearestDistance < INT_MAX);
 
 		int32 result =  GetAnimalBaseCost(unitEnum) + nearestDistance * 5;
+
+		// Stealing animal incur extra cost
+		if (IsTileOwnedByForeignPlayer(playerId, tile)) {
+			result = result * 3;
+		}
+		
 		return result / 10 * 10;
 	}
 
-	int32 GetSpyNestPrice(int32 sourcePlayerId, int32 targetTownId)
+	virtual int32 GetSpyNestPrice(int32 sourcePlayerId, int32 targetTownId) override
 	{
 		const std::vector<int32>& houseIds = buildingIds(targetTownId, CardEnum::House);
 
@@ -3189,10 +3206,12 @@ public:
 		return cardSystem(playerId).AddDrawCards(cardEnum, count);
 	}
 
-	bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) final {
-		return cardSystem(playerId).TryAddCardToBoughtHand(cardEnum, cardCount);
+	//bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) final {
+	//	return cardSystem(playerId).TryAddCardToBoughtHand(cardEnum, cardCount);
+	//}
+	virtual bool TryAddCards_BoughtHandAndInventory(int32 playerId, CardStatus cardStatus) override {
+		return cardSystem(playerId).TryAddCards_BoughtHandAndInventory(cardStatus);
 	}
-
 
 
 	/*

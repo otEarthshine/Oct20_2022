@@ -161,43 +161,64 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	{
 		auto buttonImage = AddWidget<UPunButtonImage>(UIEnum::ChooseLogoElement);
 		buttonImage->Setup(i, CallbackEnum::ChoosePlayerLogo, this);
-		buttonImage->Image1->GetDynamicMaterial()->SetTextureParameterValue("Logo", playerLogos[i]);
+		buttonImage->Image1->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", FLinearColor(0.01, 0.01, 0.01));
+		buttonImage->Image2->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", FLinearColor(0.97, 0.97, 0.97));
+		buttonImage->Image2->GetDynamicMaterial()->SetTextureParameterValue("Logo", playerLogos[i]);
 		ChooseIconWrapBox->AddChild(buttonImage);
 	}
 
 	//! Take Colors from buttons
 	{
-		TArray<FLinearColor> colors;
+		TArray<FLinearColor> backgroundColors;
+		TArray<FLinearColor> foregroundColors;
 		for (int32 i = 0; i < ChooseIconColorWrapBox1->GetChildrenCount(); i++)
 		{
-			UImage* image = FindChildRecursive<UImage>(CastChecked<UPanelWidget>(ChooseIconColorWrapBox1->GetChildAt(i)));
-			colors.Add(image->ColorAndOpacity);
+			TArray<UImage*> images;
+			FindChildrenRecursive<UImage>(CastChecked<UPanelWidget>(ChooseIconColorWrapBox1->GetChildAt(i)), images);
+			check(images.Num() == 2);
+
+			backgroundColors.Add(images[0]->ColorAndOpacity);
+			foregroundColors.Add(images[1]->ColorAndOpacity);
+			
+			//UImage* image = FindChildRecursive<UImage>(CastChecked<UPanelWidget>(ChooseIconColorWrapBox1->GetChildAt(i)));
+			//colors.Add(image->ColorAndOpacity);
 		}
 
 		auto fillColorBox = [&](UWrapBox* wrapBox, CallbackEnum callbackEnum)
 		{
 			wrapBox->ClearChildren();
-			for (int32 i = 0; i < colors.Num(); i++) {
+			for (int32 i = 0; i < backgroundColors.Num(); i++) {
 				auto buttonImage = AddWidget<UPunButtonImage>(UIEnum::ChooseColorElement);
 				buttonImage->Setup(i, callbackEnum, this);
-				buttonImage->Image1->SetColorAndOpacity(colors[i]);
+				buttonImage->Image1->SetColorAndOpacity(backgroundColors[i]);
+				buttonImage->Image2->SetColorAndOpacity(foregroundColors[i]);
 				wrapBox->AddChild(buttonImage);
 			}
 		};
 		
 		fillColorBox(ChooseIconColorWrapBox1, CallbackEnum::ChoosePlayerColor1);
-		fillColorBox(ChooseIconColorWrapBox2, CallbackEnum::ChoosePlayerColor2);
+		//fillColorBox(ChooseIconColorWrapBox2, CallbackEnum::ChoosePlayerColor2);
 	}
 
 	//! Characters
 	ChooseCharacterWrapBox->ClearChildren();
-	const TArray<UTexture2D*>& playerCharacters = _mainMenuAssetLoader->PlayerCharacters;
-	for (int32 i = 0; i < playerCharacters.Num(); i++)
+
+	// TODO: use manual arrangement
+	//TArray<FString> characterNames
+	//{
+	//	"DefaultWhiteMale",
+	//	"DefaultWhiteFemale",
+	//};
+
+	int32 index = 0;
+	for (const auto& it : _mainMenuAssetLoader->PlayerCharacters)
 	{
 		auto buttonImage = AddWidget<UPunButtonImage>(UIEnum::ChooseCharacterElement);
-		buttonImage->Setup(i, CallbackEnum::ChoosePlayerCharacter, this);
-		buttonImage->Image1->GetDynamicMaterial()->SetTextureParameterValue("Character", playerCharacters[i]);
+		buttonImage->Setup(index, CallbackEnum::ChoosePlayerCharacter, this);
+		buttonImage->name = it.Key;
+		buttonImage->Image1->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->GetPlayerCharacter(it.Key));
 		ChooseCharacterWrapBox->AddChild(buttonImage);
+		index++;
 	}
 
 
@@ -812,7 +833,7 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[names[i].logoIndex]);
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", names[i].logoColorForeground);
 		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", names[i].logoColorBackground);
-		element->PlayerCharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[names[i].characterIndex]);
+		element->PlayerCharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[names[i].portraitName]);
 
 		element->PlayerLogoForeground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerLogoBackground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -947,18 +968,20 @@ void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 	{
 		auto buttonImage = CastChecked<UPunButtonImage>(punWidgetCaller);
 		previewPlayerInfo.logoColorBackground = buttonImage->Image1->ColorAndOpacity;
+		previewPlayerInfo.logoColorForeground = buttonImage->Image2->ColorAndOpacity;
+		
 		UpdatePreviewPlayerInfoDisplay();
 	}
-	else if (callbackEnum == CallbackEnum::ChoosePlayerColor2)
-	{
-		auto buttonImage = CastChecked<UPunButtonImage>(punWidgetCaller);
-		previewPlayerInfo.logoColorForeground = buttonImage->Image1->ColorAndOpacity;
-		UpdatePreviewPlayerInfoDisplay();
-	}
+	//else if (callbackEnum == CallbackEnum::ChoosePlayerColor2)
+	//{
+	//	auto buttonImage = CastChecked<UPunButtonImage>(punWidgetCaller);
+	//	previewPlayerInfo.logoColorForeground = buttonImage->Image1->ColorAndOpacity;
+	//	UpdatePreviewPlayerInfoDisplay();
+	//}
 	else if (callbackEnum == CallbackEnum::ChoosePlayerCharacter)
 	{
 		auto buttonImage = CastChecked<UPunButtonImage>(punWidgetCaller);
-		previewPlayerInfo.characterIndex = buttonImage->index;
+		previewPlayerInfo.portraitName = buttonImage->name;
 		UpdatePreviewPlayerInfoDisplay();
 	}
 }

@@ -92,6 +92,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::Beekeeper,
 	CardEnum::Brickworks,
 	CardEnum::CandleMaker,
+	CardEnum::CarpetWeaver,
 	CardEnum::CottonMill,
 	CardEnum::GarmentFactory,
 	CardEnum::PrintingPress,
@@ -196,27 +197,26 @@ public:
 	int32 aveOverallHappiness()
 	{
 		int32 sum = 0;
-		for (size_t i = 0; i < _aveHappiness.size(); i++) {
+		int32 count = 0;
+		for (size_t i = 0; i < _aveHappiness.size(); i++) 
+		{
+			if (static_cast<HappinessEnum>(i) == HappinessEnum::Tourism && 
+				!_simulation->IsResearched(_playerId, TechEnum::Tourism)) 
+			{
+				continue;
+			}
+			
 			sum += _aveHappiness[i];
+			count++;
 		}
-		return sum / _aveHappiness.size();
+		return sum / std::max(1, count);
 	}
 
 	int32 townFoodVariety() {
 		return _townFoodVariety;
 	}
 
-	
-	//int32 aveHappinessModifier(HappinessModifierEnum modifierEnum) {
-	//	return _aveHappinessModifiers[static_cast<int>(modifierEnum)];
-	//}
-	//int32 aveHappinessModifierSum() {
-	//	int32 sum = 0;
-	//	for (size_t i = 0; i < _aveHappinessModifiers.size(); i++) {
-	//		sum += _aveHappinessModifiers[i];
-	//	}
-	//	return sum;
-	//}
+
 
 
 	const std::vector<int32>& adultIds() { return _adultIds; }

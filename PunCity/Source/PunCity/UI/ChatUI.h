@@ -33,7 +33,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* DebugOverlay;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug2;
-	
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug3;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug4;
 	
 	void PunInit()
 	{

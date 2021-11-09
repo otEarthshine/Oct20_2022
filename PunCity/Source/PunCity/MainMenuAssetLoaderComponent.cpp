@@ -46,7 +46,7 @@ UMainMenuAssetLoaderComponent::UMainMenuAssetLoaderComponent()
 		
 		UObject* playerCharacterTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/UI/PlayerCharacters/") + fileName));
 		UTexture2D* playerCharacterTexture = CastChecked<UTexture2D>(playerCharacterTextureObj);
-		PlayerCharacters.Add(playerCharacterTexture);
+		PlayerCharacters.Add(fileName, playerCharacterTexture);
 	}
 
 	

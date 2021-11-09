@@ -263,8 +263,8 @@ void TradingCompany::FinishConstruction() {
 	}
 
 	AddUpgrades({
-		BuildingUpgrade(LOCTEXT("Efficient Hauling", "Efficient Hauling"), LOCTEXT("Efficient Hauling Desc3", "+60 goods quantity per trade."), 350),
-		BuildingUpgrade(LOCTEXT("Marine Trade", "Marine Trade"),		LOCTEXT("Marine Trade Desc3", "+60 goods quantity per trade, if adjacent to a trading port."), 200),
+		//BuildingUpgrade(LOCTEXT("Efficient Hauling", "Efficient Hauling"), LOCTEXT("Efficient Hauling Desc3", "+60 goods quantity per trade."), 350),
+		//BuildingUpgrade(LOCTEXT("Marine Trade", "Marine Trade"),		LOCTEXT("Marine Trade Desc3", "+60 goods quantity per trade, if adjacent to a trading port."), 200),
 	});
 
 	_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());

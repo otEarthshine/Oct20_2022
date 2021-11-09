@@ -128,7 +128,7 @@ void TownManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
 	if (!unlockSys->unlockedStatisticsBureau &&
 		jobBuildingCount() >= 5)
 	{
-		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::StatisticsBureau)) 
+		if (_simulation->TryAddCards_BoughtHandAndInventory(_playerId, CardStatus(CardEnum::StatisticsBureau, 1)))
 		{
 			unlockSys->unlockedStatisticsBureau = true;
 			_simulation->AddPopup(_playerId,
@@ -139,7 +139,7 @@ void TownManager::PlayerAddJobBuilding(Building& building, bool isConstructed)
 	if (!unlockSys->unlockedEmploymentBureau &&
 		jobBuildingCount() >= 7)
 	{
-		if (_simulation->TryAddCardToBoughtHand(_playerId, CardEnum::JobManagementBureau)) 
+		if (_simulation->TryAddCards_BoughtHandAndInventory(_playerId, CardStatus(CardEnum::JobManagementBureau, 1)))
 		{
 			unlockSys->unlockedEmploymentBureau = true;
 			_simulation->AddPopup(_playerId,
@@ -865,7 +865,7 @@ void TownManager::Tick()
 
 		if (_trainUnitsTicks100 >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum))
 		{
-			if (_simulation->TryAddCardToBoughtHand(_playerId, _trainUnitsQueue[0].cardEnum))
+			if (_simulation->TryAddCards_BoughtHandAndInventory(_playerId, CardStatus(_trainUnitsQueue[0].cardEnum, 1)))
 			{
 				_trainUnitsTicks100 = 0;
 				_trainUnitsQueue[0].stackSize--;
@@ -922,7 +922,7 @@ void TownManager::Tick1Sec()
 	CollectHouseIncome();
 
 	//! Collect Diplomatic Building Influence Income
-	if (Time::Ticks() % GameConstants::BaseFloatupIntervalSec == 0 && isCapital())
+	if (Time::Seconds() % GameConstants::BaseFloatupIntervalSec == 0 && isCapital())
 	{
 		const std::vector<int32>& diplomaticBuildings = _simulation->GetDiplomaticBuildings(_playerId);
 		for (int32 diplomaticBuildingId : diplomaticBuildings) {
@@ -935,8 +935,8 @@ void TownManager::Tick1Sec()
 				
 				_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, bld.centerTile(), TEXT_NUMSIGNED(influenceIncome_Sec));
 				
-				if (bld.foreignBuilder() != _playerId) {
-					relationship().ChangeModifier(bld.foreignBuilder(), RelationshipModifierEnum::DiplomaticBuildings, GameRand::RandRound(influenceIncome_Sec, InfluenceToRelationship));
+				if (bld.foreignBuilderId() != _playerId) {
+					relationship().ChangeModifier(bld.foreignBuilderId(), RelationshipModifierEnum::DiplomaticBuildings, GameRand::RandRound(influenceIncome_Sec, InfluenceToRelationship));
 				}
 			}
 		}
@@ -1137,11 +1137,11 @@ void TownManager::Tick1Sec()
 				_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
 
 				// Embassy Hotel Chain
-				if (_simulation->HasForeignBuildingWithUpgrade(hotel->foreignBuilder(), _townId, CardEnum::Embassy, 1))
+				if (_simulation->HasForeignBuildingWithUpgrade(hotel->foreignBuilderId(), _townId, CardEnum::Embassy, 1))
 				{
 					int32 moneyGain100 = hotel->feePerVisitor() * 100 * 20 / 100;
-					_simulation->ChangeMoney(hotel->foreignBuilder(), moneyGain100);
-					_simulation->uiInterface()->ShowFloatupInfo(hotel->foreignBuilder(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_100SIGNED(moneyGain100));
+					_simulation->ChangeMoney(hotel->foreignBuilderId(), moneyGain100);
+					_simulation->uiInterface()->ShowFloatupInfo(hotel->foreignBuilderId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_100SIGNED(moneyGain100));
 				}
 
 				humanAI.SetHappiness(HappinessEnum::Tourism, hotel->serviceQuality());
@@ -1505,7 +1505,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 /*
 	  * Card Bonus
 	  */
-	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * min(100, _simulation->moneyCap32(_playerId) / 20) * _simulation->TownhallCardCountTown(_townId, CardEnum::Investment);
+	incomes100[static_cast<int>(IncomeEnum::InvestmentProfit)] = 100 * max(0, min(100, _simulation->moneyCap32(_playerId) / 20) * _simulation->TownhallCardCountTown(_townId, CardEnum::Investment));
 
 
 	if ( _simulation->TownhallCardCountTown(_townId, CardEnum::SocialWelfare) > 0) {
@@ -1734,15 +1734,21 @@ int32 TownManager::GetMaxAutoTradeAmount()
 	for (int32 tradingCompanyId : tradingCompanyIds)
 	{
 		TradingCompany& tradingCompany = _simulation->building<TradingCompany>(tradingCompanyId);
-		maxAutoTradeAmount += tradingCompany.tradeMaximumPerRound();
+		if (tradingCompany.isConstructed()) {
+			maxAutoTradeAmount += tradingCompany.tradeMaximumPerRound();
+		}
 	}
 	return maxAutoTradeAmount;
 }
 
 void TownManager::DecreaseTourismHappinessByAction(int32 actionCost)
 {
+	if (!_simulation->IsResearched(_playerId, TechEnum::Tourism)) {
+		return;
+	}
+	
 	check(actionCost >= 0);
-	const int32 actionCostPerHappiness = 50;
+	const int32 actionCostPerHappiness = 100;
 
 	int32 happinessDeduction = GameRand::RandRound(actionCost, actionCostPerHappiness);
 
@@ -1762,7 +1768,7 @@ void TownManager::DecreaseTourismHappinessByAction(int32 actionCost)
 			_simulation->TryDoCallOnceAction(humanAI.playerId(), PlayerCallOnceActionEnum::LowTourismHappinessPopup))
 		{
 			_simulation->AddPopupToFront(humanAI.playerId(),
-				LOCTEXT("LowTourismHappinessPopup_Popup", "Tourism Happiness is low.<space>Tourism Happiness decreases with more import/export.<space>The more exchange of goods, the more your citizens want to see the outside world.<space>To increase your citizen's Tourism Happiness:<bullet>Build Tourism Agency</><bullet>Encourage neighboring towns to build Hotels</><bullet>Help your poor neighbors build Hotels yourself.</>")
+				LOCTEXT("LowTourismHappinessPopup_Popup", "Tourism Happiness is low.<space>Tourism Happiness decreases with more import/export.<space>The more exchange of goods, the more your citizens want to see the outside world.<space>To increase your citizen's Tourism Happiness:<bullet>Encourage neighboring towns to build Hotels</><bullet>Help your poor neighbors build Hotels yourself.</>")
 			);
 		}
 	});

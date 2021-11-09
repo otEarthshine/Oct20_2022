@@ -319,7 +319,7 @@ public:
 
 					// Also need to be able to add the main Minor City Building
 					WorldTile2 largeLandSlotSize = GetBuildingInfo(CardEnum::MayanPyramid).size;
-					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
+					Direction faceDirection = Direction::S;//  static_cast<Direction>(GameRand::Rand(provinceId) % 4);
 					TileArea largeLandSlotArea = BuildingArea(centerTile, largeLandSlotSize, faceDirection);
 
 					bool isLandSlotNotBuildable = largeLandSlotArea.GetExpandedArea().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {

@@ -170,7 +170,7 @@ void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, in
 				card.stackSize = (card.stackSize + 1) * 2 / 3;
 			}
 			
-			_simulation->cardSystem(playerIdToReturn).AddCards_BoughtHandAndInventory(card);
+			_simulation->cardSystem(playerIdToReturn).TryAddCards_BoughtHandAndInventory(card);
 		}
 	}
 }
@@ -235,8 +235,9 @@ void TownManagerBase::CalculateAutoTradeProfit(
 		return 0;
 	};
 
-	const int32 feePercent = 40; // TODO: allow people to manipulate this by building more Trading Company etc.
-
+	//const int32 feePercent = 40; // TODO: allow people to manipulate this by building more Trading Company etc.
+	int32 feePercent = Building::baseTradingFeePercent(_townId, _simulation, true);
+	
 
 	std::vector<ResourcePair> directExportResources;
 	std::vector<ResourcePair> directImportResources;

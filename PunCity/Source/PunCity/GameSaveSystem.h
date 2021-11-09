@@ -42,7 +42,7 @@ struct GameSaveInfo
 	FMapSettings mapSettings;
 	TArray<FPlayerInfo> playerNames;
 
-	FString folderPath;
+	//FString folderPath;
 	
 	TArray<int32> checksum;
 	TArray<int32> compressedDataSize;
@@ -93,7 +93,7 @@ struct GameSaveInfo
 		Ar << population;
 		mapSettings.Serialize(Ar);
 
-		Ar << folderPath;
+		//Ar << folderPath;
 
 		Ar << checksum;
 		Ar << compressedDataSize;
@@ -101,7 +101,7 @@ struct GameSaveInfo
 	}
 
 	bool operator==(const GameSaveInfo& a) {
-		return folderPath == a.folderPath;
+		return name == a.name;
 	}
 };
 
@@ -136,8 +136,7 @@ public:
 		TArray<GameSaveInfo> saveList;
 		for (const FString& directoryName : foundDirectories)
 		{
-			FString folderPath = GetSaveDirectoryPath() + "/" + directoryName;
-			GameSaveInfo saveInfo = LoadMetadata(folderPath);
+			GameSaveInfo saveInfo = LoadMetadata(directoryName);
 			saveList.Add(saveInfo);
 		}
 
@@ -149,12 +148,15 @@ public:
 		return saveList;
 	}
 
-	
+
+	static FString GetSaveFolderPath(FString saveName)
+	{
+		return GetSaveDirectoryPath() + FormatStringForPath(saveName);
+	}
 
 	bool HasExistingSave(FString saveName)
 	{
-		FString folderPath = GetSaveDirectoryPath();
-		folderPath += FormatStringForPath(saveName);
+		FString folderPath = GetSaveFolderPath(saveName);
 
 		return IFileManager::Get().DirectoryExists(*folderPath);
 	}
@@ -169,7 +171,10 @@ public:
 	/*
 	 * Delete
 	 */
-	static void DeleteSave(const FString& folderPath) {
+	static void DeleteSave(FString saveName)
+	{
+		FString folderPath = GetSaveFolderPath(saveName);
+		
 		IFileManager::Get().DeleteDirectory(*folderPath, false, true);
 		RefreshSaveListStatic();
 	}
@@ -177,17 +182,17 @@ public:
 	/*
 	 * Load
 	 */
-	static GameSaveInfo LoadMetadata(const FString& folderPath);
+	static GameSaveInfo LoadMetadata(FString saveName);
 
 	GameSaveInfo LoadDataIntoCache();
 
 	void LoadDataIntoSimulation();
 	
 	// Note: with metaDataOnly, controller can be nullptr
-	GameSaveInfo Load(const FString& folderPath)
+	GameSaveInfo Load(FString saveName)
 	{
 		if (!HasSyncData()) {
-			_syncSaveInfo = LoadMetadata(folderPath);
+			_syncSaveInfo = LoadMetadata(saveName);
 			LoadDataIntoCache();
 		}
 

@@ -198,7 +198,7 @@ struct FPlayerInfo
 	UPROPERTY() int32 logoIndex = 0;
 	UPROPERTY() FLinearColor logoColorBackground = FLinearColor::Black;
 	UPROPERTY() FLinearColor logoColorForeground = FLinearColor::Yellow;
-	UPROPERTY() int32 characterIndex = 0;
+	UPROPERTY() FString portraitName = "DefaultWhiteMale";
 	UPROPERTY() int32 factionIndex = 0;
 	
 	bool IsEmpty() const { return steamId64 == InvalidSteamId64; }
@@ -214,7 +214,7 @@ struct FPlayerInfo
 		Ar << object.logoIndex;
 		Ar << object.logoColorBackground;
 		Ar << object.logoColorForeground;
-		Ar << object.characterIndex;
+		Ar << object.portraitName;
 		Ar << object.factionIndex;
 		return Ar;
 	}

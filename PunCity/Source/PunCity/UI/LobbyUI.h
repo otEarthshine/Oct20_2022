@@ -106,7 +106,7 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* ChooseIconColorOuterVerticalBox;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox1;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox2;
+	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox2; // TODO: Remove?
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseCharacterWrapBox;
 

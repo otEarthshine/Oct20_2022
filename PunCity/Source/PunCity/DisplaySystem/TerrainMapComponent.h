@@ -37,9 +37,6 @@ public:
 	
 	UPROPERTY() UMaterialInstanceDynamic* M_MapWater;
 
-	//UPROPERTY() UStaticFastInstancedMeshesComp* _georesourceEnumToMesh;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite) UStaticFastInstancedMeshesComp* _buildingsMeshes;
-	// TODO: later on, can change building by its type??? not refresh the whole thing? (buildings not shared anyway)
 
 	UPROPERTY(EditAnywhere) USceneComponent* _mapMeshesParent;
 	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseNodeMeshes;
@@ -61,8 +58,6 @@ public:
 	
 	void UpdateTerrainMapDisplay(bool mapTerrainVisible, bool mapTerrainWaterVisible, bool tileDisplayNoRegionSkip);
 
-	void InitAnnotations();
-	void RefreshAnnotations();
 
 	void RefreshDefenseMap();
 
@@ -151,8 +146,6 @@ private:
 
 	UPROPERTY() UDecalComponent* _territoryMapDecal;
 	UPROPERTY() UMaterialInstanceDynamic* _territoryMapDecalMaterial;
-
-	bool _didFirstRefreshAnnotation = false;
 
 	// Texture Data
 	std::vector<uint32> provinceData;

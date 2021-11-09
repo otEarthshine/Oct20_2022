@@ -187,17 +187,26 @@ public:
 	int32 tradeMaximumPerRound()
 	{
 		int32 quantity = 120;
-		if (IsUpgraded_InitialIndex(0)) {
-			quantity += 60;
+		//if (IsUpgraded_InitialIndex(0)) {
+		//	quantity += 60;
+		//}
+		//if (IsUpgraded_InitialIndex(1)) {
+		//	bool hasNearbyPort = _simulation->hasBuildingWithCondition(_playerId, CardEnum::TradingPort, [&](Building& bld) {
+		//		return WorldTile2::ManDistance(bld.centerTile(), centerTile()) <= 18;
+		//	});
+		//	if (hasNearbyPort) {
+		//		quantity += 60;
+		//	}
+		//}
+
+		switch(GetUpgradeEraLevel())
+		{
+		case 3: quantity = 140; break;
+		case 4: quantity = 180; break;
+		case 5: quantity = 240; break;
+		default: break;
 		}
-		if (IsUpgraded_InitialIndex(1)) {
-			bool hasNearbyPort = _simulation->hasBuildingWithCondition(_playerId, CardEnum::TradingPort, [&](Building& bld) {
-				return WorldTile2::ManDistance(bld.centerTile(), centerTile()) <= 18;
-			});
-			if (hasNearbyPort) {
-				quantity += 60;
-			}
-		}
+		
 		return quantity;
 	}
 

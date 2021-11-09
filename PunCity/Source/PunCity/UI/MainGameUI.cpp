@@ -786,6 +786,13 @@ void UMainGameUI::Tick()
 		 */
 		 // Card being placed, taking into account network delay
 		CardEnum cardEnumBeingPlaced = inputSystemInterface()->GetBuildingEnumBeingPlaced();
+
+		if (cardEnumBeingPlaced == CardEnum::None &&
+			ReinforcementOverlay->IsVisible() && 
+			reinforcementCallbackEnum == CallbackEnum::RaidBattle) 
+		{
+			cardEnumBeingPlaced = CardEnum::Raid;
+		}
 		
 		if (_lastDisplayBought != cardSystem.GetCardsBought_Display() ||
 			_lastCardEnumBeingPlaced != cardEnumBeingPlaced ||
@@ -1084,7 +1091,14 @@ void UMainGameUI::Tick()
 
 			TArray<FText> args;
 			ADDTEXT_(LOCTEXT("Happiness_Tip1", "Happiness: {0}\n"), ColorHappinessText(overallHappiness, TEXT_PERCENT(overallHappiness)));
-			for (size_t i = 0; i < HappinessEnumCount; i++) {
+			for (size_t i = 0; i < HappinessEnumCount; i++) 
+			{
+				if (static_cast<HappinessEnum>(i) == HappinessEnum::Tourism &&
+					!sim.IsResearched(playerId(), TechEnum::Tourism))
+				{
+					continue;
+				}
+				
 				int32 aveHappiness = townManager.aveHappinessByType(static_cast<HappinessEnum>(i));
 				ADDTEXT_(INVTEXT("  {0} {1}\n"), 
 					ColorHappinessText(aveHappiness, TEXT_PERCENT(aveHappiness)),
@@ -1872,7 +1886,7 @@ void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)
 		simulation().AddPopupToFront(playerId(),
 			FText::Format(
 				LOCTEXT("NoMoneyToBuildCommonCard_Pop", "Not enough money to place {0}."),
-				GetBuildingInfo(buildingEnum).GetDescription()
+				GetBuildingInfo(buildingEnum).name
 			),
 			ExclusiveUIEnum::BuildMenu, "PopupCannot"
 		);

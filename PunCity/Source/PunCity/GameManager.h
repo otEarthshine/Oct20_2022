@@ -20,6 +20,7 @@
 
 #include <chrono>
 
+#include "DisplaySystem/BuildingLOD2DisplayComponent.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "PunCity/DisplaySystem/RegionLandmarkDisplayComponent.h"
 #include "PunCity/DisplaySystem/RegionDecalDisplayComponent.h"
@@ -116,7 +117,7 @@ public:
 	}
 
 	void RefreshMapAnnotation() override {
-		_terrainMap->RefreshAnnotations();
+		_buildingLOD2DisplaySystem->RefreshAnnotations();
 	}
 	
 
@@ -204,8 +205,10 @@ private:
 	 */
 	
 	UPROPERTY(EditAnywhere) UUnitDisplayComponent* _unitDisplaySystem;
+	
 	UPROPERTY(EditAnywhere) UBuildingDisplayComponent* _buildingDisplaySystem;
 	UPROPERTY(EditAnywhere) UMiniBuildingDisplayComponent* _miniBuildingDisplaySystem;
+	UPROPERTY(EditAnywhere) UBuildingLOD2DisplayComponent* _buildingLOD2DisplaySystem;
 
 	// Terrain
 	UPROPERTY(EditAnywhere) URegionDisplayComponent* _regionDisplaySystem;
@@ -522,7 +525,7 @@ public:
 			info.logoIndex = archetypeInfo.logoIndex(playerId);
 			info.logoColorBackground = archetypeInfo.logoColor1;
 			info.logoColorForeground = archetypeInfo.logoColor2;
-			info.characterIndex = archetypeInfo.characterIndex;
+			info.portraitName = archetypeInfo.portraitName;
 			info.factionIndex = archetypeInfo.factionIndex;
 
 			return info;

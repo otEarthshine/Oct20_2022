@@ -522,7 +522,10 @@ void GameSimulationCore::InitProvinceBuildings()
 
 	//! Ancient Wonders: Anywhere
 	tryBuildAncientWonder(false, 0);
-	
+
+	for (int32 i = 0; i < ancientWondersCounts.size(); i++) {
+		check(ancientWondersCounts[i] == 1);
+	}
 
 	/*
 	 * Minor City
@@ -1207,7 +1210,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 								// If there is an existing lord, the lord lose the vassal
 								int32 oldLordPlayerId = provinceTownManager->lordPlayerId();
 								if (oldLordPlayerId != -1) {
-									LoseVassalHelper(oldLordPlayerId, provincePlayerId);
+									LoseVassalHelper(oldLordPlayerId, provinceTownId);
 								}
 
 								//! Declare Independence
@@ -1740,7 +1743,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 //#endif
 
 	if (cardEnum != CardEnum::BoarBurrow &&
-		parameters.playerId != -1) 
+		parameters.playerId != -1)
 	{
 		_LOG(LogNetworkInput, "[%d] PlaceBuilding (pid:%d) %s %s", tempVariable, playerId, *BuildingInfo[parameters.buildingEnum].nameF(), *ToFString(parameters.area.ToString()));
 	}
@@ -2019,11 +2022,11 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					int32 terrorismInfluenceLost = ApplySpyEffectiveness(1000, playerId, targetPlayerId);
 					
 					AddPopup(targetPlayerId, FText::Format(
-						LOCTEXT("Terrorism_TargetPop", "TODO: Terrorism act, {0} died... {1} is the culprit.. fear lead to {2} influence lost"), 
+						LOCTEXT("Terrorism_TargetPop", "Terrorism act, {0} died... {1} is the culprit.. fear lead to {2} influence lost"), 
 						TEXT_NUM(killCount), playerNameT(playerId), TEXT_NUM(terrorismInfluenceLost)
 					));
 					AddPopup(playerId, FText::Format(
-						LOCTEXT("Terrorism_SelfPop", "TODO: Your Terrorist planted bomb at {0}, killing {1} people...{2} lost {3} influence from fear of Terrorism"), 
+						LOCTEXT("Terrorism_SelfPop", "Your Terrorist planted bomb at {0}, killing {1} people...{2} lost {3} influence from fear of Terrorism"), 
 						townNameT(targetTownId), TEXT_NUM(killCount), playerNameT(targetPlayerId), TEXT_NUM(terrorismInfluenceLost)
 					));
 
@@ -2412,12 +2415,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		auto popupRelationshipWarning = [&]()
 		{
 			AddPopupToFront(playerId, FText::Format(
-				LOCTEXT("AI_WarnNeedRelationshipForForeignBuilding", "{0} rejected your request to build.<space>Our relationship isn't at that level yet..."),
+				LOCTEXT("AI_WarnNeedRelationshipForForeignBuilding", "{0} rejected your request to build.<space>Our relationship isn't at that level yet (requires 50 relationship)."),
 				townNameT(tileTownId)
 			));
 		};
 		
-		const int32 relationshipToAllowForeignBuilding = 0;
+		const int32 relationshipToAllowForeignBuilding = 50;
 		if (IsAITown(tileTownId))
 		{
 			if (townManagerBase(tileTownId)->relationship().GetTotalRelationship(playerId) < relationshipToAllowForeignBuilding)
@@ -2550,6 +2553,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			IsForeignOnlyBuilding(cardEnum)))
 		{
 			bld.SetForeignBuilder(playerId);
+
+			AddPopupToFront(bld.playerId(), FText::Format(
+				LOCTEXT("RequestForeignBuilding_Pop", "{0} requests to build {1} in your territory."),
+				playerNameT(playerId),
+				bld.buildingInfo().name
+			));
 			
 			// Take the build money
 			int32 quickBuildCost = Building::GetQuickBuildBaseCost(cardEnum, GetBuildingInfo(cardEnum).GetConstructionResources(bld.factionEnum()), [&](ResourceEnum resourceEnum) { return 0; });
@@ -2678,7 +2687,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 
 				// Player's building or ForeignOwner
 				if (bld.playerId() == parameters.playerId ||
-					bld.foreignBuilder() == parameters.playerId)
+					bld.foreignBuilderId() == parameters.playerId)
 				{
 					// Don't demolish a burning building..
 					if (bld.isOnFire()) {
@@ -2705,7 +2714,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						// Check if we can add townhall's cards to hand
 						auto& townManage = townManager(bld.townId());
 
-						bool returnSuccessful = cardSys.ReturnBuildingSlotCardsToHand(townManage.cardsInTownhall());
+						bool returnSuccessful = cardSys.TryReturnCardsToHandOrInventory(townManage.cardsInTownhall());
 
 						if (returnSuccessful) {
 							townManage.ClearCardsFromTownhall();
@@ -2717,35 +2726,10 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 							);
 							return;
 						}
-
-						//std::vector<CardEnum> addedCards;
-						
-						//std::vector<CardStatus> slotCards = townManage.cardsInTownhall();
-						//for (size_t i = 0; i < slotCards.size(); i++)
-						//{
-						//	if (cardSys.CanAddCardToBoughtHand(slotCards[i].cardEnum, 1)) {
-						//		townManage.RemoveCardFromTownhall(i);
-						//		
-						//		addedCards.push_back(slotCards[i].cardEnum);
-						//		cardSys.AddCardToHand2(slotCards[i].cardEnum);
-						//	}
-						//	else {
-						//		// Remove the added cards from the Hand
-						//		for (CardEnum addedCard : addedCards) {
-						//			cardSys.RemoveCardsOld(addedCard, 1);
-						//		}
-						//		
-						//		AddPopupToFront(parameters.playerId,
-						//			LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
-						//			ExclusiveUIEnum::None, "PopupCannot"
-						//		);
-						//		return;
-						//	}
-						//}
 					}
 					else
 					{
-						bool returnSuccessful = cardSys.ReturnBuildingSlotCardsToHand(bld.slotCards());
+						bool returnSuccessful = cardSys.TryReturnCardsToHandOrInventory(bld.slotCards());
 
 						if (returnSuccessful) {
 							bld.ResetCardSlots();
@@ -2757,33 +2741,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 							);
 							return;
 						}
-						
-						//// Return cards to hand
-						//std::vector<CardEnum> addedCards;
-						//
-						//std::vector<CardStatus> slotCards = bld.slotCards();
-						//for (CardStatus card : slotCards)
-						//{
-						//	if (cardSys.CanAddCardToBoughtHand(card.cardEnum, 1)) 
-						//	{
-						//		addedCards.push_back(card.cardEnum);
-						//		cardSys.AddCardToHand2(card.cardEnum);
-						//	}
-						//	else {
-						//		// Remove the added cards from the Hand
-						//		for (CardEnum addedCard : addedCards) {
-						//			cardSys.RemoveCardsOld(addedCard, 1);
-						//		}
-						//		
-						//		AddPopupToFront(parameters.playerId, 
-						//			LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
-						//			ExclusiveUIEnum::None, "PopupCannot"
-						//		);
-						//		return;
-						//	}
-						//}
 
-						//bld.ResetCardSlots();
 					}
 
 					/*
@@ -2796,9 +2754,8 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						buildingEnum != CardEnum::Fort && 
 						buildingEnum != CardEnum::ResourceOutpost)
 					{
-						if (cardSys.CanAddCardToBoughtHand(buildingEnum, 1)) {
-							cardSys.AddCardToHand2(buildingEnum);
-						} else {
+						bool success = cardSys.TryAddCards_BoughtHandAndInventory(CardStatus(buildingEnum, 1));
+						if (!success) {
 							AddPopupToFront(parameters.playerId, 
 								LOCTEXT("CardFullDemolitionFailed", "Card hand is full. Demolition failed."), 
 								ExclusiveUIEnum::None, "PopupCannot");
@@ -3010,7 +2967,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 
 					DemolishCritterBuildingsIncludingFronts(tile, parameters.playerId);
 
-					if (IsFrontBuildable(tile))
+					if (IsFrontBuildable(tile) && !overlaySystem().IsIrrigationDitch(tile))
 					{
 						// If there is a road construction here, complete it right away
 						if (Building* bld = buildingAtTile(tile))  {
@@ -3217,7 +3174,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 	if (command.callbackEnum == CallbackEnum::ForeignBuildingAllow)
 	{
 		if (Building* bld = buildingPtr(command.intVar1)) {
-			if (bld->foreignBuilder() != -1 && 
+			if (bld->foreignBuilderId() != -1 && 
 				!bld->isForeignBuildingApproved())
 			{
 				bld->ApproveForeignBuilder();
@@ -3232,12 +3189,15 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		
 		if (Building* bld = buildingPtr(buildingId))
 		{
-			int32 foreignBuilderId = bld->foreignBuilder();
+			int32 foreignBuilderId = bld->foreignBuilderId();
 			
 			if (foreignBuilderId != -1 &&
 				!bld->isForeignBuildingApproved())
 			{
-				bool returnSuccessful = cardSystem(foreignBuilderId).ReturnBuildingSlotCardsToHand(bld->slotCards());
+				// Return Cards to the owner
+				std::vector<CardStatus> cards = bld->slotCards();
+				cards.push_back(CardStatus(bld->buildingEnum(), 1));
+				bool returnSuccessful = cardSystem(foreignBuilderId).TryReturnCardsToHandOrInventory(cards);
 
 				if (returnSuccessful) {
 					bld->ResetCardSlots();
@@ -3254,11 +3214,21 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				
 				_buildingSystem->RemoveBuilding(buildingId);
 
+				AddPopupToFront(bld->playerId(), FText::Format(
+					LOCTEXT("SelfForeignBuildingRejected_Pop", "You rejected {0}'s request to build {1}."),
+					playerNameT(foreignBuilderId),
+					bld->buildingInfo().name
+				));
 				AddPopupToFront(foreignBuilderId, FText::Format(
 					LOCTEXT("PlayerForeignBuildingRejected_Pop", "{0} rejected your request to build {1}."),
 					townNameT(bld->townId()),
 					bld->buildingInfo().name
 				));
+
+				// Return the money/card to the owner
+				std::vector<int32> constructionResources = GetBuildingInfo(bld->buildingEnum()).GetConstructionResources(townManagerBase(bld->townId())->factionEnum());
+				int32 quickBuildCost = Building::GetQuickBuildBaseCost(bld->buildingEnum(), constructionResources, [&](ResourceEnum resourceEnum) { return 0; });
+				ChangeMoney(foreignBuilderId, quickBuildCost);
 			}
 		}
 		
@@ -3452,7 +3422,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 				{
 					CardEnum cardEnum = GetAnimalCardEnumFromUnitEnum(unit.unitEnum());
 
-					if (cardSystem(command.playerId).TryAddCardToBoughtHand(cardEnum))
+					if (cardSystem(command.playerId).TryAddCards_BoughtHandAndInventory(CardStatus(cardEnum, 1)))
 					{
 						unit.Die();
 						AddPopupToFront(command.playerId,
@@ -3461,6 +3431,16 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 								GetUnitInfo(unit.unitEnum()).name
 							)
 						);
+
+						// Warn
+						if (IsTileOwnedByForeignPlayer(command.playerId, unit.unitTile()))
+						{
+							AddPopup(tileOwnerPlayer(unit.unitTile()), FText::Format(
+								LOCTEXT("StealAnimalWarning_Pop", "{0} stole {1} from your territory."),
+								playerNameT(command.playerId),
+								GetUnitInfo(unit.unitEnum()).name
+							));
+						}
 					}
 					else {
 						AddPopupToFront(command.playerId,
@@ -4381,7 +4361,7 @@ void GameSimulationCore::ProcessTradeDeal(const PopupInfo& popupInfo)
 	{
 		for (const CardStatus& cardStatus : cardStatuses) {
 			cardSystem(removePlayerId).RemoveCards_BoughtHandAndInventory(cardStatus);
-			cardSystem(addPlayerId).AddCards_BoughtHandAndInventory(cardStatus);
+			cardSystem(addPlayerId).TryAddCards_BoughtHandAndInventory(cardStatus);
 		}
 	};
 
@@ -5347,6 +5327,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 {
 	UE_LOG(LogNetworkInput, Log, TEXT(" ClaimLand"));
 	int32 attackerPlayerId = command.playerId;
+
 	
 
 	// Get Military Units...
@@ -5360,6 +5341,11 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			militaryCards.push_back(cardStatus);
 			cardSystem(command.playerId).RemoveCardsFromBoughtHand(cardStatus, cardStatus.stackSize);
 		}
+	}
+
+	if (command.claimEnum == CallbackEnum::RaidBattle) {
+		cardSystem(command.playerId).RemoveCards(CardStatus(CardEnum::Raid, 1), cardSystem(command.playerId).pendingHiddenBoughtHandCards);
+		cardSystem(command.playerId).RemoveCardsFromBoughtHand(CardStatus(CardEnum::Raid, 1), 1);
 	}
 
 
@@ -5845,8 +5831,11 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 
 void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
 {
-	if (!cardSystem(command.playerId).HasBoughtCard(CardEnum::Townhall)) {
-		cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
+	if (!cardSystem(command.playerId).HasBoughtCard(CardEnum::Townhall)) 
+	{
+		if (!IsAIPlayer(command.playerId)) {
+			cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
+		}
 		
 		playerOwned(command.playerId).initialResources = command;
 		FactionEnum factionEnum = playerOwned(command.playerId).factionEnum();
@@ -7108,7 +7097,11 @@ void GameSimulationCore::TestCityNetworkStage()
 	unordered_set<CardEnum> uniqueAvailableCards(availableCards.begin(), availableCards.end());
 
 	std::vector<CardEnum> buildingsToSpawn = SortedNameBuildingEnum;
-	//std::vector<CardEnum> buildingsToSpawn = { CardEnum::ExhibitionHall };
+	
+	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ForeignQuarter);
+	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ForeignPort);
+	CppUtils::TryRemove(buildingsToSpawn, CardEnum::Embassy);
+	
 	
 	for (CardEnum buildingEnum : buildingsToSpawn)
 	{

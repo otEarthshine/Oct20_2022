@@ -185,44 +185,53 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		ClearInstructions();
 
 		TArray<FText> args;
-		if (_placementType != PlacementType::BuildingDrag) {
-			ADDTEXT_LOCTEXT("StorageYard_BuildInstruction1", "Click and Drag Cursor\nto specify area");
+		if (_simulation->townPlayerId(townId) == _gameInterface->playerId())
+		{
+			if (_placementType != PlacementType::BuildingDrag) {
+				ADDTEXT_LOCTEXT("StorageYard_BuildInstruction1", "Click and Drag Cursor\nto specify area");
+			}
+			else
+			{
+				int32 sizeX = _area.sizeX();
+				int32 sizeY = _area.sizeY();
+
+				ADDTEXT_LOCTEXT("StorageYard_BuildInstruction2", "Drag cursor to resize the storage");
+
+				if (sizeX > 1 || sizeY > 1) {
+					int32 storageSpace = ((sizeX / 2) * (sizeY / 2));
+					//ss << "\n" << (sizeY / 2 * 2) << "x" << (sizeX / 2 * 2) << " (" << storageSpace << "<img id=\"Storage\"/>)";
+					ADDTEXT_(
+						INVTEXT("\n{0}x{1} ({2}<img id=\"Storage\"/>)"),
+						TEXT_NUM(sizeY / 2 * 2),
+						TEXT_NUM(sizeX / 2 * 2),
+						TEXT_NUM(storageSpace)
+					);
+
+					int32 woodNeeded = storageSpace * GameSimulationCore::StorageCostPerTile();
+
+					bool isRed = true;
+					if (townId != -1) {
+						isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
+					}
+					//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
+					ADDTEXT_(
+						INVTEXT("\n{0}<img id=\"Wood\"/>"),
+						TextRed(TEXT_NUM(woodNeeded), isRed)
+					);
+				}
+
+				//if (IsStorageTooLarge(TileArea(WorldTile2(0, 0), WorldTile2(sizeX, sizeY)))) {
+				//	//ss << "\n" << "<Red>Width and Height must be less than 8</>";
+				//	ADDTEXT_LOCTEXT("StorageYard_BuildInstructionTooLarge", "\n<Red>Width and Height must be less than 8</>");
+				//}
+			}
 		}
 		else
 		{
-			int32 sizeX = _area.sizeX();
-			int32 sizeY = _area.sizeY();
-
-			ADDTEXT_LOCTEXT("StorageYard_BuildInstruction2", "Drag cursor to resize the storage");
-
-			if (sizeX > 1 || sizeY > 1) {
-				int32 storageSpace = ((sizeX / 2) * (sizeY / 2));
-				//ss << "\n" << (sizeY / 2 * 2) << "x" << (sizeX / 2 * 2) << " (" << storageSpace << "<img id=\"Storage\"/>)";
-				ADDTEXT_(
-					INVTEXT("\n{0}x{1} ({2}<img id=\"Storage\"/>)"),
-					TEXT_NUM(sizeY / 2 * 2),
-					TEXT_NUM(sizeX / 2 * 2),
-					TEXT_NUM(storageSpace)
-				);
-
-				int32 woodNeeded = storageSpace * GameSimulationCore::StorageCostPerTile();
-				
-				bool isRed = true;
-				if (townId != -1) {
-					isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
-				}
-				//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
-				ADDTEXT_(
-					INVTEXT("\n{0}<img id=\"Wood\"/>"),
-					TextRed(TEXT_NUM(woodNeeded), isRed)
-				);
-			}
-
-			//if (IsStorageTooLarge(TileArea(WorldTile2(0, 0), WorldTile2(sizeX, sizeY)))) {
-			//	//ss << "\n" << "<Red>Width and Height must be less than 8</>";
-			//	ADDTEXT_LOCTEXT("StorageYard_BuildInstructionTooLarge", "\n<Red>Width and Height must be less than 8</>");
-			//}
+			ADDTEXT_LOCTEXT("StorageYard_BuildInvalidForeign", "<Red>Must be built in our territory</>");
 		}
+
+		
 		SetInstruction(PlacementInstructionEnum::DragStorageYard, true, JOINTEXT(args));
 	}
 	else if (_buildingEnum == CardEnum::Farm)
@@ -231,66 +240,85 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		ClearInstructions();
 
 		TArray<FText> args;
-		int32 fertility = _dragState == DragState::Dragging ? Farm::GetAverageFertility(_area, &sim) : sim.GetFertilityPercent(_mouseOnTile);
-
-		ADDTEXT_(LOCTEXT("Farm_BuildInstruction1", "{0}Fertility: {1}%</>"),
-			(fertility < 70 ? INVTEXT("<FlashingRed>") : INVTEXT("<NotFlashing>")),
-			TEXT_NUM(fertility)
-		);
-		ADDTEXT_INV_("<space>");
-
 		PlacementInstructionEnum placementInstructionEnum = PlacementInstructionEnum::DragFarm;
-		
-		if (_dragState == DragState::NeedDragStart)
+
+		if (_simulation->townPlayerId(townId) == _gameInterface->playerId())
 		{
-			if (_simulation->HasValidSeed(_mouseOnTile, _gameInterface->playerId())) {
-				ADDTEXT_LOCTEXT("Farm_BuildInstruction2", "Click and Drag Cursor\nto specify area");
+			int32 fertility;
+			if (_dragState == DragState::Dragging) {
+				int32 sumFertility = 0;
+				for (const FarmTile& farmTile : _farmWorldTiles) {
+					sumFertility += sim.GetFertilityPercent(farmTile.worldTile);
+				}
+				fertility = sumFertility / std::max(1, static_cast<int32>(_farmWorldTiles.size()));
 			}
 			else {
-				placementInstructionEnum = PlacementInstructionEnum::FarmNoValidSeedForRegion;
+				fertility = sim.GetFertilityPercent(_mouseOnTile);
 			}
-		}
-		// Farm
-		else {
-			int32 sizeX = _area.sizeX();
-			int32 sizeY = _area.sizeY();
 
-			ADDTEXT_LOCTEXT("Farm_BuildInstruction3", "Drag cursor to resize the farm");
+			ADDTEXT_(LOCTEXT("Farm_BuildInstruction1", "{0}Fertility: {1}%</>"),
+				(fertility < 70 ? INVTEXT("<FlashingRed>") : INVTEXT("<NotFlashing>")),
+				TEXT_NUM(fertility)
+			);
+			ADDTEXT_INV_("<space>");
 
-			if (sizeX > 1 || sizeY > 1) {
-				int32 areaSize = _farmWorldTiles.size();
-				int32 farmWorkerCount = Farm::GetFarmWorkerCount(areaSize);
-				
-				ADDTEXT_(
-					LOCTEXT("Farm_BuildInstructionArea", "\n{0}x{1}\nArea:{2} (Workers:{3})"),
-					TEXT_NUM(sizeY),
-					TEXT_NUM(sizeX),
-					TEXT_NUM(areaSize),
-					TEXT_NUM(farmWorkerCount)
-				);
 
-				int32 woodNeeded = sim.GetFarmCost(areaSize);
-				bool isRed = true;
-				if (townId != -1) {
-					isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
+			if (_dragState == DragState::NeedDragStart)
+			{
+				if (_simulation->HasValidSeed(_mouseOnTile, _gameInterface->playerId())) {
+					ADDTEXT_LOCTEXT("Farm_BuildInstruction2", "Click and Drag Cursor\nto specify area");
 				}
-				
-				ADDTEXT_(
-					INVTEXT("\n{0}<img id=\"Wood\"/>"),
-					TextRed(TEXT_NUM(woodNeeded), isRed)
-				);
+				else {
+					placementInstructionEnum = PlacementInstructionEnum::FarmNoValidSeedForRegion;
+				}
 			}
+			// Farm
+			else {
+				int32 sizeX = _area.sizeX();
+				int32 sizeY = _area.sizeY();
 
-			if (_simulation->IsFarmWidthTooHigh(_area2)) {
-				ADDTEXT_LOCTEXT("Farm_BuildInvalid1", "\n<Red>Width or Length too large</>\n<Red>(Max Width/Length: 50)</>");
-			}
-			else if (_simulation->IsFarmTooLarge(_farmWorldTiles)) {
-				ADDTEXT_LOCTEXT("Farm_BuildInvalid2", "\n<Red>Area is too large (Max Area: 500)</>");
-			}
-			else if (_simulation->IsFarmTooSmall(_farmWorldTiles)) {
-				ADDTEXT_LOCTEXT("Farm_BuildInvalid3", "\n<Red>Area is too small (Min Area: 16)</>");
+				ADDTEXT_LOCTEXT("Farm_BuildInstruction3", "Drag cursor to resize the farm");
+
+				if (sizeX > 1 || sizeY > 1) {
+					int32 areaSize = _farmWorldTiles.size();
+					int32 farmWorkerCount = Farm::GetFarmWorkerCount(areaSize);
+
+					ADDTEXT_(
+						LOCTEXT("Farm_BuildInstructionArea", "\n{0}x{1}\nArea:{2} (Workers:{3})"),
+						TEXT_NUM(sizeY),
+						TEXT_NUM(sizeX),
+						TEXT_NUM(areaSize),
+						TEXT_NUM(farmWorkerCount)
+					);
+
+					int32 woodNeeded = sim.GetFarmCost(areaSize);
+					bool isRed = true;
+					if (townId != -1) {
+						isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
+					}
+
+					ADDTEXT_(
+						INVTEXT("\n{0}<img id=\"Wood\"/>"),
+						TextRed(TEXT_NUM(woodNeeded), isRed)
+					);
+				}
+
+				if (_simulation->IsFarmWidthTooHigh(_area2)) {
+					ADDTEXT_LOCTEXT("Farm_BuildInvalid1", "\n<Red>Width or Length too large</>\n<Red>(Max Width/Length: 50)</>");
+				}
+				else if (_simulation->IsFarmTooLarge(_farmWorldTiles)) {
+					ADDTEXT_LOCTEXT("Farm_BuildInvalid2", "\n<Red>Area is too large (Max Area: 500)</>");
+				}
+				else if (_simulation->IsFarmTooSmall(_farmWorldTiles)) {
+					ADDTEXT_LOCTEXT("Farm_BuildInvalid3", "\n<Red>Area is too small (Min Area: 16)</>");
+				}
 			}
 		}
+		else
+		{
+			ADDTEXT_LOCTEXT("Farm_BuildInvalidForeign", "<Red>Must be built in our territory</>");
+		}
+		
 		SetInstruction(placementInstructionEnum, true, JOINTEXT(args));
 	}
 	else if (_placementType == PlacementType::StoneRoad)
@@ -340,7 +368,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		if (_dragState == DragState::Dragging && _canPlace) {
 			int32 goldNeeded = 0;
 			for (int32 roadTileId : _roadPathTileIds) {
-				if (!_gameInterface->simulation().IsRoadTile(WorldTile2(roadTileId))) {
+				if (!_gameInterface->simulation().overlaySystem().IsIrrigationDitch(WorldTile2(roadTileId))) {
 					goldNeeded += IrrigationDitchTileCost;
 				}
 			}
@@ -2318,32 +2346,6 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				SetInstruction(PlacementInstructionEnum::MustBeNearRiver, true);
 			}
 			
-			//const std::vector<int32>& oasisSlotIds = _simulation->provinceInfoSystem().oasisSlotProvinceIds();
-			//
-			//_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
-			//{
-			//	if (IsPlayerBuildable(tile)) 
-			//	{
-			//		bool hasOasis = false;
-			//		for (int32 i = 0; i < oasisSlotIds.size(); i++) {
-			//			const ProvinceBuildingSlot& slot = _simulation->provinceInfoSystem().provinceBuildingSlot(oasisSlotIds[i]);
-			//			if (slot.oasisSlot.isValid() && WorldTile2::Distance(slot.oasisSlot.centerTile, tile) < 20) {
-			//				hasOasis = true;
-			//				break;
-			//			}
-			//		}
-			//		
-			//		if (hasOasis ||
-			//			terrainGenerator.riverFraction(tile) > GetRiverFractionPercentThreshold(_buildingEnum) / 100.0f ||
-			//			PunSettings::IsOn("CheatFastBuild")) 
-			//		{
-			//			_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
-			//			return;
-			//		}
-			//		SetInstruction(PlacementInstructionEnum::MustBeNearRiver, true);
-			//	}
-			//	_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-			//});
 		}
 		// Logistics Office
 		else if (_buildingEnum == CardEnum::ShippingDepot)
@@ -2737,45 +2739,6 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, cameraAtom, location);
 			});
 		}
-		//else if (_buildingEnum == CardEnum::Farm)
-		//{
-		//	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		//		if (IsPlayerBuildable(tile)) {
-		//			if (simulation.GetFertilityPercent(tile) < 20) {
-		//				SetInstruction(PlacementInstructionEnum::FarmAndRanch, true);
-		//				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-		//				return;
-		//			}
-
-		//			// Any seed that can be planted here?
-		//			std::vector<SeedInfo> seedsOwned = simulation.resourceSystem(_gameInterface->playerId()).seedsPlantOwned();
-		//			GeoresourceEnum georesourceEnum = simulation.georesource(tile.region()).georesourceEnum;
-		//			bool hasValidSeed = false;
-		//			for (SeedInfo seed : seedsOwned)
-		//			{
-		//				if (IsCommonSeedCard(seed.cardEnum)) {
-		//					hasValidSeed = true;
-		//					break;
-		//				}
-		//				if (IsSpecialSeedCard(seed.cardEnum) && 
-		//					seed.georesourceEnum == georesourceEnum) 
-		//				{
-		//					hasValidSeed = true;
-		//					break;
-		//				}
-		//			}
-		//			
-		//			if (!hasValidSeed) {
-		//				SetInstruction(PlacementInstructionEnum::FarmNoValidSeedForRegion, true);
-		//				_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-		//				return;
-		//			}
-		//			_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
-		//			return;
-		//		}
-		//		_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-		//	});
-		//}
 		/*
 		 * Foreign buildings
 		 */
@@ -2807,7 +2770,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				_placementGrid.SpawnGrid(gridEnum, cameraAtom, tile, _faceDirection);
 			});
 		}
-		//! Foreign-only Building
+		//! Foreign-only Building Warning
 		else if (IsForeignOnlyBuilding(_buildingEnum) &&
 				simulation.tileOwnerPlayer(_area.centerTile()) == playerId)
 		{
@@ -2817,7 +2780,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 			SetInstruction(PlacementInstructionEnum::Generic, true, foreignOnlyBuild_MustBeForeignTown);
 		}
 		//! Tech Researched... Build Foreign
-		else if (simulation.IsForeignPlacement(_area.centerTile(), playerId) ||
+		else if ((simulation.IsForeignPlacement(_area.centerTile(), playerId) && _buildingEnum != CardEnum::StorageYard) ||
 				IsForeignOnlyBuilding(_buildingEnum))
 		{
 			bool canForeignPlace = simulation.IsForeignBuildable(_area,
@@ -3234,7 +3197,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 
 		int32 goldNeeded = 0;
 		for (int32 roadTileId : _roadPathTileIds) {
-			if (!_gameInterface->simulation().IsRoadTile(WorldTile2(roadTileId))) {
+			if (!_gameInterface->simulation().overlaySystem().IsIrrigationDitch(WorldTile2(roadTileId))) {
 				goldNeeded += IrrigationDitchTileCost;
 			}
 		}

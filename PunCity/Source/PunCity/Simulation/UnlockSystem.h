@@ -194,6 +194,9 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{ TechEnum::SpyGuard, {
 		LOCTEXT("Spy Guard", "Spy Guard")
 	}},
+	{ TechEnum::SpyCenter, {
+		LOCTEXT("Espionage", "Espionage")
+	} },
 
 	{ TechEnum::Colony, {
 		LOCTEXT("Colonization", "Colonization"),
@@ -421,7 +424,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 
 	{ TechEnum::Museum, {
 		LOCTEXT("Museum", "Museum"),
-		LOCTEXT("Foreign Investment Desc", "Allows Artifact Excavation from Ruins."),
+		LOCTEXT("Museum Desc", "Allows Artifact Excavation from Ruins."),
 	} },
 
 	{ TechEnum::MarketInfluence, {

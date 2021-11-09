@@ -157,7 +157,8 @@ struct ScopeTimerLoop
 	entry(TickResourceDisplay) \
 	entry(TickDisplayMisc) \
 	entry(TickMiniBuildingDisplay) \
-	entry(TickBuildingDisplay)
+	entry(TickBuildingDisplay) \
+	entry(TickBuildingLOD2Display)
 
 #define UI_PROFILING_LIST(entry) \
 	entry(TickMainGameUI) \

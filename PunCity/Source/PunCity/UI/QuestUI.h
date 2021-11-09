@@ -143,11 +143,11 @@ public:
 				FString name = dataSource()->playerNameF(curId);
 
 				auto element = CastChecked<UPlayerCompareElement>(PlayerCompareBox->GetChildAt(i));
-				if (element->PlayerNameText->GetText().ToString() != name ||
-					element->PopulationText->GetText().ToString() != FString::FromInt(pop))
+				if (element->uiPlayerId != curId ||
+					element->population != pop)
 				{
 					SetChildHUD(element);
-					element->PunInit(curId);
+					element->PunInit(curId, pop);
 
 					auto setHomeTownIcon = [&]() {
 						element->HomeTownIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -491,8 +491,14 @@ public:
 	{
 		std::vector<int32> playerIds = simulation().allHumanPlayerIds();
 		
-		std::sort(playerIds.begin(), playerIds.end(), [&](int32 playerA, int32 playerB) {
-			return simulation().populationPlayer(playerA) > simulation().populationPlayer(playerB);
+		std::stable_sort(playerIds.begin(), playerIds.end(), [&](int32 playerA, int32 playerB) 
+		{
+			int32 popA = simulation().populationPlayer(playerA);
+			int32 popB = simulation().populationPlayer(playerB);
+			if (popA == popB) {
+				return playerA > playerB; // Ensure stable sort (redundant to stable_sort?)
+			}
+			return popA > popB;
 		});
 		return playerIds;
 	}

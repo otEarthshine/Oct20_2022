@@ -74,6 +74,7 @@ AGameManager::AGameManager()
 
 #if DISPLAY_MINIBUILDING
 	_miniBuildingDisplaySystem = CreateDefaultSubobject<UMiniBuildingDisplayComponent>("MiniBuildingDisplay");
+	_buildingLOD2DisplaySystem = CreateDefaultSubobject<UBuildingLOD2DisplayComponent>("BuildingLOD2Display");
 #endif
 
 #if DISPLAY_TERRAIN
@@ -235,6 +236,8 @@ void AGameManager::InitPhase2()
 #if DISPLAY_MINIBUILDING
 	_LOG(PunInit, "_miniBuildingDisplaySystem Init");
 	_miniBuildingDisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 206);
+	_buildingLOD2DisplaySystem->Init(GameMapConstants::TotalRegions, this, _assetLoader, 150);
+	_buildingLOD2DisplaySystem->InitAnnotations();
 #endif
 
 #if DISPLAY_TERRAIN
@@ -266,7 +269,6 @@ void AGameManager::InitPhase2()
 	
 	_terrainMap->SetupWorldMapMesh(this, GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY,
 												worldMapSizeX, worldMapSizeX * 2, GetMapSettings().mapSizeEnum(), _assetLoader);
-	_terrainMap->InitAnnotations();
 
 	_worldMap->Init(GameMapConstants::TotalRegions, this, _assetLoader, 0);
 #endif
@@ -850,16 +852,19 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 			bool miniBuildingDisplayOn = PunSettings::IsOn("DisplayMiniBuildings");
 			bool displayMiniBuildings = miniBuildingDisplayOn && !displayBuildings && zoomDistance < WorldZoomTransition_BuildingsMini;
 			
-			if (PunSettings::TrailerMode()) {
-				displayMiniBuildings = miniBuildingDisplayOn && !displayBuildings;
-			}
-			
 			{
 				LEAN_PROFILING_D(TickMiniBuildingDisplay);
 				SCOPE_CYCLE_COUNTER(STAT_PunDisplayMiniBuilding);
 				SCOPE_TIMER_FILTER(5000, "** Tick MiniBuilding -");
 				
 				_miniBuildingDisplaySystem->Display(displayMiniBuildings ? _sampleRegionIds : noSample);
+			}
+
+			{
+				LEAN_PROFILING_D(TickBuildingLOD2Display);
+				SCOPE_TIMER_FILTER(5000, "** Tick BuildingLOD2Display -");
+				
+				_buildingLOD2DisplaySystem->TickBuildingLOD2();
 			}
 #endif
 		}

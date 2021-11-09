@@ -235,10 +235,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 
 	//
 
-	if (isMini) {
-		SetRenderScale(FVector2D(0.5, 0.5));
-	}
-
 
 }
 

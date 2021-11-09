@@ -15,8 +15,10 @@ class PROTOTYPECITY_API UPunButtonImage : public UPunWidget
 public:
 	UPROPERTY(meta = (BindWidget)) UButton* Button1;
 	UPROPERTY(meta = (BindWidget)) UImage* Image1;
+	UPROPERTY(meta = (BindWidget)) UImage* Image2;
 
 	int32 index = -1;
+	FString name;
 	CallbackEnum callbackEnum = CallbackEnum::None;
 	UPROPERTY() UPunWidget* callbackParent = nullptr;
 

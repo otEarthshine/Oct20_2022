@@ -1884,7 +1884,7 @@ public:
 		};
 		
 		addMoney(_playerId);
-		addMoney(foreignBuilder());
+		addMoney(foreignBuilderId());
 	}
 };
 
@@ -1895,13 +1895,15 @@ public:
 
 	virtual int32 influenceIncome100(int32 playerId) const override {
 		int32 income = 50;
-		if (IsUpgraded(2) && _simulation->HasForeignBuilding(foreignBuilder(), _townId, CardEnum::ForeignQuarter)) {
+		if (IsUpgraded(2) && _simulation->HasForeignBuilding(foreignBuilderId(), _townId, CardEnum::ForeignQuarter)) {
 			income += 30;
 		}
 		return income * 100;
 	}
 
-	
+	//virtual int32 displayVariationIndex() override {
+	//	return _simulation->GetTownLvl(foreignBuilderId()) >= 4 ? 1 : 0;
+	//}
 };
 
 
@@ -1919,7 +1921,10 @@ public:
 	}
 
 	virtual int32 moneyIncome100(int32 playerId) const override { return GetUpgrade(1).upgradeLevel * 20 * 100; }
-	
+
+	virtual int32 displayVariationIndex() override {
+		return _simulation->GetTownLvl(foreignBuilderId()) >= 4 ? 1 : 0;
+	}
 };
 
 
@@ -1927,12 +1932,15 @@ class ForeignPort : public DiplomaticBuilding
 {
 public:
 	virtual int32 moneyIncome100(int32 playerId) const override {
-		if (_simulation->HasForeignBuilding(foreignBuilder(), _townId, CardEnum::ForeignQuarter)) {
+		if (_simulation->HasForeignBuilding(foreignBuilderId(), _townId, CardEnum::ForeignQuarter)) {
 			return 100 * 100;
 		}
 		return 0;
 	}
 
+	//virtual int32 displayVariationIndex() override {
+	//	return _simulation->GetTownLvl(foreignBuilderId()) >= 4 ? 1 : 0;
+	//}
 };
 
 
@@ -2039,8 +2047,9 @@ public:
 
 		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
 
-		hoverWarning = tradeRoutes.size() > 0 ? HoverWarning::NeedSetup : HoverWarning::None;
-		return true;
+		bool needSetup = tradeRoutes.size() > 0;
+		hoverWarning = needSetup ? HoverWarning::NeedSetup : HoverWarning::None;
+		return needSetup;
 	}
 
 	/*

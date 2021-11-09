@@ -2087,7 +2087,92 @@ void ProvinceRuin::OnUpgradeBuildingWithPlayerId(int32 upgradeIndex, int32 upgra
 {
 	if (upgradeIndex == 0)
 	{
-		_simulation->TryAddCardToBoughtHand(upgraderPlayerId, CardEnum::Codex);
+		std::vector<CardEnum> availableCards;
+
+		if (isEnum(CardEnum::MayanPyramid))
+		{
+			availableCards = {
+				CardEnum::DecorativePlate,
+				CardEnum::SacrificialAltar,
+
+				CardEnum::BallCourtGoals, //!
+				
+				CardEnum::StoneStele,
+
+				CardEnum::DecorativePlate,
+				CardEnum::SacrificialAltar,
+				CardEnum::StoneStele,
+
+				CardEnum::Codex, //!!
+			};
+		}
+		else if (isEnum(CardEnum::EgyptianPyramid))
+		{
+			availableCards = {
+				CardEnum::CanopicJars,
+				CardEnum::DepartureScrolls,
+
+				CardEnum::SolarBarque, //!
+
+				CardEnum::DeathMask,
+
+				CardEnum::CanopicJars,
+				CardEnum::DepartureScrolls,
+				CardEnum::DeathMask,
+				
+				CardEnum::GoldCapstone, //!!
+			};
+		}
+		else if (isEnum(CardEnum::StoneHenge))
+		{
+			availableCards = {
+				CardEnum::FeastRemains,
+				CardEnum::ForeignTrinkets,
+
+				CardEnum::OfferingCup, //!
+				
+				CardEnum::ChalkPlaque,
+				
+				CardEnum::FeastRemains,
+				CardEnum::ForeignTrinkets,
+				CardEnum::ChalkPlaque,
+
+				CardEnum::OrnateTrinkets, //!!
+			};
+		}
+		else if (isEnum(CardEnum::EasterIsland))
+		{
+			availableCards = {
+				CardEnum::TatooingNeedles,
+				CardEnum::Petroglyphs,
+
+				CardEnum::CoralEyes, //!
+				
+				CardEnum::StoneFishhooks,
+
+				CardEnum::TatooingNeedles,
+				CardEnum::Petroglyphs,
+				CardEnum::StoneFishhooks,
+
+				CardEnum::AncientStaff, //!!
+			};
+		}
+
+		
+		CardEnum artifactEnum = availableCards[GetUpgrade(upgradeIndex).upgradeLevel % availableCards.size()];
+		
+		_simulation->TryAddCards_BoughtHandAndInventory(upgraderPlayerId, CardStatus(artifactEnum, 1));
+
+		// Warn
+		if (_simulation->IsTileOwnedByForeignPlayer(upgraderPlayerId, centerTile()))
+		{
+			_simulation->AddPopup(_simulation->tileOwnerPlayer(centerTile()), FText::Format(
+				LOCTEXT("StealArtifactWarning_Pop", "{0} stole an artifact from your territory ({1} from {2})."),
+				_simulation->playerNameT(upgraderPlayerId),
+				GetBuildingInfo(artifactEnum).GetName(),
+				buildingInfo().GetName()
+			));
+		}
 	}
 }
 
@@ -2174,12 +2259,12 @@ void Museum::FinishConstruction()
 void DiplomaticBuilding::FinishConstruction()
 {
 	Building::FinishConstruction();
-	_simulation->playerOwned(foreignBuilder()).AddDiplomaticBuilding(buildingId());
+	_simulation->playerOwned(foreignBuilderId()).AddDiplomaticBuilding(buildingId());
 	_simulation->playerOwned(_playerId).AddDiplomaticBuilding(buildingId());
 }
 
 void DiplomaticBuilding::OnDeinit() {
-	_simulation->playerOwned(foreignBuilder()).RemoveDiplomaticBuilding(buildingId());
+	_simulation->playerOwned(foreignBuilderId()).RemoveDiplomaticBuilding(buildingId());
 	_simulation->playerOwned(_playerId).RemoveDiplomaticBuilding(buildingId());
 }
 
@@ -2238,18 +2323,18 @@ void ForeignQuarter::FinishConstruction()
 
 	DiplomaticBuilding::FinishConstruction();
 
-	UnlockSystem* unlockSys = _simulation->unlockSystem(foreignBuilder());
+	UnlockSystem* unlockSys = _simulation->unlockSystem(foreignBuilderId());
 	if (!unlockSys->unlockState(UnlockStateEnum::ForeignPort)) {
 		unlockSys->SetUnlockState(UnlockStateEnum::ForeignPort, true);
 
 		CardEnum unlockBuildingEnum = CardEnum::ForeignPort;
-		_simulation->AddDrawCards(foreignBuilder(), unlockBuildingEnum);
+		_simulation->AddDrawCards(foreignBuilderId(), unlockBuildingEnum);
 
 		_simulation->AddPopup(
-			PopupInfo(foreignBuilder(),
+			PopupInfo(foreignBuilderId(),
 				FText::Format(
 					LOCTEXT("UnlockedBuilding_Pop", "Unlocked Foreign Port.<space>Foreign Port can increase the effectiveness of Foreign Quarters.<space>Would you like to buy a Foreign Port card for {0}<img id=\"Coin\"/>."),
-					TEXT_NUM(_simulation->GetCardPrice(foreignBuilder(), unlockBuildingEnum))
+					TEXT_NUM(_simulation->GetCardPrice(foreignBuilderId(), unlockBuildingEnum))
 				),
 				{ LOCTEXT("Buy", "Buy"), LOCTEXT("Refuse", "Refuse") },
 				PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", static_cast<int32>(unlockBuildingEnum)
@@ -2374,7 +2459,7 @@ void SpyCenter::OnTick1Sec()
 		_secsToCardProduction--;
 		if (_secsToCardProduction == 0) 
 		{
-			_simulation->TryAddCardToBoughtHand(_playerId, cardEnum);
+			_simulation->TryAddCards_BoughtHandAndInventory(_playerId, CardStatus(cardEnum, 1));
 			
 			resetCardProduction();
 		}
@@ -2395,7 +2480,7 @@ void PolicyOffice::FinishConstruction()
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony", "Economic Hegemony"),
-			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony Desc", "+3% production bonus.. if you have more than X Influence"),
+			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony Desc", "+3% production bonus for the Town"),
 			ResourceEnum::Influence, 30
 		),
 	});

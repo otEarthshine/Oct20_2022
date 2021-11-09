@@ -11,6 +11,53 @@ int32 TimeDisplay::_Ticks = 0;
 
 float Time::kForcedFallSeason = 0.0f;
 
+std::vector<int32> BldInfo::GetConstructionResources(FactionEnum factionEnum) const
+{
+	if (factionEnum == FactionEnum::Arab) 
+	{
+		if (cardEnum == CardEnum::House) {
+			return GetConstructionResourceListFromResourcePairs({ ResourcePair(ResourceEnum::Clay, 20) });
+		}
+
+		auto convertWoodToOtherResource = [&](std::vector<int32>& result, ResourceEnum resourceEnum)
+		{
+			// Convert wood in construction to stone
+			if (constructionResources.size() > 0)
+			{
+				int32 totalWoodPrice = constructionResources[0] * GetResourceInfo(ResourceEnum::Wood).basePrice;
+				result[0] = 0;
+
+				for (int32 i = 0; i < constructionResources.size(); i++) {
+					if (ConstructionResources[i] == resourceEnum) {
+						result[i] = constructionResources[i] + totalWoodPrice / GetResourceInfo(resourceEnum).basePrice;
+						result[i] = result[i] / 10 * 10;
+					}
+				}
+			}
+		};
+
+		// Trading Post/Port converted to stone
+		if (cardEnum == CardEnum::TradingPort ||
+			cardEnum == CardEnum::TradingPost)
+		{
+			std::vector<int32> result = constructionResources;
+			convertWoodToOtherResource(result, ResourceEnum::Stone);
+			return result;
+		}
+		
+		// Most building's wood is converted to clay
+		if (cardEnum != CardEnum::Fisher &&
+			cardEnum != CardEnum::ClayPit &&
+			!IsMountainMine(cardEnum))
+		{
+			std::vector<int32> result = constructionResources;
+			convertWoodToOtherResource(result, ResourceEnum::Clay);
+			return result;
+		}
+	}
+	return constructionResources;
+}
+
 TileArea BuildingArea(WorldTile2 centerTile, WorldTile2 size, Direction faceDirection)
 {
 	check(size.isValid());

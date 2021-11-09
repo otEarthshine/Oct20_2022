@@ -291,6 +291,18 @@ void UChatUI::TickDebugUI()
 			}
 		};
 
+		
+		int32 lineCount = 2;
+		bool filledFirstColumn = false;
+		auto incrementLine = [&](UTextBlock* textBlock, std::stringstream& ss) {
+			lineCount++;
+			if (!filledFirstColumn && lineCount > 60) {
+				textBlock->SetText(FText::FromString(FString(ss.str().c_str())));
+				ss.str("");
+				filledFirstColumn = true;
+			}
+		};
+
 		// Simulation Normal Profiling
 		{
 			std::stringstream ss;
@@ -327,14 +339,20 @@ void UChatUI::TickDebugUI()
 						ss << LeanScopeTimerChar[static_cast<int32>(profilerElements[i].profilerEnum)] << ":\t"
 							<< (profilerElements[i].nanosecondsSum / 1000 / profilingTicksInterval)
 							<< "us \t(" << profilerElements[i].count << ")\n";
+						
+						incrementLine(TopLeftTextDebug, ss);
 					}
 				}
 
 				ss << "\n";
 			}
 
-			TopLeftTextDebug->SetText(FText::FromString(FString(ss.str().c_str())));
+			TopLeftTextDebug2->SetText(FText::FromString(FString(ss.str().c_str())));
 		}
+
+		
+		lineCount = 2;
+		filledFirstColumn = false;
 
 		// Simulation Max Profiling
 		{
@@ -372,13 +390,15 @@ void UChatUI::TickDebugUI()
 						ss << LeanScopeTimerChar[static_cast<int32>(profilerElements[i].profilerEnum)] << ":\t"
 							<< (profilerElements[i].maxTickNanosecondsSum / 1000)
 							<< "us\n";
+						
+						incrementLine(TopLeftTextDebug3, ss);
 					}
 				}
 
 				ss << "\n";
 			}
 
-			TopLeftTextDebug2->SetText(FText::FromString(FString(ss.str().c_str())));
+			TopLeftTextDebug4->SetText(FText::FromString(FString(ss.str().c_str())));
 		}
 
 		

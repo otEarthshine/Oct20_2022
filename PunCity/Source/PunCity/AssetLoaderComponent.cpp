@@ -283,12 +283,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau_Era", "EmploymentBureau", 1);
 
 
-	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub", "IntercityLogisticsHub", 1);
-	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort", "IntercityLogisticsPort", 1);
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub", "IntercityLogisticsHub", 0);
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort", "IntercityLogisticsPort", 0);
 	
 	LoadBuilding(CardEnum::ForeignQuarter, "ForeignQuarter", 3);
 	LoadBuilding(CardEnum::ForeignPort, "ForeignPort", 3);
 	LoadBuilding(CardEnum::SpyCenter, "SpyCenter", 4);
+
+	// TODO: EU era 2,3,4
+	LoadBuilding(CardEnum::Market, "Market", 2, 2);
 
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Caravansary, "Caravansary", "Caravansary", 2);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
@@ -449,8 +452,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	LoadBuilding(CardEnum::Beekeeper, "BeeKeeper_Era", "", "Beekeeper", 2);
 
-	// TODO: ARAB FIX
-	LoadBuilding(CardEnum::Market, "Market__Era", "", "Market", 2, 2);
 	LoadBuilding(FactionEnum::Europe, CardEnum::IrrigationReservoir, "IrrigationReservoir", "IrrigationReservoir");
 
 	//--
@@ -460,6 +461,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "Iron_Smelter_Era", "IronSmelter", 2, 2);
 
 	LoadBuilding(CardEnum::IrrigationPump, "", "IrrigationPump_Era", "IrrigationPump", 2);
+
+	
 
 	/*
 	 * Irrigation
@@ -873,11 +876,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	_cardIconHasFadeBorder.SetNum(FactionEnumCount * CardEnumCount_WithNone);
 	
 	int32 addCardIconCount = 0;
-	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName, bool isScreenShot = false)
+	FString folderName = "CardImages_BleGood/";
+	FString suffix = "_1024";
+	bool hasFadeBorder = false;
+	auto addCardIcon = [&](CardEnum cardEnum, FString iconFileName)
 	{
-		FString folderName = isScreenShot ? "CardImages_Screenshot/" : "CardImages_BleGood/";
 		for (int32 i = 0; i < FactionEnumCount; i++) {
-			SetCardIcon(i, cardEnum, LoadF<UTexture2D>(FString("/Game/UI/Images/") + folderName + iconFileName + (isScreenShot ? "" : "_1024")), isScreenShot);
+			SetCardIcon(i, cardEnum, LoadF<UTexture2D>(FString("/Game/UI/Images/") + folderName + iconFileName + suffix), hasFadeBorder);
 		}
 		addCardIconCount++;
 	};
@@ -973,17 +978,65 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::Snatch, "StealCard");
 	addCardIcon(CardEnum::Steal, "SnatchCard");
 
-	// Screenshot images
-	addCardIcon(CardEnum::Farm, "FarmIcon", true);
-	addCardIcon(CardEnum::DirtRoad, "DirtRoadIcon", true);
-	addCardIcon(CardEnum::StoneRoad, "StoneRoadIcon", true);
-	
-	addCardIcon(CardEnum::Bridge, "BridgeIcon", true);
-	addCardIcon(CardEnum::Tunnel, "TunnelIcon", true);
-	addCardIcon(CardEnum::StorageYard, "StorageYardIcon", true);
 
-	addCardIcon(CardEnum::IntercityRoad, "DirtRoadIcon", true);
-	addCardIcon(CardEnum::IntercityBridge, "BridgeIcon", true);
+	// Artifacts
+	folderName = "CardImages_Artifacts/";
+	suffix = "_1024";
+	hasFadeBorder = false;
+	addCardIcon(CardEnum::Codex, "Codex");
+	addCardIcon(CardEnum::SacrificialAltar, "SacrificialAltar");
+	addCardIcon(CardEnum::StoneStele, "StoneStele");
+	addCardIcon(CardEnum::BallCourtGoals, "BallCourtGoals");
+	addCardIcon(CardEnum::DecorativePlate, "DecorativePlate");
+
+	addCardIcon(CardEnum::CanopicJars, "CanopicJars");
+	addCardIcon(CardEnum::DepartureScrolls, "DepartureScrolls");
+	addCardIcon(CardEnum::DeathMask, "DeathMask");
+	addCardIcon(CardEnum::SolarBarque, "SolarBarque");
+	addCardIcon(CardEnum::GoldCapstone, "GoldCapstone");
+
+	addCardIcon(CardEnum::FeastRemains, "FeastRemains");
+	addCardIcon(CardEnum::ForeignTrinkets, "ForeignTrinkets");
+	addCardIcon(CardEnum::ChalkPlaque, "ChalkPlaque");
+	addCardIcon(CardEnum::OfferingCup, "OfferingCup");
+	addCardIcon(CardEnum::OrnateTrinkets, "OrnateTrinkets");
+
+	addCardIcon(CardEnum::TatooingNeedles, "TatooingNeedles");
+	addCardIcon(CardEnum::Petroglyphs, "Petroglyphs");
+	addCardIcon(CardEnum::StoneFishhooks, "StoneFishhooks");
+	addCardIcon(CardEnum::CoralEyes, "CoralEyes");
+	addCardIcon(CardEnum::AncientStaff, "AncientStaff");
+	
+	// Animals
+	folderName = "CardImages_Animals/";
+	suffix = "_1024";
+	hasFadeBorder = false;
+	addCardIcon(CardEnum::BlackBear, "BlackBear");
+	addCardIcon(CardEnum::Boar, "Boar");
+	addCardIcon(CardEnum::BrownBear, "BrownBear");
+	addCardIcon(CardEnum::YellowDeer, "MuleDeer");
+	
+	addCardIcon(CardEnum::Panda, "Panda");
+	addCardIcon(CardEnum::RedDeer, "RedDeer");
+	//addCardIcon(CardEnum::Reindeer, "Reindeer");
+	addCardIcon(CardEnum::DarkDeer, "SambarDeer");
+
+	
+
+	// Screenshot images
+	folderName = "CardImages_Screenshot/";
+	suffix = "";
+	hasFadeBorder = true;
+	addCardIcon(CardEnum::Farm, "FarmIcon");
+	addCardIcon(CardEnum::DirtRoad, "DirtRoadIcon");
+	addCardIcon(CardEnum::StoneRoad, "StoneRoadIcon");
+	
+	addCardIcon(CardEnum::Bridge, "BridgeIcon");
+	addCardIcon(CardEnum::Tunnel, "TunnelIcon");
+	addCardIcon(CardEnum::StorageYard, "StorageYardIcon");
+
+	addCardIcon(CardEnum::IntercityRoad, "DirtRoadIcon");
+	addCardIcon(CardEnum::IntercityBridge, "BridgeIcon");
 
 	
 
@@ -998,6 +1051,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{
 			FString name = GetBuildingInfo(buildingEnum).nameF().Replace(TEXT(" "), TEXT(""));
 			name = name.Replace(TEXT("'"), TEXT(""));
+
+			if (buildingEnum == CardEnum::CardMaker) {
+				name = FString("Archives");
+			}
+			else if (buildingEnum == CardEnum::Museum) {
+				name = FString("ScholarsOffice");
+			}
 
 			FString path = folderPath + name;
 
@@ -1813,6 +1873,14 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 			{
 				FString moduleTypeNameIn = FString("Special") + FString::FromInt(bodySpecialIndex);
 				addMesh(moduleTypeNameIn, true);
+			}
+			else if (foundFiles[i].Contains("_LOD01_"))
+			{
+				const auto mesh = loadMesh(i);
+
+				FString moduleName = moduleSetName + "_" + foundFiles[i];
+				AddBuildingModule(moduleName, mesh, _moduleNames);
+				_tempAuxGroup.miniModules.push_back(ModuleTransform(moduleName));
 			}
 			// Work Rotation
 			else if (foundFiles[i].Contains("_WorkRotation1"))

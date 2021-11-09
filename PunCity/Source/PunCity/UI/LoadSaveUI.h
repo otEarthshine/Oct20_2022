@@ -307,7 +307,7 @@ private:
 						oldestAutosave = autoSaves[i];
 					}
 				}
-				saveSystem().DeleteSave(oldestAutosave.folderPath);
+				saveSystem().DeleteSave(oldestAutosave.name);
 				autoSaves.Remove(oldestAutosave);
 
 				saveSystem().RefreshSaveList();
@@ -336,7 +336,7 @@ private:
 		if (!saveInfo.IsAutosave())
 		{
 			// Test that after loading the file up and saving again, the checksum is still the same
-			saveSystem().Load(saveInfo.folderPath);
+			saveSystem().Load(saveInfo.name);
 			GameSaveInfo saveInfoCheck = saveSystem().SaveDataToFile(nameString);
 			PUN_CHECK(saveInfo.checksum == saveInfoCheck.checksum);
 		}

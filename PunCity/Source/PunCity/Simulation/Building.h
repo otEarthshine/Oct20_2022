@@ -217,6 +217,10 @@ public:
 	template<typename Func>
 	static int32 GetQuickBuildBaseCost(CardEnum buildingEnum, std::vector<int32> constructionCosts, Func getResourceCount)
 	{
+		if (IsForeignOnlyBuilding(buildingEnum)) {
+			return 0;
+		}
+		
 		int32 quickBuildCost_Resource = 0;
 		int32 quickBuildCost_Work = 0;
 		
@@ -1373,7 +1377,7 @@ public:
 		check(_deliverySourceIds.size() == 0);
 	}
 
-	int32 foreignBuilder() const { return _foreignBuilder; }
+	int32 foreignBuilderId() const { return _foreignBuilder; }
 	bool isForeignBuilding() { return _foreignBuilder != -1; }
 	void SetForeignBuilder(int32 foreignBuilder) {
 		_foreignBuilder = foreignBuilder;
@@ -1576,11 +1580,15 @@ public:
 	 * Trading
 	 */
 	static int32 baseFixedTradingFeePercent() { return 35; }
-	int32 baseTradingFeePercent()
+
+	int32 baseTradingFeePercent() {
+		return baseTradingFeePercent(_townId, _simulation, false);
+	}
+	static int32 baseTradingFeePercent(int32 townId, IGameSimulationCore* simulation, bool isAutoTrade)
 	{
 		int32 tradeFeePercent = baseFixedTradingFeePercent();
 
-		std::vector<BonusPair> bonuses = GetTradingFeeBonuses();
+		std::vector<BonusPair> bonuses = GetTradingFeeBonuses(townId, simulation, isAutoTrade);
 		for (const BonusPair& bonus : bonuses) {
 			tradeFeePercent += bonus.value;
 		}
@@ -1590,30 +1598,38 @@ public:
 		return tradeFeePercent;
 	}
 	virtual int32 maxTradeQuatity() { return 0; }
-	
-	std::vector<BonusPair> GetTradingFeeBonuses();
 
-	int32 tradingFeePercent(int32 baseTradingFeePercent, ResourceEnum resourceEnum)
+	std::vector<BonusPair> GetTradingFeeBonuses() {
+		return GetTradingFeeBonuses(_townId, _simulation, false);
+	}
+	static std::vector<BonusPair> GetTradingFeeBonuses(int32 townId, IGameSimulationCore* simulation, bool isAutoTrade);
+
+	//! Take into account those free fees specific to resource
+	int32 tradingFeePercent(int32 baseTradingFeePercent, ResourceEnum resourceEnum) {
+		return tradingFeePercent(baseTradingFeePercent, resourceEnum, _townId, _simulation);
+	}
+	static int32 tradingFeePercent(int32 baseTradingFeePercent, ResourceEnum resourceEnum, int32 townId, IGameSimulationCore* simulation)
 	{
+		int32 playerId = simulation->townPlayerId(townId);
+		
 		int32 tradeFeePercent = baseTradingFeePercent;
-		if (_simulation->HasTownBonus(townId(), CardEnum::DesertTradeForALiving))
+		if (simulation->HasTownBonus(townId, CardEnum::DesertTradeForALiving))
 		{
 			if (IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal) {
 				tradeFeePercent = 0;
 			}
 		}
-		if (_simulation->HasTownBonus(townId(), CardEnum::DesertOreTrade) &&
+		if (simulation->HasTownBonus(townId, CardEnum::DesertOreTrade) &&
 			IsOreEnum(resourceEnum))
 		{
 			tradeFeePercent = 0;
 		}
 
-		if (_simulation->IsResearched(playerId(), TechEnum::CarpetTrade) &&
+		if (simulation->IsResearched(playerId, TechEnum::CarpetTrade) &&
 			resourceEnum == ResourceEnum::Carpet)
 		{
 			tradeFeePercent = 0;
 		}
-
 		
 		return std::max(0, tradeFeePercent);
 	}

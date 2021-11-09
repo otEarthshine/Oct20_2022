@@ -32,10 +32,12 @@ GameSaveInfo GameSaveSystem::SaveDataToFile(FString saveName, bool isCachingForS
 	//	}
 	//}
 
-	FString folderPath = GetSaveDirectoryPath();
-	folderPath += FormatStringForPath(saveName);
+	//FString folderPath = GetSaveDirectoryPath();
+	//folderPath += FormatStringForPath(saveName);
 
-	saveInfo.folderPath = folderPath;
+	//saveInfo.folderPath = folderPath;
+
+	FString folderPath = GetSaveFolderPath(saveName);
 
 	/*
 	 * Multithreaded Save
@@ -92,7 +94,7 @@ GameSaveInfo GameSaveSystem::SaveDataToFile(FString saveName, bool isCachingForS
 		//! Meta data
 		saveInfo.Serialize(SaveArchive);
 
-		FString metaDataPath = folderPath + "/MetaData.dat";
+		FString metaDataPath = GetSaveFolderPath(saveName) + "/MetaData.dat";
 		succeed = FFileHelper::SaveArrayToFile(SaveArchive, *metaDataPath);
 		SaveArchive.FlushCache();
 		SaveArchive.Empty();
@@ -186,11 +188,11 @@ FSaveThreadResults GameSaveSystem::SaveDataToFile_ThreadHelper(bool isCachingFor
 	return results;
 }
 
-GameSaveInfo GameSaveSystem::LoadMetadata(const FString& folderPath)
+GameSaveInfo GameSaveSystem::LoadMetadata(FString saveName)
 {
 	GameSaveInfo saveInfo;
 
-	FString metaDataPath = folderPath + "/MetaData.dat";
+	FString metaDataPath = GetSaveFolderPath(saveName) + "/MetaData.dat";
 
 	TArray<uint8> metaDataBinary;
 	{
@@ -208,7 +210,6 @@ GameSaveInfo GameSaveSystem::LoadMetadata(const FString& folderPath)
 	LoadArchive.SetIsSaving(false);
 	LoadArchive.SetIsLoading(true);
 
-	saveInfo.folderPath = folderPath;
 	saveInfo.Serialize(LoadArchive);
 
 	LoadArchive.FlushCache();
@@ -226,7 +227,7 @@ GameSaveInfo GameSaveSystem::LoadDataIntoCache()
 
 	for (int32 i = 0; i < static_cast<int>(GameSaveChunkEnum::Count); i++)
 	{
-		FString gameDataPath = _syncSaveInfo.folderPath + "/GameData" + FString::FromInt(i) + ".dat";
+		FString gameDataPath = GetSaveFolderPath(_syncSaveInfo.name) + "/GameData" + FString::FromInt(i) + ".dat";
 
 		compressedDataChunk.Empty();
 		if (!FFileHelper::LoadFileToArray(compressedDataChunk, *gameDataPath)) {

@@ -17,5 +17,13 @@ public:
 
 	
 	UPROPERTY() TArray<UTexture2D*> PlayerLogos;
-	UPROPERTY() TArray<UTexture2D*> PlayerCharacters;
+	
+	//UPROPERTY() TArray<UTexture2D*> PlayerCharacters;
+	UPROPERTY() TMap<FString, UTexture2D*> PlayerCharacters;
+
+	UTexture2D* GetPlayerCharacter(const FString& name) { return PlayerCharacters[name]; }
+
+
+
+	
 };

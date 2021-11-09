@@ -94,11 +94,14 @@ void PlayerOwnedManager::Tick1Sec()
 				
 				int32 spyInfluenceGainPerRound = _simulation->GetSpyNestInfluenceGainPerRound(spyPlayerId, nest->townId());
 
-				int32 spyInfluenceGainPer2Sec = GameRand::RandRound(spyInfluenceGainPerRound * GameConstants::BaseFloatupIntervalSec, Time::TicksPerSecond);
+				int32 spyInfluenceGainPerXSec = GameRand::RandRound(spyInfluenceGainPerRound * GameConstants::BaseFloatupIntervalSec, Time::TicksPerSecond);
 
-				_simulation->ChangeInfluence(nest->playerId(), -spyInfluenceGainPer2Sec);
-				_simulation->ChangeInfluence(_playerId, spyInfluenceGainPer2Sec);
-				_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, nest->centerTile(), TEXT_NUMSIGNED(spyInfluenceGainPer2Sec));
+				// Can't steal if already 0 influence for target
+				spyInfluenceGainPerXSec = std::min(spyInfluenceGainPerXSec, _simulation->influence(nest->playerId()));
+
+				_simulation->ChangeInfluence(nest->playerId(), -spyInfluenceGainPerXSec);
+				_simulation->ChangeInfluence(_playerId, spyInfluenceGainPerXSec);
+				_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, nest->centerTile(), TEXT_NUMSIGNED(spyInfluenceGainPerXSec));
 			}
 		}
 	}

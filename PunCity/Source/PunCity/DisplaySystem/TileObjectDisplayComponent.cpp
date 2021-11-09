@@ -186,9 +186,11 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 		FString orangeMeshName = GetMeshName(TileObjEnum::Orange, 2); //  GetTileObjInfo(TileObjEnum::Orange).nameFStr() + FString::FromInt(2);
 		FString papayaMeshName = GetMeshName(TileObjEnum::Papaya, 2); //GetTileObjInfo(TileObjEnum::Papaya).nameFStr() + FString::FromInt(2);
 		FString cococutMeshName = GetMeshName(TileObjEnum::Coconut, 2); //GetTileObjInfo(TileObjEnum::Coconut).nameFStr() + FString::FromInt(2);
+		FString dateMeshName = GetMeshName(TileObjEnum::DesertDatePalm, 2);
 		meshes->SetCustomDepth(orangeMeshName, customDepth);
 		meshes->SetCustomDepth(papayaMeshName, customDepth);
 		meshes->SetCustomDepth(cococutMeshName, customDepth);
+		meshes->SetCustomDepth(dateMeshName, customDepth);
 	}
 
 

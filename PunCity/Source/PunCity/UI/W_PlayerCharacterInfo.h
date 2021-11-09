@@ -20,13 +20,13 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* FactionName;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerName;
 
-	void UpdatePlayerInfo(const FPlayerInfo& playerInfo, const TArray<UTexture2D*>& playerLogos, const TArray<UTexture2D*>& playerCharacters)
+	void UpdatePlayerInfo(const FPlayerInfo& playerInfo, const TArray<UTexture2D*>& playerLogos, const TMap<FString, UTexture2D*>& playerCharacters)
 	{
 		LogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", playerLogos[playerInfo.logoIndex]);
 		LogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
 		LogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
 		
-		CharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", playerCharacters[playerInfo.characterIndex]);
+		CharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", playerCharacters[playerInfo.portraitName]);
 
 		FactionName->SetText(GetFactionInfoInt(playerInfo.factionIndex).name);
 		PlayerName->SetText(playerInfo.name);

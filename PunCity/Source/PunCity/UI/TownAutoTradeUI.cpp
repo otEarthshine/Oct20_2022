@@ -184,7 +184,7 @@ void UTownAutoTradeUI::TickUI()
 			TownManagerBase* townManagerBase = sim.townManagerBase(townId);
 
 			const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
-			const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoExportElementsConst();
+			const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElementsConst();
 
 
 			int32 hash = townId;
@@ -274,148 +274,6 @@ void UTownAutoTradeUI::TickUI()
 	 * Money
 	 */
 	{
-		//auto& townManager = sim.townManager(uiTownId); // AutoTrade UI's townId can only be major town
-
-		//const std::vector<AutoTradeElement>& autoExportElements = townManager.autoExportElements();
-		//const std::vector<AutoTradeElement>& autoImportElements = townManager.autoImportElements();
-
-		//// Check all Trade Route to find any fee discount
-		//// - Do this separately with TradeRoutePair so we can show which TradeRoute is giving the discount
-
-		//auto addResource = [&](std::vector<ResourcePair>& vec, ResourcePair pair)
-		//{
-		//	for (int32 i = 0; i < vec.size(); i++) {
-		//		if (vec[i].resourceEnum == pair.resourceEnum) {
-		//			vec[i].count += pair.count;
-		//			return;
-		//		}
-		//	}
-		//	vec.push_back(pair);
-		//};
-
-		//auto findDirectResource = [&](std::vector<ResourcePair>& vec, ResourceEnum resourceEnum){
-		//	for (int32 i = 0; i < vec.size(); i++) {
-		//		if (vec[i].resourceEnum == resourceEnum) {
-		//			return vec[i].count;
-		//		}
-		//	}
-		//	return 0;
-		//};
-
-		//const int32 feePercent = 40; // TODO: allow people to manipulate this by building more Trading Company etc.
-
-		//TArray<FText> feeDiscountTooltipText;
-
-		//
-		//std::vector<ResourcePair> directExportResources;
-		//std::vector<ResourcePair> directImportResources;
-
-		////! fill directExport/ImportResources
-		////!
-		//const std::vector<TradeRoutePair>& tradeRoutePairs = worldTradeSys.tradeRoutePairs();
-		//for (const TradeRoutePair& tradeRoutePair : tradeRoutePairs)
-		//{
-		//	if (tradeRoutePair.HasTownId(uiTownId))
-		//	{
-		//		for (const TradeRouteResourcePair& tradeResourcePair : tradeRoutePair.tradeResources)
-		//		{
-		//			bool isExport = (tradeRoutePair.townId1 == uiTownId && tradeResourcePair.isTown1ToTown2) ||
-		//							(tradeRoutePair.townId2 == uiTownId && !tradeResourcePair.isTown1ToTown2);
-
-		//			ResourcePair pair = tradeResourcePair.resourcePair;
-		//			
-		//			if (isExport) {
-		//				addResource(directExportResources, pair);
-		//			} else {
-		//				addResource(directImportResources, pair);
-		//			}
-
-		//			// feeDiscountTooltipText
-		//			int32 feeDiscount = pair.count * worldTradeSys.price100(pair.resourceEnum) * feePercent / 100;
-		//			if (feeDiscount > 0) {
-		//				FText mainText = isExport ?
-		//					LOCTEXT("feeDiscountTooltipText_Export", "\n  {0}<img id=\"Coin\"/> export {1} {2} to {3}") :
-		//					LOCTEXT("feeDiscountTooltipText_Import", "\n  {0}<img id=\"Coin\"/> import {1} {2} from {3}");
-		//				
-		//				feeDiscountTooltipText.Add(FText::Format(
-		//					mainText,
-		//					TEXT_100(feeDiscount),
-		//					TEXT_NUM(pair.count),
-		//					GetResourceInfo(pair.resourceEnum).name,
-		//					sim.townNameT(uiTownId)
-		//				));
-		//			}
-		//		}
-		//	}
-		//}
-		//
-
-		//int32 exportMoneyTotal = 0;
-		//int32 importMoneyTotal = 0;
-		//int32 feeTotal = 0;
-		//int32 feeDiscountTotal = 0;
-		//
-		//TArray<FText> exportTooltipText;
-		//TArray<FText> importTooltipText;
-		//TArray<FText> feeTooltipText;
-
-
-		//for (const AutoTradeElement& exportElement : autoExportElements) 
-		//{
-		//	int32 price100 = worldTradeSys.price100(exportElement.resourceEnum);
-		//	int32 exportMoney = exportElement.calculatedTradeAmountNextRound * price100;
-
-		//	FText resourceName = GetResourceInfo(exportElement.resourceEnum).GetName();
-		//	
-		//	exportMoneyTotal += exportMoney;
-		//	exportTooltipText.Add(FText::Format(
-		//		LOCTEXT("exportTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(exportMoney), resourceName
-		//	));
-
-		//	int32 directTradeAmount = findDirectResource(directExportResources, exportElement.resourceEnum);
-		//	
-		//	int32 feeDiscount = directTradeAmount * price100 * feePercent / 100;
-		//	int32 fee = exportMoney - feeDiscount;
-
-		//	feeDiscountTotal += feeDiscount;
-		//	feeTotal += fee;
-
-		//	if (fee > 0) {
-		//		feeTooltipText.Add(FText::Format(
-		//			LOCTEXT("exportFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} export\n"), TEXT_100(fee), resourceName
-		//		));
-		//	}
-		//}
-		//
-		//for (const AutoTradeElement& importElement : autoImportElements) 
-		//{
-		//	int32 price100 = worldTradeSys.price100(importElement.resourceEnum);
-		//	int32 importMoney = importElement.calculatedTradeAmountNextRound * price100;
-
-		//	FText resourceName = GetResourceInfo(importElement.resourceEnum).GetName();
-
-		//	importMoneyTotal += importMoney;
-		//	importTooltipText.Add(FText::Format(
-		//		LOCTEXT("importTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1}\n"), TEXT_100(importMoney), resourceName
-		//	));
-
-		//	int32 directTradeAmount = findDirectResource(directImportResources, importElement.resourceEnum);
-
-		//	int32 feeDiscount = directTradeAmount * price100 * feePercent / 100;
-		//	int32 fee = (importMoney * feePercent / 100) - feeDiscount;
-
-		//	feeDiscountTotal += feeDiscount;
-		//	feeTotal += fee;
-
-		//	if (fee > 0) {
-		//		feeTooltipText.Add(FText::Format(
-		//			LOCTEXT("importFeeTooltipText_Elem", "  {0}<img id=\"Coin\"/> {1} import\n"), TEXT_100(fee), resourceName
-		//		));
-		//	}
-		//}
-
-
-
 		int32 exportMoneyTotal = 0;
 		int32 importMoneyTotal = 0;
 		int32 feeTotal = 0;
@@ -481,12 +339,14 @@ void UTownAutoTradeUI::TickUI()
 		AddToolTip(ImportMoneyLeftText, importTooltipText);
 
 		// Fee
+		int32 tradingFeePercent = Building::baseTradingFeePercent(uiTownId, &sim, true);
 		FeeText->SetText(FText::Format(
-			INVTEXT("<img id=\"Coin\"/>{0} ({1}%)"), TEXT_100(feeTotal), TEXT_NUM(TownManagerBase::BaseAutoTradeFeePercent))
+			INVTEXT("<img id=\"Coin\"/>{0} ({1}%)"), TEXT_100(feeTotal), TEXT_NUM(tradingFeePercent))
 		);
 		feeTooltipText.Insert(FText::Format(
-			LOCTEXT("feeTooltipText", "Fee: <img id=\"Coin\"/>{0} ({1}%)<space>"), TEXT_100(feeTotal), TEXT_NUM(TownManagerBase::BaseAutoTradeFeePercent)
+			LOCTEXT("feeTooltipText", "Fee: <img id=\"Coin\"/>{0} ({1}%)<space>"), TEXT_100(feeTotal), TEXT_NUM(tradingFeePercent)
 		), 0);
+		
 		AddToolTip(FeeText, feeTooltipText, false);
 		AddToolTip(FeeLeftText, feeTooltipText);
 

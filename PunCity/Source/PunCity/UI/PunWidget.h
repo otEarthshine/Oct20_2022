@@ -495,6 +495,21 @@ public:
 		
 		return nullptr;
 	}
+
+	template<typename T>
+	static void FindChildrenRecursive(UPanelWidget* widget, TArray<T*>& results)
+	{
+		for (int32 i = 0; i < widget->GetChildrenCount(); i++)
+		{
+			if (T* result = Cast<T>(widget->GetChildAt(i))) {
+				results.Add(result);
+			}
+
+			if (UPanelWidget* panelWidget = Cast<UPanelWidget>(widget->GetChildAt(i))) {
+				FindChildrenRecursive<T>(panelWidget, results);
+			}
+		}
+	}
 	
 
 public:

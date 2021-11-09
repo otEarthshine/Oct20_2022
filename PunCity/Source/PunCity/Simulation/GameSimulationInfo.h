@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 56 // 3 digit
+#define MINOR_VERSION 59 // 3 digit
 
-#define VERSION_DAY 26
-#define VERSION_MONTH 10
+#define VERSION_DAY 4
+#define VERSION_MONTH 11
 #define VERSION_YEAR 21
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -32,10 +32,10 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 36 // 3 digit
+#define MINOR_SAVE_VERSION 38 // 3 digit
 
-#define VERSION_SAVE_DAY 26
-#define VERSION_SAVE_MONTH 10
+#define VERSION_SAVE_DAY 4
+#define VERSION_SAVE_MONTH 11
 #define VERSION_SAVE_YEAR 21
 
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -2406,7 +2406,7 @@ enum class CardEnum : uint16
 	SacrificialAltar,
 	StoneStele,
 	BallCourtGoals,
-	FeatherCrown,
+	DecorativePlate,
 	
 	CanopicJars,
 	DepartureScrolls,
@@ -2593,7 +2593,7 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::Granary, 10 },
 
 	{ CardEnum::TradingPost, 20 },
-	{ CardEnum::TradingCompany, 10 },
+	{ CardEnum::TradingCompany, 20 },
 	{ CardEnum::TradingPort, 20 },
 	{ CardEnum::CardMaker, 20 },
 	{ CardEnum::ImmigrationOffice, 10 },
@@ -3002,15 +3002,7 @@ struct BldInfo
 
 	int32 minEra() const { return resourceInfo.era; }
 
-	std::vector<int32> GetConstructionResources(FactionEnum factionEnum) const
-	{
-		if (factionEnum == FactionEnum::Arab) {
-			if (cardEnum == CardEnum::House) {
-				return GetConstructionResourceListFromResourcePairs({ ResourcePair(ResourceEnum::Clay, 20) });
-			}
-		}
-		return constructionResources;
-	}
+	std::vector<int32> GetConstructionResources(FactionEnum factionEnum) const;
 	
 
 	BldInfo(CardEnum buildingEnum,
@@ -3411,7 +3403,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::TradingPost, _LOCTEXT("Trading Post", "Trading Post"),		LOCTEXT("Trading Post (Plural)", "Trading Posts"), LOCTEXT("Trading Post Desc", "Trade resources with world market."),
 		WorldTile2(8, 8), GetBldResourceInfoManual({50, 50})
 	),
-	BldInfo(CardEnum::TradingCompany, _LOCTEXT("Trading Company", "Trading Company"), LOCTEXT("Trading Company (Plural)", "Trading Companies"), LOCTEXT("Trading Company Desc", "Automatically trade resources with world market with low trade fees."),
+	BldInfo(CardEnum::TradingCompany, _LOCTEXT("Trading Company", "Trading Company"), LOCTEXT("Trading Company (Plural)", "Trading Companies"), LOCTEXT("Trading Company Desc", "Automatically trade resources with world market."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({ 50, 50 }, 0, 2)
 	),
 	BldInfo(CardEnum::TradingPort, _LOCTEXT("Trading Port", "Trading Port"),		LOCTEXT("Trading Port (Plural)", "Trading Ports"), LOCTEXT("Trading Port Desc", "Trade resources with world market. Must be built on the coast."),
@@ -3769,10 +3761,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 12), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Slot Animal Cards to get bonuses."),
-		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100, 100 })
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
 	),
 	BldInfo(CardEnum::Museum, _LOCTEXT("Museum", "Museum"), LOCTEXT("Museum (Plural)", "Museums"), LOCTEXT("Museum Desc", "Slot Artifact Cards to get bonuses"),
-		WorldTile2(10, 8), GetBldResourceInfoManual({})
+		WorldTile2(10, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
 	),
 	BldInfo(CardEnum::Embassy, _LOCTEXT("Embassy", "Embassy"), LOCTEXT("Embassy (Plural)", "Embassy"), LOCTEXT("Embassy Desc", "+50<img id=\"Influence\"/> income for builder and host player."),
 		WorldTile2(6, 6), GetBldResourceInfoManual({ 200 })
@@ -3787,7 +3779,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
 	BldInfo(CardEnum::PolicyOffice, _LOCTEXT("Policy Office", "Policy Office"), LOCTEXT("Policy Office (Plural)", "Policy Office"), LOCTEXT("Policy Office Desc", ""),
-		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
 	),
 	BldInfo(CardEnum::WorldTradeOffice, _LOCTEXT("World Trade Office", "World Trade Office"), LOCTEXT("World Trade Office (Plural)", "World Trade Office"), LOCTEXT("World Trade Office Desc", ""),
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
@@ -3820,7 +3812,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(1, 1), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", ""),
-		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Wool, ResourceEnum::Dye, ResourceEnum::Carpet }, { 0, 0, 0, 5, 10, 5, 0 }, 0, 130)
+		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Wool, ResourceEnum::Dye, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
 	),
 	BldInfo(CardEnum::BathHouse, _LOCTEXT("Bath House", "Bath House"), LOCTEXT("Bath House (Plural)", "Bath Houses"), LOCTEXT("Bath House Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
@@ -3916,8 +3908,8 @@ static const BldInfo CardInfos[]
 	// Zoo animals
 	BldInfo(CardEnum::Boar,				_LOCTEXT("Boar", "Boar"), 1000, LOCTEXT("Boar Desc", "+5% City Attractiveness when placed in Zoo Collection")),
 	BldInfo(CardEnum::RedDeer,			_LOCTEXT("Red Deer", "Red Deer"), 1000, LOCTEXT("Red Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
-	BldInfo(CardEnum::YellowDeer,		_LOCTEXT("Yellow Deer", "Yellow Deer"), 1000, LOCTEXT("Yellow Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
-	BldInfo(CardEnum::DarkDeer,			_LOCTEXT("Dark Deer", "Dark Deer"), 1000, LOCTEXT("Dark Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::YellowDeer,		_LOCTEXT("Mule Deer", "Mule Deer"), 1000, LOCTEXT("Yellow Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
+	BldInfo(CardEnum::DarkDeer,			_LOCTEXT("Sambar Deer", "Sambar Deer"), 1000, LOCTEXT("Dark Deer Desc", "+5% City Attractiveness when placed in Zoo Collection")),
 
 	BldInfo(CardEnum::BrownBear,		_LOCTEXT("Brown Bear", "Brown Bear"), 1000, LOCTEXT("Brown Bear Desc", "+5% City Attractiveness when placed in Zoo Collection")),
 	BldInfo(CardEnum::BlackBear,		_LOCTEXT("Black Bear", "Black Bear"), 1000, LOCTEXT("Black Bear Desc", "+5% City Attractiveness when placed in Zoo Collection)")),
@@ -3933,7 +3925,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::SacrificialAltar,	_LOCTEXT("Sacrificial Altar", "Sacrificial Altar"), 1000, LOCTEXT("Sacrificial Altar Desc","+5% City Attractiveness when placed in Museum Collection")),
 	BldInfo(CardEnum::StoneStele,		_LOCTEXT("Stone Stele", "Stone Stele"), 1000,			LOCTEXT("Stone Stele Desc","+5% City Attractiveness when placed in Museum Collection")),
 	BldInfo(CardEnum::BallCourtGoals,	_LOCTEXT("Ball Court Goals", "Ball Court Goals"), 1000, LOCTEXT("Ball Court Goals Desc","+5% City Attractiveness when placed in Museum Collection")),
-	BldInfo(CardEnum::FeatherCrown,		_LOCTEXT("Feather Crown", "Feather Crown"), 1000,		LOCTEXT("Feather Crown Desc","+5% City Attractiveness when placed in Museum Collection")),
+	BldInfo(CardEnum::DecorativePlate,		_LOCTEXT("Decorative Plate", "Decorative Plate"), 1000,		LOCTEXT("Feather Crown Desc","+5% City Attractiveness when placed in Museum Collection")),
 
 	BldInfo(CardEnum::CanopicJars,		_LOCTEXT("Canopic Jars", "Canopic Jars"), 1000,			LOCTEXT("Canopic Jars Desc","+5% City Attractiveness when placed in Museum Collection")),
 	BldInfo(CardEnum::DepartureScrolls,	_LOCTEXT("Departure Scrolls", "Departure Scrolls"), 1000, LOCTEXT("Departure Scrolls Desc","+5% City Attractiveness when placed in Museum Collection")),
@@ -8077,6 +8069,7 @@ enum class PlayerCallOnceActionEnum : uint8
 {
 	ForeignBuiltSuccessfulPopup,
 	LowTourismHappinessPopup,
+	UnlockCaravan,
 	Count
 };
 static const int32 CallOnceEnumCount = static_cast<int32>(PlayerCallOnceActionEnum::Count);
@@ -8486,6 +8479,8 @@ enum class FloatupEnum : uint8
 	GainMoney,
 	GainScience,
 	GainInfluence,
+
+	GainInfluence_With0,
 };
 struct FloatupInfo
 {
@@ -9680,7 +9675,7 @@ const float WorldZoomTransition_Region4x4ToMap = GetCameraZoomAmount(ZoomStep_Re
 const float WorldZoomTransition_Region4x4ToMap_SlightBelow = GetCameraZoomAmount(ZoomStep_Region4x4ToMap - 1); // 1900
 
 const float WorldZoomTransition_Buildings = 810;
-const float WorldZoomTransition_BuildingsMini = WorldZoomTransition_Region4x4ToMap;
+const float WorldZoomTransition_BuildingsMini = WorldZoomTransition_RegionToRegion4x4; // Nov 3: WorldZoomTransition_Region4x4ToMap;
 
 const float WorldToMapZoomAmount = WorldZoomTransition_Region4x4ToMap;
 
@@ -10056,7 +10051,7 @@ enum class CallbackEnum : uint8
 	// Lobby Player Settings
 	ChoosePlayerLogo,
 	ChoosePlayerColor1,
-	ChoosePlayerColor2,
+	//ChoosePlayerColor2,
 	ChoosePlayerCharacter,
 };
 
@@ -10600,7 +10595,7 @@ public:
 	std::vector<int32> logoIndices;
 	FLinearColor logoColor1;
 	FLinearColor logoColor2;
-	int32 characterIndex;
+	FString portraitName;
 	int32 factionIndex;
 
 	FactionEnum factionEnum() const { return static_cast<FactionEnum>(factionIndex); }
@@ -10631,7 +10626,7 @@ static const std::vector<AIArchetypeInfo> AIArchetypeInfos =
 		{ 0, 1, 2, 3, 4, 5, 6, 7, 8 },
 		FLinearColor::Black,
 		FLinearColor::Yellow,
-		1,
+		"DefaultWhiteFemale",
 		0
 	},
 	{ AIArchetypeEnum::Peaceful2,
@@ -10639,7 +10634,7 @@ static const std::vector<AIArchetypeInfo> AIArchetypeInfos =
 		{ 0, 1, 2, 3, 4, 5, 6, 7, 8 },
 		FLinearColor::Black,
 		FLinearColor::Yellow,
-		1,
+		"DefaultWhiteFemale",
 		0
 	},
 };
@@ -10722,7 +10717,7 @@ static const std::vector<CardSetInfo> ZooSetInfos
 
 static const std::vector<CardSetInfo> MuseumSetInfos
 {
-	CardSetInfo(LOCTEXT("Prosperity", "Prosperity"),		LOCTEXT("Prosperity Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::Codex, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
+	CardSetInfo(LOCTEXT("Prosperity", "Prosperity"),		LOCTEXT("Prosperity Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::DecorativePlate, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
 	CardSetInfo(LOCTEXT("Mummification", "Mummification"), LOCTEXT("Mummification Desc", ""), { CardEnum::CanopicJars, CardEnum::DepartureScrolls, CardEnum::DeathMask }),
 	CardSetInfo(LOCTEXT("Pilgrimage", "Pilgrimage"),		LOCTEXT("Pilgrimage Desc", "Hotel gives +50% influence bonus"), { CardEnum::FeastRemains, CardEnum::ForeignTrinkets, CardEnum::ChalkPlaque }),
 	CardSetInfo(LOCTEXT("Islander Life", "Islander Life"), LOCTEXT("Islander Life Desc", "+50%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::TatooingNeedles, CardEnum::Petroglyphs, CardEnum::StoneFishhooks }),
@@ -10730,7 +10725,7 @@ static const std::vector<CardSetInfo> MuseumSetInfos
 	CardSetInfo(LOCTEXT("A Fulfilled Life", "A Fulfilled Life"), LOCTEXT("A Fulfilled Life Desc", "Every 2% Happiness above 70%,\ngives +1% productivity (town)"), { CardEnum::BallCourtGoals, CardEnum::SolarBarque }),
 	CardSetInfo(LOCTEXT("Remembrance", "Remembrance"),		LOCTEXT("Remembrance Desc", "+1% City Attractiveness for each House Lv 8\n(per city, max 100%)"), { CardEnum::OfferingCup, CardEnum::CoralEyes }),
 
-	CardSetInfo(LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("Royal Heritage Desc", "Every 1% City Attractiveness gives \n+1%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::FeatherCrown, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
+	CardSetInfo(LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("Royal Heritage Desc", "Every 1% City Attractiveness gives \n+1%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::Codex, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
 };
 
 static const std::vector<CardSetInfo> CardCombinerSetInfos

@@ -293,19 +293,19 @@ void Building::FinishConstruction()
 
 
 	//! Foreign Builder
-	if (foreignBuilder() != -1)
+	if (foreignBuilderId() != -1)
 	{
 		// Foreign Investment
-		if (_simulation->HasForeignBuildingWithUpgrade(foreignBuilder(), _townId, CardEnum::Embassy, 0))
+		if (_simulation->HasForeignBuildingWithUpgrade(foreignBuilderId(), _townId, CardEnum::Embassy, 0))
 		{
 			int32 influenceGained = GetQuickBuildBaseCost(buildingEnum(), GetConstructionResourceCost(), [&](ResourceEnum resourceEnum) { return 0; }) / 2;
-			_simulation->ChangeInfluence(foreignBuilder(), influenceGained);
+			_simulation->ChangeInfluence(foreignBuilderId(), influenceGained);
 			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceGained));
 		}
 
 		// Popup Once
-		if (_simulation->TryDoCallOnceAction(foreignBuilder(), PlayerCallOnceActionEnum::ForeignBuiltSuccessfulPopup)) {
-			_simulation->AddPopupToFront(foreignBuilder(),
+		if (_simulation->TryDoCallOnceAction(foreignBuilderId(), PlayerCallOnceActionEnum::ForeignBuiltSuccessfulPopup)) {
+			_simulation->AddPopupToFront(foreignBuilderId(),
 				LOCTEXT("ForeignBuiltSuccessful_Popup", "Successfully built on foreign land.<space>Note: You retain the rights to demolish this building.")
 			);
 		}
@@ -721,6 +721,10 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	// Special case: Ancient Wonders
 	if (IsAncientWonderCardEnum(buildingEnum())) {
 		resourceNeeded.count = resourceNeeded.count * subclass<ProvinceRuin>().GetDigDistanceFactor(upgraderPlayerId) / 100;
+
+		if (_simulation->IsTileOwnedByForeignPlayer(upgraderPlayerId, centerTile())) {
+			resourceNeeded.count = resourceNeeded.count * 3; // Stealing incur x3 cost
+		}
 	}
 	
 	
@@ -1623,43 +1627,46 @@ void Building::TryRemoveDeliveryTarget()
 /*
  * Bonus
  */
-std::vector<BonusPair> Building::GetTradingFeeBonuses()
+std::vector<BonusPair> Building::GetTradingFeeBonuses(int32 townId, IGameSimulationCore* simulation, bool isAutoTrade)
 {
+	int32 playerId = simulation->townPlayerId(townId);
+	
 	std::vector<BonusPair> bonuses;
 
-	int32 eraLevel = GetUpgradeEraLevel();
-	if (eraLevel > 1) {
-		bonuses.push_back({ LOCTEXT("Trade Building Upgrade Level", "Upgrade Level"), -5 * (eraLevel - 1) });
+	//int32 eraLevel = GetUpgradeEraLevel();
+	//if (eraLevel > 1) {
+	//	bonuses.push_back({ LOCTEXT("Trade Building Upgrade Level", "Upgrade Level"), -5 * (eraLevel - 1) });
+	//}
+
+	//if (isEnum(CardEnum::TradingCompany)) {
+	//	bonuses.push_back({ LOCTEXT("Trading Company", "Trading Company"), -5 });
+
+	//	if (simulation->TownhallCardCountTown(_townId, CardEnum::CompaniesAct)) {
+	//		bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), -10 });
+	//	}
+
+	//	//if (simulation->IsResearched(playerId(), TechEnum::TraderDiscount)) {
+	//	//	if (adjacentCount(CardEnum::TradingPort) > 0) {
+	//	//		bonuses.push_back({ LOCTEXT("Trader Discount", "Trader Discount"), -5 });
+	//	//	}
+	//	//}
+	//}
+
+	if (isAutoTrade && simulation->TownhallCardCountTown(townId, CardEnum::CompaniesAct)) {
+		bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), -10 });
 	}
 
-	if (isEnum(CardEnum::TradingCompany)) {
-		bonuses.push_back({ LOCTEXT("Trading Company", "Trading Company"), -5 });
-
-		if (_simulation->TownhallCardCountTown(_townId, CardEnum::CompaniesAct)) {
-			bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), -10 });
-		}
-	}
-
-	if (_simulation->townBuildingFinishedCount(_townId, CardEnum::MerchantGuild)) {
+	if (simulation->townBuildingFinishedCount(townId, CardEnum::MerchantGuild)) {
 		bonuses.push_back({ LOCTEXT("Merchant Guild", "Merchant Guild"), -5 });
 	}
 
-	if (_simulation->IsResearched(playerId(), TechEnum::TraderDiscount))
-	{
-		if (isEnum(CardEnum::TradingCompany)) {
-			if (adjacentCount(CardEnum::TradingPort) > 0) {
-				bonuses.push_back({ LOCTEXT("Trader Discount", "Trader Discount"), -5 });
-			}
-		}
-	}
+	//if (simulation->IsResearched(playerId(), TechEnum::DesertTrade) &&
+	//	simulation->GetBiomeEnum(_centerTile) == BiomeEnum::Desert)
+	//{
+	//	bonuses.push_back({ LOCTEXT("Silk Road", "Silk Road"), -10 });
+	//}
 
-	if (_simulation->IsResearched(playerId(), TechEnum::DesertTrade) &&
-		_simulation->GetBiomeEnum(_centerTile) == BiomeEnum::Desert)
-	{
-		bonuses.push_back({ LOCTEXT("Silk Road", "Silk Road"), -10 });
-	}
-
-	if (int32 tradeRelationsTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::TradeRelations)) {
+	if (int32 tradeRelationsTechUpgradeCount = simulation->GetTechnologyUpgradeCount(playerId, TechEnum::TradeRelations)) {
 		bonuses.push_back({ LOCTEXT("Trade Relations", "Trade Relations"), -2 * tradeRelationsTechUpgradeCount });
 	}
 
@@ -1837,8 +1844,8 @@ FactionEnum Building::factionEnum() const
 	if (_simulation == nullptr) {
 		return FactionEnum::None;
 	}
-	if (foreignBuilder() != -1) {
-		return _simulation->playerOwned(foreignBuilder()).factionEnum();
+	if (foreignBuilderId() != -1) {
+		return _simulation->playerOwned(foreignBuilderId()).factionEnum();
 	}
 	TownManagerBase* townManagerBase = _simulation->townManagerBaseNullable(_townId);
 	return townManagerBase ? townManagerBase->factionEnum() : FactionEnum::Europe;

@@ -1239,53 +1239,56 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							/*
 							 * Spy Nest
 							 */
-							// TODO: show more info than Townhall ???
-							
-							if (house->spyPlayerId() != playerId())
+							 // TODO: show more info than Townhall ???
+							if (sim.IsResearched(playerId(), TechEnum::SpyCenter))
 							{
-								int32 spyNestPrice = sim.GetSpyNestPrice(playerId(), house->townId());
-
-								UPunButton* button = focusBox->AddButton2Lines(
-									FText::Format(
-										LOCTEXT("EstablishSpyNest_Button", "Establish Spy Nest\n<img id=\"Coin\"/>{0}"),
-										TextRed(TEXT_NUM(spyNestPrice), spyNestPrice > sim.moneyCap32(playerId()))
-									),
-									this, CallbackEnum::SpyEstablishNest, true, false, objectId
-								);
-
-								// Tooltip
-								AddToolTip(button, 
-									LOCTEXT("EstablishSpyNest_Tip", "Establish a Spy Nest.<space>Spy Cards used in this City will not reveal your identity.<space>+30% Spy Bonus when using Spy Cards in this City.")
-								);
-							}
-							else
-							{
-								FText anonymityText;
-								bool showEnabled = true;
-								
-								if (house->isConcealed()) {
-									anonymityText = LOCTEXT("EnsureAnonymity_Button", "Ensure Anonymity\n(Upgraded)");
-									showEnabled = false;
-								}
-								else {
+								if (house->spyPlayerId() != playerId())
+								{
 									int32 spyNestPrice = sim.GetSpyNestPrice(playerId(), house->townId());
-									
-									anonymityText = FText::Format(
-										LOCTEXT("EnsureAnonymity_Button", "Ensure Anonymity\n<img id=\"Coin\"/>{0}"),
-										TextRed(TEXT_NUM(spyNestPrice), spyNestPrice > sim.moneyCap32(playerId()))
+
+									UPunButton* button = focusBox->AddButton2Lines(
+										FText::Format(
+											LOCTEXT("EstablishSpyNest_Button", "Establish Spy Nest\n<img id=\"Coin\"/>{0}"),
+											TextRed(TEXT_NUM(spyNestPrice), spyNestPrice > sim.moneyCap32(playerId()))
+										),
+										this, CallbackEnum::SpyEstablishNest, true, false, objectId
+									);
+
+									// Tooltip
+									AddToolTip(button,
+										LOCTEXT("EstablishSpyNest_Tip", "Establish a Spy Nest.<space>Spy Cards used in this City will not reveal your identity.<space>+30% Spy Bonus when using Spy Cards in this City.")
 									);
 								}
-								
-								UPunButton* button = focusBox->AddButton2Lines(
-									anonymityText,
-									this, CallbackEnum::SpyEnsureAnonymity, showEnabled, false, objectId
-								);
+								else
+								{
+									FText anonymityText;
+									bool showEnabled = true;
 
-								// Tooltip
-								AddToolTip(button, 
-									LOCTEXT("ConcealSpyNest_Tip", "Upgrade benefit: If your Spy Nest is found, you will not be revealed as the owner of this Spy Nest.")
-								);
+									if (house->isConcealed()) {
+										anonymityText = LOCTEXT("EnsureAnonymity_Button", "Ensure Anonymity\n(Upgraded)");
+										showEnabled = false;
+									}
+									else {
+										int32 spyNestPrice = sim.GetSpyNestPrice(playerId(), house->townId());
+
+										anonymityText = FText::Format(
+											LOCTEXT("EnsureAnonymity_Button", "Ensure Anonymity\n<img id=\"Coin\"/>{0}"),
+											TextRed(TEXT_NUM(spyNestPrice), spyNestPrice > sim.moneyCap32(playerId()))
+										);
+									}
+
+									UPunButton* button = focusBox->AddButton2Lines(
+										anonymityText,
+										this, CallbackEnum::SpyEnsureAnonymity, showEnabled, false, objectId
+									);
+
+									// Tooltip
+									AddToolTip(button,
+										LOCTEXT("ConcealSpyNest_Tip", "Upgrade benefit: If your Spy Nest is found, you will not be revealed as the owner of this Spy Nest.")
+									);
+								}
 							}
+
 						}
 					}
 					else if (building.isEnum(CardEnum::Townhall))
@@ -1391,7 +1394,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							if (science100PerRound > 0) {
 								focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 									LOCTEXT("Science", "Science"),
-									FText::AsNumber(science100PerRound),
+									TEXT_100(science100PerRound),
 									assetLoader->ScienceIcon
 								);
 								
@@ -1940,7 +1943,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								);
 							}
 
-							if (provinceRuin.GetDigDistanceFactor(playerId()) > 100) {
+							if (sim.IsTileOwnedByForeignPlayer(playerId(), provinceRuin.centerTile())) {
+								focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("RuinFarFromTownhall_FocusUI", "Excavating sneakily in foreign territory incur cost penalty")));
+							}
+							else if (provinceRuin.GetDigDistanceFactor(playerId()) > 100) {
 								focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("RuinFarFromTownhall_FocusUI", "Excavating far from Townhall incur cost penalty")));
 							}
 						}
@@ -1950,7 +1956,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						const DiplomaticBuilding& diplomaticBuilding = building.subclass<DiplomaticBuilding>();
 
-						bool isHostOrForeignBuilder = building.playerId() == playerId() || building.foreignBuilder() == playerId();
+						bool isHostOrForeignBuilder = building.playerId() == playerId() || building.foreignBuilderId() == playerId();
 						if (isHostOrForeignBuilder) {
 							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Influence Income", "Influence Income"), TEXT_100(diplomaticBuilding.influenceIncome100(playerId())), assetLoader->InfluenceIcon);
 							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Money Income", "Money Income"), TEXT_100(diplomaticBuilding.moneyIncome100(playerId())), assetLoader->CoinIcon);
@@ -2333,6 +2339,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
 							LOCTEXT("AttackRequires", "Attacking this province requires 100% more <img id=\"Influence\"/>.")
 						);
+
+						
 					}
 					else if (IsPowerPlant(buildingEnum))
 					{
@@ -3339,7 +3347,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 				bool isUpgraderPlayer;
 				if (IsForeignOnlyBuilding(buildingEnum)) {
-					isUpgraderPlayer = building.foreignBuilder() == playerId();
+					isUpgraderPlayer = building.foreignBuilderId() == playerId();
 				} else {
 					isUpgraderPlayer = building.playerId() == playerId();
 				}
@@ -3419,9 +3427,16 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							ResourcePair resourceNeededPair = upgrade.currentUpgradeResourceNeeded();
 
 							// Special case: Ancient Wonders
-							if (IsAncientWonderCardEnum(building.buildingEnum())) {
-								ADDTEXT_(INVTEXT("{0}"), building.GetUpgradeDisplayName(upgradeIndex));
+							if (IsAncientWonderCardEnum(building.buildingEnum())) 
+							{
 								resourceNeededPair.count = resourceNeededPair.count * building.subclass<ProvinceRuin>().GetDigDistanceFactor(playerId()) / 100;
+								
+								if (sim.IsTileOwnedByForeignPlayer(playerId(), building.centerTile())) {
+									ADDTEXT_LOCTEXT("Steal Artifact", "Steal Artifact");
+									resourceNeededPair.count = resourceNeededPair.count * 3; // Stealing incur x3 cost
+								} else {
+									ADDTEXT_(INVTEXT("{0}"), building.GetUpgradeDisplayName(upgradeIndex));
+								}
 							}
 							else {
 								ADDTEXT_(LOCTEXT("Upgrade {0}", "Upgrade {0}"), building.GetUpgradeDisplayName(upgradeIndex));
@@ -3461,7 +3476,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Steel) { showResourceText("SteelBeam"); }
 								else if (resourceEnum == ResourceEnum::Influence) {
 									int32 influenceNeeded = resourceNeededPair.count;
-									FText influenceText = TextRed(TEXT_NUM(influenceNeeded), globalResourceSys.moneyCap32() < influenceNeeded);
+									FText influenceText = TextRed(TEXT_NUM(influenceNeeded), globalResourceSys.influence() > influenceNeeded);
 
 									ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), influenceText);
 								}
@@ -3891,9 +3906,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 			/*
 			 * Unit Capture Button
 			 */
-			if (IsWildAnimal(unit.unitEnum()))
+			if (IsWildAnimal(unit.unitEnum()) &&
+				sim.IsResearched(playerId(), TechEnum::Zoo))
 			{
 				int32 animalPrice = sim.GetCaptureAnimalPrice(playerId(), unit.unitEnum(), unit.unitTile());
+
+				if (sim.IsTileOwnedByForeignPlayer(playerId(), unit.unitTile())) {
+					focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("WildAnimalStealWarn_FocusUI", "Stealing animal from foreign territory incur extra cost")));
+				}
 
 				UPunButton* button = focusBox->AddButton2Lines(
 					FText::Format(

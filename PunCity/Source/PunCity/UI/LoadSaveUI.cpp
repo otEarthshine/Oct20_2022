@@ -115,7 +115,7 @@ void ULoadSaveUI::OnClickConfirmDeleteGameButton()
 		int32 oldSaveListCount = saveList.Num();
 		PUN_CHECK(activeIndex < oldSaveListCount)
 		
-		saveSystem().DeleteSave(saveList[activeIndex].folderPath);
+		saveSystem().DeleteSave(saveList[activeIndex].name);
 
 		RefreshSaveSelectionList(SaveActiveIndex_SelectFirstAvailable);
 	}

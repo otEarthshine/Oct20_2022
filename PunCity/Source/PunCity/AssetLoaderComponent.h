@@ -454,10 +454,10 @@ public:
 	const TArray<UTexture2D*>& GetPlayerLogos() const {
 		return _mainMenuAssetLoader->PlayerLogos;
 	}
-	UTexture2D* GetPlayerLogo(int32 playerId) const {
-		return _mainMenuAssetLoader->PlayerLogos[playerId];
+	UTexture2D* GetPlayerLogo(int32 logoIndex) const {
+		return _mainMenuAssetLoader->PlayerLogos[logoIndex];
 	}
-	const TArray<UTexture2D*>& GetPlayerCharacters() const {
+	const TMap<FString, UTexture2D*>& GetPlayerCharacters() const {
 		return _mainMenuAssetLoader->PlayerCharacters;
 	}
 	
@@ -636,6 +636,8 @@ public:
 	UPROPERTY(EditAnywhere) UTexture2D* WarningTools;
 	UPROPERTY(EditAnywhere) UTexture2D* WarningUnhappy;
 
+	UPROPERTY(EditAnywhere) UMaterial* M_LogoHover;
+
 	enum class HoverWarningEnum : uint8 {
 		Housing,
 		Starving,
@@ -644,6 +646,10 @@ public:
 		Tools,
 		UnhappyOrange,
 		UnhappyRed,
+
+		Logo,
+
+		Count,
 	};
 	UPROPERTY(EditAnywhere) TArray<UMaterialInstanceDynamic*> MI_HoverWarnings;
 	UMaterialInstanceDynamic* GetHoverWarningMaterial(HoverWarningEnum warningEnum)
@@ -829,19 +835,13 @@ private:
 	
 	void LinkBuilding(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
 		LinkBuilding(factionEnum, factionEnum, buildingEnum, moduleGroupName, auxGroup, minEra);
-		//CppUtils::AppendVec(auxGroup.particleInfos, _tempAuxGroup.particleInfos);
-		//CppUtils::AppendVec(auxGroup.animTransforms, _tempAuxGroup.animTransforms);
-		//CppUtils::AppendVec(auxGroup.togglableTransforms, _tempAuxGroup.togglableTransforms);
-		//_tempAuxGroup = ModuleTransformGroup();
-		//_lastTempAuxGroup = auxGroup;
-
-		//_factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)].Add(
-		//	ModuleTransformGroup::CreateSet(WithFactionName(factionEnum, moduleGroupName), auxGroup)
-		//);
-		//_factionEnumToBuildingEnumToMinEraModel[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)] = minEra;
 	}
 
-	void LinkBuilding(FactionEnum factionEnum, FactionEnum modelFactionEnum, CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1) {
+	// TODO: Link by just using _factionEnumToBuildingEnumToModuleGroups instead
+	void LinkBuilding(FactionEnum factionEnum, FactionEnum modelFactionEnum, CardEnum buildingEnum, FString moduleGroupName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1)
+	{
+		CppUtils::AppendVec(auxGroup.transforms, _tempAuxGroup.transforms);
+		CppUtils::AppendVec(auxGroup.miniModules, _tempAuxGroup.miniModules);
 		CppUtils::AppendVec(auxGroup.particleInfos, _tempAuxGroup.particleInfos);
 		CppUtils::AppendVec(auxGroup.animTransforms, _tempAuxGroup.animTransforms);
 		CppUtils::AppendVec(auxGroup.togglableTransforms, _tempAuxGroup.togglableTransforms);

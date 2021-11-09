@@ -9,6 +9,10 @@
 
 void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 {
+	if (isMini) {
+		SetRenderScale(FVector2D(0.5, 0.5));
+	}
+	
 	/*
 	 * City Name
 	 */

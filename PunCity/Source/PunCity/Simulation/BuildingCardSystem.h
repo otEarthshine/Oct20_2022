@@ -448,7 +448,10 @@ public:
 
 	std::vector<CardStatus> GetCardsBought_Display() {
 		std::vector<CardStatus> cardsBought = _cardsBought;
-		RemoveCards(cardsBought, pendingMilitarySlotCards);
+		RemoveCards_Static(cardsBought, pendingMilitarySlotCards);
+
+		RemoveCards_Static(cardsBought, pendingHiddenBoughtHandCards);
+		
 		return cardsBought;
 	}
 
@@ -492,24 +495,6 @@ public:
 		cardStacks.push_back(cardStatus);
 	}
 	
-
-	bool TryAddCardToBoughtHand(CardEnum cardEnum, int32 cardCount = 1)
-	{
-		if (CanAddCardToBoughtHand(cardEnum, cardCount)) {
-			AddCardToHand2(cardEnum);
-			return true;
-		}
-		return false;
-	}
-
-	//bool TryAddCardStatusToBoughtHand(CardStatus cardStatus)
-	//{
-	//	if (maxCardsBought > _cardsBought.size()) {
-	//		_cardsBought.push_back(cardStatus);
-	//		return true;
-	//	}
-	//	return false;
-	//}
 
 	CardStatus GetActualBoughtCardStatus(const CardStatus& cardStatusIn)
 	{
@@ -609,6 +594,7 @@ public:
 		// Sell command could be a duplicate, in that case return 1
 		return -1;
 	}
+	
 
 	//! Check cardBirthTicks
 	int32 RemoveCardsFromBoughtHand(CardStatus cardStatus, int32 removeCount)
@@ -631,59 +617,76 @@ public:
 		return -1;
 	}
 
-
-	void AddCards_BoughtHandAndInventory(CardStatus cardStatus)
+	int32 RemoveCardsFromBoughtHandOrInventory(CardEnum cardEnum, int32 removeCount)
 	{
-		auto tryAddCards = [&](std::vector<CardStatus>& cardStatuses, int32 maxCardCount)
-		{
-			for (size_t i = cardStatuses.size(); i-- > 0;) {
-				if (cardStatuses[i].cardEnum == cardStatus.cardEnum) {
-					cardStatuses[i].stackSize += cardStatus.stackSize;
-					cardStatus.stackSize = 0;
-					return true;
-				}
-			}
-
-			if (cardStatuses.size() < maxCardCount) {
-				cardStatuses.push_back(cardStatus);
-			}
-			
-			return false;
-		};
-
-		if (tryAddCards(_cardsBought, maxCardsBought)) {
-			return;
+		int32 actualRemoveCount = RemoveCardsOld(cardEnum, removeCount);
+		removeCount -= actualRemoveCount;
+		if (removeCount == 0) {
+			return actualRemoveCount;
 		}
-		tryAddCards(_cardsInventory, maxCardInventorySlots());
+		
+		for (size_t i = _cardsBought.size(); i-- > 0;)
+		{
+			if (_cardsBought[i].cardEnum == cardEnum)
+			{
+				int32_t actualSellStackSize = std::min(_cardsBought[i].stackSize, removeCount);
+				_cardsBought[i].stackSize -= actualSellStackSize;
+				if (_cardsBought[i].stackSize == 0) {
+					_cardsBought.erase(_cardsBought.begin() + i);
+				}
+				return actualSellStackSize;
+			}
+		}
+
+		// Removal failed
+		return -1;
+	}
+
+	/*
+	 * Bought Hand + Inventory
+	 */
+	bool CanAddCardsToBoughtHandOrInventory(CardEnum cardEnum)
+	{
+		return CanAddCardToBoughtHand(cardEnum, 1) || CanAddCardsToCardInventory(cardEnum);
+	}
+
+	static bool TryAddCards(CardStatus cardStatus, std::vector<CardStatus>& cardStatuses, int32 maxCardCount)
+	{
+		for (size_t i = cardStatuses.size(); i-- > 0;) {
+			if (cardStatuses[i].cardEnum == cardStatus.cardEnum) {
+				cardStatuses[i].stackSize += cardStatus.stackSize;
+				return true;
+			}
+		}
+
+		if (cardStatuses.size() < maxCardCount) {
+			cardStatuses.push_back(cardStatus);
+			return true;
+		}
+
+		return false;
+	};
+
+	bool TryAddCards_BoughtHandAndInventory(CardStatus cardStatus)
+	{
+		if (TryAddCards(cardStatus, _cardsBought, maxCardsBought)) {
+			return true;
+		}
+		return TryAddCards(cardStatus, _cardsInventory, maxCardInventorySlots());
 	}
 	
 	void RemoveCards_BoughtHandAndInventory(CardStatus cardStatus)
 	{
-		auto removeCards = [&](std::vector<CardStatus>& cardStatuses)
-		{
-			for (size_t i = cardStatuses.size(); i-- > 0;)
-			{
-				if (cardStatuses[i].cardEnum == cardStatus.cardEnum)
-				{
-					int32_t actualSellStackSize = std::min(cardStatuses[i].stackSize, cardStatus.stackSize);
-					cardStatuses[i].stackSize -= actualSellStackSize;
-					cardStatus.stackSize -= actualSellStackSize;
-					if (cardStatuses[i].stackSize == 0) {
-						cardStatuses.erase(cardStatuses.begin() + i);
-					}
-				}
-
-				if (cardStatus.stackSize <= 0) {
-					return;
-				}
-			}
-		};
-		
-		removeCards(_cardsBought);
-		removeCards(_cardsInventory);
+		int32 removeCount = RemoveCards(cardStatus, _cardsBought);
+		cardStatus.stackSize -= removeCount;
+		if (cardStatus.stackSize > 0) {
+			RemoveCards(cardStatus, _cardsInventory);
+		}
 	}
 
-	static void RemoveCards(CardStatus cardStatus, std::vector<CardStatus>& cardStatuses)
+	// Single CardStatus, remove slot if 0
+	// Do no work with  duplicates (return after finding 1 slot)
+	static int32 RemoveCards(CardStatus cardStatus, std::vector<CardStatus>& cardStatuses)
 	{
 		for (size_t i = cardStatuses.size(); i-- > 0;)
 		{
@@ -694,9 +697,10 @@ public:
 				if (cardStatuses[i].stackSize == 0) {
 					cardStatuses.erase(cardStatuses.begin() + i);
 				}
-				return;
+				return actualSellStackSize;
 			}
 		}
+		return 0;
 	}
 
 	
@@ -792,7 +796,8 @@ public:
 		}
 
 		if (actualCount > 0) {
-			TryAddCardToBoughtHand(cardStatus.cardEnum, actualCount);
+			TryAddCards(CardStatus(cardStatus.cardEnum, actualCount), _cardsBought, maxCardsBought);
+			//TryAddCardToBoughtHand(cardStatus.cardEnum, actualCount);
 		}
 	}
 
@@ -848,7 +853,7 @@ public:
 
 			// Not everything was slotted, return the rest to hand
 			if (removedCount > 0) {
-				TryAddCardToBoughtHand(cardStatus.cardEnum, removedCount);
+				TryAddCards_BoughtHandAndInventory(CardStatus(cardStatus.cardEnum, removedCount));
 			}
 
 			// Card Combiner combines card
@@ -876,16 +881,16 @@ public:
 
 							// Add combined card
 							if (cardSet[0].cardEnum == CardEnum::ProductivityBook) {
-								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::ProductivityBook2, 1));
+								TryAddCards_BoughtHandAndInventory(CardStatus(CardEnum::ProductivityBook2, 1));
 							}
 							else if (cardSet[0].cardEnum == CardEnum::SustainabilityBook) {
-								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::SustainabilityBook2, 1));
+								TryAddCards_BoughtHandAndInventory(CardStatus(CardEnum::SustainabilityBook2, 1));
 							}
 							else if (cardSet[0].cardEnum == CardEnum::Motivation) {
-								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::Motivation2, 1));
+								TryAddCards_BoughtHandAndInventory(CardStatus(CardEnum::Motivation2, 1));
 							}
 							else if (cardSet[0].cardEnum == CardEnum::Passion) {
-								AddCards_BoughtHandAndInventory(CardStatus(CardEnum::Passion2, 1));
+								TryAddCards_BoughtHandAndInventory(CardStatus(CardEnum::Passion2, 1));
 							}
 						}
 					}
@@ -913,7 +918,7 @@ public:
 				if (cardSet[j].cardEnum == cardStatus.cardEnum &&
 					cardSet[j].stackSize > 0)
 				{
-					if (TryAddCardToBoughtHand(cardStatus.cardEnum, 1)) {
+					if (TryAddCards_BoughtHandAndInventory(CardStatus(cardStatus.cardEnum, 1))) {
 						cardSet[j].stackSize = 0;
 					}
 					return;
@@ -945,23 +950,22 @@ public:
 	}
 
 
-	bool ReturnBuildingSlotCardsToHand(const std::vector<CardStatus>& slotCards)
+	bool TryReturnCardsToHandOrInventory(const std::vector<CardStatus>& cards)
 	{
 		// Note: Still need to ResetCardSlots after
 		// Return cards to hand
 		std::vector<CardEnum> addedCards;
 
-		for (CardStatus card : slotCards)
+		for (CardStatus card : cards)
 		{
-			if (CanAddCardToBoughtHand(card.cardEnum, 1))
-			{
+			if (TryAddCards_BoughtHandAndInventory(card)) {
 				addedCards.push_back(card.cardEnum);
-				AddCardToHand2(card.cardEnum);
 			}
-			else {
+			else 
+			{
 				// Remove the added cards from the Hand (added on previous iterations)
 				for (CardEnum addedCard : addedCards) {
-					RemoveCardsOld(addedCard, 1);
+					RemoveCards_BoughtHandAndInventory(CardStatus(addedCard, 1));
 				}
 
 				return false;
@@ -974,7 +978,7 @@ public:
 	/*
 	 * 
 	 */
-	static void RemoveCards(std::vector<CardStatus>& cardStatus, const std::vector<CardStatus>& cardsToRemove)
+	static void RemoveCards_Static(std::vector<CardStatus>& cardStatus, const std::vector<CardStatus>& cardsToRemove)
 	{
 		for (int32 i = 0; i < cardStatus.size(); i++) {
 			for (int32 j = 0; j < cardsToRemove.size(); j++) {
@@ -1087,7 +1091,9 @@ public:
 
 	std::vector<CardStatus> pendingMilitarySlotCards;
 
-	std::vector<CardStatus> pendingCardSetsSlotCards;
+	std::vector<CardStatus> pendingCardSetsSlotCards; // TODO: not used?
+
+	std::vector<CardStatus> pendingHiddenBoughtHandCards;
 	
 private:
 	IGameSimulationCore* _simulation = nullptr;

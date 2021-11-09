@@ -222,7 +222,7 @@ void APunPlayerController::LoadController_GameManager()
 		PUN_LOG("IsLoadingGame");
 		_LOG(PunSaveCheck, "IsLoadingGame");
 
-		gameInstance->saveSystem().Load(saveInfo.folderPath);
+		gameInstance->saveSystem().Load(saveInfo.name);
 
 		gameInstance->SetSavedGameToLoad(GameSaveInfo());
 

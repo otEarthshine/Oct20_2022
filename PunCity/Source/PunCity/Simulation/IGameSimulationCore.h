@@ -359,6 +359,8 @@ public:
 	virtual int32 tileOwnerTown(WorldTile2 tile) = 0;
 	virtual int32 tileOwnerPlayer(WorldTile2 tile) = 0;
 
+	virtual bool IsTileOwnedByForeignPlayer(int32 playerId, WorldTile2 tile) = 0;
+
 	virtual bool IsFrontBuildable(WorldTile2 tile) = 0;
 	virtual bool IsRoadOverlapBuildable(WorldTile2 tile) = 0;
 	virtual bool IsRoadTile(WorldTile2 tile) = 0;
@@ -473,6 +475,8 @@ public:
 	virtual const std::vector<ProvinceConnection>& GetProvinceConnections(int32 provinceId) = 0;
 	virtual void AddTunnelProvinceConnections(int32 provinceId1, int32 provinceId2) = 0;
 
+	virtual int32 GetSpyNestPrice(int32 sourcePlayerId, int32 targetTownId) = 0;
+	
 	virtual int32 GetSpyEffectiveness(int32 playerId, bool isCounterSpy = false) = 0;
 	virtual int32 GetSpyEffectivenessOnTarget(int32 playerId, int32 targetPlayerId) = 0;
 	virtual int32 GetSpyNestInfluenceGainPerRound(int32 nestOwnerPlayerId, int32 nestTownId) = 0;
@@ -644,7 +648,8 @@ public:
 	
 	virtual void AddDrawCards(int32 playerId, CardEnum cardEnum, int32 count = 1) = 0;
 
-	virtual bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) = 0;
+	//virtual bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) = 0;
+	virtual bool TryAddCards_BoughtHandAndInventory(int32 playerId, CardStatus cardStatus) = 0;
 	
 	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage, int32 objectId = -1) = 0;
 
@@ -758,15 +763,20 @@ public:
 	}
 
 	template<typename Func>
-	void ExecuteOnAllTowns(Func func) {
-		ExecuteOnMajorTowns(func);
-
+	void ExecuteOnMinorTowns(Func func)
+	{
 		for (int32 i = minorTownCount(); i-- > 0;) {
 			int32 townId = i + MinorTownShift;
 			if (townManager_Minor(townId)) {
 				func(townId);
 			}
 		}
+	}
+
+	template<typename Func>
+	void ExecuteOnAllTowns(Func func) {
+		ExecuteOnMajorTowns(func);
+		ExecuteOnMinorTowns(func);
 	}
 
 	

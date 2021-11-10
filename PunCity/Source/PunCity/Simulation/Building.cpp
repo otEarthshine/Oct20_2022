@@ -836,7 +836,27 @@ FText Building::GetUpgradeDisplayDescription(int32 index)
 		
 		// Special case: Trading Post/Port
 		if (IsTradingPostLike(buildingEnum())) {
-			return NSLOCTEXT("BuildingUpgrade", "Trader Level Desc", "Decrease Trading Fee by 5% per Upgrade Level");
+			int32 quantity = 20;
+			switch(nextEra) {
+				case 3: quantity = 40; break;
+				case 4: quantity = 80; break;
+				default: break;
+			}
+			return FText::Format(
+				NSLOCTEXT("BuildingUpgrade", "Trader Level Desc", "Increase Trade Quantity per Round by {0}"),
+				TEXT_NUM(quantity)
+			);
+		}
+		if (isEnum(CardEnum::TradingCompany)) {
+			int32 quantity = 20;
+			switch (nextEra) {
+			case 4: quantity = 40; break;
+			default: break;
+			}
+			return FText::Format(
+				NSLOCTEXT("BuildingUpgrade", "Trader Level Desc", "Increase Trade Quantity per Round by {0}"),
+				TEXT_NUM(quantity)
+			);
 		}
 
 		if (nextEra > 5)
@@ -960,7 +980,7 @@ void Building::TestWorkDone()
 			_filledInputs = false;
 
 			auto& cardSys = _simulation->cardSystem(_playerId);
-			cardSys.AddCardToHand2(static_cast<CardMaker*>(this)->GetCardProduced());
+			cardSys.AddCards_BoughtHandAndInventory(static_cast<CardMaker*>(this)->GetCardProduced());
 
 			AddConsumptionStats();
 
@@ -1653,7 +1673,7 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses(int32 townId, IGameSimulat
 	//}
 
 	if (isAutoTrade && simulation->TownhallCardCountTown(townId, CardEnum::CompaniesAct)) {
-		bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), -10 });
+		bonuses.push_back({ LOCTEXT("Companies Act", "Companies Act"), std::max(-20, -2 * simulation->buildingCount(townId, CardEnum::TradingCompany)) });
 	}
 
 	if (simulation->townBuildingFinishedCount(townId, CardEnum::MerchantGuild)) {

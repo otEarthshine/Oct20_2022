@@ -151,7 +151,7 @@ public:
 		//! Training Clock
 		if (trainingQueue.size() > 0) {
 			TrainingClock->GetDynamicMaterial()->SetScalarParameterValue(FName("Fraction"), townManager.GetTrainingFraction());
-			TrainingClock->SetVisibility(ESlateVisibility::Visible);
+			TrainingClock->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		} else {
 			TrainingClock->SetVisibility(ESlateVisibility::Collapsed);
 		}
@@ -209,7 +209,7 @@ public:
 		NavyBox->SetVisibility(navyEnum != CardEnum::None ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		SetupButton(NavyUnitsBox, 0, navyEnum);
 
-		ActionBox->SetVisibility(sim.cardSystem(playerId()).HasBoughtMilitaryCard() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		ActionBox->SetVisibility(sim.cardSystem(playerId()).HasBoughtMilitaryCard() || trainingQueue.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		SetupButton(ActionCardsBox, 0, CardEnum::Raid);
 	}
 

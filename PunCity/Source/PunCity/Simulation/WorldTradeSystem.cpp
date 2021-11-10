@@ -82,7 +82,7 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 			_simulation->AddPopup(
 				PopupInfo(command.playerId,
 					FText::Format(
-						LOCTEXT("UnlockedBuilding_Pop", "Unlocked Caravansary.<space>Trade Caravans bring profit from Trade Route.<space>Would you like to buy a Caravansary card for {0}<img id=\"Coin\"/>."),
+						LOCTEXT("UnlockedBuilding_Pop", "Unlocked Caravansary.<space>Trade Caravans bring profit from Land Trade Route.<space>Would you like to buy a Caravansary card for {0}<img id=\"Coin\"/>."),
 						TEXT_NUM(_simulation->GetCardPrice(command.playerId, CardEnum::Caravansary))
 					),
 					{ LOCTEXT("Buy", "Buy"), LOCTEXT("Refuse", "Refuse") },

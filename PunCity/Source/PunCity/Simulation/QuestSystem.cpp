@@ -8,10 +8,10 @@
 using namespace std;
 
 bool Quest::CanGetRewardCard() {
-	return simulation->cardSystem(playerId).CanAddCardToBoughtHand(rewardCardEnum(), 1);
+	return simulation->cardSystem(playerId).CanAddCardsToBoughtHandOrInventory(rewardCardEnum());
 }
 void Quest::GetRewardCard() {
-	simulation->cardSystem(playerId).AddCardToHand2(rewardCardEnum());
+	simulation->cardSystem(playerId).AddCards_BoughtHandAndInventory(rewardCardEnum());
 }
 
 

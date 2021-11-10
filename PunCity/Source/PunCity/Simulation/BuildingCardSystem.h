@@ -102,6 +102,14 @@ public:
 			cardPrice /= 2;
 		}
 
+		// Special case:
+		if (buildingEnum == CardEnum::IrrigationDitch) {
+			cardPrice = IrrigationDitchTileCost;
+		}
+		else if (buildingEnum == CardEnum::IntercityRoad) {
+			cardPrice = IntercityRoadTileCost;
+		}
+
 		return cardPrice;
 	}
 
@@ -402,39 +410,29 @@ public:
 	/*
 	 * Buy card from bottom row...
 	 */
-	void AddCardToHand2(CardEnum buildingEnum, bool isFromBuying = false)
-	{
-		int32 cardBoughtIndex = -1;
-		for (size_t i = 0; i < _cardsBought.size(); i++) {
-			if (_cardsBought[i].cardEnum == buildingEnum) {
-				cardBoughtIndex = i;
-				_cardsBought[i].stackSize++;
-			}
-		}
+	//void AddCardToHand2(CardEnum buildingEnum, bool isFromBuying = false)
+	//{
+	//	int32 cardBoughtIndex = -1;
+	//	for (size_t i = 0; i < _cardsBought.size(); i++) {
+	//		if (_cardsBought[i].cardEnum == buildingEnum) {
+	//			cardBoughtIndex = i;
+	//			_cardsBought[i].stackSize++;
+	//		}
+	//	}
 
-		// Didn't find card, add card
-		if (cardBoughtIndex == -1) {
-			cardBoughtIndex = _cardsBought.size();
+	//	// Didn't find card, add card
+	//	if (cardBoughtIndex == -1) {
+	//		CardStatus cardStatus;
+	//		cardStatus.cardEnum = buildingEnum;
+	//		cardStatus.cardBirthTicks = Time::Ticks();
+	//		
+	//		_cardsBought.push_back(cardStatus);
+	//	}
 
-			CardStatus cardStatus;
-			cardStatus.cardEnum = buildingEnum;
-			cardStatus.cardBirthTicks = Time::Ticks();
-			
-			_cardsBought.push_back(cardStatus);
-		}
-
-		// Card combining
-		if (buildingEnum == CardEnum::ShrineGreedPiece) {
-			if (_cardsBought[cardBoughtIndex].stackSize >= 3) {
-				UseBoughtCard(buildingEnum, 3);
-				AddCardToHand2(CardEnum::ShrineGreed);
-			}
-		}
-
-		if (isFromBuying) {
-			_alreadyBoughtCardThisRound = true;
-		}
-	}
+	//	if (isFromBuying) {
+	//		_alreadyBoughtCardThisRound = true;
+	//	}
+	//}
 
 	const std::vector<CardStatus>& GetCardsBought() {
 		return _cardsBought;
@@ -456,43 +454,15 @@ public:
 	}
 
 	static const int32 maxCardsBought = 7;
-	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards, bool checkHand1Reserved = false)
+	bool CanAddCardToBoughtHand(CardEnum buildingEnum, int32 additionalCards)
 	{
 		// Get the current stack
 		std::vector<CardStatus> cardStacksFinal = GetCardsBought();
 
-		// Draw Hand case: include all reserved cards
-		if (checkHand1Reserved)
-		{
-			// Add Reserved Cards for final cardStacks calculation
-			check(_cardsHand1Reserved.size() <= _cardsHand.size());
-			for (size_t i = 0; i < _cardsHand1Reserved.size(); i++) {
-				if (_cardsHand1Reserved[i]) {
-					AddToCardStacksHelper(_cardsHand[i], 1, cardStacksFinal);
-				}
-			}
-		}
-
 		// Normal case, we just try to add cards to the cardStacksFinal
-		AddToCardStacksHelper(buildingEnum, additionalCards, cardStacksFinal);
+		TryAddCards(CardStatus(buildingEnum, additionalCards), cardStacksFinal, 9999);
 		
 		return cardStacksFinal.size() <= maxCardsBought;
-	}
-
-	void AddToCardStacksHelper(CardEnum buildingEnum, int32 additionalCards, std::vector<CardStatus>& cardStacks)
-	{
-		for (int32 i = cardStacks.size(); i-- > 0;) {
-			if (buildingEnum == cardStacks[i].cardEnum) {
-				cardStacks[i].stackSize += additionalCards;
-				return;
-			}
-		}
-		
-		CardStatus cardStatus;
-		cardStatus.cardEnum = buildingEnum;
-		cardStatus.stackSize = additionalCards;
-		
-		cardStacks.push_back(cardStatus);
 	}
 	
 
@@ -645,8 +615,34 @@ public:
 	/*
 	 * Bought Hand + Inventory
 	 */
-	bool CanAddCardsToBoughtHandOrInventory(CardEnum cardEnum)
+	bool CanAddCardsToBoughtHandOrInventory_CheckHand1Reserve(CardEnum cardEnum)
 	{
+		// Get the current stack
+		std::vector<CardStatus> cardsBoughtFinal = GetCardsBought();
+		std::vector<CardStatus> cardInventoryFinal = _cardsInventory;
+
+		// Add Reserved Cards for final cardStacks calculation
+		check(_cardsHand1Reserved.size() <= _cardsHand.size());
+		for (size_t i = 0; i < _cardsHand1Reserved.size(); i++) {
+			if (_cardsHand1Reserved[i]) {
+				bool succeed = TryAddCards(CardStatus(_cardsHand[i], 1), cardsBoughtFinal, maxCardsBought);
+				if (!succeed) {
+					TryAddCards(CardStatus(_cardsHand[i], 1), cardInventoryFinal, maxCardsBought);
+				}
+			}
+		}
+
+		// Add the main card
+		if (TryAddCards(CardStatus(cardEnum, 1), cardsBoughtFinal, maxCardsBought)) {
+			return true;
+		}
+		if (TryAddCards(CardStatus(cardEnum, 1), cardInventoryFinal, maxCardInventorySlots())) {
+			return true;
+		}
+		return false;
+	}
+
+	bool CanAddCardsToBoughtHandOrInventory(CardEnum cardEnum) {
 		return CanAddCardToBoughtHand(cardEnum, 1) || CanAddCardsToCardInventory(cardEnum);
 	}
 
@@ -673,6 +669,27 @@ public:
 			return true;
 		}
 		return TryAddCards(cardStatus, _cardsInventory, maxCardInventorySlots());
+	}
+
+	bool TryAddCards_BoughtHandAndInventory(CardEnum cardEnum)
+	{
+		if (TryAddCards(CardStatus(cardEnum, 1), _cardsBought, maxCardsBought)) {
+			return true;
+		}
+		return TryAddCards(CardStatus(cardEnum, 1), _cardsInventory, maxCardInventorySlots());
+	}
+
+	void AddCards_BoughtHandAndInventory(CardEnum cardEnum)
+	{
+		CardStatus card(cardEnum, 1);
+		if (TryAddCards(card, _cardsBought, maxCardsBought)) {
+			return;
+		}
+		if (TryAddCards(card, _cardsInventory, maxCardInventorySlots())) {
+			return;
+		}
+
+		_cardsBought.push_back(card);
 	}
 	
 	void RemoveCards_BoughtHandAndInventory(CardStatus cardStatus)
@@ -989,7 +1006,10 @@ public:
 			}
 		}
 	}
-	
+
+	void SetAlreadyBoughtCardThisRound() {
+		_alreadyBoughtCardThisRound = true;
+	}
 
 	/*
 	 * Serialize

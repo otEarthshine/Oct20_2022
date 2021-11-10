@@ -1684,169 +1684,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						// Shouldn't be able to tamper with other ppl's trade
 						if (showWhenOwnedByCurrentPlayer)
 						{
-							//// Display status only if the trade type was chosen...
-							//if (tradingCompany.activeResourceEnum != ResourceEnum::None)
-							//{
-							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-							//		LOCTEXT("Max trade per round", "Max trade per round"), 
-							//		TEXT_NUM(tradingCompany.tradeMaximumPerRound())
-							//	);
-
-							//	AddTradeFeeText(building.subclass<TradeBuilding>(), focusBox);
-
-							//	AddEfficiencyText(building, focusBox);
-
-							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-							//		LOCTEXT("Profit", "Profit"),
-							//		TEXT_100SIGNED(tradingCompany.exportMoney100() - tradingCompany.importMoney100()),
-							//		assetLoader->CoinIcon
-							//	);
-
-							//	focusBox->AddLineSpacer();
-							//}
-
-							//if (tradingCompany.activeResourceEnum == ResourceEnum::None) 
-							//{
-							//	focusBox->AddSpacer();
-							//	focusBox->AddRichText(
-							//		TEXT_TAG("<Red>", LOCTEXT("Setup automatic trade below.", "Setup automatic trade below."))
-							//	);
-							//}
-							//else {
-							//	FText importExportText = tradingCompany.isImport ? LOCTEXT("Importing", "Importing") : LOCTEXT("Exporting", "Exporting");
-							//	ADDTEXT_(LOCTEXT("ImportUntil", "{0} until {1}"), importExportText, TEXT_NUM(tradingCompany.targetAmount));
-							//	
-							//	focusBox->AddIconPair(JOINTEXT(args), tradingCompany.activeResourceEnum, LOCTEXT("ImportTarget", " target"));
-							//	args.Empty();
-
-							//	if (tradingCompany.activeResourceEnum != ResourceEnum::None)
-							//	{
-							//		int32 target = tradingCompany.targetAmount;
-							//		int32 count = resourceSys.resourceCount(tradingCompany.activeResourceEnum);
-
-							//		if (tradingCompany.isImport) {
-							//			if (target > count) {
-							//				ADDTEXT_(LOCTEXT("ImportRemaining", "(import remaining: {0})"), TEXT_NUM(target - count));
-							//			}
-							//			else {
-							//				ADDTEXT_LOCTEXT("ImportTarget", "(import storage-target reached)");
-							//			}
-							//		}
-							//		else {
-							//			// Export
-							//			if (target < count) {
-							//				ADDTEXT_(LOCTEXT("ExportRemaining", "(export remaining: {0})"), TEXT_NUM(count - target));
-							//			}
-							//			else {
-							//				ADDTEXT_LOCTEXT("StorageBelowTarget", "(resources in storage already below storage-target)");
-							//			}
-							//		}
-							//		focusBox->AddRichText(args);
-							//	}
-							//}
-
-							//focusBox->AddSpacer();
-
-							//if (showWhenOwnedByCurrentPlayer)
-							//{
-							//	static const FText importText = LOCTEXT("Import", "Import");
-							//	static const FText exportText = LOCTEXT("Export", "Export");
-							//	
-							//	focusBox->AddDropdown(
-							//		building.buildingId(),
-							//		{ importText, exportText },
-							//		tradingCompany.isImport ? importText : exportText,
-							//		[&](int32 objectId, FString sItem, IGameUIDataSource* dataSource, IGameNetworkInterface* networkInterface, int32 dropdownIndex)
-							//	{
-							//		auto& trader = dataSource->simulation().building(objectId).subclass<TradingCompany>(CardEnum::TradingCompany);
-
-							//		auto command = make_shared<FChangeWorkMode>();
-							//		command->buildingId = objectId;
-							//		command->intVar1 = static_cast<int32>(trader.activeResourceEnum);
-							//		command->intVar2 = (sItem == importText.ToString()) ? 1 : 0;
-							//		command->intVar3 = trader.targetAmount;
-							//		networkInterface->SendNetworkCommand(command);
-							//	});
-							//}
-
-							//focusBox->AddSpacer(12);
-
-							//// Show choose box
-							//focusBox->AddChooseResourceElement(tradingCompany.activeResourceEnum, this, CallbackEnum::OpenChooseResource);
-
-							//focusBox->AddSpacer(12);
-
-							//// targetAmount
-							//// - just opened UI, get it from targetAmount (actual value)
-							//// - after opened, we keep value in lastTargetAmountSet
-							//if (_justOpenedDescriptionUI) {
-							//	tradingCompany.lastTargetAmountSet = tradingCompany.targetAmount;
-							//}
-							//int32 targetAmount = tradingCompany.lastTargetAmountSet;
-							//
-							//focusBox->AddEditableNumberBox(this, CallbackEnum::EditNumberChooseResource, building.buildingId(), 
-							//	FText::Format(INVTEXT("{0}: "), LOCTEXT("Target", "Target")), targetAmount
-							//);
-
-							//focusBox->AddLineSpacer();
-							//if (tradingCompany.HasPendingTrade()) {
-							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
-							//		LOCTEXT("Trade complete in", "Trade complete in"), 
-							//		FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradingCompany.CountdownSecondsDisplayInt()))
-							//	);
-							//}
-							//else 
-							//{
-							//	// TODO: do we need args on the right?
-							//	if (tradingCompany.hoverWarning == HoverWarning::NotEnoughMoney) {
-							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")));
-							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Not enough Money", "Not enough Money")));
-							//	}
-							//	else if (tradingCompany.hoverWarning == HoverWarning::AlreadyReachedTarget) {
-							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Import Failed", "Import Failed")));
-							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Already reached import target", "Already reached import target")));
-							//	}
-							//	else if (tradingCompany.hoverWarning == HoverWarning::ResourcesBelowTarget) {
-							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Export Failed", "Export Failed")));
-							//		focusBox->AddWGT_WarningText(TEXT_TAG("<Red>", LOCTEXT("Resource below target", "Resource count below storage target")));
-							//	}
-
-							//	int32 tradeRetryCountdown = max(0, tradingCompany.TradeRetryCountDownTicks() / Time::TicksPerSecond);
-
-							//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
-							//		LOCTEXT("Retry trade in", "Retry trade in"), 
-							//		FText::Format(LOCTEXT("{0} secs", "{0} secs"), TEXT_NUM(tradeRetryCountdown))
-							//	);
-							//}
-
-							//// Dropdown / EditableNumberBox set in ObjectDescriptionUI.cpp
-							////_objectDescriptionUI->SetEditableNumberBox(building.buildingId(), this, CallbackEnum::EditNumberChooseResource);
-
-							///*
-							// * Fill choose resource box
-							// */
-							//UPunBoxWidget* chooseResourceBox = _objectDescriptionUI->ChooseResourceBox;
-							//FString searchString = _objectDescriptionUI->SearchBox->GetText().ToString();
-
-							//for (const ResourceInfo& info : SortedNameResourceInfo)
-							//{
-							//	FString name = info.name.ToString();
-
-							//	if (IsTradeResource(info.resourceEnum))
-							//	{
-							//		if (searchString.IsEmpty() ||
-							//			name.Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
-							//		{
-							//			auto widget = chooseResourceBox->AddChooseResourceElement(info.resourceEnum, this, CallbackEnum::PickChooseResource);
-							//			widget->punId = building.buildingId();
-							//		}
-							//	}
-							//}
-							//chooseResourceBox->AfterAdd();
-
+							
 						}
 
-						
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Trade per Round", "Trade Quantity per Round"),
+							TEXT_NUM(tradingCompany.tradeMaximumPerRound())
+						);
+
 					}
 					else if (building.isEnum(CardEnum::TourismAgency))
 					{
@@ -2208,9 +2053,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 										optionInts
 									);
 								}
-								else {
-									focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Need Trade Route", "Need Trade Route")));
-								}
+								//else {
+								//	focusBox->AddRichText(TEXT_TAG("<Red>", LOCTEXT("Need Trade Route", "Need Trade Route")));
+								//}
 								focusBox->AddSpacer(18);
 							}
 
@@ -3476,7 +3321,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Steel) { showResourceText("SteelBeam"); }
 								else if (resourceEnum == ResourceEnum::Influence) {
 									int32 influenceNeeded = resourceNeededPair.count;
-									FText influenceText = TextRed(TEXT_NUM(influenceNeeded), globalResourceSys.influence() > influenceNeeded);
+									FText influenceText = TextRed(TEXT_NUM(influenceNeeded), globalResourceSys.influence() < influenceNeeded);
 
 									ADDTEXT_(INVTEXT("\n<img id=\"Influence\"/>{0}"), influenceText);
 								}

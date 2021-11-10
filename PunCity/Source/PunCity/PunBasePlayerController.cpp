@@ -62,6 +62,7 @@ void APunBasePlayerController::TryChangePlayerId_ToServer_Implementation(int32 t
 	if (succeed)
 	{
 		SetControllerPlayerId(targetPlayerId);
+		_LOG(PunSync, "SetControllerPlayerId -> TryChangePlayerId_ToServer %d", targetPlayerId);
 
 		// If the player is host, change host playerId too
 		if (originalPlayerId == gameInstance()->hostPlayerId) {

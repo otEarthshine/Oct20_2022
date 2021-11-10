@@ -349,7 +349,7 @@ public:
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
 		claimProgress.defenderTownId = _townId;
-		claimProgress.battleFinishCountdownSecs = Time::SecondsPerRound;
+		claimProgress.battleFinishCountdownSecs = 120;
 
 		//! Fill Attacker Military Units
 		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);

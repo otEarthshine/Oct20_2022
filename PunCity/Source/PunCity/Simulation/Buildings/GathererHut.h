@@ -2047,9 +2047,17 @@ public:
 
 		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
 
-		bool needSetup = tradeRoutes.size() > 0;
-		hoverWarning = needSetup ? HoverWarning::NeedSetup : HoverWarning::None;
-		return needSetup;
+		if (tradeRoutes.size() == 0) {
+			hoverWarning = HoverWarning::NeedTradeRoute;
+			return true;
+		}
+		if (_targetTownId == -1) {
+			hoverWarning = HoverWarning::ChooseTradeRoute;
+			return true;
+		}
+		
+		hoverWarning = HoverWarning::None;
+		return false;
 	}
 
 	/*

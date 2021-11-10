@@ -22,8 +22,6 @@
 #endif
 
 #endif
-//#include "steam/isteamuser.h"
-//#include "steam/isteamutils.h"
 
 
 void APunGameMode::PreLogin(const FString& Options, const FString& Address, const FUniqueNetIdRepl& UniqueId, FString& ErrorMessage)
@@ -107,7 +105,9 @@ void APunGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 	
 	int32 newPlayerId = gameInst->ConnectPlayer(playerName, steamId.ConvertToUint64());
+	
 	newController->SetControllerPlayerId(newPlayerId);
+	_LOG(PunSync, "SetControllerPlayerId -> ConnectPlayer %d", newPlayerId);
 
 
 	// Sync

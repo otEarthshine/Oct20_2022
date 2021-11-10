@@ -22,6 +22,8 @@ bool PunSettings::_CheatFullFarmRoad = false;
 
 std::unordered_map<std::string, int32> PunSettings::Settings = 
 {
+	{ "AllLines", 1 },
+	
 	{ "WalkableGrid", 0 },
 	{ "TreeGrid", 0 },
 	{ "ShowPerlinLines", 0 },

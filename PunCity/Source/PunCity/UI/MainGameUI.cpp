@@ -2257,7 +2257,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			//	}
 			//}
 			
-			if (!cardSystem.CanAddCardToBoughtHand(buildingEnum, 1, true)) {
+			if (!cardSystem.CanAddCardsToBoughtHandOrInventory_CheckHand1Reserve(buildingEnum)) {
 				simulation().AddPopupToFront(playerId(), 
 					LOCTEXT("ReachedHandLimit_Pop", "Reached hand limit for bought cards."),
 					ExclusiveUIEnum::CardHand1, "PopupCannot"
@@ -2289,7 +2289,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			if (!IsPermanentTownBonus(buildingEnum) &&
 				!IsPermanentGlobalBonus(buildingEnum))
 			{
-				if (!simulation().cardSystem(playerId()).CanAddCardToBoughtHand(buildingEnum, 1))
+				if (!simulation().cardSystem(playerId()).CanAddCardsToBoughtHandOrInventory(buildingEnum))
 				{
 					simulation().AddPopupToFront(playerId(),
 						LOCTEXT("ReachedHandLimitRare_Pop", "Reached hand limit for bought cards.<space>Please sell or use some cards on your hand, then choose a rare card prize again."),

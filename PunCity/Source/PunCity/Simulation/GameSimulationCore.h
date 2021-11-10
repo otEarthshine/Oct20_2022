@@ -399,12 +399,17 @@ public:
 		}
 		return population;
 	}
-	int32 worldPlayerPopulation() final
+	int32 worldTownPopulation() final
 	{
 		int32 result = 0;
-		ExecuteOnPlayersAndAI([&](int32 playerId) {
-			result += populationTown(playerId);
-		});
+		for (int32 i = 0; i < _townManagers.size(); i++) {
+			if (_townManagers[i]->isValid()) {
+				result += _townManagers[i]->population();
+			}
+		}
+		//ExecuteOnPlayersAndAI([&](int32 playerId) {
+		//	result += populationTown(playerId);
+		//});
 		return result;
 	}
 	
@@ -2995,7 +3000,9 @@ public:
 					float Thickness = 1.0f, float LifeTime = 10000) final 
 	{
 #if WITH_EDITOR
-		_debugLineSystem.DrawLine(atom, startShift, endAtom, endShift, Color, Thickness, LifeTime);
+		if (PunSettings::Settings["AllLines"]) {
+			_debugLineSystem.DrawLine(atom, startShift, endAtom, endShift, Color, Thickness, LifeTime);
+		}
 #endif
 	}
 	// NOTE!!! Y is up
@@ -3161,7 +3168,8 @@ public:
 			return false;
 		}
 
-		if (!cardSystem(playerId).CanAddCardToBoughtHand(buildingEnum, 1)) {
+		if (!cardSystem(playerId).CanAddCardsToBoughtHandOrInventory(buildingEnum)) 
+		{
 			AddPopupToFront(playerId, 
 				NSLOCTEXT("SimCore", "ReachedHandLimit_Pop", "Reached hand limit for bought cards."),
 				ExclusiveUIEnum::CardHand1, "PopupCannot"
@@ -3739,7 +3747,7 @@ public:
 							AddPopup(playerId, 
 								FText::Format(NSLOCTEXT("SimCore", "Found Seed", "You found {0}!"), GetBuildingInfo(seedCardEnum).name)
 							);
-							cardSystem(playerId).AddCardToHand2(seedCardEnum);
+							cardSystem(playerId).AddCards_BoughtHandAndInventory(seedCardEnum);
 							break;
 						}
 					}

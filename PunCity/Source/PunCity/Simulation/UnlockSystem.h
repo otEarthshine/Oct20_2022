@@ -1895,35 +1895,59 @@ public:
 		return _enumToTech[techEnum]->upgradeCount;
 	}
 	
-	bool IsLocked(TechEnum techEnum)
+	bool IsLocked(TechEnum techEnum, bool isMainTechTree)
 	{
 		// Age
 		auto techInfo = GetTechInfo(techEnum);
 		int32 column = techInfo->column;
-		if (column == 3 || column == 4 || column == 5) {
-			if (techEnum == TechEnum::MiddleAge) {
-				return columnToResearchedCount(2) == 0;
+
+		if (isMainTechTree)
+		{
+			if (column == 3 || column == 4 || column == 5) {
+				if (techEnum == TechEnum::MiddleAge) {
+					return columnToResearchedCount(2) == 0;
+				}
+				if (!IsResearched(TechEnum::MiddleAge)) {
+					return true;
+				}
 			}
-			if (!IsResearched(TechEnum::MiddleAge)) {
-				return true;
+			if (column == 6 || column == 7 || column == 8 || column == 9) {
+				if (techEnum == TechEnum::EnlightenmentAge) {
+					return columnToResearchedCount(5) == 0;
+				}
+				if (!IsResearched(TechEnum::EnlightenmentAge)) {
+					return true;
+				}
+			}
+			if (column == 10 || column == 11 || column == 12 || column == 13) {
+				if (techEnum == TechEnum::IndustrialAge) {
+					return columnToResearchedCount(8) == 0;
+				}
+				if (!IsResearched(TechEnum::IndustrialAge)) {
+					return true;
+				}
 			}
 		}
-		if (column == 6 || column == 7 || column == 8 || column == 9) {
-			if (techEnum == TechEnum::EnlightenmentAge) {
-				return columnToResearchedCount(5) == 0;
+		else
+		{
+			// Upgrades Tree
+			if (column == 3 || column == 4 || column == 5) {
+				if (!IsResearched(TechEnum::MiddleAge)) {
+					return true;
+				}
 			}
-			if (!IsResearched(TechEnum::EnlightenmentAge)) {
-				return true;
+			if (column == 6 || column == 7 || column == 8) {
+				if (!IsResearched(TechEnum::EnlightenmentAge)) {
+					return true;
+				}
+			}
+			if (column == 9 || column == 10 || column == 11 || column == 12) {
+				if (!IsResearched(TechEnum::IndustrialAge)) {
+					return true;
+				}
 			}
 		}
-		if (column == 10 || column == 11 || column == 12) {
-			if (techEnum == TechEnum::IndustrialAge) {
-				return columnToResearchedCount(8) == 0;
-			}
-			if (!IsResearched(TechEnum::IndustrialAge)) {
-				return true;
-			}
-		}
+
 		
 		// Prerequisites
 		std::vector<TechEnum> prerequisites = techInfo->prerequisites();

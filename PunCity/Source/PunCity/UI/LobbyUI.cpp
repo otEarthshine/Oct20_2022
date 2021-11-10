@@ -14,6 +14,24 @@
 #include "PunCity/PunGameMode.h"
 #include "PunCity/MainMenuPlayerController.h"
 
+/*
+ * Steam API warning disable
+ */
+#ifdef PLATFORM_WINDOWS
+ // so vs2015 triggers depracated warnings from standard C functions within the steam api, this wrapper makes the output log just ignore these since its clearly on crack.
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable:4996)
+
+#include <steam/steam_api.h>
+
+#pragma warning(pop)
+#endif
+
+#endif
+
+//--
+
 #define LOCTEXT_NAMESPACE "LobbyUI"
 
 void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
@@ -56,7 +74,10 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	}
 	// Set default AI count
 	mapSettings.aiCount = GetDefaultAICount(static_cast<MapSizeEnum>(mapSettings.mapSizeEnumInt));
-	
+
+
+	// Load Player Settings
+	LoadPlayerInfo();
 	
 	/*
 	 * Loading Multiplayer Saves
@@ -793,7 +814,7 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 	int32 i = playerId;
 
 	auto gameInst = gameInstance();
-	const TArray<FPlayerInfo>& names = gameInst->playerInfoList();
+	const TArray<FPlayerInfo>& playerInfos = gameInst->playerInfoList();
 
 	
 	element->PlayerName->SetVisibility(ESlateVisibility::Collapsed);
@@ -820,20 +841,20 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		gameInst->playerConnectedStates[i])
 	{
 		//PUN_DEBUG2("playerConnectedStates true");
-		element->playerName = names[i].name.ToString();
+		element->playerName = playerInfos[i].name.ToString();
 		element->PlayerName->SetText(FText::FromString(
-			TrimStringF_Dots(names[i].name.ToString(), 12) +
+			TrimStringF_Dots(playerInfos[i].name.ToString(), 12) +
 			(gameInst->isMultiplayer() && gameInst->hostPlayerId == i ? LOCTEXT("(Host)", "(Host)").ToString() : "")
 		));
 		element->PlayerName->SetVisibility(ESlateVisibility::Visible);
 		
-		element->FactionName->SetText(GetFactionInfo(names[i].factionEnum()).name);
+		element->FactionName->SetText(GetFactionInfo(playerInfos[i].factionEnum()).name);
 		element->FactionName->SetVisibility(ESlateVisibility::Visible);
 
-		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[names[i].logoIndex]);
-		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", names[i].logoColorForeground);
-		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", names[i].logoColorBackground);
-		element->PlayerCharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[names[i].portraitName]);
+		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[playerInfos[i].logoIndex]);
+		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfos[i].logoColorForeground);
+		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfos[i].logoColorBackground);
+		element->PlayerCharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[playerInfos[i].portraitName]);
 
 		element->PlayerLogoForeground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerLogoBackground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -923,15 +944,6 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 void ULobbyUI::UpdatePreviewPlayerInfoDisplay()
 {
 	PlayerCharacterInfoUI->UpdatePlayerInfo(previewPlayerInfo, _mainMenuAssetLoader->PlayerLogos, _mainMenuAssetLoader->PlayerCharacters);
-	
-	//LogoPreviewImage->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[previewPlayerInfo.logoIndex]);
-	//LogoPreviewImage->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", previewPlayerInfo.logoColorForeground);
-	//
-	//CharacterPreviewImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[previewPlayerInfo.characterIndex]);
-	//CharacterPreviewImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", previewPlayerInfo.logoColorBackground);
-	//
-	//PlayerSettingsPreviewFactionName->SetText(GetFactionInfoInt(previewPlayerInfo.factionIndex).name);
-	//PlayerSettingsPreviewPlayerName->SetText(FText::FromString(GetFirstController()->PlayerState->GetPlayerName()));
 }
 
 void ULobbyUI::OnClickChoosePlayerLogoCloseButton()
@@ -940,6 +952,7 @@ void ULobbyUI::OnClickChoosePlayerLogoCloseButton()
 	LobbyChooseLogoOverlay->SetVisibility(ESlateVisibility::Collapsed);
 
 	GetFirstController()->SendPlayerInfo_ToServer(previewPlayerInfo);
+	SavePlayerInfo();
 }
 
 void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
@@ -948,13 +961,14 @@ void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 		UPlayerListElementUI* element = CastChecked<UPlayerListElementUI>(punWidgetCaller);
 		GetFirstController()->TryChangePlayerId_ToServer(element->slotId);
 	}
-	else if (callbackEnum == CallbackEnum::LobbyChoosePlayerLogo) 
+	else if (callbackEnum == CallbackEnum::LobbyChoosePlayerSettings) 
 	{
 		LobbyChooseLogoOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-		const TArray<FPlayerInfo>& playerInfos = gameInstance()->playerInfoList();
+		CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
 
-		previewPlayerInfo = playerInfos[GetFirstController()->controllerPlayerId()];
+		previewPlayerInfo = gameInstance()->GetPlayerInfoBySteamId(steamId.ConvertToUint64());
+
 		UpdatePreviewPlayerInfoDisplay();
 	}
 
@@ -984,6 +998,41 @@ void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 		previewPlayerInfo.portraitName = buttonImage->name;
 		UpdatePreviewPlayerInfoDisplay();
 	}
+}
+
+static FString GetSavePlayerInfoPath() {
+	return FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "PlayerInfo.dat";
+}
+
+void ULobbyUI::SavePlayerInfo()
+{
+	PunFileUtils::SaveFile(GetSavePlayerInfoPath(), [&](FArchive& Ar)
+	{
+		FPlayerInfo playerInfo;
+		if (gameInstance()->isMultiplayer()) {
+			CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
+			playerInfo = gameInstance()->GetPlayerInfoBySteamId(steamId.ConvertToUint64());
+		}
+		else {
+			playerInfo = gameInstance()->playerInfoList()[0];
+		}
+		
+		Ar << playerInfo;
+	});
+}
+
+void ULobbyUI::LoadPlayerInfo()
+{
+	PunFileUtils::LoadFile(GetSavePlayerInfoPath(), [&](FArchive& Ar)
+	{
+		FPlayerInfo playerInfo;
+		Ar << playerInfo;
+
+		CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
+		playerInfo.steamId64 = steamId.ConvertToUint64();
+
+		GetFirstController()->SendPlayerInfo_ToServer(playerInfo);
+	});
 }
 
 

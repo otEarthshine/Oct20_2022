@@ -564,7 +564,7 @@ public:
 
 	virtual int32 populationTown(int32 townId) = 0;
 	virtual int32 populationPlayer(int32 playerId) = 0;
-	virtual int32 worldPlayerPopulation() = 0;
+	virtual int32 worldTownPopulation() = 0;
 	
 	virtual int HousingCapacity(int32 townId) = 0;
 	virtual int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl = false) = 0;

@@ -37,6 +37,8 @@ public:
 		_isMouseDownScrolling = false;
 	}
 
+	virtual bool IsMainTechTree() { return GetExclusiveUIEnum() == ExclusiveUIEnum::TechTreeUI; }
+
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override
 	{
 		//PUN_LOG("- NativeOnMouseButtonDown");

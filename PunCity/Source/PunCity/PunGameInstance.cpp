@@ -954,6 +954,22 @@ void UPunGameInstance::HandleTravelFailure(UWorld* World, ETravelFailure::Type F
 /*
  * SetPlayerInfo
  */
+static bool SteamID64Equals(uint64 steamId64A, uint64 steamId64B) {
+	return  CSteamID(steamId64A).GetAccountID() == CSteamID(steamId64B).GetAccountID();
+}
+
+FPlayerInfo UPunGameInstance::GetPlayerInfoBySteamId(uint64 steamId64)
+{
+	for (int32 i = 0; i < _playerInfos.Num(); i++)
+	{
+		if (SteamID64Equals(_playerInfos[i].steamId64, steamId64)) {
+			return _playerInfos[i];
+		}
+	}
+	return FPlayerInfo();
+}
+
+
 void UPunGameInstance::SetPlayerInfos(TArray<FPlayerInfo> playerInfosIn) {
 	_LOG(PunSync, "SetPlayerInfos[start] isInGame:%d", IsInGame());
 	PrintPlayers();
@@ -963,11 +979,18 @@ void UPunGameInstance::SetPlayerInfos(TArray<FPlayerInfo> playerInfosIn) {
 	_LOG(PunSync, "SetPlayerInfos[end]");
 	PrintPlayers();
 }
-void UPunGameInstance::SetPlayerInfo(int32 playerId, const FPlayerInfo& playerInfo) {
-	_LOG(PunSync, "SetPlayerInfo[start] isInGame:%d playerId:%d %s ", IsInGame(), playerId, *playerInfo.name.ToString());
+void UPunGameInstance::SetPlayerInfo(const FPlayerInfo& playerInfo)
+{
+	_LOG(PunSync, "SetPlayerInfo[start] isInGame:%d %s ", IsInGame(), *playerInfo.name.ToString());
 	PrintPlayers();
 
-	_playerInfos[playerId] = playerInfo;
+	for (int32 i = 0; i < _playerInfos.Num(); i++)
+	{
+		if (SteamID64Equals(_playerInfos[i].steamId64, playerInfo.steamId64)) {
+			_playerInfos[i] = playerInfo;
+			break;
+		}
+	}
 
 	// Check for possible duplicate
 	TSet<uint32> steamIds;
@@ -986,10 +1009,6 @@ void UPunGameInstance::SetPlayerInfo(int32 playerId, const FPlayerInfo& playerIn
 /*
  * Connect/Disconnect Players
  */
-
-static bool SteamID64Equals(uint64 steamId64A, uint64 steamId64B) {
-	return  CSteamID(steamId64A).GetAccountID() == CSteamID(steamId64B).GetAccountID();
-}
 
 void UPunGameInstance::PrintPlayers()
 {

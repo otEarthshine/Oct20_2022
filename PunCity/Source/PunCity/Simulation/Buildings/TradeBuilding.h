@@ -155,10 +155,20 @@ public:
 	virtual std::vector<BonusPair> GetBonuses() final;
 
 	virtual int32 maxTradeQuatity() override {
-		int32 quantity = 180;
+		int32 quantity = 120;
+
+		switch (GetUpgradeEraLevel())
+		{
+		case 2: quantity = 140; break;
+		case 3: quantity = 180; break;
+		case 4: quantity = 240; break;
+		default: break;
+		}
+
 		if (IsUpgraded_InitialIndex(1)) {
 			quantity += 120;
 		}
+		
 		return quantity;
 	}
 };
@@ -170,9 +180,21 @@ public:
 	virtual std::vector<BonusPair> GetBonuses() final;
 
 	virtual int32 maxTradeQuatity() override {
-		int32 quantity = 240;
+		int32 quantity = 120;
+
+		switch (GetUpgradeEraLevel())
+		{
+		case 2: quantity = 140; break;
+		case 3: quantity = 180; break;
+		case 4: quantity = 240; break;
+		default: break;
+		}
+
+		// port bonus
+		quantity += 60;
+		
 		if (IsUpgraded_InitialIndex(1)) {
-			quantity += 240;
+			quantity += 180;
 		}
 		return quantity;
 	}
@@ -203,7 +225,6 @@ public:
 		{
 		case 3: quantity = 140; break;
 		case 4: quantity = 180; break;
-		case 5: quantity = 240; break;
 		default: break;
 		}
 		

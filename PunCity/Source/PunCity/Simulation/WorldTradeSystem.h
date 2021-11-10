@@ -293,7 +293,7 @@ private:
 	}
 	
 private:
-	int64 worldPopulationWithBase() { return _simulation->worldPlayerPopulation() + BaseWorldPopulation; }
+	int64 worldPopulationWithBase() { return _simulation->worldTownPopulation() + BaseWorldPopulation; }
 
 	// How fast price goes back to base price without tampering
 	int64 EquilibriumSupplyValue100(ResourceEnum resourceEnum) {

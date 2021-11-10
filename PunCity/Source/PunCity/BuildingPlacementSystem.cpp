@@ -209,13 +209,15 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 
 					int32 woodNeeded = storageSpace * GameSimulationCore::StorageCostPerTile();
 
+					FactionEnum factionEnum = _simulation->playerOwned(_simulation->tileOwnerPlayer(_area.centerTile())).factionEnum();
+
 					bool isRed = true;
 					if (townId != -1) {
-						isRed = sim.resourceSystem(townId).resourceCountWithDrops(ResourceEnum::Wood) < woodNeeded;
+						isRed = sim.resourceSystem(townId).resourceCountWithDrops(factionEnum == FactionEnum::Arab ? ResourceEnum::Clay : ResourceEnum::Wood) < woodNeeded;
 					}
 					//ss << "\n" << MaybeRedText(to_string(woodNeeded), sim.resourceCountWithDrops(playerId, ResourceEnum::Wood) < woodNeeded) << "<img id=\"Wood\"/>";
 					ADDTEXT_(
-						INVTEXT("\n{0}<img id=\"Wood\"/>"),
+						factionEnum == FactionEnum::Arab ? INVTEXT("\n{0}<img id=\"Clay\"/>") : INVTEXT("\n{0}<img id=\"Wood\"/>"),
 						TextRed(TEXT_NUM(woodNeeded), isRed)
 					);
 				}

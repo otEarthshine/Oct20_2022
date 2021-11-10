@@ -288,7 +288,8 @@ public:
 		
 		// Refresh Hover Warning
 		// Check every sec
-		if (building.ownedBy(playerId()))
+		if (building.ownedBy(playerId()) ||
+			building.foreignBuilderId() == playerId())
 		{
 			building.TryRefreshHoverWarning(UGameplayStatics::GetTimeSeconds(this));
 			//if (time - building.lastHoverWarningCheckTime >= 1.0f)

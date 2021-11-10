@@ -326,7 +326,7 @@ public:
 		if (commandAndParams.size() >= 1 && commandAndParams[0] == TEXT("AddWildCard")) {
 			int32 addCount = commandAndParams.size() >= 2 ? SafeStoi(commandAndParams[1]) : 3;
 			for (int32 i = 0; i < addCount; i++) {
-				simulation().cardSystem(playerId()).AddCardToHand2(CardEnum::WildCard);
+				simulation().cardSystem(playerId()).AddCards_BoughtHandAndInventory(CardEnum::WildCard);
 			}
 		}
 

@@ -56,7 +56,7 @@ public:
 	}
 
 	UFUNCTION() void OnClickPlayerLogoChangeButton() {
-		_parent->CallBack1(this, CallbackEnum::LobbyChoosePlayerLogo);
+		_parent->CallBack1(this, CallbackEnum::LobbyChoosePlayerSettings);
 	}
 
 	int32 slotId = -1;

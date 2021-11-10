@@ -146,6 +146,10 @@ public:
 
 	UFUNCTION() void OnClickChoosePlayerLogoCloseButton();
 
+	
+	void SavePlayerInfo();
+	void LoadPlayerInfo();
+
 public:
 
 	void AddPopup(FText message) {

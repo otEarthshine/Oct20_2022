@@ -132,7 +132,7 @@ void UTechTreeUI::TickUI(bool shouldCallSetShowUI)
 		for (const auto& pair : techEnumToTechBox) {
 			UTechBoxUI* techBox = pair.Value;
 			auto tech = unlockSys->GetTechInfo(techBox->techEnum);
-			bool isLocked = unlockSys->IsLocked(tech->techEnum);
+			bool isLocked = unlockSys->IsLocked(tech->techEnum, IsMainTechTree());
 
 			pair.Value->SetTechState(tech->state, isLocked, false, tech);
 		}
@@ -172,7 +172,7 @@ void UTechTreeUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBackEn
 
 	// Make sure this tech is not locked or researched
 	auto unlockSys = simulation().unlockSystem(playerId());
-	if (unlockSys->IsLocked(techBox->techEnum)) {
+	if (unlockSys->IsLocked(techBox->techEnum, IsMainTechTree())) {
 		dataSource()->Spawn2DSound("UI", "UIIncrementalError");
 		return;
 	}

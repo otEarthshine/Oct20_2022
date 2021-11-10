@@ -1634,6 +1634,20 @@ static int32 ConstructionCostAsMoney(std::vector<int32> bldResourceCost) {
 	return resourceValue;
 }
 
+static void ConstructionResourcesAdd(std::vector<int32>& constructionResources, ResourceEnum resourceEnum, int32 amount)
+{
+	for (int32 i = 0; i < ConstructionResourceCount; i++) {
+		if (ConstructionResources[i] == resourceEnum) {
+			if (i >= constructionResources.size()) {
+				constructionResources.resize(i + 1, 0);
+			}
+			constructionResources[i] += amount;
+			return;
+		}
+	}
+	UE_DEBUG_BREAK();
+}
+
 static bool IsConstructionResourceEnum(ResourceEnum resourceEnumIn)
 {
 	for (ResourceEnum resourceEnum : ConstructionResources) {
@@ -3852,7 +3866,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::MasterPotter,			_LOCTEXT("Master Potter", "Master Potter"), 200, LOCTEXT("Master Potter Desc", "Potters gain +20% efficiency")),
 
 	BldInfo(CardEnum::CooperativeFishing,	_LOCTEXT("Cooperative Fishing", "Cooperative Fishing"), 200, LOCTEXT("Cooperative Fishing Desc","Every 1% Happiness above 60%, gives +1% productivity to Fishing Lodge")),
-	BldInfo(CardEnum::CompaniesAct,			_LOCTEXT("Companies Act", "Companies Act"), 200, LOCTEXT("Companies Act Desc", "-10% trade fees for Trading Companies.")),
+	BldInfo(CardEnum::CompaniesAct,			_LOCTEXT("Companies Act", "Companies Act"), 200, LOCTEXT("Companies Act Desc", "-2% trade fees for each Trading Company (max -20%).")),
 
 	BldInfo(CardEnum::ProductivityBook,	_LOCTEXT("Productivity Book", "Productivity Book"), 100, LOCTEXT("Productivity Book Desc", "+20% productivity")),
 	BldInfo(CardEnum::ProductivityBook2,_LOCTEXT("Productivity+ Book", "Productivity+ Book"),	100, LOCTEXT("Productivity+ Book Desc", "+30% productivity")),
@@ -4002,7 +4016,7 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::BorealPineForesting, _LOCTEXT("Pine Foresting", "Pine Foresting"), 0, LOCTEXT("Pine Foresting Desc", "+30% Wood yield when cutting Pine Trees.")),
 
 		BldInfo(CardEnum::DesertGem, _LOCTEXT("Desert Gem", "Desert Gem"), 0, LOCTEXT("Desert Gem Desc", "+50% Productivity to Gem and Gold Mines.")),
-		BldInfo(CardEnum::DesertTradeForALiving, _LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "Food/Wood/Coal has 0% Trading Fee.")),
+		BldInfo(CardEnum::DesertTradeForALiving, _LOCTEXT("Trade for a Living", "Trade for a Living"), 0, LOCTEXT("Trade for a Living Desc", "Food/Wood/Coal/Clay has 0% Trading Fee.")),
 		BldInfo(CardEnum::DesertOreTrade, _LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "Ores/Coal/Gemstone has 0% Trading Fee.")),
 		BldInfo(CardEnum::DesertIndustry, _LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+20% Productivity to all Industries. -50% Farm Productivity.")),
 
@@ -4609,6 +4623,7 @@ static std::vector<CardEnum> NonFoodAgricultureBuildings // Change to Agricultur
 {
 	CardEnum::Windmill,
 	CardEnum::Forester,
+	CardEnum::IrrigationPump,
 }; // Gets 
 
 
@@ -5085,8 +5100,14 @@ struct BuildingUpgrade
 		if (IsTradingPostLike(cardEnum)) {
 			return 3;
 		}
-		return 100;
-		//return 5 - startEra; // Old
+		if (cardEnum == CardEnum::TradingCompany) {
+			return 2;
+		}
+		if (cardEnum == CardEnum::PolicyOffice) {
+			return 20;
+		}
+		
+		return 10 + (5 - startEra); // 10 lvl without era+electricity
 	}
 
 	ResourcePair currentUpgradeResourceNeeded(int32 upgraderPlayerId = -1)
@@ -9981,7 +10002,7 @@ enum class CallbackEnum : uint8
 	QuestOpenDescription,
 
 	SelectEmptySlot,
-	LobbyChoosePlayerLogo,
+	LobbyChoosePlayerSettings,
 
 	SetGlobalJobPriority_Up,
 	SetGlobalJobPriority_Down,
@@ -10187,6 +10208,7 @@ enum class HoverWarning : uint8 {
 	OutputInventoryFull,
 
 	NeedTradeRoute,
+	ChooseTradeRoute,
 	AwaitingApproval,
 };
 
@@ -10216,6 +10238,7 @@ static const std::vector<FText> HoverWarningString = {
 	LOCTEXT("Output Inventory Full", "Output Inventory\nFull"),
 
 	LOCTEXT("Need Trade Route", "Need Trade Route"),
+	LOCTEXT("Choose Trade Route", "Choose Trade Route"),
 	LOCTEXT("Awaiting Approval", "Awaiting\nApproval"),
 };
 static const std::vector<FText> HoverWarningDescription = {
@@ -10244,6 +10267,7 @@ static const std::vector<FText> HoverWarningDescription = {
 	LOCTEXT("Output Inventory Full Desc", "Output Resource Inventory is full causing the production to pause."),
 
 	LOCTEXT("Need Trade Route Desc", "Need Trade Route"),
+	LOCTEXT("Choose Trade Route Desc", "Choose Trade Route"),
 	LOCTEXT("Awaiting Approval Desc", "Waiting for another player to approve foreign building."),
 };
 static FText GetHoverWarningName(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }

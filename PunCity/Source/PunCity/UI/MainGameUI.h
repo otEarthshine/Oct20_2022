@@ -112,7 +112,7 @@ public:
 	}
 
 	bool IsShowingConfirmationUI(FText confirmationStrIn) {
-		return TextEquals(confirmationStrIn, confirmationString);
+		return  ConfirmationOverlay->IsVisible() && TextEquals(confirmationStrIn, confirmationString);
 	}
 
 	void ToggleRoad(bool isStoneRoad)

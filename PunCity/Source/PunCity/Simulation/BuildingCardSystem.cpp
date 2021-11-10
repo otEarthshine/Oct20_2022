@@ -25,7 +25,7 @@ void BuildingCardSystem::TickRound()
 		}
 
 		_cardHandQueueCount = 1; // Combine to create wild card
-		AddCardToHand2(CardEnum::WildCard);
+		TryAddCards_BoughtHandAndInventory(CardStatus(CardEnum::WildCard, 1));
 	}
 
 	// Show hand if not already done so

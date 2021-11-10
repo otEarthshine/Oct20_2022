@@ -228,7 +228,7 @@ void TradingPort::FinishConstruction() {
 
 	AddUpgrades({
 		BuildingUpgrade(FastDeliveryText, LOCTEXT("Fast Delivery Desc2", "Halve the time it takes, for traders to arrive (+100% efficiency)."), 500),
-		BuildingUpgrade(IncreaseLoadText, LOCTEXT("Increased Load Desc2", "+240 goods quantity per trade."), 300),
+		BuildingUpgrade(IncreaseLoadText, LOCTEXT("Increased Load Desc2", "+180 goods quantity per trade."), 300),
 	});
 
 	_simulation->TryAddQuest(_playerId, std::make_shared<TradeQuest>());

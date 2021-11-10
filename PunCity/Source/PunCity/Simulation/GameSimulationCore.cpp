@@ -2961,6 +2961,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			//! IrrigationDitch
 			if (placementType == PlacementType::IrrigationDitch)
 			{
+				const std::vector<int32>& bldIds = buildingIds(tileOwnerTown(path[0]), CardEnum::Farm);
+				std::vector<int32> bldToRefreshFertility;
+
 				for (int32 i = 0; i < path.Num(); i++)
 				{
 					WorldTile2 tile(path[i]);
@@ -2984,7 +2987,19 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 						SetNeedDisplayUpdate(DisplayClusterEnum::Trees, tile.regionId(), true);
 						SetNeedDisplayUpdate(DisplayClusterEnum::Building, tile.regionId(), true);
 						SetNeedDisplayUpdate(DisplayClusterEnum::Overlay, tile.regionId(), true);
+
+						// Refresh Fertility
+						for (int32 buildingId : bldIds) {
+							Building& bld = building(buildingId);
+							if (bld.isConstructed() && bld.DistanceTo(tile) <= 20) {
+								bldToRefreshFertility.push_back(buildingId);
+							}
+						}
 					}
+				}
+
+				for (int32 buildingId : bldToRefreshFertility) {
+					building(buildingId).subclass<Farm>().RefreshFertility();
 				}
 
 				return;
@@ -4537,7 +4552,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			if (CanBuyCard(command.playerId, unlockedEnum))
 			{
 				auto& cardSys = cardSystem(command.playerId);
-				cardSys.AddCardToHand2(unlockedEnum);
+				cardSys.AddCards_BoughtHandAndInventory(unlockedEnum);
 				ChangeMoney(command.playerId, -cardSys.GetCardPrice(unlockedEnum));
 			}
 		}
@@ -4552,7 +4567,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	{
 		if (command.choiceIndex == 0) {
 			auto& cardSys = cardSystem(command.playerId);
-			cardSys.AddCardToHand2(CardEnum::Cannibalism);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Cannibalism);
 		}
 	}
 	else if (replyReceiver == PopupReceiverEnum::Approve_AbandonTown2)
@@ -4754,7 +4769,7 @@ void GameSimulationCore::SelectRareCard(FSelectRareCard command)
 		}
 		else
 		{
-			cardSys.AddCardToHand2(command.cardEnum);
+			cardSys.AddCards_BoughtHandAndInventory(command.cardEnum);
 			cardSys.DoneSelectRareHand();
 		}
 
@@ -4782,7 +4797,8 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 
 		if (CanBuyCard(command.playerId, buildingEnum)) {
 			ChangeMoney(command.playerId, -cardSys.GetCardPrice(buildingEnum)); // Must ChangeMoney before adding cards for cards with lvl...
-			cardSys.AddCardToHand2(buildingEnum, true);
+			cardSys.AddCards_BoughtHandAndInventory(buildingEnum);
+			cardSys.SetAlreadyBoughtCardThisRound();
 
 			// First time buying card for this quest? Introduce round timer properly
 			if (!playerOwned(command.playerId).alreadyBoughtFirstCard &&
@@ -5130,7 +5146,7 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 		auto& townManage = townManager(bld.townId());
 		CardEnum cardEnum = townManage.RemoveCardFromTownhall(command.unslotIndex);
 		if (cardEnum != CardEnum::None) {
-			cardSys.AddCardToHand2(cardEnum);
+			cardSys.AddCards_BoughtHandAndInventory(cardEnum);
 			townManage.RecalculateTaxDelayed();
 		}
 	}
@@ -5140,11 +5156,11 @@ void GameSimulationCore::UnslotCard(FUnslotCard command)
 		CardStatus cardStatus = bld.slotCard(command.unslotIndex);
 		if (cardStatus.cardEnum != CardEnum::None)
 		{
-			if (cardSys.CanAddCardToBoughtHand(cardStatus.cardEnum, 1))
+			if (cardSys.CanAddCardsToBoughtHandOrInventory(cardStatus.cardEnum))
 			{
 				CardEnum cardEnum = bld.RemoveSlotCard(command.unslotIndex);
 				if (cardEnum != CardEnum::None) {
-					cardSys.AddCardToHand2(cardEnum);
+					cardSys.AddCards_BoughtHandAndInventory(cardEnum);
 				}
 			}
 			else {
@@ -5675,9 +5691,36 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 	PUN_CHECK(_provinceSystem.IsProvinceValid(provinceId));
 	PUN_CHECK(townId != -1);
 
+	int32 playerId = townManager(townId).playerId();
+
+	// Remove any existing regional building and give the according bonus...
+	if (GetProvinceCountPlayer(playerId) >= 1) // Only for claim the first one (for townhall placement)
+	{
+		ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
+		{
+			if (bld.isEnum(CardEnum::MinorCity))
+			{
+				ImmigrationEvent(townId, 5,
+					FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
+					PopupReceiverEnum::TribalJoinEvent
+				);
+
+				RemoveMinorTown(bld.townId());
+			}
+			else if (bld.isEnum(CardEnum::RegionCrates)) {
+				GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
+				InstantDemolishBuilding(bld);
+			}
+			else if (bld.isEnum(CardEnum::RegionShrine)) {
+				GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The Shrine bestows its wisdom upon us."));
+				//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
+			}
+		});
+	}
+
 	SetProvinceOwner(provinceId, townId);
 
-	int32 playerId = townManager(townId).playerId();
+
 
 	// Succeed claiming land
 	{
@@ -5706,35 +5749,6 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 
 		// Taking over proper land grants seeds or unlocks proper mine
 		CheckSeedAndMineCard(playerId);
-		
-		// Claim land hand
-		int32 claimCount = GetProvinceCountPlayer(playerId);
-
-		// Remove any existing regional building and give the according bonus...
-		if (claimCount > 1)
-		{
-			ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
-			{
-				if (bld.isEnum(CardEnum::MinorCity))
-				{
-					ImmigrationEvent(townId, 5,
-						FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
-						PopupReceiverEnum::TribalJoinEvent
-					);
-
-					RemoveMinorTown(bld.townId());
-				}
-				else if (bld.isEnum(CardEnum::RegionCrates)) {
-					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
-					InstantDemolishBuilding(bld);
-				}
-				else if (bld.isEnum(CardEnum::RegionShrine)) {
-					GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The Shrine bestows its wisdom upon us."));
-					//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
-				}
-			});
-		}
-
 	}
 }
 
@@ -5834,7 +5848,7 @@ void GameSimulationCore::ChooseInitialResources(FChooseInitialResources command)
 	if (!cardSystem(command.playerId).HasBoughtCard(CardEnum::Townhall)) 
 	{
 		if (!IsAIPlayer(command.playerId)) {
-			cardSystem(command.playerId).AddCardToHand2(CardEnum::Townhall);
+			cardSystem(command.playerId).AddCards_BoughtHandAndInventory(CardEnum::Townhall);
 		}
 		
 		playerOwned(command.playerId).initialResources = command;
@@ -5993,8 +6007,7 @@ void GameSimulationCore::Cheat(FCheat command)
 		}
 		case CheatEnum::Unhappy:
 		{
-			cardSys.AddCardToHand2(CardEnum::Cannibalism);
-			cardSys.AddCardToHand2(CardEnum::Cannibalism);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Cannibalism);
 			break;
 		}
 
@@ -6082,7 +6095,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			int32 addCount = command.var2;
 				
 			for (int32 j = 0; j < addCount; j++) {
-				cardSys.AddCardToHand2(cardEnum);
+				cardSys.AddCards_BoughtHandAndInventory(cardEnum);
 			}
 			break;
 		}
@@ -6581,36 +6594,36 @@ void GameSimulationCore::Cheat(FCheat command)
 		
 		case CheatEnum::TrailerCityGreen1:
 		{
-			cardSys.AddCardToHand2(CardEnum::FurnitureWorkshop);
-			cardSys.AddCardToHand2(CardEnum::TradingPort); cardSys.AddCardToHand2(CardEnum::TradingPort);
-			cardSys.AddCardToHand2(CardEnum::Fisher); cardSys.AddCardToHand2(CardEnum::Fisher);
-			cardSys.AddCardToHand2(CardEnum::Windmill);
-			cardSys.AddCardToHand2(CardEnum::PaperMaker);
-			cardSys.AddCardToHand2(CardEnum::CandleMaker);
-			cardSys.AddCardToHand2(CardEnum::Winery);
-			cardSys.AddCardToHand2(CardEnum::BeerBrewery);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::FurnitureWorkshop);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::TradingPort); cardSys.AddCards_BoughtHandAndInventory(CardEnum::TradingPort);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Fisher); cardSys.AddCards_BoughtHandAndInventory(CardEnum::Fisher);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Windmill);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::PaperMaker);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::CandleMaker);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Winery);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::BeerBrewery);
 				
 			break;
 		}
 		case CheatEnum::TrailerCityGreen2:
 		{
-			cardSys.AddCardToHand2(CardEnum::Tailor);
-			cardSys.AddCardToHand2(CardEnum::Beekeeper);
-			cardSys.AddCardToHand2(CardEnum::FruitGatherer);
-			cardSys.AddCardToHand2(CardEnum::HuntingLodge);
-			cardSys.AddCardToHand2(CardEnum::Forester);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Tailor);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Beekeeper);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::FruitGatherer);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::HuntingLodge);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Forester);
 			break;
 		}
 		case CheatEnum::TrailerCityBrown:
 		{
-			cardSys.AddCardToHand2(CardEnum::Quarry);
-			cardSys.AddCardToHand2(CardEnum::CoalMine);
-			cardSys.AddCardToHand2(CardEnum::GoldMine);
-			cardSys.AddCardToHand2(CardEnum::IronMine);
-			cardSys.AddCardToHand2(CardEnum::GemstoneMine);
-			cardSys.AddCardToHand2(CardEnum::IronSmelter);
-			cardSys.AddCardToHand2(CardEnum::GoldSmelter);
-			cardSys.AddCardToHand2(CardEnum::Jeweler);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Quarry);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::CoalMine);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::GoldMine);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::IronMine);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::GemstoneMine);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::IronSmelter);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::GoldSmelter);
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::Jeweler);
 			break;
 		}
 

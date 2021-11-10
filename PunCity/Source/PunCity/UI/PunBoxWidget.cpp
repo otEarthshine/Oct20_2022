@@ -67,8 +67,8 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 	//	UE_DEBUG_BREAK();
 	//}
 
-
-	int32 cardPrice = punWidgetSupport->dataSource()->simulation().cardSystem(punWidgetSupport->playerId()).GetCardPrice(buildingEnum);
+	auto& sim = punWidgetSupport->dataSource()->simulation();
+	int32 cardPrice = sim.cardSystem(punWidgetSupport->playerId()).GetCardPrice(buildingEnum);
 	if (cardPrice > 0) {
 		const FText cardPriceText = LOCTEXT("Card price:", "Card price:");
 		tooltipBox->AddRichText(FText::Format(INVTEXT("{0} <img id=\"Coin\"/>{1}"), cardPriceText, TEXT_NUM(cardPrice)));
@@ -103,7 +103,10 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 		}
 		else if (buildingEnum == CardEnum::StorageYard)
 		{
-			tooltipBox->AddIconPair(INVTEXT(" "), ResourceEnum::Wood, LOCTEXT("StorageWoodCost", " 2 x Storage Space"));
+			tooltipBox->AddIconPair(INVTEXT(" "), 
+				sim.playerFactionEnum(punWidgetSupport->playerId()) == FactionEnum::Arab ? ResourceEnum::Clay : ResourceEnum::Wood, 
+				LOCTEXT("StorageWoodCost", " 2 x Storage Space")
+			);
 		}
 		else
 		{

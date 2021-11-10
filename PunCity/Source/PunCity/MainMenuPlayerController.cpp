@@ -249,7 +249,7 @@ void AMainMenuPlayerController::SendPlayerInfo_ToServer_Implementation(const FPl
 		return;
 	}
 
-	gameInstance()->SetPlayerInfo(controllerPlayerId(), playerInfo);
+	gameInstance()->SetPlayerInfo(playerInfo);
 
 	auto gameMode = CastChecked<APunGameMode>(UGameplayStatics::GetGameMode(this));
 	gameMode->Server_SyncPlayerStateToAllControllers();

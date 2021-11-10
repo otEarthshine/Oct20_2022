@@ -217,10 +217,6 @@ public:
 	template<typename Func>
 	static int32 GetQuickBuildBaseCost(CardEnum buildingEnum, std::vector<int32> constructionCosts, Func getResourceCount)
 	{
-		if (IsForeignOnlyBuilding(buildingEnum)) {
-			return 0;
-		}
-		
 		int32 quickBuildCost_Resource = 0;
 		int32 quickBuildCost_Work = 0;
 		
@@ -257,7 +253,11 @@ public:
 			return constructionResources;
 		}
 		if (_buildingEnum == CardEnum::StorageYard) {
-			std::vector<int32> constructionResources = { _area.tileCount() / 4 * _simulation->StorageCostPerTile() };
+			std::vector<int32> constructionResources;
+			ConstructionResourcesAdd(constructionResources,
+				factionEnum() == FactionEnum::Arab ? ResourceEnum::Clay : ResourceEnum::Wood,
+				_area.tileCount() / 4 * _simulation->StorageCostPerTile()
+			);
 			constructionResources.resize(ConstructionResourceCount, 0);
 			return constructionResources;
 		}
@@ -1615,7 +1615,11 @@ public:
 		int32 tradeFeePercent = baseTradingFeePercent;
 		if (simulation->HasTownBonus(townId, CardEnum::DesertTradeForALiving))
 		{
-			if (IsFoodEnum(resourceEnum) || resourceEnum == ResourceEnum::Wood || resourceEnum == ResourceEnum::Coal) {
+			if (IsFoodEnum(resourceEnum) || 
+				resourceEnum == ResourceEnum::Wood || 
+				resourceEnum == ResourceEnum::Coal ||
+				resourceEnum == ResourceEnum::Clay) 
+			{
 				tradeFeePercent = 0;
 			}
 		}

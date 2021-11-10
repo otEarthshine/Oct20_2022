@@ -8,7 +8,9 @@
 #include "ProsperityUI.generated.h"
 
 /**
- * 
+ *
+ *
+ * OLD?????
  */
 UCLASS()
 class PROTOTYPECITY_API UProsperityUI : public UPunWidget
@@ -23,6 +25,8 @@ public:
 	UPROPERTY() TMap<int32, UTechBoxUI*> techEnumToProsperityBox;
 
 	bool isInitialized = false;
+
+	virtual bool IsMainTechTree() { return false; }
 
 	void PunInit()
 	{

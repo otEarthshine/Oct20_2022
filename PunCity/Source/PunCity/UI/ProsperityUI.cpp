@@ -10,7 +10,7 @@ void UProsperityUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callBack
 
 	// Make sure this tech is not locked or researched
 	auto unlockSys = simulation().unlockSystem(playerId());
-	if (unlockSys->IsLocked(techBox->techEnum) ||
+	if (unlockSys->IsLocked(techBox->techEnum, IsMainTechTree()) ||
 		unlockSys->IsResearched(techBox->techEnum))
 	{
 		dataSource()->Spawn2DSound("UI", "UIIncrementalError");

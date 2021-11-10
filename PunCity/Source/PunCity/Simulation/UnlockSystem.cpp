@@ -33,7 +33,7 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 
 		// Special case: Common Seeds (Herbs, Potato etc.)
 		if (IsCommonSeedCard(buildingEnum)) {
-			cardSystem.AddCardToHand2(buildingEnum);
+			cardSystem.AddCards_BoughtHandAndInventory(buildingEnum);
 
 			_simulation->AddPopup(playerId, 
 				FText::Format(LOCTEXT("UnlockedSeed_Pop", "You unlocked and received {0} Card."), GetBuildingInfo(buildingEnum).name)
@@ -54,7 +54,7 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 				GetBuildingInfo(buildingEnum).name
 			));
 			
-			cardSystem.AddCardToHand2(buildingEnum);
+			cardSystem.AddCards_BoughtHandAndInventory(buildingEnum);
 		}
 		else if (IsBuildingCard(buildingEnum))
 		{	
@@ -99,7 +99,7 @@ void CardGiving_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulati
 	{
 		// Special case: Common Seeds (Herbs, Potato etc.)
 		if (IsCommonSeedCard(buildingEnum)) {
-			cardSystem.AddCardToHand2(buildingEnum);
+			cardSystem.AddCards_BoughtHandAndInventory(buildingEnum);
 
 			_simulation->AddPopup(playerId,
 				FText::Format(LOCTEXT("UnlockedSeed_Pop", "You unlocked and received {0} Card."), GetBuildingInfo(buildingEnum).name)
@@ -107,7 +107,7 @@ void CardGiving_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulati
 			continue;
 		}
 
-		cardSystem.AddCardToHand2(buildingEnum);
+		cardSystem.AddCards_BoughtHandAndInventory(buildingEnum);
 		_simulation->AddPopup(playerId,
 			FText::Format(LOCTEXT("CardReceivedFromTree_Pop", "You received {0} Card from the Upgrades Tree."), GetBuildingInfo(buildingEnum).name)
 		);

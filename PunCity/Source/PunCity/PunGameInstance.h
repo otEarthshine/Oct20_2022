@@ -548,6 +548,9 @@ public:
 	const TArray<FPlayerInfo>& playerInfoList() {
 		return _playerInfos;
 	}
+
+	FPlayerInfo GetPlayerInfoBySteamId(uint64 steamId64);
+	
 	
 	FString playerNameF(int32 playerId) {
 		if (playerId >= GameConstants::MaxPlayersPossible) {
@@ -606,7 +609,7 @@ public:
 	}
 
 	void SetPlayerInfos(TArray<FPlayerInfo> playerInfosIn);
-	void SetPlayerInfo(int32 playerId, const FPlayerInfo& playerInfo);
+	void SetPlayerInfo(const FPlayerInfo& playerInfo); // Use steamId to match the correct player
 	
 
 	bool IsAllPlayersReady() {

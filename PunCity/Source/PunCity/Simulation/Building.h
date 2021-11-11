@@ -775,7 +775,7 @@ public:
 			isEnum(CardEnum::StorageYard)) 
 		{
 			// Scale build time the same ratio as the construction resources
-			return baseBuildTime * GetConstructionResourceCost()[0] / info.constructionResources[0];
+			return baseBuildTime * ConstructionCostAsMoney(GetConstructionResourceCost()) / (10 * GetResourceInfo(ResourceEnum::Wood).basePrice); // Base 10 wood (convert to price)
 		}
 		if (isEnum(CardEnum::Fort) ||
 			isEnum(CardEnum::ResourceOutpost))

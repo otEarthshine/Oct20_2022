@@ -246,7 +246,7 @@ private:
 	//TSubclassOf<class UUserWidget> _playerInfoUIClass;
 	//TArray<class ULobbyPlayerInfoUI*> _playerInfos;
 
-	UPROPERTY() TArray<UPlayerListElementUI*> _playerListElements;
+	//UPROPERTY() TArray<UPlayerListElementUI*> _playerListElements;
 
 
 	UPROPERTY() UMainMenuAssetLoaderComponent* _mainMenuAssetLoader;
@@ -254,6 +254,8 @@ private:
 private:
 	FMapSettings clientLastMapSettings;
 	bool clientReadyState = false;
+
+	bool _loadedPlayerInfo = false;
 
 	float lastSendMapSettingsTime = 0.0f;
 

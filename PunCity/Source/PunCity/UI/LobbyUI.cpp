@@ -75,9 +75,6 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	// Set default AI count
 	mapSettings.aiCount = GetDefaultAICount(static_cast<MapSizeEnum>(mapSettings.mapSizeEnumInt));
 
-
-	// Load Player Settings
-	LoadPlayerInfo();
 	
 	/*
 	 * Loading Multiplayer Saves
@@ -117,7 +114,7 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	
 	LobbyChatContentRichText->SetText(FText());
 	LobbyPlayerListBox->ClearChildren();
-
+	LobbyPlayerListBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	
 	LobbySettingsUI->InitLobbySettings(mapSettings);
 	
@@ -509,6 +506,13 @@ void ULobbyUI::Tick()
 
 	UpdateLobbyUI();
 
+
+	// Load Player Settings if needed
+	if (!_loadedPlayerInfo && GetFirstController()->PlayerState) {
+		_loadedPlayerInfo = true;
+		LoadPlayerInfo();
+	}
+
 	// End Tick()
 }
 
@@ -784,28 +788,28 @@ void ULobbyUI::UpdateLobbyUI()
 	
 
 	LastPlayerColumnText->SetVisibility(saveInfo.IsValid() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
-	
+
+	// Show player list
 	for (int i = 0; i < names.Num(); i++)
 	{
 		//PUN_DEBUG2("names %s", *names[i]);
 
-		if (_playerListElements.Num() <= i) {
-			_playerListElements.Add(AddWidget<UPlayerListElementUI>(UIEnum::PlayerListElement));
-			_playerListElements[i]->PunInit(this, i);
-			PUN_CHECK(_playerListElements[i]);
+		if (LobbyPlayerListBox->GetChildrenCount() <= i) {
+			auto widget = AddWidget<UPlayerListElementUI>(UIEnum::PlayerListElement);
+			widget->PunInit(this, i);
+			PUN_CHECK(widget);
 
-			LobbyPlayerListBox->AddChild(_playerListElements[i]);
+			LobbyPlayerListBox->AddChild(widget);
 		}
+
+		UPlayerListElementUI* element = CastChecked<UPlayerListElementUI>(LobbyPlayerListBox->GetChildAt(i));
 		
-		UPlayerListElementUI* element = _playerListElements[i];
-
 		UpdatePlayerPortraitUI(element, i, saveInfo);
-
 
 		element->SetVisibility(ESlateVisibility::Visible);
 	}
-	for (int32 i = names.Num(); i < _playerListElements.Num(); i++) {
-		_playerListElements[i]->SetVisibility(ESlateVisibility::Collapsed);
+	for (int32 i = names.Num(); i < LobbyPlayerListBox->GetChildrenCount(); i++) {
+		LobbyPlayerListBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 

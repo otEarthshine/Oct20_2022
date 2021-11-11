@@ -13,7 +13,7 @@
 #include "Components/CircularThrobber.h"
 #include "LobbySettingsUI.h"
 #include "LoadSaveUI.h"
-
+#include "SpineWidget.h"
 
 #include "MainMenuUI.generated.h"
 /**
@@ -215,6 +215,15 @@ public:
 
 	void KeyPressed_Escape() {
 		LoadSaveUI->KeyPressed_Escape();
+	}
+
+public:
+	// TESTING
+	UPROPERTY(meta = (BindWidget)) USpineWidget* TestSpine;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override
+	{
+		UPunWidget::NativeTick(MyGeometry, InDeltaTime);
+		TestSpine->Tick(InDeltaTime);
 	}
 
 private:

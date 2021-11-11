@@ -38,6 +38,7 @@ public:
 	void CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
 	void CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum) override;
 
+
 	//void OnCancelPlacement()
 	//{
 	//	GatherSettingsOverlay->SetVisibility(ESlateVisibility::Collapsed);
@@ -158,6 +159,7 @@ public:
 		JobPriorityOverlay->SetVisibility(JobPriorityOverlay->GetVisibility() == ESlateVisibility::Collapsed ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		jobPriorityTownId = townIdIn;
 	}
+
 
 public:
 	//UPROPERTY(meta = (BindWidget)) UOverlay* AnimatedCardOverlay;

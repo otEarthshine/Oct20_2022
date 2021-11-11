@@ -884,7 +884,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	bool showOccupants = building.maxOccupants() > 0;
 
 	// Processor/Trader ... show progress bar
-	bool showProgress = IsProducerProcessor(building.buildingEnum()) ||
+	bool showJobUI = IsProducerProcessor(building.buildingEnum()) ||
 						IsSpecialProducer(building.buildingEnum()) ||
 						IsTradingPostLike(building.buildingEnum()) ||
 						building.isEnum(CardEnum::TradingCompany) ||
@@ -892,6 +892,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						building.isEnum(CardEnum::Zoo) ||
 						building.isEnum(CardEnum::Museum) ||
 						building.isEnum(CardEnum::CardCombiner) ||
+						building.isEnum(CardEnum::Caravansary) ||
 						IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::HuntingLodge) ||
@@ -909,7 +910,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	
 	if (jobUIState == JobUIState::Job)
 	{
-		if (showOccupants || showProgress)
+		if (showOccupants || showJobUI)
 		{
 			bool canManipulateOccupant = showOccupants && playerId() == building.playerId();
 			buildingJobUI->SetShowHumanSlots(showOccupants, canManipulateOccupant);
@@ -921,7 +922,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				buildingJobUI->SetSlots(0, 0, 0, FLinearColor::White);
 			}
 
-			if (showProgress) {
+			if (showJobUI) {
 				buildingJobUI->SetBuildingStatus(building, jobUIState);
 				buildingJobUI->SetHoverWarning(building);
 			}
@@ -938,7 +939,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		buildingJobUI->SetShowHumanSlots(false, false);
 		buildingJobUI->SetShowBar(false);
 
-		if (showProgress) {
+		if (showJobUI) {
 			buildingJobUI->SetBuildingStatus(building, jobUIState);
 			buildingJobUI->SetHoverWarning(building);
 		}
@@ -1068,6 +1069,9 @@ void UWorldSpaceUI::TickUnits()
 				if (unitAI.unitEnum() != UnitEnum::Human) {
 					continue;
 				}
+				if (unitAI.animationEnum() == UnitAnimationEnum::Invisible) {
+					continue;
+				}
 				HumanStateAI& human = unitAI.subclass<HumanStateAI>();
 
 				std::vector<bool> warningToShow(static_cast<int32>(UAssetLoaderComponent::HoverWarningEnum::Count), false);
@@ -1095,62 +1099,61 @@ void UWorldSpaceUI::TickUnits()
 				
 				// Don't forget to add this in DespawnUnusedUIs too... ???
 
-				
-
-				if (unitAI.animationEnum() != UnitAnimationEnum::Invisible)
+			
+				for (int32 i = 0; i < warningToShow.size(); i++)
 				{
-					for (int32 i = 0; i < warningToShow.size(); i++)
-					{
-						if (countLeft-- <= 0) {
-							break;
-						}
+					if (countLeft-- <= 0) {
+						break;
+					}
 
+					if (warningToShow[i])
+					{
 						FVector displayLocation = data->GetUnitDisplayLocation(unitId, inputSystemInterface()->cameraAtom());
 						displayLocation += FVector(0, 0, 25);
-
+						
 						UHoverIconWidgetBase* hoverIcon = _unitHoverIcons.GetHoverUI<UHoverIconWidgetBase>(unitId, UIEnum::HoverIcon, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
 							[&](UHoverIconWidgetBase* ui) {}, WorldZoomTransition_WorldSpaceUIShrink, 1.25f);
-
-						if (warningToShow[i])
-						{
-							hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->GetHoverWarningMaterial(static_cast<UAssetLoaderComponent::HoverWarningEnum>(i)));
-							break;
-						}
 
 						// Special case: Logo
 						if (static_cast<UAssetLoaderComponent::HoverWarningEnum>(i) == UAssetLoaderComponent::HoverWarningEnum::Logo) {
 							FPlayerInfo playerInfo = dataSource()->playerInfo(human.playerId());
+							hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->M_LogoHover);
 							hoverIcon->IconImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfo.logoColorBackground);
 							hoverIcon->IconImage->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfo.logoColorForeground);
 							hoverIcon->IconImage->GetDynamicMaterial()->SetTextureParameterValue("Logo", assetLoader()->GetPlayerLogo(playerInfo.logoIndex));
 						}
-
-						//// Set the right image
-						//if (needHousing) {
-						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Housing);
-						//}
-						//else if (needFood) {
-						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Starving);
-						//}
-						//else if (needHeat) {
-						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Freezing);
-						//}
-						//else if (needHealthcare) {
-						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Sick);
-						//}
-						//else if (needTools) {
-						//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Tools);
-						//}
-						//else if (needHappiness) {
-						//	if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
-						//		setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyRed);
-						//	}
-						//	else {
-						//		setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyOrange);
-						//	}
-						//}
+						else {
+							hoverIcon->IconImage->SetBrushFromMaterial(assetLoader()->GetHoverWarningMaterial(static_cast<UAssetLoaderComponent::HoverWarningEnum>(i)));
+						}
+						break;
 					}
+
+					//// Set the right image
+					//if (needHousing) {
+					//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Housing);
+					//}
+					//else if (needFood) {
+					//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Starving);
+					//}
+					//else if (needHeat) {
+					//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Freezing);
+					//}
+					//else if (needHealthcare) {
+					//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Sick);
+					//}
+					//else if (needTools) {
+					//	setMaterial(UAssetLoaderComponent::HoverWarningEnum::Tools);
+					//}
+					//else if (needHappiness) {
+					//	if (human.happinessOverall() < human.happinessLeaveTownThreshold()) {
+					//		setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyRed);
+					//	}
+					//	else {
+					//		setMaterial(UAssetLoaderComponent::HoverWarningEnum::UnhappyOrange);
+					//	}
+					//}
 				}
+				
 			}
 
 		}

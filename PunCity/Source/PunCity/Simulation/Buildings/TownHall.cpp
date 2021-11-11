@@ -22,7 +22,7 @@ static const TArray<FText> TownhallLvlToUpgradeBonusText =
 	FText(),
 	FText(),
 
-	LOCTEXT("TownhallLvl2UpgradeBonus", "Unlocked Cards:<bullet>Sell Food</><bullet>Buy Wood</><bullet>Snatch</>"), // Lvl 2
+	LOCTEXT("TownhallLvl2UpgradeBonus", "Unlocked Cards:<bullet>Sell Food</><bullet>Buy Wood</><bullet>Steal</>"), // Lvl 2
 
 	LOCTEXT("TownhallLvl3UpgradeBonus", "<bullet>+10% mine/quarry production.</><space>Unlocked Cards:<bullet>Immigrants</><bullet>Kidnap</>"), // 3
 

@@ -654,20 +654,23 @@ public:
 	UPROPERTY(EditAnywhere) TArray<UMaterialInstanceDynamic*> MI_HoverWarnings;
 	UMaterialInstanceDynamic* GetHoverWarningMaterial(HoverWarningEnum warningEnum)
 	{
-		if (MI_HoverWarnings.Num() == 0) {
-			auto addHoverWarningIconInst = [&](UMaterial* material, UTexture2D* image) {
-				MI_HoverWarnings.Add(UMaterialInstanceDynamic::Create(material, this));
+		if (MI_HoverWarnings.Num() == 0) 
+		{
+			MI_HoverWarnings.SetNum(static_cast<int>(HoverWarningEnum::Count));
+			
+			auto addHoverWarningIconInst = [&](HoverWarningEnum warningEnum, UMaterial* material, UTexture2D* image) {
+				MI_HoverWarnings[static_cast<int>(warningEnum)] = UMaterialInstanceDynamic::Create(material, this);
 				if (image) {
-					MI_HoverWarnings.Last()->SetTextureParameterValue("IconImage", image);;
+					MI_HoverWarnings[static_cast<int>(warningEnum)]->SetTextureParameterValue("IconImage", image);;
 				}
 			};
-			addHoverWarningIconInst(M_HoverWarning, WarningHouse);
-			addHoverWarningIconInst(M_HoverWarning, WarningStarving);
-			addHoverWarningIconInst(M_HoverWarning, WarningSnow);
-			addHoverWarningIconInst(M_HoverWarning, WarningHealthcare);
-			addHoverWarningIconInst(M_HoverWarning, WarningTools);
-			addHoverWarningIconInst(M_HoverWarningHappiness, HappinessOrangeIcon);
-			addHoverWarningIconInst(M_HoverWarningHappiness, HappinessRedIcon);
+			addHoverWarningIconInst(HoverWarningEnum::Housing, M_HoverWarning, WarningHouse);
+			addHoverWarningIconInst(HoverWarningEnum::Starving, M_HoverWarning, WarningStarving);
+			addHoverWarningIconInst(HoverWarningEnum::Freezing, M_HoverWarning, WarningSnow);
+			addHoverWarningIconInst(HoverWarningEnum::Sick, M_HoverWarning, WarningHealthcare);
+			addHoverWarningIconInst(HoverWarningEnum::Tools, M_HoverWarning, WarningTools);
+			addHoverWarningIconInst(HoverWarningEnum::UnhappyOrange, M_HoverWarningHappiness, HappinessOrangeIcon);
+			addHoverWarningIconInst(HoverWarningEnum::UnhappyRed, M_HoverWarningHappiness, HappinessRedIcon);
 		}
 		return MI_HoverWarnings[static_cast<int32>(warningEnum)];
 	}

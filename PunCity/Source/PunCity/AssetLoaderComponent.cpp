@@ -142,6 +142,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	WarningHealthcare = Load<UTexture2D>("/Game/UI/Images/Healthcare");
 	WarningTools = Load<UTexture2D>("/Game/UI/Images/ToolsWarning");
 	WarningUnhappy = Load<UTexture2D>("/Game/UI/Images/Unhappy");
+
+	M_LogoHover = Load<UMaterial>("/Game/UI/PlayerLogos/M_LogoHover");
 	
 
 	//! Video

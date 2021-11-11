@@ -667,14 +667,17 @@ public:
 		if (PunSettings::IsOn("CheatFastBuild")) {
 			return Time::TicksPerSecond * 3;
 		}
-		int32 secsPerMoneyCost = 2;
-		return Time::TicksPerSecond * GetMilitaryInfo(cardEnum).allCostCombined() * secsPerMoneyCost;
+		if (cardEnum == CardEnum::Raid) {
+			return Time::TicksPerSecond * 5;
+		}
+		int32 ticksPerMoneyCost = 3;
+		return GetMilitaryInfo(cardEnum).allCostCombined() * ticksPerMoneyCost;
 	}
 
 	float GetTrainingFraction()
 	{
 		if (_trainUnitsQueue.size() > 0) {
-			return FMath::Clamp(static_cast<float>(_trainUnitsTicks100) / GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum), 0.0f, 1.0f);
+			return FMath::Clamp(static_cast<float>(_trainUnitsTicks) / GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum), 0.0f, 1.0f);
 		}
 		return 0.0f;
 	}
@@ -1062,7 +1065,7 @@ public:
 		SerializeVecValue(Ar, _townBonuses);
 		
 		SerializeVecValue(Ar, _trainUnitsQueue);
-		Ar << _trainUnitsTicks100;
+		Ar << _trainUnitsTicks;
 		
 		Ar << _electricityProductionCapacity;
 		Ar << _electricityConsumption;
@@ -1151,7 +1154,7 @@ private:
 
 	// Train Units
 	std::vector<CardStatus> _trainUnitsQueue;
-	int32 _trainUnitsTicks100 = 0;
+	int32 _trainUnitsTicks = 0;
 
 
 

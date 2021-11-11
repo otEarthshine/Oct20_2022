@@ -861,13 +861,13 @@ void TownManager::Tick()
 	// Unit Training
 	if (_trainUnitsQueue.size() > 0)
 	{
-		_trainUnitsTicks100 += 1 * 100;
+		_trainUnitsTicks++;
 
-		if (_trainUnitsTicks100 >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum))
+		if (_trainUnitsTicks >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum))
 		{
 			if (_simulation->TryAddCards_BoughtHandAndInventory(_playerId, CardStatus(_trainUnitsQueue[0].cardEnum, 1)))
 			{
-				_trainUnitsTicks100 = 0;
+				_trainUnitsTicks = 0;
 				_trainUnitsQueue[0].stackSize--;
 
 				// Take away 3 population
@@ -1261,6 +1261,8 @@ void TownManager::TickRound()
 		_simulation->ChangeMoney100(_playerId, netTotal100);
 
 		SetLastRoundAutoTradeProfit(netTotal100);
+
+		_simulation->QuestUpdateStatus(_playerId, QuestEnum::TradeQuest, abs((exportMoneyTotal + importMoneyTotal + feeTotal) / 100));
 		
 		//! UI Display
 		WorldTile2 floatupCenter = _simulation->building(townhallId).centerTile();
@@ -1813,7 +1815,7 @@ void TownManager::TrainUnits_Helper(const FUseCard& command, std::vector<CardSta
 
 					// Real Action: If this is the first stack, reset the timer
 					if (isRealAction && i == 0) {
-						_trainUnitsTicks100 = 0;
+						_trainUnitsTicks = 0;
 					}
 				}
 				return;

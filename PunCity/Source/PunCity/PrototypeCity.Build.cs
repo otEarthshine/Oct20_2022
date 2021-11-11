@@ -32,6 +32,7 @@ public class PrototypeCity : ModuleRules
             "OnlineSubsystemUtils",
             "Steamworks",
             "RHI",
+            "SpinePlugin",
             //"OnlineSubsystemSteam",
         });
 
@@ -44,6 +45,11 @@ public class PrototypeCity : ModuleRules
         );
 
         PrivateDependencyModuleNames.AddRange(new string[] { "Slate", "SlateCore" });
+
+        //PublicIncludePaths.AddRange(new string[] {
+        //    "SpinePlugin/Public",
+        //    "SpinePlugin/Classes",
+        //});
 
         // Uncomment if you are using online features
         // PrivateDependencyModuleNames.Add("OnlineSubsystem");

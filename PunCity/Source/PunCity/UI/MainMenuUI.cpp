@@ -77,6 +77,11 @@ void UMainMenuUI::Init()
 
 	// No longer caring about a game save now that the mainMenu is brought up
 	gameInstance()->SetSavedGameToLoad(GameSaveInfo());
+
+
+	// TEST:
+	// TestSpine
+	TestSpine->SetAnimation(0, "Archer_Idle", true);
 }
 
 void UMainMenuUI::Tick()

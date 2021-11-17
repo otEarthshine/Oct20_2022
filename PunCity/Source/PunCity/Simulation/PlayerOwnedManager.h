@@ -158,13 +158,13 @@ public:
 	//}
 
 public:
-	int32 GetProvinceUpkeep100(int32 provinceId)
-	{
-		// Upkeep is half of the income in ideal
-		// Upkeep suffers from the same penalty as claim price
-		int32 baseUpkeep100 = _simulation->GetProvinceIncome100(provinceId) / 2;
-		return baseUpkeep100;
-	}
+	//int32 GetProvinceUpkeep100(int32 provinceId)
+	//{
+	//	// Upkeep is half of the income in ideal
+	//	// Upkeep suffers from the same penalty as claim price
+	//	int32 baseUpkeep100 = _simulation->GetProvinceIncome100(provinceId) / 2;
+	//	return baseUpkeep100;
+	//}
 
 
 
@@ -317,6 +317,8 @@ public:
 		SerializeVecValue(Ar, _spyNestIds);
 		SerializeVecValue(Ar, _uniqueBuildingIds);
 
+		Ar << spyNestInfluenceStolen;
+
 		//_LOG(PunPlayerOwned, "Serialize[%d] After isSaving:%d, %d %d %d", _playerId, Ar.IsSaving(), _roadConstructionIds.size(), _constructionIds.size(), _jobBuildingEnumToIds.size());
 	}
 	
@@ -362,6 +364,9 @@ private:
 	std::vector<int32> _diplomaticBuildingIds;
 	std::vector<int32> _spyNestIds;
 	std::vector<int32> _uniqueBuildingIds; // unique buildings from buildingEnum
+
+	//
+	int32 spyNestInfluenceStolen = 0;
 
 	// Dark Age
 	bool _isInDarkAge;

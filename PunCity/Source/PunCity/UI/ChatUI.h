@@ -35,6 +35,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug2;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug3;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TopLeftTextDebug4;
+
+	UPROPERTY(meta = (BindWidget)) UTextBlock* DesyncText;
 	
 	void PunInit()
 	{

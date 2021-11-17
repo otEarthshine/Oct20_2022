@@ -689,6 +689,8 @@ public:
 	// Debug
 	UFUNCTION(Reliable, Server) void GamePause_ToServer();
 
+	void CheckDesyncWarning();
+	UFUNCTION(Reliable, Client) void CheckDesyncWarning_ToClient(const TArray<int32>& serverTickToHashes);
 
 	UFUNCTION(Reliable, Client) void CompareUnitHashes_ToClient(int32 startIndex, const TArray<int32>& serverHashes);
 

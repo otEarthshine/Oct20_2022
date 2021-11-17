@@ -200,7 +200,7 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 		else if (requirements.requiredHouseLvl != -1 &&
 			tech->state != TechStateEnum::Researched)
 		{
-			int32 houseLvlCount = simulation().GetHouseLvlCount(playerId(), requirements.requiredHouseLvl, true);
+			int32 houseLvlCount = simulation().GetHouseLvlCount_Player(playerId(), requirements.requiredHouseLvl, true);
 			setTechRequirementText(
 				houseLvlCount,
 				requirements.requiredHouselvlCount,

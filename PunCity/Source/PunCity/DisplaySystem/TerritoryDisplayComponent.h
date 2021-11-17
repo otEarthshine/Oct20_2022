@@ -125,7 +125,7 @@ public:
 
 		// Lines
 		{
-			float lineDisplayScaling = displayScaling * 0.67f;
+			float lineDisplayScalingZ = displayScaling * 0.67f;
 			
 			const std::vector<ProvinceConnection>& connections = provinceSys.GetProvinceConnections(provinceId);
 
@@ -182,31 +182,51 @@ public:
 					
 					FVector diffVec = targetVec - sourceVec;
 
+					float lineDisplayScalingY = lineDisplayScalingZ;
+
 					// Coloring
 					if (connection.tileType == TerrainTileType::River) {
-						sourceVec.Z += 1; // Gray River
+						sourceVec.Z += 4; // Dotted River
 					}
 					else {
-						if (sim.townPlayerId(sourceOwnerInfo.townId) == playerId()) {
-							if (!sourceOwnerInfo.isSafe) {
-								sourceVec.Z += 4; // Source Unsafe Color
-							}
-						}
-						else {
-							sourceVec.Z += 2; // Source Enemy Color	
-						}
+						int32 sourceIsOurs = sim.townPlayerId(sourceOwnerInfo.townId) == playerId();
+						int32 targetIsOurs = sim.townPlayerId(targetOwnerInfo.townId) == playerId();
 
-						if (sim.townPlayerId(targetOwnerInfo.townId) == playerId()) {
-							if (!targetOwnerInfo.isSafe) {
-								sourceVec.Z += 16; // Target Unsafe Color
+						//if (sourceIsOurs) {
+						//	if (!sourceOwnerInfo.isSafe) {
+						//		sourceVec.Z += 4; // Source Unsafe Color
+						//	}
+						//}
+						//else {
+						//	sourceVec.Z += 2; // Source Enemy Color	
+						//}
+
+						//if (targetIsOurs) {
+						//	if (!targetOwnerInfo.isSafe) {
+						//		sourceVec.Z += 16; // Target Unsafe Color
+						//	}
+						//}
+						//else {
+						//	sourceVec.Z += 8; // Target Enemy Color	
+						//}
+
+						if (sourceIsOurs && targetIsOurs) 
+						{
+							if (!sourceOwnerInfo.isSafe || !targetOwnerInfo.isSafe) {
+								sourceVec.Z += 2; // Unsafe Color
 							}
+
+							// Thicker line for Source/Target is ours
+							lineDisplayScalingY *= 2.0f;
 						}
-						else {
-							sourceVec.Z += 8; // Target Enemy Color	
+						else
+						{
+							sourceVec.Z += 1; // Enemy
 						}
 					}
+					
 
-					lineTransforms_Out.Add(FTransform(diffVec.Rotation(), sourceVec, FVector(diffVec.Size() * 0.1f, lineDisplayScaling, lineDisplayScaling)));
+					lineTransforms_Out.Add(FTransform(diffVec.Rotation(), sourceVec, FVector(diffVec.Size() * 0.1f, lineDisplayScalingY, lineDisplayScalingZ)));
 				}
 			}
 		}

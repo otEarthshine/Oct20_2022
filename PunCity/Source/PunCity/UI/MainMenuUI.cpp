@@ -81,7 +81,7 @@ void UMainMenuUI::Init()
 
 	// TEST:
 	// TestSpine
-	TestSpine->SetAnimation(0, "Archer_Idle", true);
+	//TestSpine->SetAnimation(0, "Archer_Idle", true);
 }
 
 void UMainMenuUI::Tick()

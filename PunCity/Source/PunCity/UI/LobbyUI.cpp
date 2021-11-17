@@ -1012,6 +1012,9 @@ void ULobbyUI::SavePlayerInfo()
 {
 	PunFileUtils::SaveFile(GetSavePlayerInfoPath(), [&](FArchive& Ar)
 	{
+		int32 saveVersion = SAVE_VERSION;
+		Ar << saveVersion;
+		
 		FPlayerInfo playerInfo;
 		if (gameInstance()->isMultiplayer()) {
 			CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
@@ -1029,13 +1032,18 @@ void ULobbyUI::LoadPlayerInfo()
 {
 	PunFileUtils::LoadFile(GetSavePlayerInfoPath(), [&](FArchive& Ar)
 	{
-		FPlayerInfo playerInfo;
-		Ar << playerInfo;
+		int32 saveVersion;
+		Ar << saveVersion;
+		if (saveVersion == SAVE_VERSION)
+		{
+			FPlayerInfo playerInfo;
+			Ar << playerInfo;
 
-		CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
-		playerInfo.steamId64 = steamId.ConvertToUint64();
+			CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
+			playerInfo.steamId64 = steamId.ConvertToUint64();
 
-		GetFirstController()->SendPlayerInfo_ToServer(playerInfo);
+			GetFirstController()->SendPlayerInfo_ToServer(playerInfo);
+		}
 	});
 }
 

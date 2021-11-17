@@ -31,8 +31,11 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftArmyBackOuterBox;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftArmyFrontOuterBox;
+
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightArmyBackOuterBox;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightArmyFrontOuterBox;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightArmyWall;
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* RightArmyTreasure;
 
 	UPROPERTY(meta = (BindWidget)) UButton* LeftReinforceButton;
 	UPROPERTY(meta = (BindWidget)) UButton* RightReinforceButton;
@@ -71,11 +74,11 @@ public:
 		GetPunHUD()->OpenReinforcementUI(provinceId, callbackEnum);
 	}
 
-	void SetShowReinforceRetreat(bool isShowing, bool isLeft)
+	void SetShowReinforceRetreat(bool showLeftReinforce, bool showLeftRetreat, bool showRightReinforce, bool showRightRetreat)
 	{
-		LeftReinforceButton->SetVisibility(isShowing && isLeft ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		LeftRetreatButton->SetVisibility(isShowing && isLeft ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		RightReinforceButton->SetVisibility(isShowing && !isLeft ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		RightRetreatButton->SetVisibility(isShowing && !isLeft ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		LeftReinforceButton->SetVisibility(showLeftReinforce ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		LeftRetreatButton->SetVisibility(showLeftRetreat ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		RightReinforceButton->SetVisibility(showRightReinforce ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		RightRetreatButton->SetVisibility(showRightRetreat ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
 };

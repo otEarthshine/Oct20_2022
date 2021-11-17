@@ -22,9 +22,9 @@ static const TArray<FText> TownhallLvlToUpgradeBonusText =
 	FText(),
 	FText(),
 
-	LOCTEXT("TownhallLvl2UpgradeBonus", "Unlocked Cards:<bullet>Sell Food</><bullet>Buy Wood</><bullet>Steal</>"), // Lvl 2
+	LOCTEXT("TownhallLvl2UpgradeBonus", "<bullet>Military Unit Training</><space>Unlocked Cards:<bullet>Buy Wood</><bullet>Steal</>"), // Lvl 2
 
-	LOCTEXT("TownhallLvl3UpgradeBonus", "<bullet>+10% mine/quarry production.</><space>Unlocked Cards:<bullet>Immigrants</><bullet>Kidnap</>"), // 3
+	LOCTEXT("TownhallLvl3UpgradeBonus", "<bullet>Spy Center</><bullet>+10% mine/quarry production.</><space>Unlocked Cards:<bullet>Immigrants</><bullet>Kidnap</>"), // 3
 
 	LOCTEXT("TownhallLvl4UpgradeBonus", "<space>Unlocked Cards:<bullet>Sharing is caring</>"), // 4
 
@@ -185,16 +185,31 @@ void TownHall::UpgradeTownhall()
 	auto& cardSys = _simulation->cardSystem(_playerId);
 	auto unlockSys = _simulation->unlockSystem(_playerId);
 
-	if (townhallLvl == 2) {
-		cardSys.AddDrawCards(CardEnum::SellFood, 1);
+	if (townhallLvl == 2) 
+	{
+		//cardSys.AddDrawCards(CardEnum::SellFood, 1);
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
 		cardSys.AddDrawCards(CardEnum::Snatch, 1);
+
+		// Unlock Influence
+		_simulation->AddPopup(_playerId,
+			LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/>.<space><img id=\"Influence\"/> can be used to claim territory and enact policies.")
+		);
+		_simulation->TryUnlock(_playerId, UnlockStateEnum::InfluencePoints);
+
+		
+		_simulation->AddPopup(_playerId,
+			LOCTEXT("UnlockedTraining_Pop", "Unlocked Military Training.<space>Click Train Units Button above Townhall to bring up the Training UI.")
+		);
+		_simulation->TryUnlock(_playerId, UnlockStateEnum::TrainUnits);
+		
 	}
-	else if (townhallLvl == 3) {
+	else if (townhallLvl == 3) 
+	{
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 
-
+		cardSys.AddCards_BoughtHandAndInventory(CardEnum::SpyCenter);
 	}
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);

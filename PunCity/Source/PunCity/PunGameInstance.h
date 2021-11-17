@@ -398,7 +398,7 @@ private:
 	void CreateGame_Phase2();
 
 public:
-	const int32 MaxPlayer = 8;
+	const int32 MaxPlayer = 12;
 
 	int32 sessionTickCount = 0;
 

@@ -411,8 +411,7 @@ void GameSimulationCore::InitProvinceBuildings()
 	{	
 		check(placement.isValid());
 
-		int32 townId = AddMinorTown(provinceId);
-		SetProvinceOwner(provinceId, townId, true);
+		int32 townId = AddMinorTown(provinceId, FactionEnum::Europe, CardEnum::MinorCity);
 
 		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, placement.centerTile, placement.faceDirection, 7);
 		if (minorCityBuildingId != -1) {
@@ -1202,7 +1201,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							//! Raid
 							if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle)
 							{
-								CompleteRaid(claimProgress.provinceId, claimProgress.attackerPlayerId, provinceTownId);
+								CompleteRaid(claimProgress.provinceId, claimProgress.attackerPlayerId, provinceTownId, claimProgress.raidMoney);
 							}
 							//! Minor Town
 							else if (provincePlayerId == -1)
@@ -1359,6 +1358,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							 */
 							provinceTownManager->EndConquer(claimProgress.provinceId);
 							townManagerBase(claimProgress.attackerPlayerId)->EndConquer_Attacker(claimProgress.provinceId);
+
+							// Return Raid Money
+							if (claimProgress.raidMoney > 0) {
+								ChangeMoney(townPlayerId(claimProgress.defenderTownId), claimProgress.raidMoney);
+							}
 
 							// Note: no point in trying to pipe claimProgress here, too confusing...
 							if (provincePlayerId == -1) // Minor Town
@@ -1533,6 +1537,15 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Resources, hashResources);
 		}
 #endif
+
+		if (Time::Ticks() % (Time::TicksPerSecond * 10) == 0)
+		{
+			recentTickToHash.push_back(std::pair<int32, int32>(Time::Ticks(), GameRand::RandState()));
+			if (recentTickToHash.size() > DesyncWarningHashCount) {
+				recentTickToHash.erase(recentTickToHash.begin());
+			}
+		}
+		
 
 #if USE_LEAN_PROFILING
 		LeanProfiler::FinishTick(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
@@ -1883,128 +1896,73 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				int32 targetPlayerId = building(buildingId).playerId();
 				int32 targetTownId = building(buildingId).townId();
 
-				//if (cardEnum == CardEnum::Steal)
-				//{
-				//	//if (population(targetPlayerId) < population(playerId)) {
-				//	//	AddPopup(playerId, "Cannot steal from a weaker town.");
-				//	//	return -1;
-				//	//}
 
-				//	// Guard
-				//	if (playerOwned(targetPlayerId).HasBuff(CardEnum::TreasuryGuard))
-				//	{
-				//		AddPopup(targetPlayerId, 
-				//			FText::Format(LOCTEXT("FailedStealMoney_TargetPop", "{0} failed to steal money, because of your well-planned Treasury Guard."), playerNameT(playerId))
-				//		);
-				//		AddPopup(playerId, 
-				//			FText::Format(LOCTEXT("FailedStealMoney_SelfPop", "You failed to steal money from {0}, because of Treasury Guard."), playerNameT(targetPlayerId))
-				//		);
-				//	}
-				//	else
-				//	{
-				//		int32 targetPlayerMoney = moneyCap32(targetPlayerId);
-				//		targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
-				//		
-				//		int32 actualSteal = targetPlayerMoney * 30 / 100;
-				//		ChangeMoney(targetPlayerId, -actualSteal);
-				//		ChangeMoney(playerId, actualSteal);
-				//		AddPopup(targetPlayerId, 
-				//			FText::Format(LOCTEXT("XStoleCoinFromYou_Pop", "{0} stole {1}<img id=\"Coin\"/> from you"), playerNameT(playerId), TEXT_NUM(actualSteal))
-				//		);
-				//		AddPopup(playerId, 
-				//			FText::Format(LOCTEXT("YouStoleCoinFromX_Pop", "You stole {0}<img id=\"Coin\"/> from {1}"), TEXT_NUM(actualSteal), townNameT(targetPlayerId))
-				//		);
-
-				//		ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -actualSteal / GoldToRelationship);
-				//	}
-				//}
-				//else 
 				if (cardEnum == CardEnum::Snatch)
 				{
-					//if (population(targetPlayerId) < population(playerId)) {
-					//	AddPopup(playerId, "Cannot steal from a weaker town.");
-					//	return -1;
-					//}
+					int32 targetPlayerMoney = moneyCap32(targetPlayerId);
+					targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 
-					// Guard
-					if (playerOwned(targetPlayerId).HasBuff(CardEnum::TreasuryGuard))
+					int32 targetStealMoney = GameRand::RandRound(10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId), 100);
+					
+					int32 actualSteal = min(targetPlayerMoney, targetStealMoney);
+
+					int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
+					actualSteal = actualSteal * (100 - std::min(80, militaryUnitCount * 20)) / 100;
+					
+					ChangeMoney(targetPlayerId, -actualSteal);
+					ChangeMoney(playerId, actualSteal);
+					AddPopup(targetPlayerId, FText::Format(
+						LOCTEXT("Snatched_TargetPop", "{0} stole {1}<img id=\"Coin\"/> from you.{2}"), 
+						townNameT(playerId), 
+						TEXT_NUM(actualSteal),
+						militaryUnitCount > 0 ? LOCTEXT("StealLessEffective_TargetPop", "<space>(less effective because of your military)") : FText()
+					));
+					AddPopup(playerId, FText::Format(
+						LOCTEXT("Snatched_SelfPop", "You stole {0}<img id=\"Coin\"/> from {1}.{2}"), 
+						TEXT_NUM(actualSteal), 
+						townNameT(targetPlayerId),
+						militaryUnitCount > 0 ? LOCTEXT("StealLessEffective_SelfPop", "<space>(less effective because of their military)") : FText()
+					));
+
+					ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -actualSteal / GoldToRelationship);
+
+					// Tell player to build warrior to guard
+					if (TryDoCallOnceAction(targetPlayerId, PlayerCallOnceActionEnum::Steal_ExplainMilitaryGuard))
 					{
-						AddPopup(targetPlayerId, 
-							FText::Format(LOCTEXT("FailedToSnatch_TargetPop", "{0} failed to snatch money, because of your well-planned Treasury Guard."), playerNameT(playerId))
-						);
-						AddPopup(playerId,
-							FText::Format(LOCTEXT("FailedToSnatch_SelfPop", "You failed to snatch money from {0}, because of Treasury Guard."), playerNameT(targetPlayerId))
+						AddPopup(targetPlayerId,
+							LOCTEXT("Snatched_GuardHelp", "To counter enemy stealing <img id=\"Coin\"/>, train some military units.<space>Each military unit decreases enemy's steal effectiveness by 20% (max 80%)")
 						);
 					}
-					else
-					{
-						int32 targetPlayerMoney = moneyCap32(targetPlayerId);
-						targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
-
-						int32 targetStealMoney = GameRand::RandRound(10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId), 100);
-						
-						int32 actualSteal = min(targetPlayerMoney, targetStealMoney);
-						ChangeMoney(targetPlayerId, -actualSteal);
-						ChangeMoney(playerId, actualSteal);
-						AddPopup(targetPlayerId, 
-							FText::Format(LOCTEXT("Snatched_TargetPop", "{0} snatched {1}<img id=\"Coin\"/> from you"), townNameT(playerId), TEXT_NUM(actualSteal))
-						);
-						AddPopup(playerId, 
-							FText::Format(LOCTEXT("Snatched_SelfPop", "You snatched {0}<img id=\"Coin\"/> from {1}"), TEXT_NUM(actualSteal), townNameT(targetPlayerId))
-						);
-
-						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -actualSteal / GoldToRelationship);
-					}
+					
 				}
 				else if (cardEnum == CardEnum::Kidnap)
 				{
-					//int32 kidnapMoney = 5 * population(playerId);
-					//if (money(playerId) < kidnapMoney) {
-					//	AddPopup(playerId, "Need (5 x Population)<img id=\"Coin\"/> to kidnap (" + to_string(kidnapMoney) + "<img id=\"Coin\"/>).");
-					//	return -1;
-					//}
+					std::vector<int32> humanIds = townManager(targetTownId).humanIds();
 
-					//int32 targetPopulation = population(targetPlayerId);
-					//if (targetPopulation < 20) {
-					//	AddPopup(playerId, "Target town's population is too low for kidnap.");
-					//	return -1;
-					//}
+					int32 kidnapTarget = ApplySpyEffectiveness(3, playerId, targetPlayerId);
 
-					// Guard
-					if (playerOwned(targetPlayerId).HasBuff(CardEnum::KidnapGuard))
-					{
-						AddPopup(targetPlayerId, 
-							FText::Format(LOCTEXT("FailedToKidnap_TargetPop", "{0} failed to kidnap your citizens, because of your well-planned Kidnap Guard."), playerNameT(playerId))
-						);
-						AddPopup(playerId, 
-							FText::Format(LOCTEXT("FailedToKidnap_SelfPop", "You failed to kidnap citizens from {0}, because of Kidnap Guard."), playerNameT(targetPlayerId))
-						);
+					int32 kidnapCount = std::min(kidnapTarget, static_cast<int>(humanIds.size()));
+
+					int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
+					kidnapCount = kidnapCount * (100 - std::min(80, militaryUnitCount * 20)) / 100;
+					
+					for (int32 i = 0; i < kidnapCount; i++) {
+						UnitStateAI& unitAI = unitSystem().unitStateAI(humanIds[i]);
+						unitAI.Die();
 					}
-					else
-					{
-						std::vector<int32> humanIds = townManager(targetTownId).humanIds();
 
-						int32 kidnapTarget = ApplySpyEffectiveness(3, playerId, targetPlayerId);
+					AddPopup(targetPlayerId, 
+						 FText::Format(LOCTEXT("Kidnapped_TargetPop", "{0} kidnapped {1} citizens from you"), playerNameT(playerId), TEXT_NUM(kidnapCount))
+					);
 
-						int32 kidnapCount = std::min(kidnapTarget, static_cast<int>(humanIds.size()));
-						
-						for (int32 i = 0; i < kidnapCount; i++) {
-							UnitStateAI& unitAI = unitSystem().unitStateAI(humanIds[i]);
-							unitAI.Die();
-						}
+					AddPopup(playerId, 
+						FText::Format(LOCTEXT("Kidnapped_SelfPop", "You kidnapped {0} citizens from {1}."), TEXT_NUM(kidnapCount), playerNameT(targetPlayerId))
+					);
 
-						AddPopup(targetPlayerId, 
-							 FText::Format(LOCTEXT("Kidnapped_TargetPop", "{0} kidnapped {1} citizens from you"), playerNameT(playerId), TEXT_NUM(kidnapCount))
-						);
+					GetTownhallCapital(playerId).AddImmigrants(kidnapCount);
 
-						AddPopup(playerId, 
-							FText::Format(LOCTEXT("Kidnapped_SelfPop", "You kidnapped {0} citizens from {1}."), TEXT_NUM(kidnapCount), playerNameT(targetPlayerId))
-						);
-
-						GetTownhallCapital(playerId).AddImmigrants(kidnapCount);
-
-						ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -(kidnapCount * 300) / GoldToRelationship);
-					}
+					ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -(kidnapCount * 300) / GoldToRelationship);
+				
 				}
 				else if (cardEnum == CardEnum::Terrorism)
 				{
@@ -2321,7 +2279,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			}
 		});
 	}
-	// Townhall doesn't need to check for land ownership
+	//! Resource Outpost
+	else if (cardEnum == CardEnum::ResourceOutpost)
+	{
+		
+	}
+	//! Townhall doesn't need to check for land ownership
 	else if (IsTownPlacement(cardEnum))
 	{	
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -2474,7 +2437,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		
 
 		// Special case: Colony Prepare
-		if (IsTownPlacement(cardEnum)) 
+		if (cardEnum == CardEnum::ResourceOutpost)
+		{
+			int32 provinceId = GetProvinceIdClean(parameters.center);
+			AddMinorTown(provinceId, FactionEnum::Europe, CardEnum::ResourceOutpost);
+		}
+		else if (IsTownPlacement(cardEnum)) 
 		{
 			PUN_LOG("Town Placement %s", ToTChar(parameters.area.ToString()));
 			
@@ -2541,7 +2509,24 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		Building& bld = building(buildingId);
 
 		// Special case: Townhall
-		if (IsTownPlacement(cardEnum)) 
+		if (cardEnum == CardEnum::ResourceOutpost)
+		{
+			bld.TryInstantFinishConstruction();
+			_buildingSystem->OnRefreshFloodGrid(bld.gateTile().region());
+
+			int32 provinceId = GetProvinceIdClean(parameters.center);
+			int32 townId = provinceOwnerTownSafe(provinceId);
+			if (townId != -1) {
+				TownManagerBase* townMgr = townManagerBase(townId);
+				townMgr->townhallId = bld.buildingId();
+
+				townManagerBase(playerId)->GainVassal(townMgr->townId());
+				townMgr->SetLordPlayerId(playerId);
+			}
+
+			provinceInfoSystem().SetSlotBuildingId(provinceId, bld.buildingId());
+		}
+		else if (IsTownPlacement(cardEnum)) 
 		{
 			PlaceInitialTownhallHelper(parameters, buildingId);
 			_buildingSystem->OnRefreshFloodGrid(bld.gateTile().region());
@@ -4602,19 +4587,20 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			}
 		}
 	}
-	else if (replyReceiver == PopupReceiverEnum::RaidHandleDecision)
-	{
-		int32 provinceId = command.replyVar1;
-		int32 raiderPlayerId = command.replyVar2;
-		int32 defenderPlayerId = command.playerId;
-		
-		if (command.choiceIndex == 0) {
-			CompleteRaid(provinceId, raiderPlayerId, defenderPlayerId);
-		}
-		else if (command.choiceIndex == 1) {
-			_uiInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
-		}
-	}
+	//else if (replyReceiver == PopupReceiverEnum::RaidHandleDecision)
+	//{
+	//	int32 provinceId = command.replyVar1;
+	//	int32 raiderPlayerId = command.replyVar2;
+	//	int32 defenderPlayerId = command.playerId;
+	//	int32 raidMoney = command.replyVar3;
+	//	
+	//	if (command.choiceIndex == 0) {
+	//		CompleteRaid(provinceId, raiderPlayerId, defenderPlayerId, raidMoney);
+	//	}
+	//	else if (command.choiceIndex == 1) {
+	//		_uiInterface->OpenReinforcementUI(provinceId, CallbackEnum::RaidBattle);
+	//	}
+	//}
 	else if (replyReceiver == PopupReceiverEnum::RetreatConfirmDecision)
 	{
 		int32 provinceId = command.replyVar1;
@@ -4691,9 +4677,8 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 
 }
 
-void GameSimulationCore::CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId)
+void GameSimulationCore::CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId, int32 raidMoney)
 {
-	int32 raidMoney = GetProvinceRaidMoney100(provinceId) / 100;
 	int32 raidInfluence = raidMoney / 2;
 
 	ChangeMoney(raiderPlayerId, raidMoney);
@@ -5455,15 +5440,25 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			{
 				if (command.provinceId != -1 && provincePlayerId != -1)
 				{
-					int32 raidMoney100 = GetProvinceRaidMoney100(command.provinceId);
-					int32 raidInfluence100 = raidMoney100 / 2;
+					int32 raidMoney = GetProvinceRaidMoney100(command.provinceId) / 100;
+					int32 raidInfluence = raidMoney / 2;
 
 					AddPopup(provincePlayerId, FText::Format(
 							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<space><bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</><bullet> If you fight, you may lose your army.</>"),
 							playerNameT(attackerPlayerId),
-							TEXT_100(raidMoney100),
-							TEXT_100(raidInfluence100)
+							TEXT_NUM(raidMoney),
+							TEXT_NUM(raidInfluence)
 					));
+
+					ChangeMoney(provincePlayerId, -raidMoney);
+					ChangeInfluence(provincePlayerId, -raidInfluence);
+
+					if (TryDoCallOnceAction(provincePlayerId, PlayerCallOnceActionEnum::RaidHandle_ExplainFortGuard)) {
+						AddPopup(provincePlayerId,
+							LOCTEXT("RaidHandleExplainFortGuard_Pop", "To guard against Raid:<bullet>build Fort at choke point to ensure your provinces are protected</><bullet>build a stronger army to fight head on</>")
+						);
+					}
+
 				}
 			}
 			else if (attackEnum == ProvinceAttackEnum::ConquerProvince) 
@@ -5654,16 +5649,16 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 void GameSimulationCore::SetProvinceOwner(int32 provinceId, int32 townId, bool lightMode)
 {
-	int32 playerId = townPlayerId(townId);
+	//int32 playerId = townPlayerId(townId);
 	
-	// When transfering land if it is oversea, warn of 200% influence upkeep
-	if (playerId != -1 &&
-		GetProvinceClaimConnectionEnumPlayer(provinceId, playerId) == ClaimConnectionEnum::Deepwater)
-	{
-		AddPopup(playerId,
-			LOCTEXT("OverseaPenalty_Pop", "You have claimed a Province oversea.<space>Oversea provinces have upkeep penalty of +200%")
-		);
-	}
+	//// When transfering land if it is oversea, warn of 200% influence upkeep
+	//if (playerId != -1 &&
+	//	GetProvinceClaimConnectionEnumPlayer(provinceId, playerId) == ClaimConnectionEnum::Deepwater)
+	//{
+	//	AddPopup(playerId,
+	//		LOCTEXT("OverseaPenalty_Pop", "You have claimed a Province oversea.<space>Oversea provinces have upkeep penalty of +200%")
+	//	);
+	//}
 
 	int32 oldTownId = provinceOwnerTown_Major(provinceId);
 	if (oldTownId != -1) {
@@ -5694,9 +5689,13 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 	int32 playerId = townManager(townId).playerId();
 
 	// Remove any existing regional building and give the according bonus...
-	if (GetProvinceCountPlayer(playerId) >= 1) // Only for claim the first one (for townhall placement)
+	ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
 	{
-		ExecuteOnProvinceBuildings(provinceId, [&](Building& bld, const std::vector<WorldRegion2>& regionOverlaps)
+		if (bld.isEnum(CardEnum::MinorCity)) {
+			RemoveMinorTown(bld.townId());
+		}
+
+		if (GetProvinceCountPlayer(playerId) >= 1) // Only for claim the first one (for townhall placement)
 		{
 			if (bld.isEnum(CardEnum::MinorCity))
 			{
@@ -5704,8 +5703,6 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 					FText::Format(LOCTEXT("TribalImmigrantAsk_Pop", "{0} wish to join your city."), GenerateTribeName(bld.buildingId())),
 					PopupReceiverEnum::TribalJoinEvent
 				);
-
-				RemoveMinorTown(bld.townId());
 			}
 			else if (bld.isEnum(CardEnum::RegionCrates)) {
 				GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("CratesUseCardSelection", "Searching through the crates you found."));
@@ -5715,8 +5712,8 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 				GenerateRareCardSelection(playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("ShrineUseCardSelection", "The Shrine bestows its wisdom upon us."));
 				//bld.subclass<RegionShrine>().PlayerTookOver(playerId);
 			}
-		});
-	}
+		}
+	});
 
 	SetProvinceOwner(provinceId, townId);
 
@@ -5814,12 +5811,14 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 		
 		PUN_DEBUG(FString("ChooseLocation GameSimulationCore"));
 		PUN_LOG("ChooseLocation %d %s", command.playerId, ToTChar(WorldRegion2(command.provinceId).ToString()));
-		
-		// Clear any regional building
-		ClearProvinceBuildings(command.provinceId);
 
 		// Claim Land
 		SetProvinceOwnerFull(command.provinceId, command.playerId);
+
+
+		// Clear any regional building (Clear Shrine etc. too)
+		ClearProvinceBuildings(command.provinceId);
+		
 		
 		// For Camera Movement
 		playerOwned(command.playerId).justChoseLocation = true;

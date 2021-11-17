@@ -13,7 +13,8 @@
 				"UMG",
 				"ProceduralMeshComponent",
 				"CustomMeshComponent",
-				"CoreUObject"
+				"CoreUObject",
+				"SpinePlugin"
 			]
 		}
 	],

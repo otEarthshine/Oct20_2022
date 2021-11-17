@@ -341,14 +341,14 @@ int64 House::GetScience100(ScienceEnum scienceEnum, int64 cumulative100) const
 		int32 radiusBonus = GetRadiusBonus(CardEnum::Library, Library::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, 1);
 		});
-		return radiusBonus > 0 ? cumulative100 : 0; // +100%
+		return radiusBonus > 0 ? (cumulative100 * 50 / 100) : 0; // +50%
 	}
 
 	case ScienceEnum::School: {
 		int32 radiusBonus = GetRadiusBonus(CardEnum::School, Library::Radius, [&](int32 bonus, Building& building) {
 			return max(bonus, 1);
 		});
-		return radiusBonus > 0 ? (cumulative100 * 120 / 100) : 0; // +120%
+		return radiusBonus > 0 ? (cumulative100 * 70 / 100) : 0; // +70%
 	}
 
 	case ScienceEnum::BookWorm: {

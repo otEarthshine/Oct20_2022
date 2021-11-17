@@ -16,11 +16,14 @@ struct ProvinceClaimProgress
 
 	std::vector<CardStatus> attackerFrontLine;
 	std::vector<CardStatus> attackerBackLine;
-
 	std::vector<CardStatus> defenderFrontLine;
 	std::vector<CardStatus> defenderBackLine;
 
+	std::vector<CardStatus> defenderWall;
+	std::vector<CardStatus> defenderTreasure;
+
 	bool isCrossingRiver = false;
+	int32 raidMoney = 0;
 
 	int32 attacker_attackBonus = 0;
 	int32 attacker_defenseBonus = 0;
@@ -31,7 +34,7 @@ struct ProvinceClaimProgress
 	
 
 	bool attackerWon() const {
-		return battleFinishCountdownSecs == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0;
+		return battleFinishCountdownSecs == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0 && defenderTreasure.size() == 0;
 	}
 	bool attackerLost() const {
 		return attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
@@ -39,6 +42,27 @@ struct ProvinceClaimProgress
 	bool isWaitingForBattleFinishCountdown() {
 		return (defenderFrontLine.size() == 0 && defenderBackLine.size() == 0) || 
 				(attackerFrontLine.size() == 0 && attackerBackLine.size() == 0);
+	}
+
+	bool IsPlayerReinforcingAttacker(int32 playerId)
+	{
+		return IsPlayerReinforcingLine(playerId, attackerFrontLine) ||
+				IsPlayerReinforcingLine(playerId, attackerBackLine);
+	}
+	bool IsPlayerReinforcingDefender(int32 playerId)
+	{
+		return IsPlayerReinforcingLine(playerId, defenderFrontLine) ||
+			IsPlayerReinforcingLine(playerId, defenderBackLine);
+	}
+
+	static bool IsPlayerReinforcingLine(int32 playerId, const std::vector<CardStatus>& line)
+	{
+		for (const CardStatus& lineUnit : line) {
+			if (lineUnit.cardStateValue1 == playerId) {
+				return true;
+			}
+		}
+		return false;
 	}
 	
 
@@ -87,7 +111,12 @@ struct ProvinceClaimProgress
 		SerializeVecObj(Ar, defenderFrontLine);
 		SerializeVecObj(Ar, defenderBackLine);
 
+		SerializeVecObj(Ar, defenderWall);
+		SerializeVecObj(Ar, defenderTreasure);
+
 		Ar << isCrossingRiver;
+		Ar << raidMoney;
+		
 		Ar << attacker_attackBonus;
 		Ar << attacker_defenseBonus;
 		Ar << defender_attackBonus;
@@ -197,8 +226,8 @@ public:
 		_factionEnum(factionEnum),
 		_simulation(simulation)
 	{
-		_minorCityWealth = 100;
-		_minorCityTargetWealth = 0;
+		_minorCityWealth = 500;
+		//_minorCityTargetWealth = 0;
 	}
 
 	virtual ~TownManagerBase() {}
@@ -349,8 +378,8 @@ public:
 		claimProgress.provinceId = provinceId;
 		claimProgress.attackerPlayerId = attackerPlayerId;
 		claimProgress.defenderTownId = _townId;
-		claimProgress.battleFinishCountdownSecs = 120;
-
+		claimProgress.battleFinishCountdownSecs = 0; // Battle Countdown (Not needed???)
+		
 		//! Fill Attacker Military Units
 		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
 
@@ -359,11 +388,64 @@ public:
 		if (provinceAttackEnum == ProvinceAttackEnum::Raze) {
 			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 3 / 2) }; // More resistance if the intent is to raze...
 		}
-		else if (provinceAttackEnum != ProvinceAttackEnum::RaidBattle) {
+		else if (provinceAttackEnum == ProvinceAttackEnum::RaidBattle) {
+			claimProgress.raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
+		}
+		else {
 			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits()) }; // Town Population help is this is not a raid
 		}
 
+		//! Fill Defender Wall
+		int32 majorTownId = _simulation->provinceOwnerTown_Major(provinceId);
+		if (majorTownId != -1) 
+		{
+			auto addWall = [&]() {
+				claimProgress.defenderWall = { CardStatus(CardEnum::Wall, 1) };
+				claimProgress.PrepareCardStatusForMilitary(defenderPlayerId(), claimProgress.defenderWall);
+
+				defenderCards.push_back(CardStatus(CardEnum::Archer, 1));
+			};
+			
+			// Vassalize is hard
+			if (provinceAttackEnum == ProvinceAttackEnum::Vassalize) {
+				addWall();
+			}
+			else {
+				const std::vector<int32>& bldIds = _simulation->buildingIds(majorTownId, CardEnum::Fort);
+				for (int32 bldId : bldIds) {
+					if (_simulation->building(bldId).provinceId() == provinceId) {
+						addWall();
+						break;
+					}
+				}
+			}
+		}
+
 		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
+
+
+		//! Fill Defender Raid Treasure
+		if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle)
+		{
+			int32 raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
+			raidMoney = std::max(500, raidMoney);
+			
+			CardStatus raidTreasure(CardEnum::RaidTreasure, 1);
+			raidTreasure.cardStateValue1 = defenderPlayerId();
+			raidTreasure.cardStateValue2 = raidMoney * 100;
+			raidTreasure.cardStateValue3 = raidMoney * 100;
+			claimProgress.defenderTreasure = { raidTreasure };
+		}
+		else if (claimProgress.attackEnum == ProvinceAttackEnum::ConquerProvince)
+		{
+			int32 claimMoney = 3 * _simulation->GetProvinceClaimPrice(provinceId, attackerPlayerId) / 100;
+
+			CardStatus raidTreasure(CardEnum::RaidTreasure, 1);
+			raidTreasure.cardStateValue1 = defenderPlayerId();
+			raidTreasure.cardStateValue2 = claimMoney * 100;
+			raidTreasure.cardStateValue3 = claimMoney * 100;
+			claimProgress.defenderTreasure = { raidTreasure };
+		}
 
 		//! Fill Attacker/Defender Bonus
 		auto getBonus = [&](std::vector<BonusPair> bonuses)
@@ -546,6 +628,21 @@ public:
 		return 50;
 	}
 
+	int32 GetMinorCityAllyInfluenceReward(int32 playerId)
+	{
+		if (_relationships.isAlly(playerId)) {
+			return 150;
+		}
+		int32 totalRelationship = _relationships.GetTotalRelationship(playerId);
+		if (totalRelationship >= 60) {
+			return 60;
+		}
+		if (totalRelationship >= 30) {
+			return 30;
+		}
+		return 0;
+	}
+
 	/*
 	 * Minor City
 	 * - target wealth largely mimics nearby X cities's revenue
@@ -557,20 +654,18 @@ public:
 	 * - Raiding Card is more expensive, the more frequent the raid.
 	 * - Razing city gives a bit more money/influence, but is a one time thing..
 	 */
-	void RefreshMinorCityTargetWealth();
+	//void RefreshMinorCityTargetWealth();
 
+	// 500*1.3^20 = 95k .. (starts with 500)
+	// start around 20 per round, ends at around 4000 per round
+	
 	int32 GetMinorCityMoneyIncome() {
-		const int32 roundsToCatchupToTargetWealth = 20;
-		return (_minorCityTargetWealth - _minorCityWealth) / roundsToCatchupToTargetWealth;
-	}
-
-	int32 GetMinorCityInfluence() {
-		return _minorCityWealth / 4;
+		return _minorCityWealth * 30 / 100 / Time::RoundsPerYear;
 	}
 	
 	void GetMinorCityLevelAndCurrentMoney(int32& level, int32& currentMoney, int32& moneyToNextLevel)
 	{
-		const int32 firstLevelRequirement = 500;
+		const int32 firstLevelRequirement = 1000;
 
 		// TODO: use mod instead???
 
@@ -592,6 +687,13 @@ public:
 		GetMinorCityLevelAndCurrentMoney(level, currentMoney, moneyToNextLevel);
 		return level;
 	}
+
+	bool CanBeClaimed()
+	{
+		return townhallId != -1 && 
+			_simulation->buildingEnum(townhallId) == CardEnum::MinorCity && 
+			GetMinorCityLevel() <= 1;
+	}
 	
 
 	int32 totalWealth_MinorCity() { return _minorCityWealth; }
@@ -599,9 +701,9 @@ public:
 		_minorCityWealth += value;
 	}
 
-	// Target wealth is equal to the revenue of nearby major city
-	virtual int32 totalRevenue100() { return _minorCityWealth * 100 / 10; }
-	virtual int32 totalInfluenceIncome100() { return totalRevenue100() / 2; }
+	// Revenue depends on minorCityWealth
+	virtual int32 totalRevenue100() { return GetMinorCityMoneyIncome() * 100; }
+	virtual int32 totalInfluenceIncome100() { return totalRevenue100() / 2; } // TODO: Not used yet??
 
 	/*
 	 * Children
@@ -676,7 +778,7 @@ public:
 
 		//! Minor City
 		Ar << _minorCityWealth;
-		Ar << _minorCityTargetWealth;
+		//Ar << _minorCityTargetWealth;
 	}
 
 public:
@@ -715,7 +817,7 @@ protected:
 
 	// Minor City
 	int32 _minorCityWealth = -1;
-	int32 _minorCityTargetWealth = -1;
+	//int32 _minorCityTargetWealth = -1;
 	std::vector<int32> _childBuildingIds;
 
 	/*

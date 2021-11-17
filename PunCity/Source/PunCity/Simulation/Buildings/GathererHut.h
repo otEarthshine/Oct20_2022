@@ -1873,6 +1873,8 @@ public:
 	virtual int32 influenceIncome100(int32 playerId) const { return 0; }
 	virtual int32 moneyIncome100(int32 playerId) const { return 0; }
 
+	virtual int32 maxCardSlots() override { return 0; }
+
 	virtual void TickRound() override
 	{
 		auto addMoney = [&](int32 playerId) {

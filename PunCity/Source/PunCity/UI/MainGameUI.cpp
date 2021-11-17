@@ -2827,12 +2827,15 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	 */
 	if (callbackEnum == CallbackEnum::SelectInventorySlotCard)
 	{
-		auto command = make_shared<FUseCard>();
-		command->callbackEnum = CallbackEnum::SelectInventorySlotCard;
-		command->cardStatus = cardButton->cardStatus;
-		command->variable1 = dataSource()->isShiftDown() ? simulation().cardSystem(playerId()).cardInventory().size() : 1;
+		if (cardButton->cardStatus.cardEnum != CardEnum::None)
+		{
+			auto command = make_shared<FUseCard>();
+			command->callbackEnum = CallbackEnum::SelectInventorySlotCard;
+			command->cardStatus = cardButton->cardStatus;
+			command->variable1 = dataSource()->isShiftDown() ? simulation().cardSystem(playerId()).cardInventory().size() : 1;
 
-		networkInterface()->SendNetworkCommand(command);
+			networkInterface()->SendNetworkCommand(command);
+		}
 		
 		return;
 	}

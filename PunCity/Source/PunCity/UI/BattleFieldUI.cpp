@@ -107,36 +107,18 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	// UI-Player is Attacker
 	if (claimProgress.attackerPlayerId == playerId())
 	{
-		//int32 provincePlayerIdTemp = sim.provinceOwnerPlayer(claimProgress.provinceId); //TODO: does it needs claimProgress.provinceId?
-		//auto& provincePlayerOwner = sim.playerOwned(provincePlayerIdTemp);
-
-		//ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, claimProgress.attackerPlayerId);
-		//ProvinceAttackEnum attackEnum = provincePlayerOwner.GetProvinceAttackEnum(provinceId, claimProgress.attackerPlayerId);
-
-		//int32 reinforcePrice = (attackEnum == ProvinceAttackEnum::DeclareIndependence) ? BattleInfluencePrice : sim.GetProvinceAttackReinforcePrice(provinceId, claimConnectionEnum);
-		//bool hasEnoughInfluence = sim.influence(playerId()) >= reinforcePrice;
-
-
-		
-		//SetText(LeftReinforceText, LOCTEXT("Reinforce", "Reinforce"));
-		//LeftReinforceButton->SetIsEnabled(hasEnoughInfluence);
-
-		SetShowReinforceRetreat(true, true);
+		SetShowReinforceRetreat(true, true, false, false);
 	}
 	// UI-Player is Defender
 	else if (provincePlayerId == playerId())
 	{
-		//int32 hasEnoughInfluence = sim.influence(playerId()) >= BattleInfluencePrice;
-		//SetText(RightReinforceText,
-		//	FText::Format(INVTEXT("{0}\n<img id=\"Influence\"/>{1}"), LOCTEXT("Reinforce", "Reinforce"), TextRed(TEXT_NUM(BattleInfluencePrice), !hasEnoughInfluence))
-		//);
-		//RightReinforceButton->SetIsEnabled(hasEnoughInfluence);
-
-
-		SetShowReinforceRetreat(true, false);
+		SetShowReinforceRetreat(false, false, true, true);
 	}
 	else {
-		SetShowReinforceRetreat(false, true);
+		int32 reinforcingAttacker = claimProgress.IsPlayerReinforcingAttacker(playerId());
+		int32 reinforcingDefender = claimProgress.IsPlayerReinforcingDefender(playerId());
+		SetShowReinforceRetreat(!reinforcingDefender, reinforcingAttacker,
+								!reinforcingAttacker, reinforcingDefender);
 	}
 
 	/*
@@ -169,7 +151,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	int32 calculatedRowCount = std::max(1, std::max(attackerMinRowCount, defenderMinRowsCount));
 
 	//! Fill Unit UI
-	auto addUnits = [&](std::vector<CardStatus>& simUnits, UHorizontalBox* armyOuterBox)
+	auto addUnits = [&](std::vector<CardStatus>& simUnits, UHorizontalBox* armyOuterBox, bool isLeft)
 	{
 		int32 columnIndex = 0;
 		int32 simUnitIndex = 0;
@@ -188,16 +170,29 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 				unitIcon->UnitCountText->SetText(TEXT_NUM(simUnit.stackSize));
 
 				//LogoImage
-				PunUIUtils::SetPlayerLogo(unitIcon->LogoImage, unitIcon->UnitImage, dataSource()->playerInfo(unitPlayerId), assetLoader());
+				//PunUIUtils::SetPlayerLogo(unitIcon->LogoImage, unitIcon->UnitImage, dataSource()->playerInfo(unitPlayerId), assetLoader());
+				
+				unitIcon->BackgroundImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", dataSource()->playerInfo(unitPlayerId).logoColorBackground);
+				unitIcon->UnitImage->PunTick();
+				unitIcon->UnitImage->SetRenderScale(FVector2D(isLeft ? 1 : -1, 1));
+
+				FSpineAsset spineAsset = assetLoader()->GetSpine(simUnit.cardEnum);
+				unitIcon->UnitImage->Atlas = spineAsset.atlas;
+				unitIcon->UnitImage->SkeletonData = spineAsset.skeletonData;
 
 				MilitaryCardInfo militaryInfo = GetMilitaryInfo(simUnit.cardEnum);
 
 				int32 currentHP = simUnit.cardStateValue2 / 100;
 				int32 unitHP = militaryInfo.hp100 / 100;
+				if (simUnit.cardEnum == CardEnum::RaidTreasure) {
+					unitHP = simUnit.cardStateValue3 / 100;
+				}
 				
 				AddToolTip(unitIcon, FText::Format(
-					LOCTEXT("UnitIcon_Tip", "{0}<space>Unit HP: {1}/{2}\nUnit Count: {3}<space>Army HP: {4}/{5}"),
+					LOCTEXT("UnitIcon_Tip", "{0}<space>Unit Attack: {1} \nUnit Defense: {2}<space>Unit HP: {3}/{4}\nUnit Count: {5}<space>Army HP: {6}/{7}"),
 					GetBuildingInfo(simUnit.cardEnum).name,
+					TEXT_NUM(militaryInfo.attackDisplay()),
+					TEXT_NUM(militaryInfo.defenseDisplay()),
 					TEXT_NUM(currentHP),
 					TEXT_NUM(unitHP),
 					TEXT_NUM(simUnit.stackSize),
@@ -206,15 +201,28 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 				));
 
 				/*
+				 * Attack
+				 */
+				int32 lastAttackTick = simUnit.displayCardStateValue3;
+				if (lastAttackTick != -1 &&
+					Time::Ticks() - lastAttackTick < Time::TicksPerSecond && // if more than 1 sec already passed, don't show the damage
+					lastAttackTick > unitIcon->lastAttackTick) // lastAttack is still the same as the current one
+				{
+					unitIcon->lastAttackTick = lastAttackTick;
+					unitIcon->UnitImage->SetAnimation(0, "Attack", false);
+				}
+				
+				/*
 				 * Damage Floatup
 				 */
 				int32 lastDamage = simUnit.displayCardStateValue1;
 				int32 lastDamageTick = simUnit.displayCardStateValue2;
 
 				if (lastDamageTick != -1 &&
-					Time::Ticks() - lastDamageTick < Time::TicksPerSecond &&
-					lastDamageTick > unitIcon->lastDamageTick &&
-					lastDamage > 0)
+					lastDamage > 0 &&
+					Time::Ticks() - lastDamageTick > Time::TicksPerSecond * 2 / 3 && // Damage Delay
+					Time::Ticks() - lastDamageTick < Time::TicksPerSecond * 5 / 3 && // if more than 1 sec already passed, don't show the damage
+					lastDamageTick > unitIcon->lastDamageTick) // lastDamage is still the same as the current one
 				{
 					// Clear any existing damage that expired
 					UOverlay* damageOverlay = unitIcon->DamageFloatupOverlay;
@@ -236,6 +244,8 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 					auto animation = GetAnimation(damageFloatup, FString("Floatup"));
 					damageFloatup->PlayAnimation(animation);
 
+					unitIcon->UnitImage->SetAnimation(0, "Hit", false);
+
 					//PUN_LOG("DamageOverlay: %d", unitUI->DamageOverlay->GetChildrenCount());
 				}
 				
@@ -250,18 +260,23 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 		}
 
 		BoxAfterAdd(armyOuterBox, columnIndex);
+
+		armyOuterBox->SetVisibility(simUnits.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	};
 
 	//! Attacker
 	{
-		addUnits(claimProgress.attackerBackLine, LeftArmyBackOuterBox);
-		addUnits(claimProgress.attackerFrontLine, LeftArmyFrontOuterBox);
+		addUnits(claimProgress.attackerBackLine, LeftArmyBackOuterBox, true);
+		addUnits(claimProgress.attackerFrontLine, LeftArmyFrontOuterBox, true);
 	}
 
 	//! Defender
 	{
-		addUnits(claimProgress.defenderBackLine, RightArmyBackOuterBox);
-		addUnits(claimProgress.defenderFrontLine, RightArmyFrontOuterBox);
+		addUnits(claimProgress.defenderBackLine, RightArmyBackOuterBox, false);
+		addUnits(claimProgress.defenderFrontLine, RightArmyFrontOuterBox, false);
+
+		addUnits(claimProgress.defenderWall, RightArmyWall, false);
+		addUnits(claimProgress.defenderTreasure, RightArmyTreasure, false);
 	}
 
 	//! Battle Bar

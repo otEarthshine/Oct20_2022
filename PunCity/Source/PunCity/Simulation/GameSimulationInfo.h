@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 59 // 3 digit
+#define MINOR_VERSION 62 // 3 digit
 
-#define VERSION_DAY 4
+#define VERSION_DAY 18
 #define VERSION_MONTH 11
 #define VERSION_YEAR 21
 
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 38 // 3 digit
+#define MINOR_SAVE_VERSION 40 // 3 digit
 
-#define VERSION_SAVE_DAY 4
+#define VERSION_SAVE_DAY 18
 #define VERSION_SAVE_MONTH 11
 #define VERSION_SAVE_YEAR 21
 
@@ -1165,7 +1165,7 @@ static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCo
  * Note: Farm is affected by this
  */
 static const int32 WoodGatherYield_Base100 = 250;
-static const int32 FarmBaseYield100 = 200; // 250 (nov 19)
+static const int32 FarmBaseYield100 = 200; // 250 -> 200 (nov 19)
 static const int32 StoneGatherYield_Base = 4;
 
 static const int32 CutTreeTicksBase = Time::TicksPerSecond * 10;
@@ -1174,22 +1174,40 @@ static const int32 HarvestDepositTicksBase = Time::TicksPerSecond * 14;
 // How fast people produce value when working compare to value spent on food
 // This is high because people don't spend all their time working.
 //!!! Change Base Production (Except FarmBaseYield100) !!!!
-static const int32 WorkRevenueToCost_Base = 150; // 150 -> 128 (Mar 26)... -> 150 (May 10)
+static const int32 WorkRevenueToCost_Base = 135; // 150 -> 128 (Mar 26)... -> 150 (May 10) .. Nov 11: 150->135
 
 // TODO: WorkRevenueToCost is not yet affected by resource modifiers...
 
-static const int32 WorkRevenue100PerYear_perMan_Base = BaseHumanFoodCost100PerYear * WorkRevenueToCost_Base / 100;
+static const int32 WorkRevenue100PerYear_perMan_Base = BaseHumanFoodCost100PerYear * WorkRevenueToCost_Base / 100; // Used in AssumedFoodProduction100PerYear/WorkRevenue100PerSec_perMan_Base
 // This is the same as WorkRevenuePerManSec100_Base
-static const int32 WorkRevenue100PerSec_perMan_Base = WorkRevenue100PerYear_perMan_Base / Time::SecondsPerYear;
+static const int32 WorkRevenue100PerSec_perMan_Base = WorkRevenue100PerYear_perMan_Base / Time::SecondsPerYear; // Only for Construction
 
 static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / FoodCost;
 
 // How much a person spend on each type of luxury per year. ... /4 comes from testing... it makes houselvl 2 gives x2 income compare to house lvl 1
-static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8;
+static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8 * 150 / 100; // Nov 15: +50% (150 / 100)
 static const int32 HumanLuxuryCost100PerRound_ForEachType = HumanLuxuryCost100PerYear_ForEachType / Time::RoundsPerYear;
 
 
 static const int32 BuildManSecCostFactor100 = 10; // Building work time is x% of the time it takes to acquire the resources
+
+
+/*
+ * Base Production Change Note:
+ *
+ * Nov 15: Half price of production buildings, Adjust other values to compensate
+ * - Why:
+ *   - Encourage building multiple buildings, and balancing their count.
+ *   - Use up more laborers
+ *   - Indirectly nerf Building Slot Cards (now we need more)
+ * - Half Price: halve BaseCostPerWorker, (this lead to less work revenue, might need to adjust secsToBreakEven)
+ * - Changes to compensate half price for production buildings:
+ *	 - luxury consumption +50% -> Consume more so we need to build more [HumanLuxuryCost100PerYear_ForEachType]
+ *	 - luxury 50% more expensive -> end up with same rate of unit consumption.. but 50% longer production time
+ *	   - Decrease Cannabis/Tulip yield by 30% to offset the 50% price increase
+ *	 - Nerf Library/school to 50/70% sci  (from 320% -> 220%).. offset the +50% luxury bonus which leads to +50% luxury sci
+ *	 - -10% overall production, [WorkRevenueToCost_Base]
+ */
 
 
 // Electricity
@@ -1218,15 +1236,15 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Mushroom,	LOCTEXT("Mushroom", "Mushroom"),	FoodCost, LOCTEXT("Mushroom Desc", "Delicious, earthy tasting fungus")),
 	ResourceInfo(ResourceEnum::Hay,			LOCTEXT("Hay", "Hay"),		1, LOCTEXT("Hay Desc", "Dried grass that can be used as animal feed")),
 
-	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	18, LOCTEXT("Paper Desc", "Used for research and book making")),
+	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	20, LOCTEXT("Paper Desc", "Used for research and book making")),
 	ResourceInfo(ResourceEnum::Clay,		LOCTEXT("Clay", "Clay"),		3, LOCTEXT("Clay Desc", "Fine-grained earth used to make Pottery and Bricks")),
 	ResourceInfo(ResourceEnum::Brick,		LOCTEXT("Brick", "Brick"),	12, LOCTEXT("Brick Desc", "Sturdy, versatile construction material")),
 
 	ResourceInfo(ResourceEnum::Coal,		LOCTEXT("Coal", "Coal"),		7, LOCTEXT("Coal Desc", "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood")),
 	ResourceInfo(ResourceEnum::IronOre,		LOCTEXT("Iron Ore", "Iron Ore"),		6, LOCTEXT("Iron Ore Desc", "Valuable ore that can be smelted into Iron Bar")),
 	ResourceInfo(ResourceEnum::Iron,		LOCTEXT("Iron Bar", "Iron Bar"),		18, LOCTEXT("Iron Bar Desc", "Sturdy bar of metal used in construction and tool-making.")),
-	ResourceInfo(ResourceEnum::Furniture,	LOCTEXT("Furniture", "Furniture"), 15,  LOCTEXT("Furniture Desc", "Luxury tier 1 used for housing upgrade. Make house a home.")),
-	ResourceInfo(ResourceEnum::Chocolate,	LOCTEXT("Chocolate", "Chocolate"), 30,   LOCTEXT("Chocolate Desc", "Everyone's favorite confectionary. (Luxury tier 3)")),
+	ResourceInfo(ResourceEnum::Furniture,	LOCTEXT("Furniture", "Furniture"), 22,  LOCTEXT("Furniture Desc", "Luxury tier 1 used for housing upgrade. Make house a home.")),
+	ResourceInfo(ResourceEnum::Chocolate,	LOCTEXT("Chocolate", "Chocolate"), 45,   LOCTEXT("Chocolate Desc", "Everyone's favorite confectionary. (Luxury tier 3)")),
 
 	//ResourceInfo(ResourceEnum::CrudeIronTools,	"Crude Iron Tools",	15,  "Medium-grade tool made by Blacksmith using Iron Ore and Wood."),
 	ResourceInfo(ResourceEnum::SteelTools,		LOCTEXT("Steel Tools", "Steel Tools"),			27,  LOCTEXT("Steel Tool Desc", "High-grade tool made by Blacksmith from Iron Bars and Wood")),
@@ -1239,8 +1257,8 @@ static const ResourceInfo ResourceInfos[]
 
 	//ResourceInfo(ResourceEnum::WhaleMeat, "WhaleMeat", 7, 100, "Luxury food obtained from Fishing Lodge"),
 	ResourceInfo(ResourceEnum::Grape,		LOCTEXT("Grape", "Grape"),			FoodCost, LOCTEXT("Grape Desc", "Juicy, delicious fruit used in Wine-making.")),
-	ResourceInfo(ResourceEnum::Wine,		LOCTEXT("Wine", "Wine"),			35, LOCTEXT("Wine Desc", "Luxury tier 2 used for housing upgrade. Alcoholic drink that makes everything tastes better.")),
-	ResourceInfo(ResourceEnum::MagicMushroom,		LOCTEXT("Magic Mushroom", "Magic Mushroom"),	20,		LOCTEXT("Magic Mushroom Desc", "Psychedelic mushroom that can bring you on a hallucination trip. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::Wine,		LOCTEXT("Wine", "Wine"),			52, LOCTEXT("Wine Desc", "Luxury tier 2 used for housing upgrade. Alcoholic drink that makes everything tastes better.")),
+	ResourceInfo(ResourceEnum::MagicMushroom,		LOCTEXT("Magic Mushroom", "Magic Mushroom"),	30,		LOCTEXT("Magic Mushroom Desc", "Psychedelic mushroom that can bring you on a hallucination trip. (Luxury tier 2)")),
 
 	ResourceInfo(ResourceEnum::Pork,			LOCTEXT("Pork", "Pork"),		FoodCost, LOCTEXT("Pork Desc", "Delicious meat from farmed Pigs")),
 	ResourceInfo(ResourceEnum::GameMeat,		LOCTEXT("Game Meat", "Game Meat"), FoodCost,  LOCTEXT("Game Meat Desc", "Delicious meat from wild animals")),
@@ -1250,38 +1268,38 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Wool,			LOCTEXT("Wool", "Wool"),	7, LOCTEXT("Wool Desc", "Fine, soft fiber used to make Clothes")),
 	ResourceInfo(ResourceEnum::Leather,		LOCTEXT("Leather", "Leather"), 6, LOCTEXT("Leather Desc", "Animal skin that can be used to make Clothes")),
-	ResourceInfo(ResourceEnum::Cloth,		LOCTEXT("Clothes", "Clothes"), 30, LOCTEXT("Clothes Desc", "Luxury tier 2 used for housing upgrade. Provide cover and comfort.")),
+	ResourceInfo(ResourceEnum::Cloth,		LOCTEXT("Clothes", "Clothes"), 45, LOCTEXT("Clothes Desc", "Luxury tier 2 used for housing upgrade. Provide cover and comfort.")),
 
 	ResourceInfo(ResourceEnum::GoldOre,		LOCTEXT("Gold Ore", "Gold Ore"), 14, LOCTEXT("Gold Ore Desc", "Precious ore that can be smelted into Gold Bar")),
 	ResourceInfo(ResourceEnum::GoldBar,		LOCTEXT("Gold Bar", "Gold Bar"), 30, LOCTEXT("Gold Bar Desc", "Precious metal that can be minted into money or crafted into Jewelry")),
 
-	ResourceInfo(ResourceEnum::Beer,			LOCTEXT("Beer", "Beer"), 12, LOCTEXT("Beer Desc", "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems.")),
+	ResourceInfo(ResourceEnum::Beer,			LOCTEXT("Beer", "Beer"), 18, LOCTEXT("Beer Desc", "Luxury tier 1 used for housing upgrade. The cause and solution to all life's problems.")),
 	//ResourceInfo(ResourceEnum::Barley,		"Barley", FoodCost, 100, "Edible grain, obtained from farming. Ideal for brewing Beer"),
 	//ResourceInfo(ResourceEnum::Oyster,		"Oyster", 7, IndustryTuneFactor + 50, "A delicacy from the Sea"),
-	ResourceInfo(ResourceEnum::Cannabis,		LOCTEXT("Cannabis", "Cannabis"), 8, LOCTEXT("Cannabis Desc", "Luxury tier 1 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Cannabis,		LOCTEXT("Cannabis", "Cannabis"), 12, LOCTEXT("Cannabis Desc", "Luxury tier 1 used for housing upgrade.")),
 	//ResourceInfo(ResourceEnum::Truffle,		"Truffle", 7, IndustryTuneFactor + 50, "Construction material"),
 	//ResourceInfo(ResourceEnum::Coconut,		"Coconut", 7, IndustryTuneFactor + 50, "Hard shell fruit with sweet white meat and delicious juice"),
 	ResourceInfo(ResourceEnum::Cabbage,		LOCTEXT("Cabbage", "Cabbage"), FoodCost, LOCTEXT("Cabbage Desc", "Healthy green vegetable.")),
 
-	ResourceInfo(ResourceEnum::Pottery,		LOCTEXT("Pottery", "Pottery"), 12, LOCTEXT("Pottery Desc", "Luxury tier 1 used for housing upgrade. Versatile pieces of earthenware.")),
+	ResourceInfo(ResourceEnum::Pottery,		LOCTEXT("Pottery", "Pottery"), 18, LOCTEXT("Pottery Desc", "Luxury tier 1 used for housing upgrade. Versatile pieces of earthenware.")),
 
 	ResourceInfo(ResourceEnum::Flour,		LOCTEXT("Wheat Flour", "Wheat Flour"),	9, LOCTEXT("Wheat Flour Desc", "Ingredient used to bake Bread")),
 	ResourceInfo(ResourceEnum::Bread,		LOCTEXT("Bread", "Bread"),			FoodCost, LOCTEXT("Bread Desc", "Delicious food baked from Wheat Flour")), // 3 bread from 1 flour
 	ResourceInfo(ResourceEnum::Gemstone,	LOCTEXT("Gemstone", "Gemstone"),	20, LOCTEXT("Gemstone Desc", "Precious stone that can be crafted into Jewelry")),
-	ResourceInfo(ResourceEnum::Jewelry,		LOCTEXT("Jewelry", "Jewelry"),		70, LOCTEXT("Jewelry Desc", "Luxury tier 3 used for housing upgrade. Expensive adornment of Gold and Gems.")),
+	ResourceInfo(ResourceEnum::Jewelry,		LOCTEXT("Jewelry", "Jewelry"),		105, LOCTEXT("Jewelry Desc", "Luxury tier 3 used for housing upgrade. Expensive adornment of Gold and Gems.")),
 
 	// June 9
 	ResourceInfo(ResourceEnum::Cotton,				LOCTEXT("Cotton", "Cotton"),				7, LOCTEXT("Cotton Desc", "Raw material used to make Cotton Fabric.")),
-	ResourceInfo(ResourceEnum::CottonFabric,		LOCTEXT("Cotton Fabric", "Cotton Fabric"), 23, LOCTEXT("Cotton Fabric Desc", "Fabric used by tailors to make Clothes.")),
-	ResourceInfo(ResourceEnum::DyedCottonFabric,	LOCTEXT("Dyed Cotton Fabric", "Dyed Cotton Fabric"), 43, LOCTEXT("Dyed Cotton Fabric Desc", "Fancy fabric used by tailors to make Fashionable Clothes.")),
-	ResourceInfo(ResourceEnum::LuxuriousClothes,	LOCTEXT("Fashionable Clothes", "Fashionable Clothes"), 50, LOCTEXT("Fashionable Clothes Desc", "Luxury tier 3 used for housing upgrade. Requires High Fashion")),
+	ResourceInfo(ResourceEnum::CottonFabric,		LOCTEXT("Cotton Fabric", "Cotton Fabric"), 34, LOCTEXT("Cotton Fabric Desc", "Fabric used by tailors to make Clothes.")),
+	ResourceInfo(ResourceEnum::DyedCottonFabric,	LOCTEXT("Dyed Cotton Fabric", "Dyed Cotton Fabric"), 64, LOCTEXT("Dyed Cotton Fabric Desc", "Fancy fabric used by tailors to make Fashionable Clothes.")),
+	ResourceInfo(ResourceEnum::LuxuriousClothes,	LOCTEXT("Fashionable Clothes", "Fashionable Clothes"), 75, LOCTEXT("Fashionable Clothes Desc", "Luxury tier 3 used for housing upgrade. Requires High Fashion")),
 	
 	ResourceInfo(ResourceEnum::Honey,		LOCTEXT("Honey", "Honey"), FoodCost, LOCTEXT("Honey Desc", "Delicious, viscous liquid produced by bees.")),
 	ResourceInfo(ResourceEnum::Beeswax,		LOCTEXT("Beeswax", "Beeswax"), 10,	LOCTEXT("Beeswax Desc", "Raw material used to make Candles.")),
-	ResourceInfo(ResourceEnum::Candle,		LOCTEXT("Candles", "Candles"), 20,	LOCTEXT("Candles Desc", "Luxury tier 2 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Candle,		LOCTEXT("Candles", "Candles"), 30,	LOCTEXT("Candles Desc", "Luxury tier 2 used for housing upgrade.")),
 	
 	ResourceInfo(ResourceEnum::Dye,			LOCTEXT("Dye", "Dye"), 9, LOCTEXT("Dye Desc", "Colored substance used for printing or dyeing clothes.")),
-	ResourceInfo(ResourceEnum::Book,		LOCTEXT("Book", "Book"), 50, LOCTEXT("Book Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Book,		LOCTEXT("Book", "Book"), 75, LOCTEXT("Book Desc", "Luxury tier 3 used for housing upgrade.")),
 
 	// Oct 26
 	ResourceInfo(ResourceEnum::Coconut,		LOCTEXT("Coconut", "Coconut"),	FoodCost, LOCTEXT("Coconut Desc", "Large delicious fruit with white meat and refreshing juice.")),
@@ -1294,8 +1312,8 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	FoodCost + 4, LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
 	ResourceInfo(ResourceEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),				FoodCost + 3, LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
-	ResourceInfo(ResourceEnum::Coffee,		LOCTEXT("Coffee", "Coffee"),	25, LOCTEXT("Coffee Desc", "Keeps you awake. (Luxury tier 2)")), // +5<img id=\"Science\"/> each unit when consumed.
-	ResourceInfo(ResourceEnum::Vodka,		LOCTEXT("Vodka", "Vodka"),		28, LOCTEXT("Vodka Desc", "Clear alcoholic beverage made from Potato. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::Coffee,		LOCTEXT("Coffee", "Coffee"),	37, LOCTEXT("Coffee Desc", "Keeps you awake. (Luxury tier 2)")), // +5<img id=\"Science\"/> each unit when consumed.
+	ResourceInfo(ResourceEnum::Vodka,		LOCTEXT("Vodka", "Vodka"),		42, LOCTEXT("Vodka Desc", "Clear alcoholic beverage made from Potato. (Luxury tier 2)")),
 
 	// Apr 9
 	ResourceInfo(ResourceEnum::StoneTools,	LOCTEXT("Stone Tools", "Stone Tools"),	10, LOCTEXT("Stone Tools Desc", "Low-grade Tools made by Stone Tool Shop.")),
@@ -1306,13 +1324,13 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Concrete,	LOCTEXT("Concrete", "Concrete"),	30, LOCTEXT("Concrete Desc", "Sturdy, versatile construction material")),
 	ResourceInfo(ResourceEnum::Steel,	LOCTEXT("Steel", "Steel"), 50, LOCTEXT("Steel Desc", "Sturdy, versatile construction material")),
 
-	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	30, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
-	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	75, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
+	ResourceInfo(ResourceEnum::Glassware,	LOCTEXT("Glassware", "Glassware"),	45, LOCTEXT("Glassware Desc", "Beautiful liquid container made from Glass. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	108, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
 
 	ResourceInfo(ResourceEnum::PitaBread, LOCTEXT("Pita Bread", "Pita Bread"), FoodCost, LOCTEXT("Pita Bread Desc", "Delicious food baked from Wheat Flour")),
-	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 50, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 75, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
 	ResourceInfo(ResourceEnum::DateFruit, LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
-	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 38, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
 	
 };
 
@@ -1666,7 +1684,7 @@ static const std::vector<std::vector<ResourceEnum>> TierToLuxuryEnums =
 {
 	{},
 	{ResourceEnum::Beer, ResourceEnum::Cannabis, ResourceEnum::Furniture, ResourceEnum::Pottery, ResourceEnum::Tulip },
-	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware},
+	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware, ResourceEnum::Carpet },
 	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate, ResourceEnum::PocketWatch},
 };
 
@@ -1747,7 +1765,7 @@ static std::vector<ResourceEnum> MiscResources = {
 // How fast price goes back to base price without tampering
 static int64 EquilibriumSupplyValue_PerPerson(ResourceEnum resourceEnum)
 {
-	static const int32 SupplyMultiplier = 30; // Determines how fast price changes
+	static const int32 SupplyMultiplier = 20; // Determines how fast price changes?? Nov 14: 30 -> 20
 	
 	return GetResourceInfo(resourceEnum).basePrice * SupplyMultiplier;
 }
@@ -2555,7 +2573,8 @@ enum class CardEnum : uint16
 	Frigate,
 	Battleship,
 
-	
+	Wall,
+	RaidTreasure,
 	
 	None, // Also Total Count
 
@@ -2600,7 +2619,7 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 
 	{ CardEnum::Hotel, 100 },
 
-	{ CardEnum::SpyCenter, 300 },
+	{ CardEnum::SpyCenter, 30 },
 
 	{ CardEnum::PolicyOffice, 100 },
 
@@ -2614,7 +2633,7 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 
 	{ CardEnum::ImmigrationOffice, 10 },
 
-	{ CardEnum::Fort, 50 },
+	{ CardEnum::Fort, 20 },
 };
 
 // Building upkeep per round
@@ -2655,7 +2674,9 @@ static const std::vector<CardEnum> AutoQuickBuildList
 	CardEnum::StatisticsBureau,
 	CardEnum::JobManagementBureau,
 	CardEnum::Fort,
-	CardEnum::ResourceOutpost,
+	CardEnum::SpyCenter,
+	CardEnum::PolicyOffice,
+	//CardEnum::ResourceOutpost,
 };
 static bool IsAutoQuickBuild(CardEnum cardEnumIn) {
 	for (CardEnum cardEnum : AutoQuickBuildList) {
@@ -2773,7 +2794,7 @@ struct BldResourceInfo
 		check(workRevenuePerSec100_perMan_beforeUpgrade > 0);
 		int32 result = std::max(1, workRevenuePerSec100_perMan_beforeUpgrade);
 		for (int32 i = 0; i < upgradeCount; i++) {
-			result = result * UpgradeProfitPercentEraMultiplier / 100;
+			result = result * UpgradeProfitPercentEraMultiplier(i + era + 1) / 100;
 		}
 		return result;
 	}
@@ -2785,10 +2806,10 @@ struct BldResourceInfo
 		}
 		
 		for (int32 i = 1; i < minEra; i++) {
-			value = value * BaseProfitPercentEraMultiplier / 100;
+			value = value * BaseProfitPercentEraMultiplier(i + 1) / 100;
 		}
 		for (int32 i = 0; i < upgradeCount; i++) {
-			value = value * UpgradeProfitPercentEraMultiplier / 100;
+			value = value * UpgradeProfitPercentEraMultiplier(minEra + i + 1) / 100;
 		}
 		return value;
 	}
@@ -2804,16 +2825,16 @@ struct BldResourceInfo
 	static const int32 PercentUpkeepToPrice = 10; // May 31: 5 -> 10
 
 	// TODO:
-	static const int32 BaseCostPercentEraMultiplier = 140;
-	static const int32 BaseProfitPercentEraMultiplier = 120;
+	static const int32 BaseCostPercentEraMultiplier = 135;
+	static int32 BaseProfitPercentEraMultiplier(int32 nextEra) { return nextEra == 2 ? 120 : 115; }
 
 	// For calculating upgrade cost and final base production
-	static const int32 UpgradeCostPercentEraMultiplier = 150;
-	static const int32 UpgradeProfitPercentEraMultiplier = 115;
+	static const int32 UpgradeCostPercentEraMultiplier = 145;
+	static int32 UpgradeProfitPercentEraMultiplier(int32 nextEra) { return nextEra == 2 ? 115 : 110; }
 
 	static const int32 FirstIndustryIncentiveMultiplier = 80;
 
-	static const int32 BaseCostPerWorker = 250;
+	static const int32 BaseCostPerWorker = 125; // Nov 15: 150 -> 125
 
 	void CalculateResourceCostValueBeforeDiscount(const std::vector<ResourceEnum>& inputsAndOutput, int32 percentDiff)
 	{
@@ -2838,7 +2859,7 @@ struct BldResourceInfo
 
 		// Building without era upgrade gets bonus
 		if (HasNoEraUpgrade(buildingEnum)) {
-			costPerWorker = costPerWorker * BaseProfitPercentEraMultiplier / 100;
+			costPerWorker = costPerWorker * BaseProfitPercentEraMultiplier(0) / 100;
 		}
 
 		costPerWorker_beforeEraAndUpgrade = costPerWorker;
@@ -2859,6 +2880,11 @@ struct BldResourceInfo
 		}
 
 		int32 constructionCostMoney = costPerWorker * (workerCount + 1);
+
+		// No worker? still have some good amount of cost
+		if (workerCount == 0) {
+			constructionCostMoney = costPerWorker * 3;
+		}
 		
 		int32 totalValueRatio = 0;
 		std::vector<int32> valueRatio(resourceRatio.size());
@@ -2885,6 +2911,9 @@ struct BldResourceInfo
 
 		if (buildingEnum == CardEnum::StatisticsBureau ||
 			buildingEnum == CardEnum::JobManagementBureau ||
+			buildingEnum == CardEnum::SpyCenter ||
+			buildingEnum == CardEnum::PolicyOffice ||
+
 			buildingEnum == CardEnum::House ||
 			buildingEnum == CardEnum::Farm ||
 			buildingEnum == CardEnum::StorageYard ||
@@ -2921,7 +2950,7 @@ struct BldResourceInfo
 			// Era
 			int32 costPerWorker_beforeUpgrade = costPerWorker_beforeEraAndUpgrade;
 			for (int32 i = 1; i < era; i++) {
-				costPerWorker_beforeUpgrade = costPerWorker_beforeUpgrade * BaseProfitPercentEraMultiplier / 100;
+				costPerWorker_beforeUpgrade = costPerWorker_beforeUpgrade * BaseProfitPercentEraMultiplier(i + 1) / 100;
 			}
 
 			workRevenuePerSec100_perMan_beforeUpgrade = costPerWorker_beforeUpgrade * 100 / secsToBreakEven; // Revenue increase required to get to breakeven within secsToBreakEven
@@ -2937,7 +2966,7 @@ struct BldResourceInfo
 			// Special cases
 			// Building without era upgrade gets work bonus
 			if (HasNoEraUpgrade(buildingEnum)) {
-				workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * UpgradeProfitPercentEraMultiplier / 100;
+				workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * UpgradeProfitPercentEraMultiplier(0) / 100;
 			}
 
 			if (buildingEnum == CardEnum::Tailor) { // Tailor is has high worker count while not being too expensive
@@ -3010,9 +3039,9 @@ struct BldInfo
 		return ConstructionCostAsMoney(constructionResources);
 	}
 
-	int32 workRevenuePerSec100_perMan(int32 upgradeCount = 0) const {
-		return resourceInfo.workRevenuePerSec100_perMan(upgradeCount);
-	}
+	//int32 workRevenuePerSec100_perMan(int32 upgradeCount = 0) const {
+	//	return resourceInfo.workRevenuePerSec100_perMan(upgradeCount);
+	//}
 
 	int32 minEra() const { return resourceInfo.era; }
 
@@ -3380,10 +3409,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 9), GetBldResourceInfo(2, { ResourceEnum::Grape, ResourceEnum::Wine }, { 1, 0, 0, 1 }, 50, 100, 1)
 	),
 
-	BldInfo(CardEnum::Library, _LOCTEXT("Library", "Library"),	LOCTEXT("Library (Plural)", "Libraries"), LOCTEXT("Library Desc", "+100%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)"),
+	BldInfo(CardEnum::Library, _LOCTEXT("Library", "Library"),	LOCTEXT("Library (Plural)", "Libraries"), LOCTEXT("Library Desc", "+50%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)"),
 		WorldTile2(4, 6), GetBldResourceInfo(2, {}, { 3, 1 }, 0, 100, -999)
 	),
-	BldInfo(CardEnum::School, _LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"), LOCTEXT("School Desc", "+120%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)"),
+	BldInfo(CardEnum::School, _LOCTEXT("School", "School"),	LOCTEXT("School (Plural)", "Schools"), LOCTEXT("School Desc", "+70%<img id=\"Science\"/> for surrounding Houses (effect doesn't stack)"),
 		WorldTile2(6, 8), GetBldResourceInfo(3, {}, { 2, 1, 1, 1 }, 50, 100, -999)
 	),
 	
@@ -3551,7 +3580,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::Fort, _LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), LOCTEXT("Fort Desc", "Place on choke point for raid protection. +200% defense on protected provinces."),
 		WorldTile2(9, 9), GetBldResourceInfoMoney(3000)
 	),
-	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Camp", "Resource Camp"),	LOCTEXT("Resource Camp (Plural)", "Resource Camps"), LOCTEXT("Resource Camp Desc", "Extract resource from province."),
+	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outpost"), LOCTEXT("Resource Outpost Desc", "Extract resource from a foreign province."),
 		WorldTile2(10, 10), GetBldResourceInfoMoney(10000)
 	),
 	BldInfo(CardEnum::ResearchLab, _LOCTEXT("Research Lab", "Research Lab"), LOCTEXT("Research Lab (Plural)", "Research Labs"), LOCTEXT("Research Lab Desc", "Generate Science Points. Uses Paper as input."),
@@ -3790,10 +3819,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(10, 12), GetBldResourceInfoManual({ 300 })
 	),
 	BldInfo(CardEnum::SpyCenter, _LOCTEXT("Spy Center", "Spy Center"), LOCTEXT("Spy Center (Plural)", "Spy Center"), LOCTEXT("Spy Center Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 0 })
 	),
 	BldInfo(CardEnum::PolicyOffice, _LOCTEXT("Policy Office", "Policy Office"), LOCTEXT("Policy Office (Plural)", "Policy Office"), LOCTEXT("Policy Office Desc", ""),
-		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
+		WorldTile2(8, 12), GetBldResourceInfoManual({ 0 })
 	),
 	BldInfo(CardEnum::WorldTradeOffice, _LOCTEXT("World Trade Office", "World Trade Office"), LOCTEXT("World Trade Office (Plural)", "World Trade Office"), LOCTEXT("World Trade Office Desc", ""),
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
@@ -4051,7 +4080,7 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::PopulationScoreMultiplier, _LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population and Happiness.")),
 
 
-		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 0, LOCTEXT("Militia Desc", "")),
+		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 0, LOCTEXT("Militia Desc", "TODO: TEXT")),
 		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 0, LOCTEXT("Conscript Desc", "")),
 	
 		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		0, LOCTEXT("Warrior Desc", "")),
@@ -4072,6 +4101,9 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			0, LOCTEXT("Galley Desc", "")),
 		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		0, LOCTEXT("Frigate Desc", "")),
 		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), 0, LOCTEXT("Battleship Desc", "")),
+
+		BldInfo(CardEnum::Wall, _LOCTEXT("Wall", "Wall"), 0, LOCTEXT("Wall Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::RaidTreasure, _LOCTEXT("Raid Treasure", "Raid Treasure"), 0, LOCTEXT("Raid Treasure Desc", "TODO: TEXT")),
 };
 
 #undef _LOCTEXT
@@ -4188,7 +4220,8 @@ struct CardStatus
 	//! Display
 	int32 displayCardStateValue1 = -1;
 	int32 displayCardStateValue2 = -1;
-
+	int32 displayCardStateValue3 = -1;
+	
 
 	FVector2D lastPosition() const {
 		return FVector2D(lastPositionX100 / 100.0f, lastPositionY100 / 100.0f);
@@ -5137,7 +5170,7 @@ struct BuildingUpgrade
 	}
 
 	static int32 CalculateMaxHouseLvlBonus(int32 houseLvl) {
-		return houseLvl * 10; // at House Lvl 8 -> can go up to 80% from 80 House Lvl Count
+		return 20 + houseLvl * 5; // at House Lvl 8 -> can go up to 80% from 80 House Lvl Count
 	}
 	
 
@@ -5748,7 +5781,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::WheatBush, LOCTEXT("Wheat", "Wheat"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), TileObjInfo::wheatGrassDesc()),
 	TileObjInfo(TileObjEnum::BarleyBush, LOCTEXT("Barley", "Barley"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), TileObjInfo::wheatGrassDesc()),
 	TileObjInfo(TileObjEnum::Grapevines, LOCTEXT("Grapevines", "Grapevines"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), LOCTEXT("Grapevines Desc", "Produces delicious Grape that can be eaten fresh or make expensive wine.")),
-	TileObjInfo(TileObjEnum::Cannabis, LOCTEXT("Cannabis", "Cannabis"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100), LOCTEXT("Cannabis Desc", "Plant whose parts can be smoked or added to food for recreational purposes.")),
+	TileObjInfo(TileObjEnum::Cannabis, LOCTEXT("Cannabis", "Cannabis"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100 * 70 / 100), LOCTEXT("Cannabis Desc", "Plant whose parts can be smoked or added to food for recreational purposes.")),
 
 	//TileObjInfo(TileObjEnum::PlumpCob, "Plump cob",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces large soft yellow tasty cob. Need 2 years before it is ready for harvest, but has 3x yield."),
 	//TileObjInfo(TileObjEnum::CreamPod, "Cream pod",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces round pods, which, when cut open, reveals thick sweet cream substance."),
@@ -5764,7 +5797,7 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Melon,		LOCTEXT("Melon", "Melon"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +5<img id=\"Coin\"/> each unit when consumed.")),
 	TileObjInfo(TileObjEnum::Pumpkin,	LOCTEXT("Pumpkin", "Pumpkin"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	TileObjInfo(TileObjEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, FarmBaseYield100), LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
-	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
+	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100 * 70 / 100), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
 	
 	TileObjInfo(TileObjEnum::Herb,		LOCTEXT("Medicinal Herb", "Medicinal Herb"),		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), LOCTEXT("Medicinal Herb Desc", "Herb used to heal sickness or make medicine.")),
@@ -6011,8 +6044,8 @@ enum class PlacementInstructionEnum
 	LogisticsOffice,
 
 	Fort,
-	Colony,
-	ColonyNoGeoresource,
+	ResourceOutpost,
+	ResourceOutpostNoGeoresource,
 	
 	ColonyNeedsEmptyProvinces,
 	ColonyNeedsPopulation,
@@ -6167,6 +6200,9 @@ enum class InfluenceIncomeEnum : uint8
 
 	GainFromVassal,
 	LoseToLord,
+
+	SpyNest,
+	EnemySpyNest,
 	
 	Count,
 };
@@ -6186,6 +6222,9 @@ static const TArray<FText> InfluenceIncomeEnumName
 
 	LOCTEXT("Gain from Vassal", "Gain from Vassal"),
 	LOCTEXT("Lose to Lord", "Lose to Lord"),
+
+	LOCTEXT("Spy Nest", "Spy Nest"),
+	LOCTEXT("Enemy Spy Nest", "Enemy Spy Nest"),
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
 
@@ -6347,6 +6386,19 @@ static std::vector<ScienceEnum> HouseScienceModifierEnums
 /**
  * Research
  */
+
+enum class UnlockStateEnum
+{
+	InfluencePoints,
+	ForeignPort,
+	TrainUnits,
+
+	Vassalize,
+	ConquerProvince,
+	Raze,
+	Count,
+};
+
 
 enum class TechEnum : uint8
 {
@@ -7216,7 +7268,14 @@ struct MilitaryCardInfo
 	int32 defense100; // attack / def = damage
 	int32 attack100;
 
-	int32 strength() { return hp100 * defense100 / MilitaryConstants::BaseDefense100 * attack100 / MilitaryConstants::BaseAttack100; }
+	int32 defenseDisplay() {
+		return (defense100 - 100) / 6;
+	}
+	int32 attackDisplay() {
+		return attack100 / 100;
+	}
+
+	int64 strength() { return static_cast<int64>(hp100) * defense100 * attack100 / MilitaryConstants::BaseDefense100 / MilitaryConstants::BaseAttack100; }
 };
 
 static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
@@ -7259,6 +7318,15 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 	}
 	else if (IsNavyCardEnum(cardEnum)) {
 		setMilitaryCost(3000, cardEnum == CardEnum::Battleship ? ResourceEnum::Steel : ResourceEnum::Money);
+	}
+	else if (cardEnum == CardEnum::RaidTreasure ||
+			cardEnum == CardEnum::Wall) 
+	{
+		result.baseMoneyCost = 0;
+		result.resourceCost = ResourcePair::Invalid();
+	}
+	else {
+		UE_DEBUG_BREAK();
 	}
 	
 
@@ -7306,13 +7374,30 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 		result.hp100 = result.hp100 * 150 / 100;
 		result.attack100 = result.attack100 * 150 / 100;
 	}
+	else if (cardEnum == CardEnum::RaidTreasure) {
+		int32 roundsToWin = 2;
+		int32 unitsToKillIn1Round = 3;
+		// With default attack100, 3 units can kill the whole 1000 hp in 1 round
+		// unitsToKillIn1Round * BaseAttack100 * (Time::SecondsPerRound * roundsToWin / SecondsPerAttack) = BaseHP100 * result.defense100
+		result.defense100 = unitsToKillIn1Round * MilitaryConstants::BaseAttack100 * 100 * (Time::SecondsPerRound * roundsToWin / MilitaryConstants::SecondsPerAttack) / MilitaryConstants::BaseHP100;
+	}
+	else if (cardEnum == CardEnum::Wall)
+	{
+		int32 roundsToWin = 4;
+		int32 unitsToKillIn1Round = 3;
+		result.hp100 = unitsToKillIn1Round * MilitaryConstants::BaseAttack100 * 100 * (Time::SecondsPerRound * roundsToWin / MilitaryConstants::SecondsPerAttack) / MilitaryConstants::BaseDefense100;
+		result.attack100 = 0;
+	}
+	else {
+		UE_DEBUG_BREAK();
+	}
 
 	// HP rounding
 	result.hp100 = result.hp100 / 10000 * 10000;
 
 	check(result.hp100 > 0);
 	check(result.defense100 > 0);
-	check(result.attack100 > 0);
+	//check(result.attack100 > 0);
 
 	// Upkeep
 	int32 roundsToEqualUpfrontCost = 200;
@@ -7344,6 +7429,9 @@ static const std::vector<MilitaryCardInfo> MilitaryCardInfoBaseList
 	CreateMilitaryInfo(CardEnum::Galley, 2),
 	CreateMilitaryInfo(CardEnum::Frigate, 3),
 	CreateMilitaryInfo(CardEnum::Battleship, 4),
+
+	CreateMilitaryInfo(CardEnum::Wall, 3),
+	CreateMilitaryInfo(CardEnum::RaidTreasure, 4),
 };
 
 static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum) {
@@ -7360,18 +7448,21 @@ static FText GetMilitaryInfoDescription(CardEnum cardEnum)
 		TEXT_NUM(GetMilitaryInfo(cardEnum).upkeep),
 
 		TEXT_NUM(militaryInfo.hp100 / 100),
-		TEXT_100(militaryInfo.defense100),
-		TEXT_100(militaryInfo.attack100)
+		TEXT_NUM(militaryInfo.defenseDisplay()),
+		TEXT_NUM(militaryInfo.attackDisplay())
 	);
 }
 
 static int32 GetArmyStrength(const std::vector<CardStatus>& cards)
 {
-	int32 strength = 0;
+	int64 strength = 0;
 	for (const CardStatus& card : cards) {
-		MilitaryCardInfo militaryInfo = GetMilitaryInfo(card.cardEnum);
-		strength += militaryInfo.strength() * std::max(0, card.stackSize - 1);
-		strength += militaryInfo.strength() * card.cardStateValue2 / militaryInfo.hp100;
+		if (card.stackSize > 0)
+		{
+			MilitaryCardInfo militaryInfo = GetMilitaryInfo(card.cardEnum);
+			strength += militaryInfo.strength() * (card.stackSize - 1);
+			strength += militaryInfo.strength() * card.cardStateValue2 / militaryInfo.hp100;
+		}
 	}
 	return strength;
 }
@@ -8091,6 +8182,9 @@ enum class PlayerCallOnceActionEnum : uint8
 	ForeignBuiltSuccessfulPopup,
 	LowTourismHappinessPopup,
 	UnlockCaravan,
+	RaidHandle_ExplainFortGuard,
+	Steal_ExplainMilitaryGuard,
+	SpyNestStoleALot,
 	Count
 };
 static const int32 CallOnceEnumCount = static_cast<int32>(PlayerCallOnceActionEnum::Count);
@@ -10139,8 +10233,8 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 	return 0 > provinceId && provinceId > EmptyProvinceId; // Edge marked with negative...
 }
 
-static const int32 Income100PerFertilityPercent = 15; // 10 -> Sep: 30 ->
-static const int32 ClaimToIncomeRatio = 50; // When 2, actual is 4 since upkeep is half the income...
+static const int32 Income100PerFertilityPercent = 75; // 10 -> Sep: 30 -> ; Nov 17: 15->75
+static const int32 ClaimToIncomeRatio = 10; // When 2, actual is 4 since upkeep is half the income... ; Nov 17: 50->10
 
 struct ProvinceConnection
 {

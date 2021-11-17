@@ -3,6 +3,8 @@
 
 #include "MinorTownWorldUI.h"
 
+#include "BattleFieldUnitIcon.h"
+
 #define LOCTEXT_NAMESPACE "MinorTownWorldUI"
 
 
@@ -16,8 +18,9 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	/*
 	 * City Name
 	 */
+	int32 uiPlayerId = townPlayerId();
 	 // Make sure town's name is up to date with sim (only for non player's town)
-	if (townPlayerId() == playerId()) {
+	if (uiPlayerId == playerId()) {
 		CityNameText->SetColorAndOpacity(FLinearColor(0.7, 0.85, 1.0)); // Our Capital
 	}
 	else
@@ -25,7 +28,7 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 		if (simulation().townManagerBase(playerId())->IsVassal(townId())) {
 			CityNameText->SetColorAndOpacity(FLinearColor(0.5, 0.6, 0.7)); // Vassal
 		}
-		else if (simulation().townManagerBase(playerId())->IsAlly(townPlayerId())) {
+		else if (simulation().townManagerBase(playerId())->IsAlly(uiPlayerId)) {
 			CityNameText->SetColorAndOpacity(FLinearColor(.7, 1, .7));
 		}
 		else {
@@ -55,7 +58,7 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 		PlayerColorCircle->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	if (simulation().townPlayerId(uiTownId) != playerId() &&
+	if (uiPlayerId != playerId() &&
 		simulation().IsResearched(playerId(), TechEnum::TradeRoute) &&
 		!simulation().worldTradeSystem().HasTradeRoute(playerId(), uiTownId))
 	{
@@ -64,6 +67,104 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	}
 	else {
 		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+
+	//! BottomCaptionText
+	auto& sim = simulation();
+	TownManagerBase* uiTownManagerBase = sim.townManagerBase(uiTownId);
+	
+	TArray<FText> args;
+	if (uiTownManagerBase->lordPlayerId() == playerId()) {
+		ADDTEXT_(
+			LOCTEXT("MinorTownBottomCaption_VassalTax", "Vassal Tax: +{0}<img id=\"Coin\"/>, +{1}<img id=\"Influence\"/>"),
+			TEXT_100(uiTownManagerBase->totalRevenue100() * uiTownManagerBase->vassalTaxPercent() / 100),
+			TEXT_100(uiTownManagerBase->totalInfluenceIncome100() * uiTownManagerBase->vassalInfluencePercent() / 100)
+		);
+	}
+
+	//! Trade Route Income
+	const std::vector<int32>& townIds = sim.GetTownIds(playerId());
+	int32 tradeIncome = 0;
+	for (int32 townId : townIds) {
+		if (sim.worldTradeSystem().HasTradeRoute(townId, uiTownId)) {
+			tradeIncome += sim.GetTradeRouteIncome();
+		}
+	}
+	if (tradeIncome > 0) {
+		if (args.Num() > 0) {
+			ADDTEXT_INV_("\n");
+		}
+		ADDTEXT_(
+			LOCTEXT("MinorTownBottomCaption_tradeRoute", "Trade Route: +{0}<img id=\"Coin\"/>"),
+			TEXT_NUM(tradeIncome)
+		);
+	}
+
+	//! Good Relation Income
+	if (IsMinorTown(uiTownId))
+	{
+		int32 relationshipInfluenceIncome = uiTownManagerBase->GetMinorCityAllyInfluenceReward(playerId());
+		if (relationshipInfluenceIncome > 0) {
+			if (args.Num() > 0) {
+				ADDTEXT_INV_("\n");
+			}
+			ADDTEXT_(
+				LOCTEXT("MinorTownBottomCaption_relationship", "Good Relation: +{0}<img id=\"Influence\"/>"),
+				TEXT_NUM(relationshipInfluenceIncome)
+			);
+		}
+	}
+	
+
+	if (args.Num() > 0) {
+		BottomCaptionText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		BottomCaptionText->SetText(JOINTEXT(args));
+	}
+	else {
+		BottomCaptionText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	/*
+	 * Show Foreign Army
+	 */
+	if (uiPlayerId != -1)
+	//if (sim.townPlayerId(uiTownId) != playerId())
+	{
+		std::vector<CardStatus> militaryCards = sim.cardSystem(uiPlayerId).GetMilitaryCards();
+		int32 index = 0;
+		for (int32 i = 0; i < militaryCards.size(); i++)
+		{
+			auto unitIcon = GetBoxChild<UBattleFieldUnitIcon>(ArmyRow, index, UIEnum::WG_BattlefieldUnitIcon, true);
+			unitIcon->UnitCountText->SetText(TEXT_NUM(militaryCards[i].stackSize));
+
+			FSpineAsset spineAsset = assetLoader()->GetSpine(militaryCards[i].cardEnum);
+			unitIcon->UnitImage->Atlas = spineAsset.atlas;
+			unitIcon->UnitImage->SkeletonData = spineAsset.skeletonData;
+
+			unitIcon->BackgroundImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", dataSource()->playerInfo(uiPlayerId).logoColorBackground);
+			unitIcon->UnitImage->PunTick();
+
+			MilitaryCardInfo militaryInfo = GetMilitaryInfo(militaryCards[i].cardEnum);
+
+			int32 unitHP = militaryInfo.hp100 / 100;
+
+			AddToolTip(unitIcon, FText::Format(
+				LOCTEXT("UnitIcon_Tip", "{0}<space>HP: {1}\nDefense: {2}\nAttack: {3}<space>Unit Count: {4}"),
+				GetBuildingInfo(militaryCards[i].cardEnum).name,
+				TEXT_NUM(unitHP),
+				TEXT_NUM(militaryInfo.defenseDisplay()),
+				TEXT_NUM(militaryInfo.attackDisplay()),
+				TEXT_NUM(militaryCards[i].stackSize)
+			));
+		}
+
+		BoxAfterAdd(ArmyRow, index);
+
+		ArmyRow->SetVisibility(ArmyRow->GetChildrenCount() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
+	else {
+		ArmyRow->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 
@@ -125,10 +226,6 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 			BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
 			AttackButton1->SetVisibility(ESlateVisibility::Visible);
 
-			//! Raze
-			AttackButton3->SetVisibility(ESlateVisibility::Visible);
-			BUTTON_ON_CLICK(AttackButton3, this, &UMinorTownWorldUI::OnClickRazeButton);
-
 			// Can also liberate if there is an existing conquerer
 			if (uiTownManagerBase->lordPlayerId() != -1) {
 				SetText(AttackButton2RichText, 
@@ -137,6 +234,13 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 				AttackButton2->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(AttackButton2, this, &UMinorTownWorldUI::OnClickLiberateButton);
 			}
+		}
+
+		//! Raze
+		if (sim.IsUnlocked(playerId(), UnlockStateEnum::Raze))
+		{
+			AttackButton3->SetVisibility(ESlateVisibility::Visible);
+			BUTTON_ON_CLICK(AttackButton3, this, &UMinorTownWorldUI::OnClickRazeButton);
 		}
 	}
 

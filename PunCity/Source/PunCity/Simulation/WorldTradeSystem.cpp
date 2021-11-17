@@ -219,6 +219,7 @@ void WorldTradeSystem::Tick1Sec()
 
 		_enumToSupplyValue100[i] = std::max(_enumToSupplyValue100[i], MinSupplyValue100_PerPerson * worldPopulationWithBase());
 
+		check(_enumToSupplyValue100[i] >= 0);
 		//PUN_LOG("Resource:%s, buy:%d sell:%d supply:%d eq:%d", *ResourceNameF(resourceEnum), buyValue100PerSec, sellValue100PerSec, _enumToSupplyValue100[i], EquilibriumSupplyValue100());
 	}
 

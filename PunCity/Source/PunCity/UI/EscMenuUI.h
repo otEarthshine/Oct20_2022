@@ -58,7 +58,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UCheckBox* OverlayCheckBox_Animals;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_HideTrees;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_ProvinceOverlay;
-	UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_DefenseOverlay;
+	//UPROPERTY(meta = (BindWidget)) UCheckBox* MapCheckBox_DefenseOverlay;
 
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_None;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OverlayOuterBox_Appeal;
@@ -610,7 +610,7 @@ private:
 			// Ensure checkboxes are up to date
 			MapCheckBox_HideTrees->SetIsChecked(dataSource()->isHidingTree());
 			MapCheckBox_ProvinceOverlay->SetIsChecked(dataSource()->isShowingProvinceOverlay());
-			MapCheckBox_DefenseOverlay->SetIsChecked(dataSource()->isShowingDefenseOverlay());
+			//MapCheckBox_DefenseOverlay->SetIsChecked(dataSource()->isShowingDefenseOverlay());
 			
 			//dataSource()->SetOverlayType(OverlayType::Farm, OverlaySetterType::OverlayToggler);
 			//SetOverlayCheckBox(OverlayCheckBox_Fertility);
@@ -644,9 +644,9 @@ private:
 	UFUNCTION() void OnCheckMap_ProvinceOverlay(bool active) {
 		dataSource()->SetOverlayProvince(active);
 	}
-	UFUNCTION() void OnCheckMap_DefenseOverlay(bool active) {
-		dataSource()->SetOverlayDefense(active);
-	}
+	//UFUNCTION() void OnCheckMap_DefenseOverlay(bool active) {
+	//	dataSource()->SetOverlayDefense(active);
+	//}
 	
 
 	UFUNCTION() void OnClickVictoryPopupScoreScreen() {

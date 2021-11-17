@@ -232,10 +232,6 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 	}
 
 
-
-	//
-
-
 }
 
 

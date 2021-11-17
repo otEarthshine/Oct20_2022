@@ -82,9 +82,9 @@ public:
 	void ToggleProvinceOverlay() {
 		_gameInterface->ToggleOverlayProvince();
 	}
-	void ToggleDefenseOverlay() {
-		_gameInterface->ToggleOverlayDefense();
-	}
+	//void ToggleDefenseOverlay() {
+	//	_gameInterface->ToggleOverlayDefense();
+	//}
 	
 	void KeyPressed_ToggleFertility() {
 		_gameInterface->ToggleOverlayFertility();

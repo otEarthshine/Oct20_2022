@@ -481,9 +481,9 @@ public:
 	const std::vector<int32>& oasisSlotProvinceIds() { return _oasisSlotProvinceIds; }
 
 	void SetSlotBuildingId(int32 provinceId, int32 buildingId) {
-		check(_provinceBuildingSlots[provinceId].portLandSlot.isValid() ||
-			_provinceBuildingSlots[provinceId].largeLandSlot.isValid() ||
-			_provinceBuildingSlots[provinceId].oasisSlot.isValid());
+		//check(_provinceBuildingSlots[provinceId].portLandSlot.isValid() ||
+		//	_provinceBuildingSlots[provinceId].largeLandSlot.isValid() ||
+		//	_provinceBuildingSlots[provinceId].oasisSlot.isValid());
 		
 		_provinceBuildingSlots[provinceId].buildingId = buildingId;
 	}

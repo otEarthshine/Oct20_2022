@@ -588,9 +588,16 @@ void APunPlayerController::Tick(float DeltaTime)
 							}
 							kNetworkTickInfoCache.push_back(tickInfo);
 
+							//! Send Ticks
 							const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
-							for (APunBasePlayerController* controller : controllers) {
+							for (APunBasePlayerController* controller : controllers) 
+							{
 								CastChecked<APunPlayerController>(controller)->SendTickToClient(tickInfo);
+							}
+
+							//! Desync Warning
+							if (gameInstance->serverTick() % (GameTicksPerNetworkTicks * 4 * 5)) { // send every 5 sec
+								CheckDesyncWarning();
 							}
 						}
 					}
@@ -1045,6 +1052,41 @@ bool APunPlayerController::ServerSendNetworkCommand_ToServer_Validate(const TArr
 
 void APunPlayerController::GamePause_ToServer_Implementation() {
 	Pause();
+}
+
+void APunPlayerController::CheckDesyncWarning()
+{
+	if (APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this)))
+	{
+		//! Desync Warning
+		TArray<int32> serverTickToHashes;
+		const auto& tickToHashes = simulation().recentTickToHash;
+		for (int32 i = 0; i < std::min(5, static_cast<int32>(tickToHashes.size())); i++)
+		{
+			serverTickToHashes.Add(tickToHashes[i].first);
+			serverTickToHashes.Add(tickToHashes[i].second);
+		}
+
+		//! Send Ticks
+		const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
+		for (APunBasePlayerController* controller : controllers) {
+			CastChecked<APunPlayerController>(controller)->CheckDesyncWarning_ToClient(serverTickToHashes);
+		}
+	}
+}
+void APunPlayerController::CheckDesyncWarning_ToClient_Implementation(const TArray<int32>& serverTickToHashes)
+{
+	const auto& tickToHashes = simulation().recentTickToHash;
+	
+	for (int32 i = 0; i < serverTickToHashes.Num(); i += 2) {
+		for (int32 j = 0; j < tickToHashes.size(); j++) {
+			if (serverTickToHashes[i] == tickToHashes[j].first) {
+				if (serverTickToHashes[i + 1] != tickToHashes[j].second) {
+					simulation().isDesynced = true;
+				}
+			}
+		}
+	}
 }
 
 

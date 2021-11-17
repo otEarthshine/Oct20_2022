@@ -24,10 +24,14 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* AttackButton3;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* AttackButton3RichText;
 
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ArmyRow;
+
 	UPROPERTY(meta = (BindWidget)) UTextBlock* TownHoverPopulationText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* CityNameText;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerColorCircle;
+
+	UPROPERTY(meta = (BindWidget)) URichTextBlock* BottomCaptionText;
 
 	int32 uiTownId = -1;
 

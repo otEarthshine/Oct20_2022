@@ -190,10 +190,11 @@ struct FPlayerInfo
 {
 	GENERATED_BODY();
 
-	static const uint64 InvalidSteamId64 = MAX_uint64;
+	static const uint64 InvalidSteamId64 = 0;
 
 	UPROPERTY() FText name;
 	UPROPERTY() uint64 steamId64 = InvalidSteamId64;
+	int32 playerId = -1;
 
 	UPROPERTY() int32 logoIndex = 0;
 	UPROPERTY() FLinearColor logoColorBackground = FLinearColor::Black;
@@ -210,6 +211,7 @@ struct FPlayerInfo
 	{
 		Ar << object.name;
 		Ar << object.steamId64;
+		Ar << object.playerId;
 		
 		Ar << object.logoIndex;
 		Ar << object.logoColorBackground;
@@ -331,7 +333,7 @@ public:
 
 	virtual void SetOverlayHideTree(bool isHiding) = 0;
 	virtual void SetOverlayProvince(bool showProvinceOverlay) = 0;
-	virtual void SetOverlayDefense(bool showOverlay) = 0;
+	//virtual void SetOverlayDefense(bool showOverlay) = 0;
 
 	virtual bool isCtrlDown() = 0;
 	virtual bool isShiftDown() = 0;
@@ -347,7 +349,7 @@ public:
 
 	virtual bool isHidingTree() = 0;
 	virtual bool isShowingProvinceOverlay() = 0;
-	virtual bool isShowingDefenseOverlay() = 0;
+	virtual bool isShowingDefenseNodes() = 0;
 	
 	virtual float zoomDistance() = 0;
 	virtual bool ZoomDistanceBelow(float threshold) = 0;

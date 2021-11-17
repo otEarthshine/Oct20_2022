@@ -74,7 +74,7 @@ public:
 	OverlayType GetOverlayType() final { return OverlayType::None; }
 	virtual bool isHidingTree() override { return false; }
 	virtual bool isShowingProvinceOverlay() override { return false; }
-	virtual bool isShowingDefenseOverlay() override { return false; }
+	virtual bool isShowingDefenseNodes() override { return false; }
 
 	ULineBatchComponent* lineBatch() final {
 		if (UWorld* world = GetWorld()) {

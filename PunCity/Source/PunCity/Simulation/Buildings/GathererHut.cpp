@@ -22,6 +22,9 @@ using namespace std;
 static const FText normalWorkModeText = LOCTEXT("Normal_WorkMode", "Normal");
 static const FText normalWorkModeDesc = LOCTEXT("Normal_WorkModeDesc", "Work mode without any bonuses.");
 
+static const int32 ProductionUpgrade30 = 20;
+static const int32 ProductionUpgrade50 = 30;
+
 //static FText ProductivityDescText(int32 productivity) {
 //	return FText::Format(LOCTEXT("+{0}% productivity.", "+{0}% productivity."), TEXT_NUM(productivity));
 //}
@@ -54,7 +57,7 @@ void GathererHut::FinishConstruction()
 	AddResourceHolder(ResourceEnum::DateFruit, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(delicateGatheringText, ResourceEnum::SteelTools, 20),
+		MakeProductionUpgrade(delicateGatheringText, ResourceEnum::SteelTools, ProductionUpgrade30),
 		MakeUpgrade(pestTrapText, LOCTEXT("Pests Traps Desc", "+30% productivity if there is an adjacent hunter (does not stack)."), ResourceEnum::Wood, 30),
 	});
 }
@@ -98,7 +101,7 @@ void HuntingLodge::FinishConstruction()
 	AddResourceHolder(ResourceEnum::Pork, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(smokingChamberText, ResourceEnum::Stone, 30),
+		MakeProductionUpgrade(smokingChamberText, ResourceEnum::Stone, ProductionUpgrade30),
 		MakeUpgrade(fruitBaitText, LOCTEXT("Fruit Bait Desc", "+30% productivity if there is an adjacent Fruit Gatherer (does not stack)."), ResourceEnum::Wood, 30),
 	});
 }
@@ -137,8 +140,8 @@ void Forester::FinishConstruction()
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Timber Management", "Timber Management"), ResourceEnum::Stone, 30),
-		MakeProductionUpgrade(LOCTEXT("Tree-cutting Techniques", "Tree-cutting Techniques"), ResourceEnum::Stone, 50),
+		MakeProductionUpgrade(LOCTEXT("Timber Management", "Timber Management"), ResourceEnum::Stone, ProductionUpgrade30),
+		MakeProductionUpgrade(LOCTEXT("Tree-cutting Techniques", "Tree-cutting Techniques"), ResourceEnum::Stone, ProductionUpgrade50),
 		MakeComboUpgrade(LOCTEXT("Forest Town", "Forest Town"), ResourceEnum::Wood),
 	});
 }
@@ -657,7 +660,7 @@ void ImmigrationOffice::FinishConstruction() {
 
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Immigrants Dream", "Immigrant's Dream"), LOCTEXT("Immigrants Dream Desc", "+2% Productivity for Every 1% Average Happiness above 75%."), 20),
-		MakeProductionUpgrade_Money(LOCTEXT("First Impression", "First Impression"), 30),
+		MakeProductionUpgrade_Money(LOCTEXT("First Impression", "First Impression"), ProductionUpgrade30),
 	});
 }
 
@@ -694,7 +697,7 @@ void Blacksmith::FinishConstruction()
 	IndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Forge", "Improved Forge"), ResourceEnum::Brick, 30),
+		MakeProductionUpgrade(LOCTEXT("Improved Forge", "Improved Forge"), ResourceEnum::Brick, ProductionUpgrade30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Alloy Recipe", "Alloy Recipe"), ResourceEnum::Paper, 4),
 		MakeComboUpgrade(LOCTEXT("Blacksmith Guild", "Blacksmith Guild"), ResourceEnum::Paper),
 	});
@@ -731,7 +734,7 @@ void MedicineMaker::FinishConstruction() {
 	});
 
 	AddUpgrades({
-		MakeProductionUpgrade_Money(LOCTEXT("Catalyst", "Catalyst"), 30),
+		MakeProductionUpgrade_Money(LOCTEXT("Catalyst", "Catalyst"), ProductionUpgrade30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Improved Extraction", "Improved Extraction"), ResourceEnum::Wood, 4),
 		MakeComboUpgrade(LOCTEXT("Pharmaceutical Guild", "Pharmaceutical Guild"), ResourceEnum::Paper),
 	});
@@ -927,7 +930,7 @@ void BeerBrewery::FinishConstruction() {
 
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Improved Malting", "Improved Malting"), LOCTEXT("Consumes 30% less input.", "Consumes 30% less input."), ResourceEnum::Stone, 50),
-		MakeProductionUpgrade(LOCTEXT("Fast Malting", "Fast Malting"), ResourceEnum::Stone, 30),
+		MakeProductionUpgrade(LOCTEXT("Fast Malting", "Fast Malting"), ResourceEnum::Stone, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Brewery Town", "Brewery Town"), ResourceEnum::Stone),
 	});
 
@@ -972,7 +975,7 @@ void VodkaDistillery::FinishConstruction() {
 
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Improved Fermentation", "Improved Fermentation"), LOCTEXT("Consumes 30% less input.", "Consumes 30% less input."), ResourceEnum::Stone, 50),
-		MakeProductionUpgrade(LOCTEXT("Improved Filtration", "Improved Filtration"), ResourceEnum::Stone, 30),
+		MakeProductionUpgrade(LOCTEXT("Improved Filtration", "Improved Filtration"), ResourceEnum::Stone, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Vodka Town", "Vodka Town"), ResourceEnum::Stone),
 	});
 }
@@ -999,7 +1002,7 @@ void Windmill::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Grinder", "Improved Grinder"), ResourceEnum::Stone, 20),
+		MakeProductionUpgrade(LOCTEXT("Improved Grinder", "Improved Grinder"), ResourceEnum::Stone, ProductionUpgrade30),
 	});
 }
 
@@ -1037,7 +1040,7 @@ void Bakery::FinishConstruction() {
 	AddResourceHolder(GetBuildingInfo(buildingEnum()).produce, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Oven", "Improved Oven"), ResourceEnum::Brick, 30),
+		MakeProductionUpgrade(LOCTEXT("Improved Oven", "Improved Oven"), ResourceEnum::Brick, ProductionUpgrade30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Baking Recipe", "Baking Recipe"), ResourceEnum::Paper, 5),
 		MakeComboUpgrade(LOCTEXT("Baker Guild", "Baker Guild"), ResourceEnum::Paper),
 	});
@@ -1062,7 +1065,7 @@ void Jeweler::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Rigorous Training", "Rigorous Training"), ResourceEnum::Brick, 30),
+		MakeProductionUpgrade(LOCTEXT("Rigorous Training", "Rigorous Training"), ResourceEnum::Brick, ProductionUpgrade30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 7),
 		MakeComboUpgrade(LOCTEXT("Jeweler's Guild", "Jeweler's Guild"), ResourceEnum::Brick),
 	});
@@ -1075,7 +1078,7 @@ void Brickworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::Stone, 30),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::Stone, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Brickworks Town", "Brickworks Town"), ResourceEnum::Brick),
 	});
 }
@@ -1088,7 +1091,7 @@ void CarpetWeaver::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 30),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, ProductionUpgrade30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Craftmanship", "Craftmanship"), ResourceEnum::Money, 4),
 		MakeComboUpgrade(LOCTEXT("Carpet Weaver Guild", "Carpet Weaver Guild"), ResourceEnum::Brick),
 	});
@@ -1101,7 +1104,7 @@ void CandleMaker::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 30),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Candle Maker Guild", "Candle Maker Guild"), ResourceEnum::Brick),
 	});
 }
@@ -1162,7 +1165,7 @@ void Potter::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_Money(LOCTEXT("Improved Kiln", "Improved Kiln"), 30),
+		MakeProductionUpgrade_Money(LOCTEXT("Improved Kiln", "Improved Kiln"), ProductionUpgrade30),
 		MakeWorkerSlotUpgrade(30),
 		MakeComboUpgrade(LOCTEXT("Potter Town", "Potter Town"), ResourceEnum::Stone),
 	});
@@ -1219,8 +1222,8 @@ void Fisher::FinishConstruction() {
 	//AddResourceHolder(ResourceEnum::WhaleMeat, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade_Money(LOCTEXT("Juicier Bait", "Juicier Bait"), 25),
-		MakeProductionUpgrade(LOCTEXT("Improved Fishing Tools", "Improved Fishing Tools"), ResourceEnum::SteelTools, 50),
+		MakeProductionUpgrade_Money(LOCTEXT("Juicier Bait", "Juicier Bait"), ProductionUpgrade30),
+		MakeProductionUpgrade(LOCTEXT("Improved Fishing Tools", "Improved Fishing Tools"), ResourceEnum::SteelTools, ProductionUpgrade50),
 		MakeWorkerSlotUpgrade(30),
 		//BuildingUpgrade("Whaling", "Catch whale from deep sea instead.\n  Produces whale meat.\n  +2 worker slots.\n  No effect nearby fish population", 120)
 	});
@@ -1367,7 +1370,7 @@ void Mine::FinishConstruction() {
 	AddUpgrades({
 		MakeWorkerSlotUpgrade(100, 4),
 		MakeUpgrade(LOCTEXT("Improved shift", "Improved shift"), LOCTEXT("Mine with full worker slots get 20% productivity", "Mine with full worker slots get 20% productivity"), 40),
-		MakeProductionUpgrade(LOCTEXT("Wide Shaft", "Wide Shaft"), ResourceEnum::Stone, 30)
+		MakeProductionUpgrade(LOCTEXT("Wide Shaft", "Wide Shaft"), ResourceEnum::Stone, ProductionUpgrade30)
 	});
 
 }
@@ -1574,7 +1577,7 @@ void Mint::FinishConstruction() {
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::Brick, 30),
+		MakeProductionUpgrade(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::Brick, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Mint Town", "Mint Town"), ResourceEnum::Brick),
 	});
 }
@@ -1594,8 +1597,8 @@ void InventorsWorkshop::FinishConstruction() {
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Better Tools", "Better Tools"), ResourceEnum::SteelTools, 50),
-		MakeProductionUpgrade(LOCTEXT("Component Blueprints", "Component Blueprints"), ResourceEnum::Paper, 50),
+		MakeProductionUpgrade(LOCTEXT("Better Tools", "Better Tools"), ResourceEnum::SteelTools, ProductionUpgrade50),
+		MakeProductionUpgrade(LOCTEXT("Component Blueprints", "Component Blueprints"), ResourceEnum::Paper, ProductionUpgrade50),
 		MakeComboUpgrade(LOCTEXT("Inventor Guild", "Inventor Guild"), ResourceEnum::Brick),
 	});
 }
@@ -1834,7 +1837,7 @@ void SandMine::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Tooling", "Improved Tooling"), ResourceEnum::SteelTools, 30),
+		MakeProductionUpgrade(LOCTEXT("Improved Tooling", "Improved Tooling"), ResourceEnum::SteelTools, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Sand Mine Town", "Sand Mine Town"), ResourceEnum::Brick),
 	});
 }
@@ -1843,7 +1846,7 @@ void Glassworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Glass Annealer", "Glass Annealer"), ResourceEnum::Brick, 30),
+		MakeProductionUpgrade(LOCTEXT("Glass Annealer", "Glass Annealer"), ResourceEnum::Brick, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Glassworks Town", "Glassworks Town"), ResourceEnum::Brick),
 	});
 }
@@ -1851,7 +1854,7 @@ void ConcreteFactory::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::Steel, 30),
+		MakeProductionUpgrade(LOCTEXT("High Temperature Kiln", "High Temperature Kiln"), ResourceEnum::Steel, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Concrete Factory Town", "Concrete Factory Town"), ResourceEnum::Concrete),
 	});
 }
@@ -1964,21 +1967,26 @@ void ResourceOutpost::TickRound()
 		ResourceEnum resourceEnum = GetColonyResourceEnum();
 		if (IsResourceValid(resourceEnum))
 		{
-			int32 resourceCount = GetColonyResourceIncome(resourceEnum);
+			int32 lordPlayerId = _simulation->townManagerBase(_townId)->lordPlayerId();
+			if (lordPlayerId != -1)
+			{
+				int32 resourceCount = GetColonyResourceIncome(resourceEnum);
 
-			// Deplete province resource
-			if (IsOreEnum(resourceEnum)) {
-				resourceCount = min(oreLeft(), resourceCount);
-				if (resourceCount > 0) {
-					_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+				// Deplete province resource
+				if (IsOreEnum(resourceEnum)) {
+					resourceCount = min(oreLeft(), resourceCount);
+					if (resourceCount > 0) {
+						_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+					}
 				}
-			}
 
-			if (resourceCount > 0) {
-				resourceSystem().AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
-				AddProductionStat(ResourcePair(resourceEnum, resourceCount));
-				
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(resourceCount), resourceEnum);
+				if (resourceCount > 0) {
+					// Send resource to the capital
+					_simulation->resourceSystem(lordPlayerId).AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+					_simulation->statSystem(lordPlayerId).AddResourceStat(ResourceSeasonStatEnum::Production, resourceEnum, resourceCount);
+
+					_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(resourceCount), resourceEnum);
+				}
 			}
 		}
 	}
@@ -2076,7 +2084,7 @@ void ProvinceRuin::FinishConstruction()
 		MakeLevelUpgrade(
 			LOCTEXT("ProvinceRuinUpgrade_Dig", "Artifact Excavation"),
 			LOCTEXT("ProvinceRuinUpgrade_Dig Desc", "Excavate the site for Artifacts"),
-			ResourceEnum::Money, 100, 70 // roughly half mil to get to lvl 10...
+			ResourceEnum::Money, 0, 70, BaseArtifactExcavationCost // roughly half mil to get to lvl 10...
 		),
 	});
 
@@ -2358,17 +2366,17 @@ void SpyCenter::FinishConstruction()
 		MakeLevelUpgrade(
 			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence", "Spy Nest Influence Gain"),
 			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence Desc", "TODO: Desc"),
-			ResourceEnum::Money, 30
+			ResourceEnum::Money, 0, 50, 1000
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness", "Spy Effectiveness"),
 			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness Desc", "TODO: Desc"),
-			ResourceEnum::Money, 30
+			ResourceEnum::Money, 0, 50, 1000
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("SpyCenterUpgrade_CounterIntelligence", "Counter Intelligence"),
 			LOCTEXT("SpyCenterUpgrade_CounterIntelligence Desc", "TODO: Espionage on this city is less effective"),
-			ResourceEnum::Money, 30
+			ResourceEnum::Money, 0, 50, 1000
 		),
 	});
 
@@ -2476,16 +2484,16 @@ void PolicyOffice::FinishConstruction()
 		MakeLevelUpgrade(
 			LOCTEXT("PolicyOfficeUpgrade_NationalPride", "National Pride"),
 			LOCTEXT("PolicyOfficeUpgrade_NationalPride Desc", "+5% City Attractiveness if you have more than X Influence"),
-			ResourceEnum::Influence, 30
+			ResourceEnum::Influence, 0, 50, 1000
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony", "Economic Hegemony"),
 			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony Desc", "+3% production bonus for the Town"),
-			ResourceEnum::Influence, 30
+			ResourceEnum::Influence, 0, 50, 1000
 		),
 	});
 
-	_simulation->playerOwned(_playerId).AddUniqueBuildingId(CardEnum::SpyCenter, buildingId());
+	_simulation->playerOwned(_playerId).AddUniqueBuildingId(CardEnum::PolicyOffice, buildingId());
 
 	Building::FinishConstruction();
 }
@@ -2525,7 +2533,7 @@ std::vector<BonusPair> Caravansary::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 
-	bonuses.push_back({ LOCTEXT("Trade Route Experience", "Trade Route Experience"), static_cast<int32>(sqrt(_cumulativeRouteMoney)) });
+	bonuses.push_back({ LOCTEXT("Trade Route Experience", "Trade Route Experience"), static_cast<int32>(sqrt(_cumulativeRouteMoney)) / 10 });
 
 
 	return bonuses;

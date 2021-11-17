@@ -107,8 +107,20 @@ public:
 		_resourceEnumToPlayerSupplyChanges[static_cast<int>(resourceEnum)].push_back({ playerId, Time::Ticks(), quantity });
 	}
 
-	int32 price100(ResourceEnum resourceEnum) {
-		return GetResourceInfo(resourceEnum).basePrice * 100 * EquilibriumSupplyValue100(resourceEnum) / SupplyValue100(resourceEnum);
+	int64 price100(ResourceEnum resourceEnum)
+	{
+		int64 basePrice100 = GetResourceInfo(resourceEnum).basePrice * 100;
+		int64 equilibriumSupplyValue100 = EquilibriumSupplyValue100(resourceEnum);
+		check(equilibriumSupplyValue100 >= 0);
+		
+		int64 supplyValue100 = SupplyValue100(resourceEnum);
+		check(supplyValue100 >= 0);
+		
+		if (equilibriumSupplyValue100 > supplyValue100) {
+			return basePrice100 * equilibriumSupplyValue100 / supplyValue100;
+		}
+		return basePrice100 * equilibriumSupplyValue100 / supplyValue100 / 2 + basePrice100 / 2;
+		//return GetResourceInfo(resourceEnum).basePrice * 100 * EquilibriumSupplyValue100(resourceEnum) / SupplyValue100(resourceEnum);
 	}
 
 	int64 SupplyValue100(ResourceEnum resourceEnum) {
@@ -301,7 +313,7 @@ private:
 	}
 
 	static const int64 BaseWorldPopulation = 300;
-	static const int64 MinSupplyValue100_PerPerson = 50 * 100; // also sort of min price % // May 10: 30 -> 50
+	static const int64 MinSupplyValue100_PerPerson = 20 * 100; // also sort of max price % // May 10: 30 -> 50, Nov 14: 50 -> 20
 	static const int64 WorldTradeFluctuationPercent = 30;
 	// Also see SupplyMultiplier in SimInfo
 

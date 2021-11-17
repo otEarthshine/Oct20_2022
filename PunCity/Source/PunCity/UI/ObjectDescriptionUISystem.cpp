@@ -1240,7 +1240,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							 * Spy Nest
 							 */
 							 // TODO: show more info than Townhall ???
-							if (sim.IsResearched(playerId(), TechEnum::SpyCenter))
+							if (sim.playerBuildingFinishedCount(playerId(), CardEnum::SpyCenter))
 							{
 								if (house->spyPlayerId() != playerId())
 								{
@@ -1468,29 +1468,29 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							}
 						}
 
-						// Note: Statistics replaced with Statistics Bureau
-						//descriptionBox->AddButton("Show Statistics", nullptr, "", this, CallbackEnum::OpenStatistics, true, false, townhall.playerId());
-						//focusBox->AddLineSpacer(10);
+						//// Note: Statistics replaced with Statistics Bureau
+						////descriptionBox->AddButton("Show Statistics", nullptr, "", this, CallbackEnum::OpenStatistics, true, false, townhall.playerId());
+						////focusBox->AddLineSpacer(10);
 
-						if (building.playerId() == playerId())
-						{
-							//descriptionBox->AddButton("Set Trade Offers", nullptr, "", this, CallbackEnum::OpenSetTradeOffers, true, false, townhall.playerId());
-							//descriptionBox->AddLineSpacer(10);
+						//if (building.playerId() == playerId())
+						//{
+						//	//descriptionBox->AddButton("Set Trade Offers", nullptr, "", this, CallbackEnum::OpenSetTradeOffers, true, false, townhall.playerId());
+						//	//descriptionBox->AddLineSpacer(10);
 
-							// Abandon town
-							//auto button = descriptionBox->AddButtonRed(FText(), LOCTEXT("AbandonTown", "Abandon Town"), nullptr, FText(), this, CallbackEnum::AbandonTown);
-							//AddToolTip(button, LOCTEXT("AbandonTownTooltip", "Abandon this town to build a new one. (Destroy this town)"));
-							//descriptionBox->AddLineSpacer(10);
-						}
-						else
-						{
-							// Vassalize
-							if (sim.IsResearched(playerId(), TechEnum::Vassalize))
-							{
+						//	// Abandon town
+						//	//auto button = descriptionBox->AddButtonRed(FText(), LOCTEXT("AbandonTown", "Abandon Town"), nullptr, FText(), this, CallbackEnum::AbandonTown);
+						//	//AddToolTip(button, LOCTEXT("AbandonTownTooltip", "Abandon this town to build a new one. (Destroy this town)"));
+						//	//descriptionBox->AddLineSpacer(10);
+						//}
+						//else
+						//{
+						//	// Vassalize
+						//	if (sim.IsResearched(playerId(), TechEnum::Vassalize))
+						//	{
 
-								
-							}
-						}
+						//		
+						//	}
+						//}
 
 					}
 					else if (IsProfitBuilding(building.buildingEnum())) 
@@ -2143,6 +2143,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (building.isEnum(CardEnum::ResourceOutpost))
 					{
 						auto& colony = building.subclass<ResourceOutpost>();
+
+						int32 lordId =sim.townManagerBase(building.townId())->lordPlayerId();
+						if (lordId != -1) {
+							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+								LOCTEXT("Lord", "Lord"),
+								sim.playerNameT(lordId)
+							);
+						}
+
+						focusBox->AddSpacer();
+						
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 							LOCTEXT("Upkeep: ", "Upkeep: "), 
 							TEXT_NUM(colony.GetColonyUpkeep()),
@@ -2735,7 +2746,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 									focusBox->AddRichText("-- baseInputValue: " + to_string(consumerIndustry.baseInputValue()));
 									focusBox->AddRichText("-- baseOutputValue: " + to_string(consumerIndustry.baseOutputValue()));
 									focusBox->AddRichText("-- baseProfitValue: " + to_string(consumerIndustry.baseProfitValue()));
-									focusBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().workRevenuePerSec100_perMan()));
+									focusBox->AddRichText("-- workManSecPerBatch100(calc): " + to_string(consumerIndustry.baseProfitValue() * 100 * 100 / consumerIndustry.buildingInfo().resourceInfo.workRevenuePerSec100_perMan(0)));
 								}
 								break;
 							}
@@ -4057,10 +4068,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 
 					// Region Owner
-					int32 ownerPlayerId = sim.provinceOwnerPlayer(provinceId);
+					int32 ownerTownId = sim.provinceOwnerTownSafe(provinceId);
+					
 					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 						LOCTEXT("TileOwner", "Owner"),
-						(ownerPlayerId == -1 ? INVTEXT("None") : sim.playerNameT(ownerPlayerId))
+						(ownerTownId == -1 ? INVTEXT("None") : sim.townOrPlayerNameT(ownerTownId))
 					);
 					focusBox->AddLineSpacer();
 
@@ -4406,7 +4418,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 	// Allow claiming level 1 Minor City
 	if (IsMinorTown(provinceTownId)) {
-		allowResourceClaim = sim.townManagerBase(provinceTownId)->GetMinorCityLevel() <= 1;
+		allowResourceClaim = sim.townManagerBase(provinceTownId)->CanBeClaimed();
 	}
 	
 	if (allowResourceClaim)
@@ -4522,7 +4534,7 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 
 		if (townManagerBase->playerIdForLogo() != playerId())
 		{
-			if (simulation().IsResearched(playerId(), TechEnum::Conquer))
+			if (simulation().IsUnlocked(playerId(), UnlockStateEnum::ConquerProvince))
 			{
 				auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
 				{
@@ -5230,27 +5242,23 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 		);
 		
 		
-		if (unlockedInfluence) {
-			//focusBox->AddRichText(FText::Format(
-			//	LOCTEXT("Upkeep: InfluenceX", "Upkeep: <img id=\"Influence\"/>{0}"), 
-			//	TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId))
-			//));
+		//if (unlockedInfluence) 
+		//{
+		//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+		//		LOCTEXT("Upkeep", "Upkeep"),
+		//		TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId)),
+		//		assetLoader()->InfluenceIcon
+		//	);
 
-			focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-				LOCTEXT("Upkeep", "Upkeep"),
-				TEXT_100(sim.GetProvinceUpkeep100(provinceIdClean, provincePlayerId)),
-				assetLoader()->InfluenceIcon
-			);
-
-			if (!sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe) 
-			{
-				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-					GetInfluenceIncomeName(InfluenceIncomeEnum::UnsafeProvinceUpkeep),
-					TEXT_100(1000),
-					assetLoader()->InfluenceIcon
-				);
-			}
-		}
+		//	if (!sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe) 
+		//	{
+		//		focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+		//			GetInfluenceIncomeName(InfluenceIncomeEnum::UnsafeProvinceUpkeep),
+		//			TEXT_100(1000),
+		//			assetLoader()->InfluenceIcon
+		//		);
+		//	}
+		//}
 
 		// Defense Bonus
 		int32 defenseBonus = sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe ? 200 : 0;
@@ -5277,13 +5285,13 @@ void UObjectDescriptionUISystem::AddProvinceUpkeepInfo(int32 provinceIdClean, UP
 			assetLoader()->CoinIcon
 		);
 		
-		if (unlockedInfluence) {
-			focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-				LOCTEXT("BaseUpkeep", "Base Upkeep"),
-				TEXT_100(sim.GetProvinceBaseUpkeep100(provinceIdClean)),
-				assetLoader()->InfluenceIcon
-			);
-		}
+		//if (unlockedInfluence) {
+		//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+		//		LOCTEXT("BaseUpkeep", "Base Upkeep"),
+		//		TEXT_100(sim.GetProvinceBaseUpkeep100(provinceIdClean)),
+		//		assetLoader()->InfluenceIcon
+		//	);
+		//}
 		
 		// Defense Bonus
 		int32 defenseBonus = sim.provinceInfoSystem().provinceOwnerInfo(provinceIdClean).isSafe ? 200 : 0;

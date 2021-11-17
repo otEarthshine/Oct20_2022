@@ -29,12 +29,14 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UTextBlock* IncomeText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* IncomeCount;
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* UpkeepBox;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* UpkeepText;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* UpkeepCount;
-	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BorderUpkeepBox;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* BorderUpkeepText;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* BorderUpkeepCount;
+	//UPROPERTY(meta = (BindWidget)) UHorizontalBox* UpkeepBox;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* UpkeepText;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* UpkeepCount;
+	//UPROPERTY(meta = (BindWidget)) UHorizontalBox* BorderUpkeepBox;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* BorderUpkeepText;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* BorderUpkeepCount;
+
+	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* IconPair1;
 
 	int32 provinceId = -1;
 	
@@ -54,10 +56,10 @@ public:
 		int32 provincePlayerId = sim.provinceOwnerPlayer(provinceIdIn);
 		bool unlockedInfluence = sim.unlockedInfluence(playerId());
 
-		UpkeepText->SetVisibility(ESlateVisibility::Collapsed);
-		UpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
-		BorderUpkeepText->SetVisibility(ESlateVisibility::Collapsed);
-		BorderUpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
+		//UpkeepText->SetVisibility(ESlateVisibility::Collapsed);
+		//UpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
+		//BorderUpkeepText->SetVisibility(ESlateVisibility::Collapsed);
+		//BorderUpkeepBox->SetVisibility(ESlateVisibility::Collapsed);
 		
 		IconSizeBox->SetVisibility(ESlateVisibility::Collapsed);
 
@@ -71,33 +73,46 @@ public:
 			SetText(IncomeText, incomeText);
 			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 			
-			if (unlockedInfluence) {
-				SetText(UpkeepText, upkeepText);
-				SetTextNumber(UpkeepCount, sim.GetProvinceUpkeep100(provinceIdIn, provincePlayerId) / 100.0f, 1);
-				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//if (unlockedInfluence) {
+			//	SetText(UpkeepText, upkeepText);
+			//	SetTextNumber(UpkeepCount, sim.GetProvinceUpkeep100(provinceIdIn, provincePlayerId) / 100.0f, 1);
+			//	UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//	UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-				if (!sim.provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe) 
-				{
-					SetText(BorderUpkeepText, GetInfluenceIncomeName(InfluenceIncomeEnum::UnsafeProvinceUpkeep));
-					SetTextNumber(BorderUpkeepCount, 10, 1);
-						
-					BorderUpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					BorderUpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				}
-			}
+			//	if (!sim.provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe) 
+			//	{
+			//		SetText(BorderUpkeepText, GetInfluenceIncomeName(InfluenceIncomeEnum::UnsafeProvinceUpkeep));
+			//		SetTextNumber(BorderUpkeepCount, 10, 1);
+			//			
+			//		BorderUpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//		BorderUpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//	}
+			//}
 		}
 		else
 		{
 			SetText(IncomeText, incomeText);
 			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
 
-			if (unlockedInfluence) {
-				SetText(UpkeepText, upkeepText);
-				SetTextNumber(UpkeepCount, sim.GetProvinceBaseUpkeep100(provinceIdIn) / 100.0f, 1);
-				UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-				UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-			}
+			//if (unlockedInfluence) {
+			//	SetText(UpkeepText, upkeepText);
+			//	SetTextNumber(UpkeepCount, sim.GetProvinceBaseUpkeep100(provinceIdIn) / 100.0f, 1);
+			//	UpkeepText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//	UpkeepBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//}
+		}
+
+		// Protected vs Unprotected
+		int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
+		if (sim.townPlayerId(originTownId) == playerId())
+		{
+			const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
+			IconPair1->SetImage(nullptr);
+			IconPair1->SetText(provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected"), FText());
+			IconPair1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else {
+			IconPair1->SetVisibility(ESlateVisibility::Collapsed);
 		}
 #undef LOCTEXT_NAMESPACE
 		

@@ -48,14 +48,15 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 	 * displayCardStateValue2 = last damage tick
 	 */
 
-	auto doDamage = [&](std::vector<CardStatus>& lineCards, std::vector<CardStatus>& damageTakerLine, int32 attackBonusPercent, int32 defenseBonusPercent)
+	auto doDamage = [&](std::vector<CardStatus>& attackerLineCards, std::vector<CardStatus>& damageTakerLine, int32 attackBonusPercent, int32 defenseBonusPercent)
 	{
 		int32 randomIndex = GameRand::Rand() % damageTakerLine.size();
 		CardStatus& damageTaker = damageTakerLine[randomIndex];
 
 		int32 attack = 0;
-		for (CardStatus& card : lineCards) {
+		for (CardStatus& card : attackerLineCards) {
 			attack += GetMilitaryInfo(card.cardEnum).attack100 * card.stackSize;
+			card.displayCardStateValue3 = Time::Ticks();
 		}
 
 		// Damage Bonus
@@ -86,33 +87,35 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 		}
 	};
 
-	auto doDamageToArmy = [&](std::vector<CardStatus>& attackerLine, std::vector<CardStatus>& damageTakerFrontLine, std::vector<CardStatus>& damageTakerBackLine, int32 attackBonus, int32 defenseBonus)
+	auto doDamageToArmy = [&](std::vector<CardStatus>& attackerLine, std::vector<std::vector<CardStatus>*> damageTakerLines, int32 attackBonus, int32 defenseBonus)
 	{
-		if (damageTakerFrontLine.size() > 0) {
-			doDamage(attackerLine, damageTakerFrontLine, attackBonus, defenseBonus);
-		}
-		else if (damageTakerBackLine.size() > 0) {
-			doDamage(attackerLine, damageTakerBackLine, attackBonus, defenseBonus);
+		for (int32 i = 0; i < damageTakerLines.size(); i++)
+		{
+			if (damageTakerLines[i]->size() > 0) {
+				doDamage(attackerLine, *damageTakerLines[i], attackBonus, defenseBonus);
+				break;
+			}
 		}
 	};
 
 	//! Defender Turn
-	if (Time::Seconds() % 8 == 0)
+	int32 secondsPerAttack = MilitaryConstants::SecondsPerAttack;
+	if (Time::Seconds() % secondsPerAttack == 0)
 	{
-		doDamageToArmy(defenderBackLine, attackerFrontLine, attackerBackLine, defender_attackBonus, attacker_defenseBonus);
+		doDamageToArmy(defenderBackLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
 	}
-	else if (Time::Seconds() % 8 == 1)
+	else if (Time::Seconds() % secondsPerAttack == 1)
 	{
-		doDamageToArmy(defenderFrontLine, attackerFrontLine, attackerBackLine, defender_attackBonus, attacker_defenseBonus);
+		doDamageToArmy(defenderFrontLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
 	}
 	//! Attacker Turn
-	else if (Time::Seconds() % 8 == 4)
+	else if (Time::Seconds() % secondsPerAttack == 4)
 	{
-		doDamageToArmy(attackerBackLine, defenderFrontLine, defenderBackLine, attacker_attackBonus, defender_defenseBonus);
+		doDamageToArmy(attackerBackLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
 	}
-	else if (Time::Seconds() % 8 == 5)
+	else if (Time::Seconds() % secondsPerAttack == 5)
 	{
-		doDamageToArmy(attackerFrontLine, defenderFrontLine, defenderBackLine, attacker_attackBonus, defender_defenseBonus);
+		doDamageToArmy(attackerFrontLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
 	}
 
 	//! Battle Countdown once it is done
@@ -148,11 +151,11 @@ void TownManagerBase::Tick1Sec_TownBase()
 			}
 		}
 
-		//! Refresh Target Wealth every 30 secs
-		if (Time::Seconds() % 30 == 0)
-		{
-			RefreshMinorCityTargetWealth();
-		}
+		////! Refresh Target Wealth every 30 secs
+		//if (Time::Seconds() % 30 == 0)
+		//{
+		//	RefreshMinorCityTargetWealth();
+		//}
 	}
 
 
@@ -175,24 +178,24 @@ void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, in
 	}
 }
 
-void TownManagerBase::RefreshMinorCityTargetWealth()
-{
-	const int32 maxTileDistanceToCheck = 300;
-	int32 maxTownRevenue = 0;
-	WorldTile2 thisTownGateTile = _simulation->GetTownhallGate_All(_townId);
-	
-	_simulation->ExecuteOnMajorTowns([&](int32 townId) 
-	{
-		WorldTile2 gateTile = _simulation->GetMajorTownhallGate(townId);
-		if (gateTile.isValid() &&
-			WorldTile2::Distance(gateTile, thisTownGateTile) < maxTileDistanceToCheck)
-		{
-			maxTownRevenue = std::max(maxTownRevenue, _simulation->GetMajorTownTotalRevenue100(townId) / 100);
-		}
-	});
-
-	_minorCityTargetWealth = maxTownRevenue;
-}
+//void TownManagerBase::RefreshMinorCityTargetWealth()
+//{
+//	const int32 maxTileDistanceToCheck = 300;
+//	int32 maxTownRevenue = 0;
+//	WorldTile2 thisTownGateTile = _simulation->GetTownhallGate_All(_townId);
+//	
+//	_simulation->ExecuteOnMajorTowns([&](int32 townId) 
+//	{
+//		WorldTile2 gateTile = _simulation->GetMajorTownhallGate(townId);
+//		if (gateTile.isValid() &&
+//			WorldTile2::Distance(gateTile, thisTownGateTile) < maxTileDistanceToCheck)
+//		{
+//			maxTownRevenue = std::max(maxTownRevenue, _simulation->GetMajorTownTotalRevenue100(townId) / 100);
+//		}
+//	});
+//
+//	_minorCityTargetWealth = maxTownRevenue;
+//}
 
 void TownManagerBase::AddChildBuilding(Building& child)
 {
@@ -443,17 +446,8 @@ void TownManagerBase::Tick1SecRelationship()
 					}
 				}
 			};
-			
-			int32 totalRelationship = _relationships.GetTotalRelationship(playerId);
-			if (_relationships.isAlly(playerId)) {
-				addInfluenceReward(150);
-			}
-			else if (totalRelationship >= 60) {
-				addInfluenceReward(60);
-			}
-			else if (totalRelationship >= 30) {
-				addInfluenceReward(30);
-			}
+
+			addInfluenceReward(GetMinorCityAllyInfluenceReward(playerId));
 			
 #undef MODIFIER
 		}

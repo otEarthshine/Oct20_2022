@@ -815,7 +815,9 @@ void TownManager::CollectRoundIncome()
 	globalResourceSys.ChangeMoney100(totalIncome100WithoutHouse);
 
 	// Change Influence
-	int32 totalInfluenceIncome100WithoutDiplomaticBuilding = totalInfluenceIncome100() - influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::DiplomaticBuildings)];
+	int32 totalInfluenceIncome100WithoutDiplomaticBuilding = totalInfluenceIncome100() - influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::DiplomaticBuildings)]
+																						- influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)];
+	
 	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100WithoutDiplomaticBuilding);
 	if (globalResourceSys.influence100() < 0)
 	{
@@ -870,7 +872,7 @@ void TownManager::Tick()
 				_trainUnitsTicks = 0;
 				_trainUnitsQueue[0].stackSize--;
 
-				// Take away 3 population
+				// Take away population equals to human cost
 				std::vector<int32> humanIds = adultIds();
 				std::vector<int32> childIdsTemp = childIds();
 				humanIds.insert(humanIds.end(), childIdsTemp.begin(), childIdsTemp.end());
@@ -882,6 +884,18 @@ void TownManager::Tick()
 
 				if (_trainUnitsQueue[0].stackSize <= 0) {
 					_trainUnitsQueue.erase(_trainUnitsQueue.begin());
+				}
+
+				// Unlock Military Actions
+				int32 militaryUnitCount = _simulation->GetMilitaryUnitCount(_playerId);
+				if (militaryUnitCount >= 5) {
+					_simulation->TryUnlock(_playerId, UnlockStateEnum::Vassalize);
+				}
+				else if (militaryUnitCount >= 4) {
+					_simulation->TryUnlock(_playerId, UnlockStateEnum::ConquerProvince);
+				}
+				else if (militaryUnitCount >= 3) {
+					_simulation->TryUnlock(_playerId, UnlockStateEnum::Raze);
 				}
 			}
 		}
@@ -1107,7 +1121,9 @@ void TownManager::Tick1Sec()
 			const std::vector<int32>& localHotelIds = _simulation->buildingIds(destinationTownId, CardEnum::Hotel);
 			for (int32 localHotelId : localHotelIds) {
 				Hotel* hotel = static_cast<Hotel*>(_simulation->buildingPtr(localHotelId));
-				if (hotel->isAvailable()) {
+				if (hotel->isAvailable() &&
+					hotel->serviceQuality() >= 50)
+				{
 					hotels.push_back(hotel);
 				}
 			}
@@ -1139,8 +1155,8 @@ void TownManager::Tick1Sec()
 				// Embassy Hotel Chain
 				if (_simulation->HasForeignBuildingWithUpgrade(hotel->foreignBuilderId(), _townId, CardEnum::Embassy, 1))
 				{
-					int32 moneyGain100 = hotel->feePerVisitor() * 100 * 20 / 100;
-					_simulation->ChangeMoney(hotel->foreignBuilderId(), moneyGain100);
+					int32 moneyGain100 = hotel->feePerVisitor() * 20; // feeVisitor -> moneyGain100 (100 cancels out)
+					_simulation->ChangeMoney100(hotel->foreignBuilderId(), moneyGain100);
 					_simulation->uiInterface()->ShowFloatupInfo(hotel->foreignBuilderId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_100SIGNED(moneyGain100));
 				}
 
@@ -1583,8 +1599,8 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 			// Tax
  			vassalTownManager->RecalculateTax(false);
-			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100;
-			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += vassalTownManager->totalInfluenceIncome100() * vassalTownManager->vassalInfluencePercent() / 100;
+			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += std::max(0, vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100);
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += std::max(0, vassalTownManager->totalInfluenceIncome100() * vassalTownManager->vassalInfluencePercent() / 100);
 		}
 	}
 
@@ -1592,8 +1608,8 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 * Pay lord the tax...
 	 */
 	if (lordPlayerId() != -1) {
-		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= totalIncome100() * vassalTaxPercent() / 100;
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::LoseToLord)] += totalInfluenceIncome100() * vassalInfluencePercent() / 100;
+		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= std::max(0, totalRevenue100() * vassalTaxPercent() / 100);
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::LoseToLord)] += std::max(0, totalInfluenceIncome100() * vassalInfluencePercent() / 100);
 	}
 
 	/*
@@ -1609,36 +1625,36 @@ void TownManager::RecalculateTax(bool showFloatup)
 	}
 
 	std::vector<TradeRoutePair> tradeRoutesTo = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
-	int32 tradeClusterTotalPopulation = 0;
-	for (const TradeRoutePair& route : tradeRoutesTo) 
-	{
-		auto addPopulation = [&](int32 townIdLocal)
-		{
-			if (IsMajorTown(townIdLocal)) {
-				tradeClusterTotalPopulation += _simulation->populationTown(townIdLocal);
-			}
-			else if (IsMinorTown(townIdLocal)) {
-				tradeClusterTotalPopulation += _simulation->townManagerBase(townIdLocal)->GetMinorCityLevel();
-			}
-		};
-		
-		addPopulation(route.townId1);
-		addPopulation(route.townId2);
-	}
+	//int32 tradeClusterTotalPopulation = 0;
+	//for (const TradeRoutePair& route : tradeRoutesTo) 
+	//{
+	//	auto addPopulation = [&](int32 townIdLocal)
+	//	{
+	//		if (IsMajorTown(townIdLocal)) {
+	//			tradeClusterTotalPopulation += _simulation->populationTown(townIdLocal);
+	//		}
+	//		else if (IsMinorTown(townIdLocal)) {
+	//			tradeClusterTotalPopulation += _simulation->townManagerBase(townIdLocal)->GetMinorCityLevel();
+	//		}
+	//	};
+	//	
+	//	addPopulation(route.townId1);
+	//	addPopulation(route.townId2);
+	//}
 	
-	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * tradeClusterTotalPopulation / 2;
+	incomes100[static_cast<int>(IncomeEnum::TradeRoute)] += 100 * _simulation->GetTradeRouteIncome() * tradeRoutesTo.size();
 
 	/*
 	 * Influence
 	 */
 
-	int32 influence100 = _simulation->influence100(_playerId);
+	//int32 influence100 = _simulation->influence100(_playerId);
 
 	// Upkeep goes to influence unless it is 0
-	int32 territoryUpkeep100 = 0;
-	for (int32 provinceId : _provincesClaimed) {
-		territoryUpkeep100 += _simulation->GetProvinceUpkeep100(provinceId, _playerId);
-	}
+	//int32 territoryUpkeep100 = 0;
+	//for (int32 provinceId : _provincesClaimed) {
+	//	territoryUpkeep100 += _simulation->GetProvinceUpkeep100(provinceId, _playerId);
+	//}
 
 	if (_simulation->unlockedInfluence(_playerId))
 	{
@@ -1667,18 +1683,18 @@ void TownManager::RecalculateTax(bool showFloatup)
 		//}
 		
 
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
+		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 
 
 		// Unprotected Province Upkeep
-		auto& provinceInfoSys = _simulation->provinceInfoSystem();
-		int32 numberOfUnprotectedProvinces = 0;
-		for (int32 provinceId : _provincesClaimed) {
-			if (!provinceInfoSys.provinceOwnerInfo(provinceId).isSafe) {
-				numberOfUnprotectedProvinces++;
-			}
-		}
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::UnsafeProvinceUpkeep)] -= territoryUpkeep100 * numberOfUnprotectedProvinces / _provincesClaimed.size(); // double upkeep per unprotected province
+		//auto& provinceInfoSys = _simulation->provinceInfoSystem();
+		//int32 numberOfUnprotectedProvinces = 0;
+		//for (int32 provinceId : _provincesClaimed) {
+		//	if (!provinceInfoSys.provinceOwnerInfo(provinceId).isSafe) {
+		//		numberOfUnprotectedProvinces++;
+		//	}
+		//}
+		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::UnsafeProvinceUpkeep)] -= territoryUpkeep100 * numberOfUnprotectedProvinces / _provincesClaimed.size(); // double upkeep per unprotected province
 
 		// Fort/Colony
 		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;
@@ -1688,20 +1704,37 @@ void TownManager::RecalculateTax(bool showFloatup)
 	{
 		// Without influence unlocked,
 		// Territory Upkeep become to money penalty
-		incomes100[static_cast<int>(IncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
+		//incomes100[static_cast<int>(IncomeEnum::TerritoryUpkeep)] -= territoryUpkeep100;
 	}
 
-	// Influence beyond 1 year accumulation gets damped
-	// At 2 years worth accumulation. The influence income becomes 0;
-	//int64 influenceIncomeBeforeCapDamp100 = totalInfluenceIncome100();
-	//int64 maxInfluence100 = _simulation->playerOwned(_playerId).maxStoredInfluence100();
-	//if (influence100 > maxInfluence100 && influenceIncomeBeforeCapDamp100 > 0) {
-	//	// Fully damp to 0 influence income at x2 maxStoredInfluence
-	//	int64 influenceIncomeDamp100 = influenceIncomeBeforeCapDamp100 * (influence100 - maxInfluence100) / max(static_cast<int64>(1), maxInfluence100); // More damp as influence stored is closer to fullYearInfluenceIncome100
-	//	influenceIncomeDamp100 = min(influenceIncomeDamp100, influenceIncomeBeforeCapDamp100); // Can't damp more than existing influence income
-	//	PUN_CHECK(influenceIncomeDamp100 >= 0);
-	//	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::TooMuchInfluencePoints)] = -influenceIncomeDamp100;
-	//}
+	//! Spy Nest
+	{
+		const std::vector<int32>& spyNestIds = _simulation->GetSpyNestIds(_playerId);
+		for (int32 spyNestId : spyNestIds)
+		{
+			if (House* nest = _simulation->buildingPtr<House>(spyNestId, CardEnum::House))
+			{
+				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)] += _simulation->GetSpyNestInfluenceGainPerRound(_playerId, nest->townId());
+			}
+		}
+	}
+
+	//! Enemy Spy Nest
+	_simulation->ExecuteOnPlayersAndAI([&](int32 enemyPlayerId)
+	{
+		const std::vector<int32>& spyNestIds = _simulation->GetSpyNestIds(enemyPlayerId);
+		for (int32 spyNestId : spyNestIds)
+		{
+			if (House* nest = _simulation->buildingPtr<House>(spyNestId, CardEnum::House))
+			{
+				if (nest->playerId() == _playerId)
+				{
+					influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::EnemySpyNest)] -= _simulation->GetSpyNestInfluenceGainPerRound(enemyPlayerId, nest->townId());
+				}
+			}
+		}
+	});
+	
 }
 
 

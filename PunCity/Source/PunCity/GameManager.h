@@ -287,7 +287,7 @@ private:
 
 	bool _isHidingTrees = false;
 	bool _showProvinceOverlay = false;
-	bool _showDefenseOverlay = false;
+	//bool _showDefenseOverlay = false;
 
 	bool _isCtrlDown = false;
 	bool _isShiftDown = false;
@@ -863,18 +863,19 @@ public:
 	virtual void ToggleOverlayProvince() override {
 		_showProvinceOverlay = !_showProvinceOverlay;
 	}
-	virtual void ToggleOverlayDefense() override {
-		_showDefenseOverlay = !_showDefenseOverlay;
-	}
+	//virtual void ToggleOverlayDefense() override {
+	//	_showDefenseOverlay = !_showDefenseOverlay;
+	//}
 
-	virtual bool isShowingDefenseOverlay() override {
-		return _showDefenseOverlay || 
+	virtual bool isShowingDefenseNodes() override {
+		return _showProvinceOverlay ||
 			GetOverlayType() == OverlayType::Raid || 
 			GetOverlayType() == OverlayType::Fort;
 	}
-	virtual void SetOverlayDefense(bool showOverlay) override {
-		_showDefenseOverlay = showOverlay;
-	}
+	//virtual void SetOverlayDefense(bool showOverlay) override {
+	//	_showDefenseOverlay = showOverlay;
+	//}
+	
 	
 	virtual void ToggleOverlayFertility() final {
 		SetOverlayType((GetOverlayType() == OverlayType::Farm) ? OverlayType::None : OverlayType::Farm, OverlaySetterType::OverlayToggler);

@@ -187,7 +187,7 @@ void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool 
 	/*
 	 * Defense Nodes
 	 */
-	bool defenseNodesVisible =  _dataSource->isShowingDefenseOverlay() &&
+	bool defenseNodesVisible =  _dataSource->isShowingDefenseNodes() &&
 								!_dataSource->ZoomDistanceBelow(WorldZoomTransition_GameToMap);
 	if (defenseNodesVisible && !_mapMeshesParent->IsVisible())
 	{
@@ -705,7 +705,7 @@ void UTerrainMapComponent::RefreshDefenseMap()
 		DefenseOverlayEnum defenseOverlayEnum;
 		FTransform nodeTransform;
 		TArray<FTransform> lineTransforms;
-		_dataSource->GetDefenseNodeDisplayInfo(provinceId, 3.0f, defenseOverlayEnum, nodeTransform, lineTransforms, true);
+		_dataSource->GetDefenseNodeDisplayInfo(provinceId, 2.5f, defenseOverlayEnum, nodeTransform, lineTransforms, true);
 
 		nodeTransform.SetTranslation(nodeTransform.GetTranslation()); //  + FVector(0, 0, 128)
 

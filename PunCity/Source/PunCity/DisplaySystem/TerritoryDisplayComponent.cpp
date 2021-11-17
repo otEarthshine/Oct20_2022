@@ -60,7 +60,7 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	{
 		int32 index = 0;
 
-		if (gameManager()->isShowingDefenseOverlay() &&
+		if (gameManager()->isShowingDefenseNodes() &&
 			_gameManager->ZoomDistanceBelow(WorldZoomTransition_GameToMap))
 		{
 			auto spawnMesh = [&]()

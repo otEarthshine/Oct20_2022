@@ -430,7 +430,7 @@ public:
 	BuildingUpgrade MakeWorkerSlotUpgrade(int32 percentOfTotalPrice, int32 workerSlotBonus = 1);
 	BuildingUpgrade MakeEraUpgrade(int32 startEra);
 
-	BuildingUpgrade MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling = 50);
+	BuildingUpgrade MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling = 50, int32 fixedInitialMoney = -1);
 
 	BuildingUpgrade MakeComboUpgrade(FText name, ResourceEnum resourceEnum);
 
@@ -783,7 +783,9 @@ public:
 			return 10000;
 		}
 		if (isEnum(CardEnum::StatisticsBureau) ||
-			isEnum(CardEnum::JobManagementBureau))
+			isEnum(CardEnum::JobManagementBureau) ||
+			isEnum(CardEnum::SpyCenter) ||
+			isEnum(CardEnum::PolicyOffice))
 		{
 			return 1000;
 		}
@@ -855,7 +857,7 @@ public:
 
 	
 	int32 workRevenuePerSec100_perMan_() {
-		int32 result = buildingInfo().workRevenuePerSec100_perMan(GetEraUpgradeCount());
+		int32 result = buildingInfo().resourceInfo.workRevenuePerSec100_perMan(GetEraUpgradeCount());
 		if (IsElectricityUpgraded()) {
 			result += result * ElectricityAmountUsage() / std::max(1, ElectricityAmountNeeded()) / 2; // having full (usage == needed) means we get 50% increase in productivity
 		}
@@ -1704,6 +1706,7 @@ public:
 			_buildingEnum == CardEnum::JobManagementBureau ||
 			_buildingEnum == CardEnum::TourismAgency ||
 			_buildingEnum == CardEnum::SpyCenter ||
+			_buildingEnum == CardEnum::PolicyOffice ||
 			_buildingEnum == CardEnum::ArchitectStudio ||
 			_buildingEnum == CardEnum::DepartmentOfAgriculture ||
 			_buildingEnum == CardEnum::EngineeringOffice) 
@@ -2024,7 +2027,8 @@ public:
 		}
 		
 		// StorageTooFar Warning
-		if (IsFoodBuilding(_buildingEnum))
+		if (IsFoodBuilding(_buildingEnum) ||
+			_buildingEnum == CardEnum::Windmill)
 		{
 			if (!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::StorageYard) &&
 				!_simulation->HasBuildingWithinRadius(_centerTile, 40, _townId, CardEnum::Warehouse) &&

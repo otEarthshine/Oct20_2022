@@ -877,7 +877,7 @@ FText Building::GetUpgradeDisplayDescription(int32 index)
 
 		return FText::Format(
 			NSLOCTEXT("BuildingUpgrade", "Level Desc", "Increases Work Speed by {0}%"),
-			TEXT_NUM(BldResourceInfo::UpgradeProfitPercentEraMultiplier - 100)
+			TEXT_NUM(BldResourceInfo::UpgradeProfitPercentEraMultiplier(nextEra) - 100)
 		);
 	}
 	return upgrade.description;
@@ -1719,8 +1719,7 @@ BuildingUpgrade Building::MakeUpgrade(FText name, FText description, int32 perce
 
 BuildingUpgrade Building::MakeProductionUpgrade(FText name, ResourceEnum resourceEnum, int32 efficiencyBonus)
 {
-	int32 costToProfitRatio100 = hasInput1() ? 200 : 300;
-	int32 percentOfTotalPrice = efficiencyBonus * costToProfitRatio100 / 100;
+	int32 percentOfTotalPrice = efficiencyBonus * 500 / 100; // Nov 11: 300
 	
 	const FText bonusText = FText::Format(LOCTEXT("+{0}% productivity", "+{0}% productivity"), TEXT_NUM(efficiencyBonus));
 	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, resourceEnum, percentOfTotalPrice);
@@ -1729,7 +1728,7 @@ BuildingUpgrade Building::MakeProductionUpgrade(FText name, ResourceEnum resourc
 }
 BuildingUpgrade Building::MakeProductionUpgrade_Money(FText name, int32 efficiencyBonus)
 {
-	int32 percentOfTotalPrice = efficiencyBonus * 300 / 100;
+	int32 percentOfTotalPrice = efficiencyBonus * 500 / 100; // Nov 11: 300
 	
 	const FText bonusText = FText::Format(LOCTEXT("+{0}% productivity", "+{0}% productivity"), TEXT_NUM(efficiencyBonus));
 	BuildingUpgrade upgrade = MakeUpgrade(name, bonusText, percentOfTotalPrice);
@@ -1793,12 +1792,12 @@ BuildingUpgrade Building::MakeEraUpgrade(int32 startEra)
 	return upgrade;
 }
 
-BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling)
+BuildingUpgrade Building::MakeLevelUpgrade(FText name, FText description, ResourceEnum resourceEnum, int32 percentOfTotalPrice, int32 percentScaling, int32 fixedInitialMoney)
 {
 	int32 resourceCount;
 	// Special case:
-	if (IsAncientWonderCardEnum(buildingEnum())) {
-		resourceCount = BaseArtifactExcavationCost;
+	if (fixedInitialMoney > 0) {
+		resourceCount = fixedInitialMoney;
 	}
 	else 
 	{

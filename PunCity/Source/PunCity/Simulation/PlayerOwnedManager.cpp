@@ -91,10 +91,10 @@ void PlayerOwnedManager::Tick1Sec()
 			{
 				int32 spyPlayerId = nest->spyPlayerId();
 				check(spyPlayerId != -1);
-				
+
 				int32 spyInfluenceGainPerRound = _simulation->GetSpyNestInfluenceGainPerRound(spyPlayerId, nest->townId());
 
-				int32 spyInfluenceGainPerXSec = GameRand::RandRound(spyInfluenceGainPerRound * GameConstants::BaseFloatupIntervalSec, Time::TicksPerSecond);
+				int32 spyInfluenceGainPerXSec = GameRand::RandRound(spyInfluenceGainPerRound * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound);
 
 				// Can't steal if already 0 influence for target
 				spyInfluenceGainPerXSec = std::min(spyInfluenceGainPerXSec, _simulation->influence(nest->playerId()));
@@ -102,6 +102,17 @@ void PlayerOwnedManager::Tick1Sec()
 				_simulation->ChangeInfluence(nest->playerId(), -spyInfluenceGainPerXSec);
 				_simulation->ChangeInfluence(_playerId, spyInfluenceGainPerXSec);
 				_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, nest->centerTile(), TEXT_NUMSIGNED(spyInfluenceGainPerXSec));
+
+
+				_simulation->playerOwned(nest->playerId()).spyNestInfluenceStolen += spyInfluenceGainPerXSec;
+				if (_simulation->playerOwned(nest->playerId()).spyNestInfluenceStolen >= 1000)
+				{
+					if (_simulation->TryDoCallOnceAction(nest->playerId(), PlayerCallOnceActionEnum::SpyNestStoleALot)) {
+						_simulation->AddPopup(nest->playerId(),
+							LOCTEXT("SpyNestWarnOnce", "You have lost <img id=\"Influence\"/>1000 to Spy Nests hidden in your city.<space>Build Spy Center and use its ability to reveal these Spy Nests hidden in houses.")
+						);
+					}
+				}
 			}
 		}
 	}

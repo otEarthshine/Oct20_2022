@@ -507,6 +507,40 @@ public:
 		return false;
 	}
 
+	template<typename Func>
+	void ExecuteOnMilitaryUnits(Func func)
+	{
+		for (const CardStatus& card : _cardsBought) {
+			if (IsMilitaryCardEnum(card.cardEnum)) {
+				func(card);
+			}
+		}
+		for (const CardStatus& card : _cardsInventory) {
+			if (IsMilitaryCardEnum(card.cardEnum)) {
+				func(card);
+			}
+		}
+	}
+	
+	int32 GetMilitaryUnitCount()
+	{
+		int32 militaryUnitCount = 0;
+		ExecuteOnMilitaryUnits([&](const CardStatus& card) {
+			militaryUnitCount += card.stackSize;
+		});
+		PUN_LOG("militaryUnitCount %d", militaryUnitCount);
+		return militaryUnitCount;
+	}
+
+	std::vector<CardStatus> GetMilitaryCards()
+	{
+		std::vector<CardStatus> militaryCards;
+		ExecuteOnMilitaryUnits([&](const CardStatus& card) {
+			TryAddCards(card, militaryCards);
+		});
+		return militaryCards;
+	}
+
 	
 
 	int32 DisplayedBoughtCardCount(CardEnum cardEnum, bool includeInventory = true)
@@ -646,7 +680,7 @@ public:
 		return CanAddCardToBoughtHand(cardEnum, 1) || CanAddCardsToCardInventory(cardEnum);
 	}
 
-	static bool TryAddCards(CardStatus cardStatus, std::vector<CardStatus>& cardStatuses, int32 maxCardCount)
+	static bool TryAddCards(CardStatus cardStatus, std::vector<CardStatus>& cardStatuses, int32 maxCardCount = 999)
 	{
 		for (size_t i = cardStatuses.size(); i-- > 0;) {
 			if (cardStatuses[i].cardEnum == cardStatus.cardEnum) {
@@ -796,21 +830,23 @@ public:
 			return;
 		}
 
-		int32 actualCount = targetCount;
+		int32 actualCount = RemoveCards(cardStatus, _cardsInventory);
 
-		for (size_t i = _cardsInventory.size(); i-- > 0;)
-		{
-			if (_cardsInventory[i].cardEnum == cardStatus.cardEnum)
-			{
-				actualCount = std::min(_cardsInventory[i].stackSize, actualCount);
+		//int32 actualCount = targetCount;
 
-				_cardsInventory[i].stackSize -= actualCount;
-				if (_cardsInventory[i].stackSize <= 0) {
-					_cardsInventory.erase(_cardsInventory.begin() + i);
-				}
-				break;
-			}
-		}
+		//for (size_t i = _cardsInventory.size(); i-- > 0;)
+		//{
+		//	if (_cardsInventory[i].cardEnum == cardStatus.cardEnum)
+		//	{
+		//		actualCount = std::min(_cardsInventory[i].stackSize, actualCount);
+
+		//		_cardsInventory[i].stackSize -= actualCount;
+		//		if (_cardsInventory[i].stackSize <= 0) {
+		//			_cardsInventory.erase(_cardsInventory.begin() + i);
+		//		}
+		//		break;
+		//	}
+		//}
 
 		if (actualCount > 0) {
 			TryAddCards(CardStatus(cardStatus.cardEnum, actualCount), _cardsBought, maxCardsBought);

@@ -988,6 +988,7 @@ void UPunGameInstance::SetPlayerInfo(const FPlayerInfo& playerInfo)
 	{
 		if (SteamID64Equals(_playerInfos[i].steamId64, playerInfo.steamId64)) {
 			_playerInfos[i] = playerInfo;
+			_playerInfos[i].playerId = i;
 			break;
 		}
 	}
@@ -1032,6 +1033,7 @@ int32 UPunGameInstance::ConnectPlayer(FString playerNameF, uint64 steamId64)
 	{
 		_playerInfos[playerId].name = FText::FromString(playerNameF);
 		_playerInfos[playerId].steamId64 = steamId64;
+		_playerInfos[playerId].playerId = playerId;
 		_playerReadyStates[playerId] = false;
 		playerConnectedStates[playerId] = true;
 		clientPacketsReceived[playerId] = 0;
@@ -1062,7 +1064,19 @@ int32 UPunGameInstance::ConnectPlayer(FString playerNameF, uint64 steamId64)
 		}
 	}
 
-	//!
+	// Make new slot
+	if (IsInGame()) {
+		FPlayerInfo playerInfo = GetCachedPlayerInfo(steamId64);
+
+		if (!playerInfo.IsEmpty() && playerInfo.playerId < _playerInfos.Num())
+		{
+			_LOG(PunSync, "ConnectPlayer (playerId): %s steamId:%llu id:%lu pcount:%d size:%d isInGame:%d", *playerNameF, steamId64, CSteamID(steamId64).GetAccountID(), playerCount(), playerInfoList().Num(), IsInGame());
+			setToExistingSlot(playerInfo.playerId);
+			return playerInfo.playerId;
+		}
+	}
+	
+	//! TODO: this might not be needed?
 	// Try Add to the slot with same name first
 	for (int32 i = 0; i < _playerInfos.Num(); i++) {
 		if (!IsPlayerConnected(i) &&
@@ -1086,13 +1100,8 @@ int32 UPunGameInstance::ConnectPlayer(FString playerNameF, uint64 steamId64)
 
 	// Make new slot
 	FPlayerInfo playerInfo;
-	if (IsInGame()) {
-		playerInfo = GetCachedPlayerInfo(steamId64);
-	}
-	else {
-		playerInfo.name = FText::FromString(playerNameF);
-		playerInfo.steamId64 = steamId64;
-	}
+	playerInfo.name = FText::FromString(playerNameF);
+	playerInfo.steamId64 = steamId64;
 
 	_playerInfos.Add(playerInfo);
 	_playerReadyStates.Add(false);
@@ -1146,6 +1155,7 @@ void UPunGameInstance::DisconnectPlayer(FString playerNameF, uint64 steamId64)
 		{
 			_playerInfos[i].name = FText();
 			_playerInfos[i].steamId64 = FPlayerInfo::InvalidSteamId64;
+			_playerInfos[i].playerId = -1;
 			_playerReadyStates[i] = false;
 			playerConnectedStates[i] = false;
 

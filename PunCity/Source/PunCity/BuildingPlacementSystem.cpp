@@ -434,7 +434,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 		//}
 	}
 	else if (_buildingEnum == CardEnum::ResourceOutpost) {
-		SetInstruction(PlacementInstructionEnum::Colony, true);
+		SetInstruction(PlacementInstructionEnum::ResourceOutpost, true);
 	}
 	else if (_buildingEnum == CardEnum::Fort) {
 		SetInstruction(PlacementInstructionEnum::Fort, true);
@@ -2373,13 +2373,15 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		else if (_buildingEnum == CardEnum::ResourceOutpost)
 		{
 			auto& sim = _gameInterface->simulation();
+			GeoresourceEnum georesourceEnum = sim.georesource(sim.GetProvinceIdClean(center)).georesourceEnum;
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				if (IsPlayerBuildable(tile)) {
-					if (sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum != GeoresourceEnum::None) {
+				if (_gameInterface->IsPlayerColonyBuildable(tile)) 
+				{
+					if (sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum == georesourceEnum) {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
 					} else {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-						SetInstruction(PlacementInstructionEnum::ColonyNoGeoresource, true);
+						SetInstruction(PlacementInstructionEnum::ResourceOutpostNoGeoresource, true);
 					}
 				} else {
 					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
@@ -2832,6 +2834,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		 */
 		if (!IsRoadOverlapBuilding(_buildingEnum) &&
 			!IsTownPlacement(_buildingEnum) &&
+			_buildingEnum != CardEnum::ResourceOutpost &&
 			_buildingEnum != CardEnum::Farm &&
 			_buildingEnum != CardEnum::StorageYard &&
 			!IsDecorativeBuilding(_buildingEnum))
@@ -2912,7 +2915,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	if (!_canPlace) 
 	{
 		if (!IsTownPlacement(_buildingEnum) &&
-			!IsForeignOnlyBuilding(_buildingEnum))
+			!IsForeignOnlyBuilding(_buildingEnum) &&
+			_buildingEnum != CardEnum::ResourceOutpost)
 		{
 			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 				if (simulation.tileOwnerPlayer(tile) != playerId) {

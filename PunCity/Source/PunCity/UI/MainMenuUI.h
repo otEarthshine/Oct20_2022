@@ -219,12 +219,12 @@ public:
 
 public:
 	// TESTING
-	UPROPERTY(meta = (BindWidget)) USpineWidget* TestSpine;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override
-	{
-		UPunWidget::NativeTick(MyGeometry, InDeltaTime);
-		TestSpine->Tick(InDeltaTime);
-	}
+	//UPROPERTY(meta = (BindWidget)) USpineWidget* TestSpine;
+	//virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override
+	//{
+	//	UPunWidget::NativeTick(MyGeometry, InDeltaTime);
+	//	TestSpine->Tick(InDeltaTime);
+	//}
 
 private:
 	bool _needLobbyListUIRefresh = false;

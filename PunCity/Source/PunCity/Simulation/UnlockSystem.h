@@ -44,13 +44,6 @@ struct TechBoxLocation
 	}
 };
 
-enum class UnlockStateEnum
-{
-	InfluencePoints,
-	ForeignPort,
-	TrainUnits,
-	Count,
-};
 
 /*
  * For research with custom name (that isn't building name etc.)
@@ -356,25 +349,25 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	/*
 	 * Prosperity Tech
 	 */
-	{ TechEnum::InfluencePoints, {
-		LOCTEXT("Influence Points", "Influence Points"),
-		LOCTEXT("Influence Points Desc", "Unlock Influence Points <img id=\"Influence\"/> used to claim land."),
-	}},
+	//{ TechEnum::InfluencePoints, {
+	//	LOCTEXT("Influence Points", "Influence Points"),
+	//	LOCTEXT("Influence Points Desc", "Unlock Influence Points <img id=\"Influence\"/> used to claim land."),
+	//}},
 
-	{ TechEnum::Conquer, {
-		LOCTEXT("Conquer Province", "Conquer Province"),
-		LOCTEXT("Conquer Province Desc", "Unlock Province Conquering"),
-	}},
+	//{ TechEnum::Conquer, {
+	//	LOCTEXT("Conquer Province", "Conquer Province"),
+	//	LOCTEXT("Conquer Province Desc", "Unlock Province Conquering"),
+	//}},
 
 	{ TechEnum::HomeLandDefense, {
 		LOCTEXT("Homeland Defense", "Homeland Defense"),
 		LOCTEXT("Homeland Defense Desc", "Provinces gain +10% defense bonus for each building on it."),
 	}},
 
-	{ TechEnum::Vassalize, {
-		LOCTEXT("Vassalize", "Vassalize"),
-		LOCTEXT("Vassalize Desc", "Unlock Vassalization which allows you to turn other city into a vassal."),
-	}},
+	//{ TechEnum::Vassalize, {
+	//	LOCTEXT("Vassalize", "Vassalize"),
+	//	LOCTEXT("Vassalize Desc", "Unlock Vassalization which allows you to turn other city into a vassal."),
+	//}},
 
 	//{ TechEnum::IntercityRoad, {
 	//	LOCTEXT("Intercity Connection", "Intercity Connection"),
@@ -623,6 +616,11 @@ public:
 				LOCTEXT("UnlockedOilResource", "Oil Resource on the Map is revealed.")
 			});
 			simulation->CheckSeedAndMineCard(playerId);
+		}
+
+		if (techEnum == TechEnum::PolicyMaking)
+		{
+			simulation->TryAddCards_BoughtHandAndInventory(playerId, CardStatus(CardEnum::PolicyOffice, 1));
 		}
 	}
 
@@ -986,49 +984,6 @@ public:
 	/*
 	 * Prosperity UI
 	 */
-	//void AddProsperityTech(int32 columnIndex, int32 unlockCount, std::shared_ptr<ResearchInfo> tech)
-	//{	
-	//	PUN_CHECK(_enumToTech.find(tech->techEnum) == _enumToTech.end());
-	//	
-	//	while (columnIndex >= _columnToUpgradeTechEnum.size()) {
-	//		_columnToUpgradeTechEnum.push_back({});
-	//		//_houseLvlToUnlockCount.push_back({});
-	//	}
-
-	//	//int32 cumulativeUnlockCount = unlockCount;
-	//	//int32 unlockListSize = _houseLvlToUnlockCount[columnIndex].size();
-	//	//if (unlockListSize > 0) {
-	//	//	cumulativeUnlockCount += _houseLvlToUnlockCount[columnIndex][unlockListSize - 1];
-	//	//}
-	//	
-	//	_columnToUpgradeTechEnum[columnIndex].push_back(tech->techEnum);
-	//	//_houseLvlToUnlockCount[columnIndex].push_back(cumulativeUnlockCount);
-	//	_enumToTech[tech->techEnum] = std::static_pointer_cast<ResearchInfo>(tech);
-	//}
-	
-	//void AddProsperityTech_Building(int32 era, int32 unlockCount, TechEnum researchEnum, CardEnum buildingEnum, int32 cardCount = 1) {
-	//	AddProsperityTech_BuildingX(era, unlockCount, researchEnum, { buildingEnum }, cardCount);
-	//}
-	//void AddProsperityTech_BuildingX(int32 era, int32 unlockCount, TechEnum researchEnum, std::vector<CardEnum> buildingEnums, int32 cardCount = 1) {
-	//	auto tech = std::make_shared<Building_Research>();
-	//	tech->Init(era, researchEnum, {});
-	//	tech->InitBuildingResearch(buildingEnums, {}, _simulation, cardCount);
-	//	AddProsperityTech(era, unlockCount, tech);
-	//}
-
-	//void AddProsperityTech_BuildingPermanent(int32 era, int32 unlockCount, TechEnum researchEnum, std::vector<CardEnum> buildingEnums) {
-	//	auto tech = std::make_shared<Building_Research>();
-	//	tech->Init(era, researchEnum, {});
-	//	tech->InitBuildingResearch({}, buildingEnums, _simulation);
-	//	auto techCasted = std::static_pointer_cast<ResearchInfo>(tech);
-	//	AddProsperityTech(era, unlockCount, tech);
-	//}
-
-	//void AddProsperityTech_Bonus(int32 era, int32 unlockCount, TechEnum researchEnum) {
-	//	auto tech = std::make_shared<BonusToggle_Research>();
-	//	tech->Init(era, researchEnum, {});
-	//	AddProsperityTech(era, unlockCount, tech);
-	//}
 
 	const std::vector<std::vector<TechEnum>>& columnToUpgradeTechEnums() {
 		return _columnToUpgradeTechEnum;
@@ -1306,7 +1261,7 @@ public:
 			);
 			AddTech_Bonus(TechEnum::BudgetAdjustment, { TechEnum::SandMine, TechEnum::CardMaker });
 			AddTech_Building(TechEnum::PolicyMaking, { TechEnum::CardMaker, TechEnum::School, TechEnum::Logistics4 },
-				{ CardEnum::PolicyOffice }
+				{ }
 			);
 			AddTech_Bonus(TechEnum::Logistics5, { TechEnum::Logistics4, TechEnum::StoneRoad });
 
@@ -1385,9 +1340,7 @@ public:
 			AddTech_Building(TechEnum::JewelryCrafting, { TechEnum::GoldWorking, TechEnum::Bank },
 				{ CardEnum::Jeweler }
 			);
-			AddTech_Building(TechEnum::SpyCenter, { TechEnum::Bank, TechEnum::Museum },
-				{ CardEnum::SpyCenter }
-			);
+			AddTech_Bonus(TechEnum::SpyCenter, { TechEnum::Bank, TechEnum::Museum });
 			AddTech_Bonus(TechEnum::CropBreeding, { TechEnum::Zoo });
 
 
@@ -1515,7 +1468,6 @@ public:
 				CardEnum::SustainabilityBook
 			);
 
-			AddTech_Bonus(TechEnum::Warrior, {});
 			AddTech_Bonus(TechEnum::Archer, {});
 
 			
@@ -1535,8 +1487,8 @@ public:
 				{ CardEnum::GardenShrubbery1 }
 			);
 
-			AddTech_Bonus(TechEnum::Swordsman, { TechEnum::Warrior });
-			AddTech_Bonus(TechEnum::Conquer, { TechEnum::Warrior, TechEnum::Archer });
+			AddTech_Bonus(TechEnum::Swordsman, { TechEnum::Archer });
+			//AddTech_Bonus(TechEnum::Conquer, { TechEnum::Warrior, TechEnum::Archer });
 			
 			
 			//
@@ -1554,7 +1506,7 @@ public:
 
 			AddTech_Bonus(TechEnum::Knight, { TechEnum::Swordsman });
 			AddTech_Bonus(TechEnum::MilitaryEngineering1, { TechEnum::Swordsman });
-			AddTech_Bonus(TechEnum::Vassalize, { TechEnum::Conquer });
+			//AddTech_Bonus(TechEnum::Vassalize, { TechEnum::Conquer });
 		
 
 			
@@ -1753,7 +1705,7 @@ public:
 			return GetResourceProductionCount(techRequirements.requiredResourceEnum) >= techRequirements.requiredResourceCount;
 		}
 		if (techRequirements.requiredHouseLvl != -1) {
-			return _simulation->GetHouseLvlCount(_playerId, techRequirements.requiredHouseLvl, true) >= techRequirements.requiredHouselvlCount;
+			return _simulation->GetHouseLvlCount_Player(_playerId, techRequirements.requiredHouseLvl, true) >= techRequirements.requiredHouselvlCount;
 		}
 		return true;
 	}
@@ -1817,7 +1769,9 @@ public:
 		unlockTree(_columnToTechs);
 		unlockTree(_columnToUpgradeTechEnum);
 
-		SetUnlockState(UnlockStateEnum::InfluencePoints, true);
+		for (int32 i = 0; i < static_cast<int32>(UnlockStateEnum::Count); i++) {
+			SetUnlockState(static_cast<UnlockStateEnum>(i), true);
+		}
 
 		_techQueue.clear();
 	}
@@ -2101,6 +2055,22 @@ public:
 	bool unlockState(UnlockStateEnum unlockStateEnum) { return _unlockStates[static_cast<int>(unlockStateEnum)]; }
 	void SetUnlockState(UnlockStateEnum unlockStateEnum, bool value) {
 		_unlockStates[static_cast<int>(unlockStateEnum)] = value;
+
+		if (unlockStateEnum == UnlockStateEnum::ConquerProvince) {
+			_simulation->AddPopup(_playerId,
+				LOCTEXT("UnlockedProvinceConqueringPop", "Unlocked Province Conquering<space>You can now conquer opponent's provinces with your army. The province to conquer must be next to your territory.")
+			);
+		}
+		if (unlockStateEnum == UnlockStateEnum::Vassalize) {
+			_simulation->AddPopup(_playerId,
+				LOCTEXT("UnlockedVassalizationPop", "Unlocked Vassalization<space>You can now vassalize another city with your army.\nTo vassalize another city, click vassalize on the target townhall.<space>Your vassal city keep their control, but must pay vassal tax to you.")
+			);
+		}
+		if (unlockStateEnum == UnlockStateEnum::Raze) {
+			_simulation->AddPopup(_playerId,
+				LOCTEXT("UnlockedRazePop", "Unlocked Raze<space>You can now raze Minor City or Fort to remove them from the map.")
+			);
+		}
 	}
 
 	

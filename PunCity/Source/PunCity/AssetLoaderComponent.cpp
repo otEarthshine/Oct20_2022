@@ -1023,6 +1023,27 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//addCardIcon(CardEnum::Reindeer, "Reindeer");
 	addCardIcon(CardEnum::DarkDeer, "SambarDeer");
 
+
+	// Military
+	folderName = "CardImages_Military/";
+	suffix = "_Card";
+	hasFadeBorder = false;
+	addCardIcon(CardEnum::Archer, "Archer");
+	addCardIcon(CardEnum::Artillery, "Artillery");
+	addCardIcon(CardEnum::Battleship, "Battleship");
+	addCardIcon(CardEnum::Cannon, "Cannon");
+	addCardIcon(CardEnum::Catapult, "Catapult");
+	addCardIcon(CardEnum::Conscript, "Conscript");
+	addCardIcon(CardEnum::Frigate, "Frigate");
+	addCardIcon(CardEnum::Galley, "Galley");
+	addCardIcon(CardEnum::Infantry, "Infantry");
+	addCardIcon(CardEnum::Knight, "Knight");
+	addCardIcon(CardEnum::MachineGun, "MachineGun");
+	addCardIcon(CardEnum::Militia, "Militia");
+	addCardIcon(CardEnum::Musketeer, "Musketeer");
+	addCardIcon(CardEnum::Swordsman, "Swordsman");
+	addCardIcon(CardEnum::Tank, "Tank");
+	addCardIcon(CardEnum::Warrior, "Warrior");
 	
 
 	// Screenshot images
@@ -1082,6 +1103,48 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	//check(addCardIconCount == 126);
 
+	////! Military Unit
+	//auto addSpine = [&](CardEnum cardEnum, FString assetName)
+	//{
+	//	TArray<FString> foundFiles;
+
+	//	FString findDirectory = FPaths::ProjectContentDir() + FString("UI/Spine/") + assetName + FString("/");
+	//	IFileManager::Get().FindFiles(foundFiles, *findDirectory, TEXT(".uasset"));
+
+	//	if (foundFiles.Num() > 0)
+	//	{
+	//		FString fileName = FPaths::MakeValidFileName(foundFiles[0]);
+	//		
+	//		//UObject* cardIconTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/UI/Spine/") + path));
+
+	//		//auto getPath = [&](FString spineSuffix) {
+	//		//	return FString("/Game/UI/Spine/") + assetName + FString("/KR_Military_") + assetName + spineSuffix;
+	//		//};
+	//		FSpineAsset asset;
+	//		UObject* obj = StaticLoadObject(UObject::StaticClass(), NULL, *(FString("/Game/UI/Spine/") + assetName + FString("/") + fileName));
+	//		asset.atlas = Cast<USpineAtlasAsset>(obj);
+	//		//asset.atlas = LoadF<USpineAtlasAsset>(getPath(""));
+	//		//asset.skeletonData = LoadF<USpineSkeletonDataAsset>(getPath(""));
+	//		_spineAssets.Add(static_cast<int32>(cardEnum), asset);
+	//	}
+	//};
+
+	//addSpine(CardEnum::Archer, "Archer");
+	//addSpine(CardEnum::Artillery, "Artillery");
+	//addSpine(CardEnum::Battleship, "Battleship");
+	//addSpine(CardEnum::Cannon, "Cannon");
+	//addSpine(CardEnum::Catapult, "Catapult");
+	//addSpine(CardEnum::Conscript, "Conscript");
+	//addSpine(CardEnum::Frigate, "Frigate");
+	//addSpine(CardEnum::Galley, "Galley");
+	//addSpine(CardEnum::Infantry, "Infantry");
+	//addSpine(CardEnum::Knight, "Knight");
+	//addSpine(CardEnum::MachineGun, "MachineGun");
+	//addSpine(CardEnum::Militia, "Militia");
+	//addSpine(CardEnum::Musketeer, "Musketeer");
+	//addSpine(CardEnum::Swordsman, "Swordsman");
+	//addSpine(CardEnum::Tank, "Tank");
+	//addSpine(CardEnum::Warrior, "Warrior");
 
 	
 	
@@ -1904,7 +1967,20 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 					moduleTypeEnum = ModuleTypeEnum::RotateRollMine;
 				}
 				else if (buildingEnum == CardEnum::FurnitureWorkshop) {
-					transform = TransformFromPosition(6.506, 0, 13.303);
+					if (factionEnum == FactionEnum::Arab) {
+						if (era == 2) {
+							transform = TransformFromPosition(0.5, 16, 13.5);
+						}
+						else if (era == 3) {
+							transform = TransformFromPosition(.67, 15.9, 14.1);
+						}
+						else if (era == 4) {
+							transform = TransformFromPosition(.5, 16, 13.7);
+						}
+					}
+					else {
+						transform = TransformFromPosition(6.506, 0, 13.303);
+					}
 					moduleTypeEnum = ModuleTypeEnum::RotateRollFurniture;
 				}
 				else if (buildingEnum == CardEnum::PaperMaker) {
@@ -3152,4 +3228,49 @@ void UAssetLoaderComponent::LoadTileObject(TileObjEnum treeEnum, std::vector<std
 		proto.assets.Add(Load<UStaticMesh>((path + meshFiles[i]).c_str()));
 	}
 	_tileMeshes.Add(static_cast<int32>(treeEnum), proto);
+}
+
+/*
+ * Spine
+ */
+
+FSpineAsset UAssetLoaderComponent::GetSpine(CardEnum cardEnum)
+{
+	auto makeAsset = [&](USpineAtlasAsset* atlas, USpineSkeletonDataAsset* data)
+	{
+		FSpineAsset asset;
+		asset.atlas = atlas;
+		asset.skeletonData = data;
+		return asset;
+	};
+
+	switch(cardEnum)
+	{
+	case CardEnum::Archer: return makeAsset(Archer_SpineAtlas, Archer_SpineData);
+	case CardEnum::Artillery: return makeAsset(Artillery_SpineAtlas, Artillery_SpineData);
+	case CardEnum::Battleship: return makeAsset(Battleship_SpineAtlas, Battleship_SpineData);
+
+	case CardEnum::Cannon: return makeAsset(Cannon_SpineAtlas, Cannon_SpineData);
+	case CardEnum::Catapult: return makeAsset(Catapult_SpineAtlas, Catapult_SpineData);
+	case CardEnum::Conscript: return makeAsset(Conscript_SpineAtlas, Conscript_SpineData);
+
+	case CardEnum::Frigate: return makeAsset(Frigate_SpineAtlas, Frigate_SpineData);
+	case CardEnum::Galley: return makeAsset(Galley_SpineAtlas, Galley_SpineData);
+	case CardEnum::Infantry: return makeAsset(Infantry_SpineAtlas, Infantry_SpineData);
+
+	case CardEnum::Knight: return makeAsset(Knight_SpineAtlas, Knight_SpineData);
+	case CardEnum::MachineGun: return makeAsset(MachineGun_SpineAtlas, MachineGun_SpineData);
+	case CardEnum::Militia: return makeAsset(Militia_SpineAtlas, Militia_SpineData);
+	case CardEnum::Musketeer: return makeAsset(Musketeer_SpineAtlas, Musketeer_SpineData);
+	case CardEnum::Swordsman: return makeAsset(Swordsman_SpineAtlas, Swordsman_SpineData);
+	case CardEnum::Tank: return makeAsset(Tank_SpineAtlas, Tank_SpineData);
+	case CardEnum::Warrior: return makeAsset(Warrior_SpineAtlas, Warrior_SpineData);
+
+	case CardEnum::Wall: return makeAsset(StoneWall_SpineAtlas, StoneWall_SpineData);
+	case CardEnum::RaidTreasure: return makeAsset(RaidTreasure_SpineAtlas, RaidTreasure_SpineData);
+
+	default:
+		UE_DEBUG_BREAK();
+		return makeAsset(Archer_SpineAtlas, Archer_SpineData);
+	}
 }

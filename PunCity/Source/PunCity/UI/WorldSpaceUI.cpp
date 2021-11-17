@@ -251,29 +251,29 @@ void UWorldSpaceUI::TickBuildings()
 						hoverIcon->SetPair(hoverIcon->IconPair3);
 					}
 				}
-				else if (dataSource()->isShowingDefenseOverlay())
-				{
-					UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
-						_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
-						WorldZoomTransition_Region4x4ToMap
-					);
+				//else if (dataSource()->isShowingDefenseOverlay())
+				//{
+				//	UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
+				//		_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
+				//		WorldZoomTransition_Region4x4ToMap
+				//	);
 
-					int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
-					if (sim.townPlayerId(originTownId) == playerId())
-					{
-						const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
-						hoverIcon->SetPair(hoverIcon->IconPair1, 
-							provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected")
-						);
-						hoverIcon->SetPair(hoverIcon->IconPair2);
-						hoverIcon->SetPair(hoverIcon->IconPair3);
-					}
-					else {
-						hoverIcon->SetPair(hoverIcon->IconPair1);
-						hoverIcon->SetPair(hoverIcon->IconPair2);
-						hoverIcon->SetPair(hoverIcon->IconPair3);
-					}
-				}
+				//	int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
+				//	if (sim.townPlayerId(originTownId) == playerId())
+				//	{
+				//		const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
+				//		hoverIcon->SetPair(hoverIcon->IconPair1, 
+				//			provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected")
+				//		);
+				//		hoverIcon->SetPair(hoverIcon->IconPair2);
+				//		hoverIcon->SetPair(hoverIcon->IconPair3);
+				//	}
+				//	else {
+				//		hoverIcon->SetPair(hoverIcon->IconPair1);
+				//		hoverIcon->SetPair(hoverIcon->IconPair2);
+				//		hoverIcon->SetPair(hoverIcon->IconPair3);
+				//	}
+				//}
 				else if (dataSource()->isShowingProvinceOverlay())
 				{
 					URegionHoverUI* regionHoverUI = getRegionHoverUI();
@@ -817,7 +817,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		buildingJobUI->ClearResourceCompletionBox();
 	}
 
-	// Houses
+	//! Houses
 	if (IsHouse(building.buildingEnum()))
 	{
 		if (IsHumanHouse(building.buildingEnum()))
@@ -877,6 +877,57 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		//buildingJobUI->SetStars(0);
 		return;
 	}
+
+	//! DiplomaticBuilding
+	if (IsForeignOnlyBuilding(building.buildingEnum()))
+	{
+		if (building.foreignBuilderId() == playerId() ||
+			building.playerId() == playerId())
+		{
+			buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+
+			int32 influenceIncome100 = building.subclass<DiplomaticBuilding>().influenceIncome100(playerId());
+
+			buildingJobUI->MediumGrayText->SetText(FText::Format(
+				LOCTEXT("+{0}<img id=\"Influence\"/> per round", "+{0}<img id=\"Influence\"/> per round"),
+				TEXT_NUM(influenceIncome100 / 100)
+			));
+		}
+
+		return;
+	}
+
+	//! Fort
+	if (building.isEnum(CardEnum::Fort))
+	{
+		if (building.playerId() == playerId())
+		if (building.playerId() == playerId())
+		{
+			buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+
+			// Show provinces protected, and income increase
+			int32 protectedProvinces = 0;
+			int32 protectionIncome100 = 0;
+			const std::vector<int32>& provinceIds = simulation().townManager(building.playerId()).provincesClaimed();
+			for (int32 provinceId : provinceIds) {
+				if (simulation().provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe) {
+					protectedProvinces++;
+					protectionIncome100 += simulation().GetProvinceIncome100(provinceId) * 2 / 3;
+				}
+			}
+
+			buildingJobUI->MediumGrayText->SetText(FText::Format(
+				LOCTEXT("Fort Hover Text", "Protected Provinces: {0}/{1}\nProtection Income: +{2}<img id=\"Coin\"/>"),
+				TEXT_NUM(protectedProvinces),
+				TEXT_NUM(provinceIds.size()),
+				TEXT_100(protectionIncome100)
+			));
+		}
+
+		return;
+	}
+	
+	
 
 	LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickWorldSpaceUI_BldJobWork);
 
@@ -1437,16 +1488,18 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	else if (needInstruction(PlacementInstructionEnum::NotThisBuildingTarget)) {
 		punBox->AddRichTextCenter(LOCTEXT("NotThisBuildingTarget_Instruct", "<Red>Cannot be used on this building.</>"));
 	}
-	else if (needInstruction(PlacementInstructionEnum::ColonyNoGeoresource)) {
+	else if (needInstruction(PlacementInstructionEnum::ResourceOutpostNoGeoresource)) {
 		punBox->AddRichTextCenter(LOCTEXT("ColonyNoGeoresource_Instruct", "<Red>Must be built on a province with georesource</>"));
 	}
-	else if (needInstruction(PlacementInstructionEnum::Colony)) {
+	else if (needInstruction(PlacementInstructionEnum::ResourceOutpost)) {
 		int32 provinceId = simulation().GetProvinceIdClean(placementInfo.mouseOnTile);
-		PUN_CHECK(provinceId != -1);
-		ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
-		if (resourceEnum != ResourceEnum::None) {
-			int32 resourceCount = ResourceOutpost::GetColonyResourceIncome(resourceEnum);
-			punBox->AddIconPair(TEXT_NUMSIGNED(resourceCount), resourceEnum, FText::Format(INVTEXT(" {0}"), LOCTEXT("per round", "per round")));
+		if (provinceId != -1)
+		{
+			ResourceEnum resourceEnum = simulation().georesource(provinceId).info().resourceEnum;
+			if (resourceEnum != ResourceEnum::None) {
+				int32 resourceCount = ResourceOutpost::GetColonyResourceIncome(resourceEnum);
+				punBox->AddIconPair(TEXT_NUMSIGNED(resourceCount), resourceEnum, FText::Format(INVTEXT(" {0}"), LOCTEXT("per round", "per round")));
+			}
 		}
 	}
 	else if (needInstruction(PlacementInstructionEnum::Fort)) {

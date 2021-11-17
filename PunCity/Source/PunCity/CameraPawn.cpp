@@ -56,7 +56,7 @@ void ACameraPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 	PlayerInputComponent->BindAction("KeyPressed_ToggleHideTree", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleHideTree);
 	PlayerInputComponent->BindAction("ToggleProvinceOverlay", IE_Pressed, this, &ACameraPawn::ToggleProvinceOverlay);
-	PlayerInputComponent->BindAction("ToggleDefenseOverlay", IE_Pressed, this, &ACameraPawn::ToggleDefenseOverlay);
+	//PlayerInputComponent->BindAction("ToggleDefenseOverlay", IE_Pressed, this, &ACameraPawn::ToggleDefenseOverlay);
 	
 	PlayerInputComponent->BindAction("KeyPressed_ToggleFertility", IE_Pressed, this, &ACameraPawn::KeyPressed_ToggleFertility);
 	PlayerInputComponent->BindAction("ToggleAppeal", IE_Pressed, this, &ACameraPawn::ToggleAppeal);

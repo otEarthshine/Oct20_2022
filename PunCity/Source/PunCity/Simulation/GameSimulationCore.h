@@ -553,6 +553,16 @@ public:
 		return _buildingSystem->GetHouseLvlCount(townId, houseLvl, includeHigherLvl);
 	}
 
+	virtual int32 GetHouseLvlCount_Player(int32 playerId, int32 houseLvl, bool includeHigherLvl = false) override
+	{
+		int32 totalHouseLvlCount = 0;
+		const std::vector<int32>& townIds = GetTownIds(playerId);
+		for (int32 townId : townIds) {
+			totalHouseLvlCount += GetHouseLvlCount(townId, houseLvl, true);
+		}
+		return totalHouseLvlCount;
+	}
+
 	std::pair<int32, int32> GetStorageCapacity(int32 townId, bool includeUnderConstruction = false) final
 	{
 		std::vector<int32> storageIds = buildingIds(townId, CardEnum::StorageYard);
@@ -744,6 +754,7 @@ public:
 		if (IsMinorTown(townId)) {
 			return GenerateTribeName(townhallId);
 		}
+		// TODO: deal with vassalization
 
 		return playerNameT(townPlayerId(townId));
 	}
@@ -813,7 +824,7 @@ public:
 	/*
 	 * Minor Town
 	 */
-	virtual int32 AddMinorTown(int32 provinceId) override
+	virtual int32 AddMinorTown(int32 provinceId, FactionEnum factionEnum, CardEnum buildingEnum) override
 	{
 		// TODO: Spawn new town from pool
 		//for () {
@@ -821,8 +832,13 @@ public:
 		//}
 		
 		int32 townId = _minorTownManagers.size() + MinorTownShift;
-		_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, townId, FactionEnum::Europe, this));
-		_minorTownManagers.back()->InitAutoTrade(provinceId);
+		_minorTownManagers.push_back(std::make_unique<TownManagerBase>(-1, townId, factionEnum, this));
+		
+		if (buildingEnum == CardEnum::MinorCity) {
+			_minorTownManagers.back()->InitAutoTrade(provinceId);
+		}
+		
+		SetProvinceOwner(provinceId, townId, true);
 		return townId;
 	}
 	void RemoveMinorTown(int32 townId)
@@ -831,6 +847,11 @@ public:
 
 		int32 provinceId = townMgr->provincesClaimed()[0];
 		provinceInfoSystem().RemoveTown(provinceId);
+
+		// Remove from being a Vassal
+		ExecuteOnMajorTowns([&](int32 curTownId) {
+			townManagerBase(curTownId)->LoseVassal(townId);
+		});
 
 		check(_provinceInfoSystem->provinceOwnerTown(provinceId) == -1);
 		check(provinceOwnerTown_Minor(provinceId) == -1);
@@ -1786,14 +1807,14 @@ public:
 	int32 GetProvinceBaseUpkeep100(int32 provinceId) {
 		return GetProvinceBaseIncome100(provinceId) / 2; // Upkeep half the income as base
 	}
-	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) final
-	{
-		int32 upkeep100 = GetProvinceBaseUpkeep100(provinceId); // Upkeep half the income as base
-		
-		return upkeep100;
-	}
+	//virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) final
+	//{
+	//	int32 upkeep100 = GetProvinceBaseUpkeep100(provinceId); // Upkeep half the income as base
+	//	
+	//	return upkeep100;
+	//}
 
-	int32 GetProvinceRaidMoney100(int32 originProvinceId)
+	virtual int32 GetProvinceRaidMoney100(int32 originProvinceId) override
 	{
 		int32 originTownId = provinceOwnerTownSafe(originProvinceId);
 
@@ -1853,7 +1874,7 @@ public:
 		return totalRaidIncome100;
 	}
 
-	void CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId);
+	void CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId, int32 raidMoney);
 
 
 	int32 GetProvinceBaseClaimPrice(int32 provinceId)
@@ -2023,7 +2044,7 @@ public:
 		if (IsAIPlayer(playerIdIn)) { //TODO: this is for testing for now..
 			return true;
 		}
-		return IsResearched(playerIdIn, TechEnum::Vassalize) && 
+		return IsUnlocked(playerIdIn, UnlockStateEnum::Vassalize) &&
 				CanConquerOtherPlayers_Base(playerIdIn);
 	}
 	bool CanConquerProvinceOtherPlayers(int32 playerIdIn)
@@ -2031,7 +2052,7 @@ public:
 		if (IsAIPlayer(playerIdIn)) { //TODO: this is for testing for now..
 			return true;
 		}
-		return IsResearched(playerIdIn, TechEnum::Conquer) &&
+		return IsUnlocked(playerIdIn, UnlockStateEnum::ConquerProvince) &&
 				CanConquerOtherPlayers_Base(playerIdIn);
 	}
 	bool CanConquerOtherPlayers_Base(int32 playerIdIn) {
@@ -2044,7 +2065,7 @@ public:
 		if (IsAIPlayer(townId)) { //TODO: this is for testing for now..
 			return true;
 		}
-		return IsResearched(conquererPlayerId, TechEnum::Vassalize) &&
+		return IsUnlocked(conquererPlayerId, UnlockStateEnum::Vassalize) &&
 			CanConquerOtherPlayers_Base(conquererPlayerId);
 	}
 
@@ -2453,23 +2474,12 @@ public:
 
 	virtual int32 GetSpyNestInfluenceGainPerRound(int32 nestOwnerPlayerId, int32 nestTownId) override
 	{
-		int32 spyInfluenceGainPerRound = SpyNestBasePrice / 8;
+		const int32 spyNestBreakevenRounds = 16;
+		int32 spyInfluenceGainPerRound = SpyNestBasePrice / spyNestBreakevenRounds;
 
-		// Population factor
-		// at 300 pop, 375 influence per year...
-		// at 1000 pop, 375 x 2
+		// Population factor each 2 pop gives 1% max at 100%
 		int32 townPopulation = populationTown(nestTownId);
-		int32 influencePopulationFactorPercent = 0;
-		auto tryPopulationFactor = [&](int32 populationBand, int32 maxFactorPercent) {
-			int32 deduction = std::min(townPopulation, populationBand);
-			influencePopulationFactorPercent += maxFactorPercent * deduction / populationBand;
-			townPopulation -= deduction;
-			check(townPopulation >= 0);
-		};
-		tryPopulationFactor(300, 100);
-		tryPopulationFactor(1000, 100);
-		influencePopulationFactorPercent += townPopulation * 100 / 3000; // each 3000 gives 100%
-
+		int32 influencePopulationFactorPercent = 100 + std::min(100, townPopulation / 2);
 
 		spyInfluenceGainPerRound = spyInfluenceGainPerRound * influencePopulationFactorPercent / 100;
 
@@ -2489,6 +2499,10 @@ public:
 
 	int32 GetRevealSpyNestPrice() { return SpyNestBasePrice / 3; }
 	int32 GetRevealSpyNestRadius() { return 32; }
+
+	virtual const std::vector<int32>& GetSpyNestIds(int32 playerId) override {
+		return playerOwned(playerId).GetSpyNestIds();
+	}
 	
 	//std::vector<BonusPair> GetSpyBonuses(int32 sourcePlayerId, int32 targetTownId)
 	//{
@@ -2600,6 +2614,9 @@ public:
 		}
 	}
 
+	virtual int32 GetTradeRouteIncome() override {
+		return 100;
+	}
 	
 	/*
 	 * 
@@ -2653,7 +2670,11 @@ public:
 	
 	bool IsInDarkAge(int32 playerId) final { return _playerOwnedManagers[playerId].IsInDarkAge(); }
 	
-	void RecalculateTaxDelayedPlayer(int32 playerId) override {
+	void RecalculateTaxDelayedPlayer(int32 playerId) override
+	{
+		if (!IsValidPlayer(playerId)) {
+			return;
+		}
 		const auto& townIds = _playerOwnedManagers[playerId].townIds();
 		for (int32 townId : townIds) {
 			_townManagers[townId]->RecalculateTaxDelayed();
@@ -2975,6 +2996,16 @@ public:
 		return unlockSystem(playerId)->unlockState(UnlockStateEnum::InfluencePoints);
 	}
 
+	virtual bool IsUnlocked(int32 playerId, UnlockStateEnum unlockStateEnum) override {
+		return unlockSystem(playerId)->unlockState(unlockStateEnum);
+	}
+	virtual void TryUnlock(int32 playerId, UnlockStateEnum unlockStateEnum) override {
+		if (!IsUnlocked(playerId, unlockStateEnum)) {
+			unlockSystem(playerId)->SetUnlockState(unlockStateEnum, true);
+		}
+	}
+	
+
 	int32 GetEra(int32 playerId) final {
 		return unlockSystem(playerId)->GetEra();
 	}
@@ -3221,6 +3252,9 @@ public:
 		return cardSystem(playerId).TryAddCards_BoughtHandAndInventory(cardStatus);
 	}
 
+	virtual int32 GetMilitaryUnitCount(int32 playerId) override {
+		return cardSystem(playerId).GetMilitaryUnitCount();
+	}
 
 	/*
 	 * Storage
@@ -4387,6 +4421,11 @@ private:
 
 public:
 	DescriptionUIState _descriptionUIState;
+
+	// desync check
+	std::vector<std::pair<int32, int32>> recentTickToHash; // tick, hash
+	bool isDesynced = false;
+	static const int32 DesyncWarningHashCount = 10;
 	
 private:
 	int32 _tickCount = 0;
@@ -4458,6 +4497,7 @@ private:
 	std::vector<std::shared_ptr<FNetworkCommand>> _commandsExecuted; // Not Serialized
 	std::vector<int32> _commandsTickExecuted; // Not Serialized
 #endif
+	
 
 	// Snow (Season * Celsius) 
 	FloatDet _snowAccumulation3 = 0;

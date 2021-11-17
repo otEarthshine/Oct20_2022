@@ -254,6 +254,7 @@ void EventQueue::event(TrackEntry *entry, Event *event) {
 
 /// Raises all events in the queue and drains the queue.
 void EventQueue::drain() {
+	return;	
 	if (_drainDisabled) {
 		return;
 	}

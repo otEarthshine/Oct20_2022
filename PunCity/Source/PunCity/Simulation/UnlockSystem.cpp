@@ -163,11 +163,11 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 			auto& cardSys = _simulation->cardSystem(_playerId);
 			if (GetEra() == 2) 
 			{
-				// Unlock Influence
-				_simulation->AddPopup(_playerId,
-					LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/>.<space><img id=\"Influence\"/> can be used to claim/maintain territory and enact policies.")
-				);
-				SetUnlockState(UnlockStateEnum::InfluencePoints, true);
+				//// Unlock Influence
+				//_simulation->AddPopup(_playerId,
+				//	LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/>.<space><img id=\"Influence\"/> can be used to claim/maintain territory and enact policies.")
+				//);
+				//SetUnlockState(UnlockStateEnum::InfluencePoints, true);
 
 				// Unlock WildCard
 				cardSys.AddDrawCards(CardEnum::WildCard, 5);
@@ -297,17 +297,17 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 	//		LOCTEXT("UnlockedInfluencePop", "Unlocked Influence Points <img id=\"Influence\"/> used to claim land.")
 	//	);
 	//}
-	if (techEnum == TechEnum::Conquer) {
-		simulation->AddPopup(playerId, 
-			LOCTEXT("UnlockedProvinceConqueringPop", "Unlocked Province Conquering<space>You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.")
-		);
-	}
-	if (techEnum == TechEnum::Vassalize) 
-	{
-		simulation->AddPopup(playerId, 
-			LOCTEXT("UnlockedVassalizationPop", "Unlocked Vassalization<space>You can now vassalize another city with Influence Points <img id=\"Influence\"/>.\nTo vassalize another city, click vassalize on the target townhall.<space>Your vassal city keep their control, but must pay vassal tax to you.")
-		);
-	}
+	//if (techEnum == TechEnum::Conquer) {
+	//	simulation->AddPopup(playerId, 
+	//		LOCTEXT("UnlockedProvinceConqueringPop", "Unlocked Province Conquering<space>You can now conquer opponent's provinces with Influence Points <img id=\"Influence\"/>.")
+	//	);
+	//}
+	//if (techEnum == TechEnum::Vassalize) 
+	//{
+	//	simulation->AddPopup(playerId, 
+	//		LOCTEXT("UnlockedVassalizationPop", "Unlocked Vassalization<space>You can now vassalize another city with Influence Points <img id=\"Influence\"/>.\nTo vassalize another city, click vassalize on the target townhall.<space>Your vassal city keep their control, but must pay vassal tax to you.")
+	//	);
+	//}
 
 	if (techEnum == TechEnum::Combo)
 	{
@@ -345,18 +345,6 @@ void BonusToggle_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulat
 		}
 	}
 
-	//! Military Tech.. Unlock TrainUnits
-	if (IsMilitaryTechEnum(techEnum))
-	{
-		UnlockSystem* unlockSys = simulation->unlockSystem(playerId);
-		if (!unlockSys->unlockState(UnlockStateEnum::TrainUnits)) {
-			unlockSys->SetUnlockState(UnlockStateEnum::TrainUnits, true);
-
-			_simulation->AddPopup(playerId,
-				LOCTEXT("UnlockedTraining_Pop", "Unlocked Military Training.<space>Click Train Units Button above Townhall to bring up the Training UI.")
-			);
-		}
-	}
 
 	ResearchInfo::OnUnlock(playerId, simulation);
 }

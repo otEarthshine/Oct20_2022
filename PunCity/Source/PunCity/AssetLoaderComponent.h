@@ -16,6 +16,8 @@
 #include "PunUnrealUtils.h"
 #include "CppUtils.h"
 #include "MainMenuAssetLoaderComponent.h"
+#include "SpineAtlasAsset.h"
+#include "SpineSkeletonDataAsset.h"
 
 #include "AssetLoaderComponent.generated.h"
 
@@ -285,6 +287,15 @@ struct FUnitAsset
 //};
 
 USTRUCT()
+struct FSpineAsset
+{
+	GENERATED_BODY();
+
+	UPROPERTY() USpineAtlasAsset* atlas;
+	UPROPERTY() USpineSkeletonDataAsset* skeletonData;
+};
+
+USTRUCT()
 struct FTileMeshAssets
 {
 	GENERATED_BODY();
@@ -449,6 +460,9 @@ public:
 		_cardIcons[index] = texture;
 		_cardIconHasFadeBorder[index] = hasFadeBorder;
 	}
+
+
+	FSpineAsset GetSpine(CardEnum cardEnum);
 
 
 	const TArray<UTexture2D*>& GetPlayerLogos() const {
@@ -776,8 +790,50 @@ public:
 	UPROPERTY(EditAnywhere) TArray<UParticleSystem*> ParticlesByEnum;
 	UPROPERTY(EditAnywhere) TArray<UNiagaraSystem*> NiagaraByEnum;
 
-	
 
+	/*
+	 * Spine
+	 */
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Archer_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Archer_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Artillery_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Artillery_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Battleship_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Battleship_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Cannon_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Cannon_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Catapult_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Catapult_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Conscript_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Conscript_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Frigate_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Frigate_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Galley_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Galley_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Infantry_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Infantry_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Knight_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Knight_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* MachineGun_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* MachineGun_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Militia_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Militia_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Musketeer_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Musketeer_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Swordsman_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Swordsman_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Tank_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Tank_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Warrior_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Warrior_SpineData;
+
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* StoneWall_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* StoneWall_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* RaidTreasure_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* RaidTreasure_SpineData;
+	//UPROPERTY(EditAnywhere) USpineAtlasAsset* ProvinceOwnershipFlag_SpineAtlas;
+	//UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* ProvinceOwnershipFlag_SpineData;
+	
 	/*
 	 * Sounds
 	 */
@@ -1020,6 +1076,9 @@ private:
 
 	//! ArmyIcon
 	UPROPERTY() TArray<UTexture2D*> _armyIcons;
+
+	//! Military
+	UPROPERTY() TMap<int32, FSpineAsset> _spineAssets;
 
 private:
 	UPROPERTY() TArray<FString> _modulesNeedingPaintConstruction;

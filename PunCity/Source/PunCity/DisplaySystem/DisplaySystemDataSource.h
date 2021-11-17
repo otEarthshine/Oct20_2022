@@ -41,7 +41,7 @@ public:
 	virtual OverlayType GetOverlayType() = 0;
 	virtual bool isHidingTree() = 0;
 	virtual bool isShowingProvinceOverlay() = 0;
-	virtual bool isShowingDefenseOverlay() = 0;
+	virtual bool isShowingDefenseNodes() = 0;
 	
 	virtual class ULineBatchComponent* lineBatch() = 0;
 

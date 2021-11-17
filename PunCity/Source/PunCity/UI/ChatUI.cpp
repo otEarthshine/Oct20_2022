@@ -235,6 +235,9 @@ void UChatUI::Tick()
 	UpdateHiddenSettingsDebugInfo();
 
 
+	// Desync Warning
+	DesyncText->SetVisibility(simulation().isDesynced ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+
 #endif
 
 }

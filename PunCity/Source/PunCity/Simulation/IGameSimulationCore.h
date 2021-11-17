@@ -190,6 +190,9 @@ public:
 	virtual bool IsConnectedToTowns(WorldTile2 tile, int32 playerId, std::vector<uint32>& path) = 0;
 
 	virtual bool unlockedInfluence(int32 playerId) = 0;
+	virtual bool IsUnlocked(int32 playerId, UnlockStateEnum unlockStateEnum) = 0;
+	virtual void TryUnlock(int32 playerId, UnlockStateEnum unlockStateEnum) = 0;
+	
 	virtual int32 GetEra(int32 playerId) = 0;
 	
 	virtual void ResetTechTreeDisplay(int32 playerId, bool resetTechTree = true, bool resetUpgradesTree = true) = 0;
@@ -344,7 +347,7 @@ public:
 	virtual bool FindBestPathWater(int32 startPortId, int32 endTownId, int32& endPortId) = 0;
 
 	//! Minor Town
-	virtual int32 AddMinorTown(int32 provinceId) = 0;
+	virtual int32 AddMinorTown(int32 provinceId, FactionEnum factionEnum, CardEnum buildingEnum) = 0;
 	
 	//! Terrain
 	virtual TerrainTileType terraintileType(int32 tileId) = 0;
@@ -455,7 +458,9 @@ public:
 	virtual const std::vector<int32>& GetTownProvincesClaimed(int32 townId) = 0;
 
 	virtual int32 GetProvinceIncome100(int32 provinceId) = 0;
-	virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
+	//virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
+
+	virtual int32 GetProvinceRaidMoney100(int32 originProvinceId) = 0;
 
 	virtual int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) = 0;
 
@@ -480,6 +485,10 @@ public:
 	virtual int32 GetSpyEffectiveness(int32 playerId, bool isCounterSpy = false) = 0;
 	virtual int32 GetSpyEffectivenessOnTarget(int32 playerId, int32 targetPlayerId) = 0;
 	virtual int32 GetSpyNestInfluenceGainPerRound(int32 nestOwnerPlayerId, int32 nestTownId) = 0;
+
+	virtual const std::vector<int32>& GetSpyNestIds(int32 playerId) = 0;
+
+	virtual int32 GetTradeRouteIncome() = 0;
 	
 	/*
 	 * 
@@ -568,6 +577,7 @@ public:
 	
 	virtual int HousingCapacity(int32 townId) = 0;
 	virtual int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl = false) = 0;
+	virtual int32 GetHouseLvlCount_Player(int32 playerId, int32 houseLvl, bool includeHigherLvl = false) = 0;
 
 	virtual std::pair<int32, int32> GetStorageCapacity(int32 townId, bool includeUnderConstruction = false) = 0;
 
@@ -650,6 +660,8 @@ public:
 
 	//virtual bool TryAddCardToBoughtHand(int32 playerId, CardEnum cardEnum, int32 cardCount = 1) = 0;
 	virtual bool TryAddCards_BoughtHandAndInventory(int32 playerId, CardStatus cardStatus) = 0;
+
+	virtual int32 GetMilitaryUnitCount(int32 playerId) = 0;
 	
 	virtual void GenerateRareCardSelection(int32 playerId, RareHandEnum rareHandEnum, FText rareHandMessage, int32 objectId = -1) = 0;
 

@@ -665,7 +665,7 @@ public:
 	static int32 GetTrainingLengthTicks(CardEnum cardEnum)
 	{
 		if (PunSettings::IsOn("CheatFastBuild")) {
-			return Time::TicksPerSecond * 3;
+			return Time::TicksPerSecond;
 		}
 		if (cardEnum == CardEnum::Raid) {
 			return Time::TicksPerSecond * 5;

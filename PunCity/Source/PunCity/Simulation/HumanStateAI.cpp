@@ -866,6 +866,9 @@ FoundResourceHolderInfos HumanStateAI::FindNeedHelper(ResourceEnum resourceEnum,
 	// Compare market provider to storage provider
 	if (resourceEnum == ResourceEnum::Food) {
 		foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::AvailableForPickup, wantAmount, uTile, maxDistance, uTile);
+		if (!foundProviders.hasInfos()) {
+			foundProviders = resourceSystem().FindFoodHolder(ResourceFindType::DropManual, wantAmount, uTile, maxDistance, uTile);
+		}
 	} else {
 		foundProviders = resourceSystem().FindHolder(ResourceFindType::AvailableForPickup, resourceEnum, wantAmount, uTile, {}, maxDistance, uTile);
 	}
@@ -898,6 +901,48 @@ bool HumanStateAI::TryFindFood()
 		int32 maxDistanceFetch = maxDistanceFetch_Get + (maxDistanceFetch_minWarnFood - maxDistanceFetch_Get) * percentToMinWarnFood / 100;
 		
 		FoundResourceHolderInfos foundProviders = FindNeedHelper(ResourceEnum::Food, wantAmount, maxDistanceFetch);
+
+		// Fetch food from farm if needed
+		if (foundProviders.hasInfos()) 
+		{
+			auto& resourceSys = resourceSystem();
+			const std::vector<int32>& farmIds = _simulation->buildingIds(_townId, CardEnum::Farm);
+			for (int32 farmId : farmIds)
+			{
+				Farm& farm = _simulation->building<Farm>(farmId, CardEnum::Farm);
+				if (farm.IsStage(FarmStage::Harvesting))
+				{
+					std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
+
+
+					int32 targetAmount = 10;
+					int32 amount = 0;
+					ResourceEnum targetResourceEnum = ResourceEnum::None;
+					std::vector<DropInfo> dropsToMove;
+					for (DropInfo drop : drops)
+					{
+						PUN_CHECK(drop.holderInfo.resourceEnum != ResourceEnum::None);
+
+						if (targetResourceEnum == ResourceEnum::None) {
+							targetResourceEnum = drop.holderInfo.resourceEnum;
+						}
+
+						int32 dropResourceCount = resourceSys.resourceCountWithPop(drop.holderInfo);
+						if (dropResourceCount > 0 &&
+							drop.holderInfo.resourceEnum == targetResourceEnum &&
+							amount + dropResourceCount <= targetAmount)
+						{
+							amount += dropResourceCount;
+							dropsToMove.push_back(drop);
+						}
+						else {
+							break;
+						}
+					}
+				}
+			}
+
+		}
 		
 		if (foundProviders.hasInfos()) {
 			// Just go to the best provider (the first one)

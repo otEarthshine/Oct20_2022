@@ -75,47 +75,73 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	TownManagerBase* uiTownManagerBase = sim.townManagerBase(uiTownId);
 	
 	TArray<FText> args;
-	if (uiTownManagerBase->lordPlayerId() == playerId()) {
-		ADDTEXT_(
-			LOCTEXT("MinorTownBottomCaption_VassalTax", "Vassal Tax: +{0}<img id=\"Coin\"/>, +{1}<img id=\"Influence\"/>"),
-			TEXT_100(uiTownManagerBase->totalRevenue100() * uiTownManagerBase->vassalTaxPercent() / 100),
-			TEXT_100(uiTownManagerBase->totalInfluenceIncome100() * uiTownManagerBase->vassalInfluencePercent() / 100)
-		);
-	}
-
-	//! Trade Route Income
-	const std::vector<int32>& townIds = sim.GetTownIds(playerId());
-	int32 tradeIncome = 0;
-	for (int32 townId : townIds) {
-		if (sim.worldTradeSystem().HasTradeRoute(townId, uiTownId)) {
-			tradeIncome += sim.GetTradeRouteIncome();
-		}
-	}
-	if (tradeIncome > 0) {
+	auto tryAddNewLine = [&]() {
 		if (args.Num() > 0) {
 			ADDTEXT_INV_("\n");
 		}
-		ADDTEXT_(
-			LOCTEXT("MinorTownBottomCaption_tradeRoute", "Trade Route: +{0}<img id=\"Coin\"/>"),
-			TEXT_NUM(tradeIncome)
-		);
-	}
+	};
 
-	//! Good Relation Income
-	if (IsMinorTown(uiTownId))
+	//! Steal Placement
+	PlacementInfo placementInfo = inputSystemInterface()->PlacementBuildingInfo();
+	if (placementInfo.buildingEnum == CardEnum::Steal &&
+		uiPlayerId != -1)
 	{
-		int32 relationshipInfluenceIncome = uiTownManagerBase->GetMinorCityAllyInfluenceReward(playerId());
-		if (relationshipInfluenceIncome > 0) {
-			if (args.Num() > 0) {
-				ADDTEXT_INV_("\n");
-			}
-			ADDTEXT_(
-				LOCTEXT("MinorTownBottomCaption_relationship", "Good Relation: +{0}<img id=\"Influence\"/>"),
-				TEXT_NUM(relationshipInfluenceIncome)
+		int32 militaryPenalty;
+		int32 actualSteal = sim.GetStealIncome(playerId(), uiPlayerId, militaryPenalty);
+		
+		FText militaryPenaltyText;
+		if (militaryPenalty > 0) {
+			militaryPenaltyText = FText::Format(
+				LOCTEXT("StealMilitaryPenalty", "\n<Red>-{0}% effectiveness from military units</>"),
+				TEXT_NUM(militaryPenalty)
 			);
 		}
+		
+		ADDTEXT_(
+			LOCTEXT("MinorTownBottomCaption_Steal", "Steal Reward: +{0}<img id=\"Coin\"/>"),
+			TEXT_NUM(actualSteal),
+			militaryPenaltyText
+		);
 	}
-	
+	else
+	{
+		if (uiTownManagerBase->lordPlayerId() == playerId()) {
+			ADDTEXT_(
+				LOCTEXT("MinorTownBottomCaption_VassalTax", "Vassal Tax: +{0}<img id=\"Coin\"/>, +{1}<img id=\"Influence\"/>"),
+				TEXT_100(uiTownManagerBase->totalRevenue100() * uiTownManagerBase->vassalTaxPercent() / 100),
+				TEXT_100(uiTownManagerBase->totalInfluenceIncome100() * uiTownManagerBase->vassalInfluencePercent() / 100)
+			);
+		}
+
+		//! Trade Route Income
+		const std::vector<int32>& townIds = sim.GetTownIds(playerId());
+		int32 tradeIncome = 0;
+		for (int32 townId : townIds) {
+			if (sim.worldTradeSystem().HasTradeRoute(townId, uiTownId)) {
+				tradeIncome += sim.GetTradeRouteIncome();
+			}
+		}
+		if (tradeIncome > 0) {
+			tryAddNewLine();
+			ADDTEXT_(
+				LOCTEXT("MinorTownBottomCaption_tradeRoute", "Trade Route: +{0}<img id=\"Coin\"/>"),
+				TEXT_NUM(tradeIncome)
+			);
+		}
+
+		//! Good Relation Income
+		if (IsMinorTown(uiTownId))
+		{
+			int32 relationshipInfluenceIncome = uiTownManagerBase->GetMinorCityAllyInfluenceReward(playerId());
+			if (relationshipInfluenceIncome > 0) {
+				tryAddNewLine();
+				ADDTEXT_(
+					LOCTEXT("MinorTownBottomCaption_relationship", "Good Relation: +{0}<img id=\"Influence\"/>"),
+					TEXT_NUM(relationshipInfluenceIncome)
+				);
+			}
+		}
+	}
 
 	if (args.Num() > 0) {
 		BottomCaptionText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -124,6 +150,9 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	else {
 		BottomCaptionText->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+
+	
 
 	/*
 	 * Show Foreign Army
@@ -174,7 +203,11 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 	auto& sim = simulation();
 	TownManagerBase* uiTownManagerBase = sim.townManagerBase(uiTownId);
 
-	if (!sim.IsResearched(playerId(), TechEnum::ForeignRelation) &&
+	bool canRaze = sim.IsUnlocked(playerId(), UnlockStateEnum::Raze);
+	bool canVassalize = sim.CanVassalizeOtherPlayers(playerId());
+	bool canDiplo = sim.IsResearched(playerId(), TechEnum::ForeignRelation);
+
+	if (!canRaze && !canVassalize && !canDiplo &&
 		uiTownManagerBase->GetMinorCityLevel() == 1) 
 	{
 		SetVisibility(ESlateVisibility::Collapsed);
@@ -187,7 +220,7 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 
 
 	
-	if (sim.IsResearched(playerId(), TechEnum::ForeignRelation))
+	if (canDiplo)
 	{
 		// Gift
 		GiftButton->SetVisibility(ESlateVisibility::Visible);
@@ -215,7 +248,7 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 	if (!sim.townManagerBase(playerId())->IsVassal(townId()))
 	{
 		// Vassalize
-		if (sim.CanVassalizeOtherPlayers(playerId()) &&
+		if (canVassalize &&
 			!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
 		{
 			//! Vassalize (AttackButton1)
@@ -237,7 +270,7 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 		}
 
 		//! Raze
-		if (sim.IsUnlocked(playerId(), UnlockStateEnum::Raze))
+		if (canRaze)
 		{
 			AttackButton3->SetVisibility(ESlateVisibility::Visible);
 			BUTTON_ON_CLICK(AttackButton3, this, &UMinorTownWorldUI::OnClickRazeButton);

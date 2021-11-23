@@ -255,9 +255,27 @@ enum class DefenseOverlayEnum : uint8
 	Node,
 	CityNode,
 	FortNode,
+	Line,
+
+	Count,
 };
 
+const int32 DefenseOverlayEnumSize = static_cast<int32>(DefenseOverlayEnum::Count);
 
+enum class DefenseColorEnum
+{
+	Empty,
+	EnemyProtected,
+	EnemyUnprotected,
+	Protected,
+	Unprotected,
+
+	River,
+
+	Count,
+};
+
+const int32 DefenseColorEnumSize = static_cast<int32>(DefenseColorEnum::Count);
 
 USTRUCT()
 struct FUnitAsset
@@ -582,6 +600,27 @@ public:
 	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_CityNode_Map;
 	UPROPERTY(EditAnywhere) UStaticMesh* DefenseOverlay_FortNode_Map;
 
+	UPROPERTY(EditAnywhere) TArray<UMaterialInstance*> DefenseMaterialInstances;
+
+	UStaticMesh* GetDefenseOverlayMesh(DefenseOverlayEnum defenseOverlayEnum, bool isMap)
+	{
+		switch (defenseOverlayEnum) {
+		case DefenseOverlayEnum::Node: return isMap ? DefenseOverlay_Node_Map : DefenseOverlay_Node;
+		case DefenseOverlayEnum::CityNode: return isMap ? DefenseOverlay_CityNode_Map : DefenseOverlay_CityNode;
+		case DefenseOverlayEnum::FortNode: return isMap ? DefenseOverlay_FortNode_Map : DefenseOverlay_FortNode;
+		case DefenseOverlayEnum::Line: return isMap ? DefenseOverlay_Line_Map : DefenseOverlay_Line;
+		default:
+			return nullptr;
+		}
+	}
+
+	UMaterialInstance* GetDefenseOverlayMaterial(DefenseColorEnum defenseColorEnum) {
+		return DefenseMaterialInstances[static_cast<int32>(defenseColorEnum)];
+	}
+
+
+	
+
 	/*
 	 * UI
 	 */
@@ -774,6 +813,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryHighlightForMesh;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_RegionHighlightDecalFaded;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryHighlightForMeshFaded;
+	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryBattleHighlight;
 
 	
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* HighlightMaterial;

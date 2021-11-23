@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 62 // 3 digit
+#define MINOR_VERSION 64 // 3 digit
 
-#define VERSION_DAY 18
+#define VERSION_DAY 23
 #define VERSION_MONTH 11
 #define VERSION_YEAR 21
 
@@ -40,6 +40,10 @@
 
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 #define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
+
+// SETTINGS_VERSION
+
+#define GAME_SETTINGS_VERSION 1
 
 
 static std::string GetGameVersionString()
@@ -2460,8 +2464,8 @@ enum class CardEnum : uint16
 	
 	//
 	FireStarter,
+	StealOld,
 	Steal,
-	Snatch,
 	SharingIsCaring,
 	Kidnap,
 	KidnapGuard,
@@ -2617,11 +2621,11 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::Theatre, 50 },
 	{ CardEnum::Tavern, 15 },
 
-	{ CardEnum::Hotel, 100 },
+	{ CardEnum::Hotel, 50 },
 
 	{ CardEnum::SpyCenter, 30 },
 
-	{ CardEnum::PolicyOffice, 100 },
+	{ CardEnum::PolicyOffice, 50 },
 
 	{ CardEnum::Granary, 10 },
 
@@ -3578,7 +3582,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 4), GetBldResourceInfoManual({ 50, 0, 0, 50 })
 	),
 	BldInfo(CardEnum::Fort, _LOCTEXT("Fort", "Fort"),				LOCTEXT("Fort (Plural)", "Forts"), LOCTEXT("Fort Desc", "Place on choke point for raid protection. +200% defense on protected provinces."),
-		WorldTile2(9, 9), GetBldResourceInfoMoney(3000)
+		WorldTile2(9, 9), GetBldResourceInfoMoney(1000)
 	),
 	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outpost"), LOCTEXT("Resource Outpost Desc", "Extract resource from a foreign province."),
 		WorldTile2(10, 10), GetBldResourceInfoMoney(10000)
@@ -3801,7 +3805,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfoManual({})
 	),
 	BldInfo(CardEnum::Hotel, _LOCTEXT("Hotel", "Hotel"), LOCTEXT("Hotel (Plural)", "Hotels"), LOCTEXT("Hotel Desc", "Allow visitors from other towns to stay (for <img id=\"Coin\"/>)."),
-		WorldTile2(8, 12), GetBldResourceInfoManual({})
+		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 50 })
 	),
 	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Slot Animal Cards to get bonuses."),
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
@@ -3991,13 +3995,13 @@ static const BldInfo CardInfos[]
 	
 	//
 	BldInfo(CardEnum::FireStarter,		_LOCTEXT("Fire Starter", "Fire Starter"), 200,	LOCTEXT("Fire Starter Desc", "Start a fire in an area (3 tiles radius).")),
-	BldInfo(CardEnum::Steal,			_LOCTEXT("StealOld", "StealOld"), 200,					LOCTEXT("StealOld Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall. <Gray>(max 10000)</>")),
-	BldInfo(CardEnum::Snatch,			_LOCTEXT("Steal", "Steal"), 100,				LOCTEXT("Steal Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 10. Use on Townhall.")),
+	BldInfo(CardEnum::StealOld,			_LOCTEXT("StealOld", "StealOld"), 200,					LOCTEXT("StealOld Desc", "Steal 30% of target player's treasury<img id=\"Coin\"/>. Use on Townhall. <Gray>(max 10000)</>")),
+	BldInfo(CardEnum::Steal,			_LOCTEXT("Steal", "Steal"), 100,				LOCTEXT("Steal Desc", "Steal <img id=\"Coin\"/> equal to target player's population X 10. Use on Townhall.")),
 	BldInfo(CardEnum::SharingIsCaring,	_LOCTEXT("Sharing is Caring", "Sharing is Caring"), 120, LOCTEXT("Sharing is Caring Desc", "Give 100 Wheat to the target player. Use on Townhall.")),
 	BldInfo(CardEnum::Kidnap,			_LOCTEXT("Kidnap", "Kidnap"), 350,				LOCTEXT("Kidnap Desc", "Steal up to 3 citizens from target player. Apply on Townhall.")),
 	BldInfo(CardEnum::KidnapGuard,		_LOCTEXT("Kidnap Guard", "Kidnap Guard"), 20,	LOCTEXT("Kidnap Guard Desc", "Guard your city against Kidnap for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
-	BldInfo(CardEnum::Raid,				_LOCTEXT("Raid", "Raid"), 350,				LOCTEXT("Raid Desc", "")),
-	BldInfo(CardEnum::Terrorism,		_LOCTEXT("Terrorism", "Terrorism"), 350,	LOCTEXT("Terrorism Desc", "Kill 5 citizens at target Town, opponent loses 1000 influence")),
+	BldInfo(CardEnum::Raid,				_LOCTEXT("Raid", "Raid"), 300,				LOCTEXT("Raid Desc", "")),
+	BldInfo(CardEnum::Terrorism,		_LOCTEXT("Terrorism", "Terrorism"), 300,	LOCTEXT("Terrorism Desc", "Kill 5 citizens at target Town, opponent loses 1000 influence")),
 	BldInfo(CardEnum::TreasuryGuard,	_LOCTEXT("Treasury Guard", "Treasury Guard"), 20, LOCTEXT("Treasury Guard Desc", "Guard your city against Steal and Snatch for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
 
 	
@@ -4081,26 +4085,26 @@ static const BldInfo CardInfos[]
 
 
 		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 0, LOCTEXT("Militia Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 0, LOCTEXT("Conscript Desc", "")),
+		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 0, LOCTEXT("Conscript Desc", "TODO: TEXT")),
 	
-		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		0, LOCTEXT("Warrior Desc", "")),
-		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"), 0, LOCTEXT("Swordsman Desc", "")),
-		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), 0, LOCTEXT("Musketeer Desc", "")),
-		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), 0, LOCTEXT("Infantry Desc", "")), // (Trench Warfare = Defense Bonus for Infantry)
+		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		0, LOCTEXT("Warrior Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"), 0, LOCTEXT("Swordsman Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), 0, LOCTEXT("Musketeer Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), 0, LOCTEXT("Infantry Desc", "TODO: TEXT")), // (Trench Warfare = Defense Bonus for Infantry)
 
-		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), 0, LOCTEXT("Knight Desc", "")), // Attack Bonus
-		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		0, LOCTEXT("Tank Desc", "")), // Attack Bonus
+		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), 0, LOCTEXT("Knight Desc", "TODO: TEXT")), // Attack Bonus
+		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		0, LOCTEXT("Tank Desc", "TODO: TEXT")), // Attack Bonus
 
-		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				0, LOCTEXT("Archer Desc", "")),
-		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), 0, LOCTEXT("Machine Gun Desc", "")), // Defense Bonus
+		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				0, LOCTEXT("Archer Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), 0, LOCTEXT("Machine Gun Desc", "TODO: TEXT")), // Defense Bonus
 
-		BldInfo(CardEnum::Catapult, _LOCTEXT("Catapult", "Catapult"), 0, LOCTEXT("Catapult Desc", "")),
-		BldInfo(CardEnum::Cannon, _LOCTEXT("Cannon", "Cannon"),			0, LOCTEXT("Cannon Desc", "")),
-		BldInfo(CardEnum::Artillery, _LOCTEXT("Artillery", "Artillery"), 0, LOCTEXT("Artillery Desc", "")), // Defense Bonus
+		BldInfo(CardEnum::Catapult, _LOCTEXT("Catapult", "Catapult"), 0, LOCTEXT("Catapult Desc", "Catapult's attack ignores Wall's defense.")),
+		BldInfo(CardEnum::Cannon, _LOCTEXT("Cannon", "Cannon"),			0, LOCTEXT("Cannon Desc", "Cannon's attack ignores Wall's defense.")),
+		BldInfo(CardEnum::Artillery, _LOCTEXT("Artillery", "Artillery"), 0, LOCTEXT("Artillery Desc", "Artillery's attack ignores Wall's defense.")), // Defense Bonus
 
-		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			0, LOCTEXT("Galley Desc", "")),
-		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		0, LOCTEXT("Frigate Desc", "")),
-		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), 0, LOCTEXT("Battleship Desc", "")),
+		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			0, LOCTEXT("Galley Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		0, LOCTEXT("Frigate Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), 0, LOCTEXT("Battleship Desc", "TODO: TEXT")),
 
 		BldInfo(CardEnum::Wall, _LOCTEXT("Wall", "Wall"), 0, LOCTEXT("Wall Desc", "TODO: TEXT")),
 		BldInfo(CardEnum::RaidTreasure, _LOCTEXT("Raid Treasure", "Raid Treasure"), 0, LOCTEXT("Raid Treasure Desc", "TODO: TEXT")),
@@ -4125,7 +4129,7 @@ static const std::vector<CardEnum> ActionCards
 
 	CardEnum::FireStarter,
 	//CardEnum::Steal,
-	CardEnum::Snatch,
+	CardEnum::Steal,
 	CardEnum::SharingIsCaring,
 	CardEnum::Kidnap,
 
@@ -4208,7 +4212,7 @@ struct CardStatus
 	int32 cardBirthTicks = -1; // used for tracking down the right card stack (network delay means we cannot use index)
 	int32 stackSize = 1;
 
-	int32 cardStateValue1 = 0;
+	int32 cardStateValue1 = 0; // 1) For Unbought Card: cardStateValue1 == -1    2) also used as playerId for military
 	int32 cardStateValue2 = 0;
 	int32 cardStateValue3 = 0;
 
@@ -5118,7 +5122,7 @@ struct BuildingUpgrade
 	 *  - Weird to have Steelworks buildable, but can't upgrade Mine lvl 2 on remote colony
 	 */
 	int32 startEra = -1;
-	int32 upgradeLevel = -1;
+	int32 upgradeLevel = -1; // 0 initially
 	int32 upgradeLevelResourceScalePercent = 50;
 	std::vector<ResourcePair> resourceNeededPerLevel;
 	
@@ -5138,6 +5142,9 @@ struct BuildingUpgrade
 		}
 		if (cardEnum == CardEnum::PolicyOffice) {
 			return 20;
+		}
+		if (cardEnum == CardEnum::Fort) {
+			return 3;
 		}
 		
 		return 10 + (5 - startEra); // 10 lvl without era+electricity
@@ -5229,6 +5236,8 @@ enum class ProvinceAttackEnum : uint8
 	ConquerColony,
 
 	Reinforce,
+
+	RazeFort,
 };
 
 
@@ -5991,7 +6000,7 @@ static bool IsBridgePlacement(PlacementType placementType)
 }
 
 static const int32 IntercityRoadTileCost = 20;
-static const int32 IrrigationDitchTileCost = 100;
+static const int32 IrrigationDitchTileCost = 80;
 
 enum class PlacementGridEnum : uint8
 {
@@ -6693,6 +6702,8 @@ enum class TechEnum : uint8
 	SpiceFarming,
 	CarpetWeaver,
 	CarpetTrade,
+
+	SpyNest,
 	
 	Count,
 };
@@ -7243,7 +7254,7 @@ static bool IsFrontlineCardEnum(CardEnum cardEnum) {
 class MilitaryConstants
 {
 public:
-	static const int32 RoundsToWinAtEqualStrength = 4;
+	static const int32 RoundsToWinAtEqualStrength = 3;
 	static const int32 SecondsPerAttack = 8;
 
 	static const int32 BaseHP100 = 100000;
@@ -7295,6 +7306,14 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 		}
 		
 		result.resourceCost = ResourcePair(resourceEnum, moneyCost / GetResourceCostWithMoney(resourceEnum));
+
+		// Human Cost
+		if (cardEnum == CardEnum::Conscript) {
+			result.humanCost = 10;
+		}
+		else {
+			result.humanCost = std::min(era, 3);
+		}
 	};
 	
 
@@ -7328,13 +7347,7 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 	else {
 		UE_DEBUG_BREAK();
 	}
-	
 
-	// Human Cost
-	result.humanCost = 3;
-	if (cardEnum == CardEnum::Conscript) {
-		result.humanCost = 10;
-	}
 	
 
 	// x y z
@@ -7368,7 +7381,7 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 	}
 	else if (IsArtilleryMilitaryCardEnum(cardEnum)) {
 		result.hp100 = result.hp100 * 20 / 100;
-		result.attack100 = result.attack100 * 220 / 100; // 1500
+		result.attack100 = result.attack100 * 170 / 100; // 1500
 	}
 	else if (IsNavyCardEnum(cardEnum)) {
 		result.hp100 = result.hp100 * 150 / 100;
@@ -7384,8 +7397,9 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 	else if (cardEnum == CardEnum::Wall)
 	{
 		int32 roundsToWin = 4;
-		int32 unitsToKillIn1Round = 3;
-		result.hp100 = unitsToKillIn1Round * MilitaryConstants::BaseAttack100 * 100 * (Time::SecondsPerRound * roundsToWin / MilitaryConstants::SecondsPerAttack) / MilitaryConstants::BaseDefense100;
+		int32 unitsToKillInXRound = 3;
+		result.defense100 = MilitaryConstants::BaseDefense100 * 2;
+		result.hp100 = unitsToKillInXRound * MilitaryConstants::BaseAttack100 * 100 * (Time::SecondsPerRound * roundsToWin / MilitaryConstants::SecondsPerAttack) / result.defense100;
 		result.attack100 = 0;
 	}
 	else {
@@ -7475,7 +7489,7 @@ static std::vector<CardEnum> SpellCards
 {
 	CardEnum::FireStarter,
 	//CardEnum::Steal,
-	CardEnum::Snatch,
+	CardEnum::Steal,
 	CardEnum::Kidnap,
 	CardEnum::Terrorism,
 	CardEnum::Raid,
@@ -9796,7 +9810,7 @@ const float WorldToMapZoomAmount = WorldZoomTransition_Region4x4ToMap;
 
 const float WorldZoomTransition_Tree = WorldZoomTransition_Region4x4ToMap;
 const float WorldZoomTransition_Bush = GetCameraZoomAmount(zoomStepBounceLow + 1);
-const float WorldZoomTransition_TreeHidden = 5000;
+const float WorldZoomTransition_TreeHidden = 3300; // Nov 19: 5000 -> 3300
 
 const float WorldZoomTransition_GameToMap = GetCameraZoomAmount(zoomStepBounceLow + 1);
 
@@ -10168,6 +10182,10 @@ enum class CallbackEnum : uint8
 	ChoosePlayerColor1,
 	//ChoosePlayerColor2,
 	ChoosePlayerCharacter,
+
+
+	// TEMP move up later since it might break saves
+	RazeFort,
 };
 
 static bool IsAutoTradeCallback(CallbackEnum callbackEnum)
@@ -10182,7 +10200,7 @@ static bool IsSpyCallback(CallbackEnum callbackEnum)
 		callbackEnum == CallbackEnum::SpyEnsureAnonymity;
 }
 
-static const int32 SpyNestBasePrice = 3000;
+static const int32 SpyNestBasePrice = 1000;
 
 
 static const int32 GameSpeedHalf = -12;
@@ -10233,8 +10251,8 @@ static bool IsEdgeProvinceId(int32 provinceId) {
 	return 0 > provinceId && provinceId > EmptyProvinceId; // Edge marked with negative...
 }
 
-static const int32 Income100PerFertilityPercent = 75; // 10 -> Sep: 30 -> ; Nov 17: 15->75
-static const int32 ClaimToIncomeRatio = 10; // When 2, actual is 4 since upkeep is half the income... ; Nov 17: 50->10
+static const int32 Income100PerFertilityPercent = 30; // 10 -> Sep: 30 -> ; Nov 17: 15->30
+static const int32 ClaimToIncomeRatio = 25; // When 2, actual is 4 since upkeep is half the income... ; Nov 18: 50->25
 
 struct ProvinceConnection
 {
@@ -10644,8 +10662,8 @@ public:
 
 static const std::vector<FactionInfo> FactionInfos =
 {
-	FactionInfo(FactionEnum::Europe, LOCTEXT("Europe", "Europe"), LOCTEXT("Europe Ability Description", "+5% research speed")),
-	FactionInfo(FactionEnum::Arab, LOCTEXT("Arab", "Arab"), LOCTEXT("Arab Ability Description", "+10% industrial production"))
+	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), LOCTEXT("Europe Ability Description", "+5% research speed")),
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), LOCTEXT("Arab Ability Description", "+10% industrial production"))
 };
 
 #undef LOCTEXT_NAMESPACE

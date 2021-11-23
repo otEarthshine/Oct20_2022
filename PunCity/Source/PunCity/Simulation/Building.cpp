@@ -891,11 +891,11 @@ FText Building::GetUpgradeDisplayName(int32 index)
 		
 		int32 currentEraLevel = upgrade.upgradeLevel + buildingInfo().minEra();
 		if (upgrade.upgradeLevel == upgrade.maxUpgradeLevel(buildingEnum())) {
-			return NSLOCTEXT("BuildingUpgrade", "Level Maxed", " Level Maxed");
+			return NSLOCTEXT("BuildingUpgrade", "Level Maxed", "Level Maxed");
 		}
 		if (currentEraLevel == 4) {
 			if (IsTradingPostLike(buildingEnum())) {
-				return NSLOCTEXT("BuildingUpgrade", "Level Maxed", " Level Maxed");
+				return NSLOCTEXT("BuildingUpgrade", "Level Maxed", "Level Maxed");
 			}
 			return NSLOCTEXT("BuildingUpgrade", "Electric Machinery", "Electric Machinery");
 		}
@@ -1541,7 +1541,7 @@ std::vector<BonusPair> Building::GetBonuses()
 		// Combo Upgrade bonuses
 		if (upgrade.isUpgraded && upgrade.comboEfficiencyBonus > 0) 
 		{
-			int32 buildingCount = _simulation->buildingCount(_townId, _buildingEnum);
+			int32 buildingCount = _simulation->townBuildingFinishedCount(_townId, _buildingEnum);
 			int32 comboLevel = 0;
 			if (buildingCount >= 8) {
 				comboLevel = 3;

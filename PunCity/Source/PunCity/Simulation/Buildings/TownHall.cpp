@@ -189,7 +189,7 @@ void TownHall::UpgradeTownhall()
 	{
 		//cardSys.AddDrawCards(CardEnum::SellFood, 1);
 		cardSys.AddDrawCards(CardEnum::BuyWood, 1);
-		cardSys.AddDrawCards(CardEnum::Snatch, 1);
+		cardSys.AddDrawCards(CardEnum::Steal, 1);
 
 		// Unlock Influence
 		_simulation->AddPopup(_playerId,

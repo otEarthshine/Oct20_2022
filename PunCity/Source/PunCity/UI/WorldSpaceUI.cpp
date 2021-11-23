@@ -183,14 +183,21 @@ void UWorldSpaceUI::TickBuildings()
 	 */
 	{
 		LEAN_PROFILING_UI(TickWorldSpaceUI_Province);
+
+		int32 provinceMeshIndex = 0;
 		
 		for (int32 provinceId : sampleProvinceIds)
 		{
 			int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
-			bool showingBattle = false;
+
+			ProvinceClaimProgress claimProgress;
+			if (provinceTownId != -1) {
+				claimProgress = sim.townManagerBase(provinceTownId)->GetDefendingClaimProgress(provinceId);
+			}
 
 			WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
-			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), 50.0f);
+			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), claimProgress.isValid() ? 0.0f : 50.0f);
+			
 			
 			auto getRegionHoverUI = [&]() {
 				return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
@@ -201,89 +208,108 @@ void UWorldSpaceUI::TickBuildings()
 					WorldZoomTransition_Region4x4ToMap
 				);
 			};
-			
-			if (provinceTownId != -1)
-			{	
-				ProvinceClaimProgress claimProgress = sim.townManagerBase(provinceTownId)->GetDefendingClaimProgress(provinceId);
-				if (claimProgress.isValid())
-				{
-					URegionHoverUI* regionHoverUI = getRegionHoverUI();
 
-					regionHoverUI->UpdateBattlefieldUI(provinceId, claimProgress);
 
-					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
-					regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
-					showingBattle = true;
-				}
-			}
-
-			if (!showingBattle &&
-				zoomDistance < WorldZoomTransition_Region4x4ToMap)
+			if (claimProgress.isValid())
 			{
-				if (dataSource()->GetOverlayType() == OverlayType::Raid)
+				URegionHoverUI* regionHoverUI = getRegionHoverUI();
+
+				regionHoverUI->UpdateBattlefieldUI(provinceId, claimProgress);
+
+				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+				regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+				
+				/*
+				 * Battle Flash
+				 */
+				UTerritoryMeshComponent* mesh = nullptr;
+				if (provinceMeshIndex < _provinceMeshes.Num())
 				{
-					UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
-						_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
-						WorldZoomTransition_Region4x4ToMap
-					);
-
-					int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
-					if (originTownId == -1)
-					{
-						hoverIcon->SetPair(hoverIcon->IconPair1, LOCTEXT("Empty Province Not Raidable", "Empty Province\nNot Raidable"));
-						hoverIcon->SetPair(hoverIcon->IconPair2);
-						hoverIcon->SetPair(hoverIcon->IconPair3);
-					}
-					else if (sim.townPlayerId(originTownId) == playerId())
-					{
-						hoverIcon->SetPair(hoverIcon->IconPair1, LOCTEXT("Our Province Not Raidable","Our Province\nNot Raidable"));
-						hoverIcon->SetPair(hoverIcon->IconPair2);
-						hoverIcon->SetPair(hoverIcon->IconPair3);
-					}
-					else
-					{
-						int32 raidMoney100 = sim.GetProvinceRaidMoney100(provinceId);
-						int32 raidInfluence100 = raidMoney100 / 2;
-
-						hoverIcon->SetPair(hoverIcon->IconPair1, FText(), assetLoader()->CoinIcon, TEXT_100(raidMoney100));
-						hoverIcon->SetPair(hoverIcon->IconPair2, FText(), assetLoader()->InfluenceIcon, TEXT_100(raidInfluence100));
-						hoverIcon->SetPair(hoverIcon->IconPair3);
-					}
+					mesh = _provinceMeshes[provinceMeshIndex];
 				}
-				//else if (dataSource()->isShowingDefenseOverlay())
-				//{
-				//	UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
-				//		_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
-				//		WorldZoomTransition_Region4x4ToMap
-				//	);
-
-				//	int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
-				//	if (sim.townPlayerId(originTownId) == playerId())
-				//	{
-				//		const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
-				//		hoverIcon->SetPair(hoverIcon->IconPair1, 
-				//			provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected")
-				//		);
-				//		hoverIcon->SetPair(hoverIcon->IconPair2);
-				//		hoverIcon->SetPair(hoverIcon->IconPair3);
-				//	}
-				//	else {
-				//		hoverIcon->SetPair(hoverIcon->IconPair1);
-				//		hoverIcon->SetPair(hoverIcon->IconPair2);
-				//		hoverIcon->SetPair(hoverIcon->IconPair3);
-				//	}
-				//}
-				else if (dataSource()->isShowingProvinceOverlay())
+				else
 				{
-					URegionHoverUI* regionHoverUI = getRegionHoverUI();
-					regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
+					auto assetLoader = dataSource()->assetLoader();
+					auto meshMaterial = assetLoader->M_TerritoryBattleHighlight;
 
-					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
+					auto comp = NewObject<UTerritoryMeshComponent>(dataSource()->componentToAttach());
+					comp->Rename(*(FString("TerritoryChunkBattleFlash") + FString::FromInt(_provinceMeshes.Num())));
+					comp->AttachToComponent(dataSource()->componentToAttach(), FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+					comp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+					comp->SetGenerateOverlapEvents(false);
+					comp->bAffectDistanceFieldLighting = false;
+					comp->SetReceivesDecals(false);
+					comp->SetCastShadow(false);
+					comp->RegisterComponent();
+					comp->SetTerritoryMaterial(meshMaterial, meshMaterial);
+					_provinceMeshes.Add(comp);
+					mesh = comp;
+				}
+				provinceMeshIndex++;
+
+				if (mesh->provinceId != provinceId) {
+					mesh->UpdateMesh(true, provinceId, -1, -1, false, &simulation(), 50);
+				}
+
+				FVector territoryDisplayLocation = dataSource()->DisplayLocation(provinceCenter.worldAtom2());
+
+				mesh->SetWorldLocation(territoryDisplayLocation + FVector(0, 0, 1));
+				mesh->SetVisibility(true);
+			}
+			else
+			{
+				if (zoomDistance < WorldZoomTransition_Region4x4ToMap)
+				{
+					if (dataSource()->GetOverlayType() == OverlayType::Raid)
+					{
+
+						int32 originTownId = sim.provinceOwnerTownSafe(provinceId);
+						if (originTownId == -1)
+						{
+							//hoverIcon->SetPair(hoverIcon->IconPair1, LOCTEXT("Empty Province Not Raidable", "Empty Province\nNot Raidable"));
+							//hoverIcon->SetPair(hoverIcon->IconPair2);
+							//hoverIcon->SetPair(hoverIcon->IconPair3);
+						}
+						else if (sim.townPlayerId(originTownId) == playerId())
+						{
+							//hoverIcon->SetPair(hoverIcon->IconPair1, LOCTEXT("Our Province Not Raidable", "Our Province\nNot Raidable"));
+							//hoverIcon->SetPair(hoverIcon->IconPair2);
+							//hoverIcon->SetPair(hoverIcon->IconPair3);
+						}
+						else if (sim.IsValidMinorTown(originTownId) ||
+								sim.IsBorderProvince(provinceId)) // Border Province Only
+						{
+							UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
+								_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
+								WorldZoomTransition_Region4x4ToMap
+							);
+							
+							int32 raidMoney100 = sim.GetProvinceRaidMoney100(provinceId);
+							int32 raidInfluence100 = raidMoney100 / 2;
+
+							hoverIcon->SetPair(hoverIcon->IconPair1, FText(), assetLoader()->CoinIcon, TEXT_100(raidMoney100));
+							hoverIcon->SetPair(hoverIcon->IconPair2, FText(), assetLoader()->InfluenceIcon, TEXT_100(raidInfluence100));
+							hoverIcon->SetPair(hoverIcon->IconPair3);
+						}
+					}
+					else if (dataSource()->isShowingProvinceOverlay())
+					{
+						URegionHoverUI* regionHoverUI = getRegionHoverUI();
+						regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
+
+						regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
+					}
 				}
 			}
 
+		}
+
+		//! Despawn the unused province Meshes
+		for (int32 i = provinceMeshIndex; i < _provinceMeshes.Num(); i++) {
+			_provinceMeshes[i]->SetVisibility(false);
+			_provinceMeshes[i]->SetActive(false);
 		}
 	}
 
@@ -355,7 +381,8 @@ void UWorldSpaceUI::TickBuildings()
 				}
 
 			}
-			else if (building.isEnum(CardEnum::MinorCity))
+			else if (building.isEnum(CardEnum::MinorCity) ||
+					building.isEnum(CardEnum::ResourceOutpost))
 			{
 				if (townhallUIActive)
 				{
@@ -901,7 +928,6 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	if (building.isEnum(CardEnum::Fort))
 	{
 		if (building.playerId() == playerId())
-		if (building.playerId() == playerId())
 		{
 			buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
 
@@ -922,6 +948,10 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				TEXT_NUM(provinceIds.size()),
 				TEXT_100(protectionIncome100)
 			));
+		}
+		else
+		{
+			buildingJobUI->SetHoverButton(LOCTEXT("Destroy Fort", "Destroy Fort"), UBuildingJobUI::GenericButtonEnum::RazeFort);
 		}
 
 		return;
@@ -944,8 +974,10 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						building.isEnum(CardEnum::Museum) ||
 						building.isEnum(CardEnum::CardCombiner) ||
 						building.isEnum(CardEnum::Caravansary) ||
+						building.isEnum(CardEnum::Hotel) ||
 						IsBarrack(building.buildingEnum()) ||
 
+						building.isEnum(CardEnum::Farm) ||
 						building.isEnum(CardEnum::HuntingLodge) ||
 						building.isEnum(CardEnum::FruitGatherer) ||
 						building.isEnum(CardEnum::ShippingDepot) ||
@@ -975,9 +1007,6 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 			if (showJobUI) {
 				buildingJobUI->SetBuildingStatus(building, jobUIState);
-				buildingJobUI->SetHoverWarning(building);
-			}
-			else if (building.isEnum(CardEnum::Farm)) {
 				buildingJobUI->SetHoverWarning(building);
 			}
 
@@ -1103,7 +1132,20 @@ void UWorldSpaceUI::TickUnits()
 
 			// Already have enough food/medicine/tools in storage? Just don't show the warning...
 			bool hasLotsOfFood = resourceSys.foodCount() > std::min(1000, population);
-			bool hasLotsOfFuel = resourceSys.fuelCount() > std::min(500, population / 2);
+
+			auto& townManager = sim.townManager(it.first);
+			bool hasLotsOfFuel = false;
+			if (townManager.GetHouseResourceAllow(ResourceEnum::Coal) &&
+				resourceSys.resourceCount(ResourceEnum::Coal) > std::min(500, population / 2)) 
+			{
+				hasLotsOfFuel = true;
+			}
+			if (townManager.GetHouseResourceAllow(ResourceEnum::Wood) &&
+				resourceSys.resourceCount(ResourceEnum::Wood) > std::min(500, population / 2)) {
+				hasLotsOfFuel = true;
+			}
+			//bool hasLotsOfFuel = resourceSys.fuelCount() > std::min(500, population / 2);
+			
 			bool hasLotsOfMedicine = resourceSys.resourceCountWithPop(ResourceEnum::Medicine) + resourceSys.resourceCountWithPop(ResourceEnum::Herb) > std::min(300, population / 2);
 			bool hasLotsOfTools = resourceSys.resourceCountWithPop(ResourceEnum::SteelTools) + resourceSys.resourceCountWithPop(ResourceEnum::StoneTools) > std::min(300, population / 4);
 

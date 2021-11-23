@@ -1203,6 +1203,17 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							{
 								CompleteRaid(claimProgress.provinceId, claimProgress.attackerPlayerId, provinceTownId, claimProgress.raidMoney);
 							}
+							//! Destroy Fort
+							else if (provinceAttackEnum == ProvinceAttackEnum::RazeFort)
+							{
+								const std::vector<int32>& fortIds = buildingIds(provinceTownId, CardEnum::Fort);
+								for (int32 fortId : fortIds) {
+									Building& fort = building(fortId);
+									if (fort.provinceId() == claimProgress.provinceId) {
+										InstantDemolishBuilding(fort);
+									}
+								}
+							}
 							//! Minor Town
 							else if (provincePlayerId == -1)
 							{
@@ -1359,9 +1370,10 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							provinceTownManager->EndConquer(claimProgress.provinceId);
 							townManagerBase(claimProgress.attackerPlayerId)->EndConquer_Attacker(claimProgress.provinceId);
 
-							// Return Raid Money
+							// Return Raid Money/Influence
 							if (claimProgress.raidMoney > 0) {
 								ChangeMoney(townPlayerId(claimProgress.defenderTownId), claimProgress.raidMoney);
+								ChangeInfluence(townPlayerId(claimProgress.defenderTownId), claimProgress.raidMoney / 2);
 							}
 
 							// Note: no point in trying to pipe claimProgress here, too confusing...
@@ -1422,7 +1434,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 				
 			}
 
-			// Tick quarter sec
+			/*
+			 * Tick quarter sec
+			 */
 			if (_tickCount % (Time::TicksPerSecond / 4) == 0)
 			{
 				ExecuteOnPlayersAndAI([&](int32 playerId) 
@@ -1436,7 +1450,37 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 				});
 			}
 
+			/*
+			 * Tick
+			 */
+			ExecuteOnPlayersAndAI([&](int32 playerId)
+			{
+				if (_playerOwnedManagers[playerId].hasCapitalTownhall())
+				{
+					_playerOwnedManagers[playerId].Tick();
 
+					//! Major Town Tick
+					const std::vector<int32>& townIds = _playerOwnedManagers[playerId].townIds();
+					for (int32 townId : townIds) {
+						_townManagers[townId]->Tick();
+					}
+
+					questSystem(playerId)->Tick();
+				}
+			});
+
+			//! Minor Towns Tick
+			for (const std::unique_ptr<TownManagerBase>& minorTown : _minorTownManagers)
+			{
+				if (minorTown->isValid()) {
+					minorTown->Tick();
+				}
+			}
+			
+
+			/*
+			 * Special tick interval
+			 */
 			// Show happiness message in the middle of the round, twice a year
 			int32 tickModYear = _tickCount % Time::TicksPerYear;
 			if (tickModYear == (Time::TicksPerYear / 4) ||
@@ -1470,25 +1514,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 					);
 				});
 			}
-
-			ExecuteOnPlayersAndAI([&](int32 playerId) 
-			{
-				if (_playerOwnedManagers[playerId].hasCapitalTownhall()) 
-				{
-					_playerOwnedManagers[playerId].Tick();
-
-					//! Tick Round Town
-					const std::vector<int32>& townIds = _playerOwnedManagers[playerId].townIds();
-					for (int32 townId : townIds) {
-						_townManagers[townId]->Tick();
-					}
-					
-
-					questSystem(playerId)->Tick();
-
-					//townhall(playerId).armyNode.Tick();
-				}
-			});
 		}
 
 		if (PunSettings::IsOn("TickUnits")) {
@@ -1885,7 +1910,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		//! Building Spell
 		else if (/*cardEnum == CardEnum::Steal ||*/
-				cardEnum == CardEnum::Snatch ||
+				cardEnum == CardEnum::Steal ||
 				cardEnum == CardEnum::Kidnap ||
 				cardEnum == CardEnum::Terrorism ||
 				cardEnum == CardEnum::SharingIsCaring)
@@ -1897,31 +1922,43 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 				int32 targetTownId = building(buildingId).townId();
 
 
-				if (cardEnum == CardEnum::Snatch)
+				if (cardEnum == CardEnum::Steal)
 				{
-					int32 targetPlayerMoney = moneyCap32(targetPlayerId);
-					targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
+					//int32 targetPlayerMoney = moneyCap32(targetPlayerId);
+					//targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 
-					int32 targetStealMoney = GameRand::RandRound(10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId), 100);
-					
-					int32 actualSteal = min(targetPlayerMoney, targetStealMoney);
+					//int32 targetStealMoney = GameRand::RandRound(10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId), 100);
+					//
+					//int32 actualSteal = min(targetPlayerMoney, targetStealMoney);
 
-					int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
-					actualSteal = actualSteal * (100 - std::min(80, militaryUnitCount * 20)) / 100;
+					//int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
+					//actualSteal = actualSteal * (100 - std::min(80, militaryUnitCount * 20)) / 100;
+
+					int32 militaryPenalty;
+					int32 actualSteal = GetStealIncome(playerId, targetPlayerId, militaryPenalty);
 					
 					ChangeMoney(targetPlayerId, -actualSteal);
 					ChangeMoney(playerId, actualSteal);
+
+					FText militaryPenaltyText;
+					if (militaryPenalty > 0) {
+						militaryPenaltyText = FText::Format(
+							LOCTEXT("StealMilitaryPenalty", "<space><Red>-{0}% effectiveness from military units</>"),
+							TEXT_NUM(militaryPenalty)
+						);
+					}
+					
 					AddPopup(targetPlayerId, FText::Format(
 						LOCTEXT("Snatched_TargetPop", "{0} stole {1}<img id=\"Coin\"/> from you.{2}"), 
 						townNameT(playerId), 
 						TEXT_NUM(actualSteal),
-						militaryUnitCount > 0 ? LOCTEXT("StealLessEffective_TargetPop", "<space>(less effective because of your military)") : FText()
+						militaryPenaltyText
 					));
 					AddPopup(playerId, FText::Format(
 						LOCTEXT("Snatched_SelfPop", "You stole {0}<img id=\"Coin\"/> from {1}.{2}"), 
 						TEXT_NUM(actualSteal), 
 						townNameT(targetPlayerId),
-						militaryUnitCount > 0 ? LOCTEXT("StealLessEffective_SelfPop", "<space>(less effective because of their military)") : FText()
+						militaryPenaltyText
 					));
 
 					ChangeRelationshipModifier(targetPlayerId, playerId, RelationshipModifierEnum::YouStealFromUs, -actualSteal / GoldToRelationship);
@@ -4681,18 +4718,18 @@ void GameSimulationCore::CompleteRaid(int32 provinceId, int32 raiderPlayerId, in
 {
 	int32 raidInfluence = raidMoney / 2;
 
-	ChangeMoney(raiderPlayerId, raidMoney);
-	ChangeInfluence(raiderPlayerId, raidInfluence);
+	//ChangeMoney(raiderPlayerId, raidMoney);
+	//ChangeInfluence(raiderPlayerId, raidInfluence);
 
 	int32 defenderPlayerId = townPlayerId(defenderTownId);
 	
-	if (IsMinorTown(defenderTownId)) {
-		townManagerBase(defenderTownId)->ChangeWealth_MinorCity(-raidMoney);
-	}
-	else {
-		ChangeMoney(defenderPlayerId, -raidMoney);
-		ChangeInfluence(defenderPlayerId, -raidInfluence);
-	}
+	//if (IsMinorTown(defenderTownId)) {
+	//	townManagerBase(defenderTownId)->ChangeWealth_MinorCity(-raidMoney);
+	//}
+	//else {
+	//	ChangeMoney(defenderPlayerId, -raidMoney);
+	//	ChangeInfluence(defenderPlayerId, -raidInfluence);
+	//}
 
 	AddPopup(raiderPlayerId, FText::Format(
 		LOCTEXT("RaidComplete_Pop_Attacker", "You raided {0}.<space>You received <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}."),
@@ -4816,14 +4853,15 @@ void GameSimulationCore::SellCards(FSellCards command)
 		int32 soldCount = cardSys.RemoveCardsFromBoughtHand(cardStatus, sellCount);
 		if (soldCount != -1)
 		{
-			ChangeMoney(command.playerId, soldCount * cardSys.GetCardPrice(cardStatus.cardEnum));
+			int32 soldMoneyAmount = soldCount * cardSys.GetCardPrice(cardStatus.cardEnum);
+			ChangeMoney(command.playerId, soldMoneyAmount);
 
 			AddEventLog(command.playerId,
 				FText::Format(
 					LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>"),
 					GetBuildingInfo(cardStatus.cardEnum).name,
-					TEXT_NUM(sellCount),
-					TEXT_NUM(soldCount)
+					TEXT_NUM(soldCount),
+					TEXT_NUM(soldMoneyAmount)
 				),
 				false
 			);
@@ -4842,24 +4880,24 @@ void GameSimulationCore::UseCard(FUseCard command)
 	CardEnum commandCardEnum = command.cardStatus.cardEnum;
 
 	// Archives Store Card
-	if (command.callbackEnum == CallbackEnum::ArchivesSlotting)
-	{
-		int32 buildingId = command.variable1;
-		if (isValidBuildingId(buildingId))
-		{
-			Building& bld = building(buildingId);
-			if (bld.isEnum(CardEnum::Archives) && bld.CanAddSlotCard())
-			{
-				int32 soldCount = cardSys.RemoveCardsFromBoughtHand(command.cardStatus, 1);
-				if (soldCount != -1)
-				{
-					CardStatus cardStatus = command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f);
-					bld.AddSlotCard(cardStatus);
-				}
-			}
-		}
-		return;
-	}
+	//if (command.callbackEnum == CallbackEnum::ArchivesSlotting)
+	//{
+	//	int32 buildingId = command.variable1;
+	//	if (isValidBuildingId(buildingId))
+	//	{
+	//		Building& bld = building(buildingId);
+	//		if (bld.isEnum(CardEnum::Archives) && bld.CanAddSlotCard())
+	//		{
+	//			int32 soldCount = cardSys.RemoveCardsFromBoughtHand(command.cardStatus, 1);
+	//			if (soldCount != -1)
+	//			{
+	//				CardStatus cardStatus = command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f);
+	//				bld.AddSlotCard(cardStatus);
+	//			}
+	//		}
+	//	}
+	//	return;
+	//}
 
 	// Train Unit
 	if (command.callbackEnum == CallbackEnum::TrainUnit ||
@@ -4956,7 +4994,9 @@ void GameSimulationCore::UseCard(FUseCard command)
 
 				int32 soldCount = cardSys.RemoveCardsOld(commandCardEnum, 1);
 				if (soldCount != -1) {
-					bld.AddSlotCard(command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f));
+					CardStatus card = command.GetCardStatus_AnimationOnly(_gameManager->GetDisplayWorldTime() * 100.0f);
+					card.stackSize = 1;
+					bld.AddSlotCard(card);
 				}
 			}
 		}
@@ -5339,6 +5379,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 
 		for (int32 i = 0; i < command.cardEnums.Num(); i++) {
 			CardStatus cardStatus(static_cast<CardEnum>(command.cardEnums[i]), command.cardCount[i]);
+			
 			militaryCards.push_back(cardStatus);
 			cardSystem(command.playerId).RemoveCardsFromBoughtHand(cardStatus, cardStatus.stackSize);
 		}
@@ -5394,6 +5435,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	else if (command.claimEnum == CallbackEnum::StartAttackProvince ||
 			command.claimEnum == CallbackEnum::Liberate ||
 			command.claimEnum == CallbackEnum::Raze ||
+			command.claimEnum == CallbackEnum::RazeFort ||
 			command.claimEnum == CallbackEnum::RaidBattle)
 	{
 		// Attack could be: Conquer Province, Vassalize, or Declare Independence
@@ -5427,7 +5469,8 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			//attackerPlayerId = (command.claimEnum == CallbackEnum::Liberate) ? provincePlayerId : command.playerId;
 
 			/*
-			 * Military Part !!!
+			 * Military Part
+			 * !! Important !!
 			 */
 			
 			provinceTownManager->StartAttack_Defender(attackerPlayerId, command.provinceId, attackEnum, militaryCards);
@@ -5438,27 +5481,35 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 			//! Popups
 			if (attackEnum == ProvinceAttackEnum::RaidBattle)
 			{
-				if (command.provinceId != -1 && provincePlayerId != -1)
+				if (command.provinceId != -1)
 				{
 					int32 raidMoney = GetProvinceRaidMoney100(command.provinceId) / 100;
-					int32 raidInfluence = raidMoney / 2;
+					
+					if (IsMinorTown(provinceTownId)) {
+						townManagerBase(provinceTownId)->ChangeWealth_MinorCity(-raidMoney);
+					}
+					else 
+					{
+						int32 raidInfluence = raidMoney / 2;
 
-					AddPopup(provincePlayerId, FText::Format(
+						AddPopup(provincePlayerId, FText::Format(
 							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<space><bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</><bullet> If you fight, you may lose your army.</>"),
 							playerNameT(attackerPlayerId),
 							TEXT_NUM(raidMoney),
 							TEXT_NUM(raidInfluence)
-					));
+						));
 
-					ChangeMoney(provincePlayerId, -raidMoney);
-					ChangeInfluence(provincePlayerId, -raidInfluence);
+						ChangeMoney(provincePlayerId, -raidMoney);
+						ChangeInfluence(provincePlayerId, -raidInfluence);
 
-					if (TryDoCallOnceAction(provincePlayerId, PlayerCallOnceActionEnum::RaidHandle_ExplainFortGuard)) {
-						AddPopup(provincePlayerId,
-							LOCTEXT("RaidHandleExplainFortGuard_Pop", "To guard against Raid:<bullet>build Fort at choke point to ensure your provinces are protected</><bullet>build a stronger army to fight head on</>")
-						);
+						if (TryDoCallOnceAction(provincePlayerId, PlayerCallOnceActionEnum::RaidHandle_ExplainFortGuard)) {
+							AddPopup(provincePlayerId,
+								LOCTEXT("RaidHandleExplainFortGuard_Pop", "To guard against Raid:<bullet>build Fort at choke point to ensure your provinces are protected</><bullet>build a stronger army to fight head on</>")
+							);
+						}
 					}
 
+					townManagerBase(provinceTownId)->SetRelationshipToWar(command.playerId);
 				}
 			}
 			else if (attackEnum == ProvinceAttackEnum::ConquerProvince) 
@@ -5474,9 +5525,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					FText::Format(LOCTEXT("YouAttack_Pop", "You started attacking {0}."), playerNameT(provincePlayerId))
 				);
 
-				if (IsAIPlayer(provincePlayerId)) {
-					townManagerBase(provincePlayerId)->DeclareWar(command.playerId);
-				}
+				townManagerBase(provinceTownId)->SetRelationshipToWar(command.playerId);
 			}
 			else if (attackEnum == ProvinceAttackEnum::Vassalize) 
 			{
@@ -5521,9 +5570,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					);
 				}
 
-				if (IsAIPlayer(provincePlayerId)) {
-					townManagerBase(provincePlayerId)->DeclareWar(command.playerId);
-				}
+				townManagerBase(provinceTownId)->SetRelationshipToWar(command.playerId);
 			}
 			else if (attackEnum == ProvinceAttackEnum::ConquerColony)
 			{
@@ -5545,9 +5592,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					)
 				);
 
-				if (IsAIPlayer(provincePlayerId)) {
-					townManagerBase(provincePlayerId)->DeclareWar(command.playerId);
-				}
+				townManagerBase(provinceTownId)->SetRelationshipToWar(command.playerId);
 			}
 			else if (attackEnum == ProvinceAttackEnum::DeclareIndependence) 
 			{

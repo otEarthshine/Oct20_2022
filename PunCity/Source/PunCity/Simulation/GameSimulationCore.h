@@ -855,6 +855,9 @@ public:
 
 		check(_provinceInfoSystem->provinceOwnerTown(provinceId) == -1);
 		check(provinceOwnerTown_Minor(provinceId) == -1);
+
+		// Remove Trade Routes
+		worldTradeSystem().RemoveTradeRouteNode(townId);
 		
 		if (townMgr->townhallId != -1)
 		{
@@ -871,6 +874,7 @@ public:
 				InstantDemolishBuilding(building(childBuildingId));
 			}
 		}
+		
 		
 		_minorTownManagers[TownIdToMinorTownId(townId)] = std::make_unique<TownManagerBase>(-1, -1, FactionEnum::None, nullptr);
 	}
@@ -1870,6 +1874,8 @@ public:
 		};
 
 		flood(originProvinceId);
+
+		totalRaidIncome100 = std::min(totalRaidIncome100, static_cast<int64>(moneyCap32(townPlayerId(originTownId)) * 100));
 		
 		return totalRaidIncome100;
 	}
@@ -2031,6 +2037,9 @@ public:
 		else if (claimEnum == CallbackEnum::Raze) {
 			attackEnum = ProvinceAttackEnum::Raze;
 		}
+		else if (claimEnum == CallbackEnum::RazeFort) {
+			attackEnum = ProvinceAttackEnum::RazeFort;
+		}
 		else {
 			attackEnum = townManagerBase(provinceTownId)->GetProvinceAttackEnum(provinceId, playerId);
 		}
@@ -2078,6 +2087,19 @@ public:
 		RecalculateTaxDelayedPlayer(formerVassalTownId);
 	}
 
+	virtual std::vector<ProvinceClaimProgress> GetAllBattles() override
+	{
+		std::vector<ProvinceClaimProgress> battles;
+		
+		ExecuteOnAllTowns([&](int32 townId) {
+			const std::vector<ProvinceClaimProgress>& townBattles = townManagerBase(townId)->defendingClaimProgress();
+			for (const ProvinceClaimProgress& battle : townBattles) {
+				battles.push_back(battle);
+			}
+		});
+
+		return battles;
+	}
 	
 
 	// Claim/Attack Cost Percent
@@ -2474,7 +2496,7 @@ public:
 
 	virtual int32 GetSpyNestInfluenceGainPerRound(int32 nestOwnerPlayerId, int32 nestTownId) override
 	{
-		const int32 spyNestBreakevenRounds = 16;
+		const int32 spyNestBreakevenRounds = 24;
 		int32 spyInfluenceGainPerRound = SpyNestBasePrice / spyNestBreakevenRounds;
 
 		// Population factor each 2 pop gives 1% max at 100%
@@ -2616,6 +2638,22 @@ public:
 
 	virtual int32 GetTradeRouteIncome() override {
 		return 100;
+	}
+
+	int32 GetStealIncome(int32 playerId, int32 targetPlayerId, int32& militaryPenalty)
+	{
+		int32 targetPlayerMoney = moneyCap32(targetPlayerId);
+		targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
+
+		int32 targetStealMoney = GameRand::RandRound(10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId), 100);
+
+		int32 actualSteal = min(targetPlayerMoney, targetStealMoney);
+
+		int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
+		militaryPenalty = std::min(80, militaryUnitCount * 20);
+		actualSteal = actualSteal * (100 - militaryPenalty) / 100;
+
+		return actualSteal;
 	}
 	
 	/*
@@ -3260,13 +3298,18 @@ public:
 	 * Storage
 	 */
 
-	virtual bool isStorageAllFull(int32 townId) override
+	virtual bool isStorageAllFull(int32 townId, bool includeGranary = false) override
 	{
 		std::vector<int32> storageIds = buildingIds(townId, CardEnum::StorageYard);
 
 		// Add warehouses
 		std::vector<int32> warehouseIds = buildingIds(townId, CardEnum::Warehouse);
 		storageIds.insert(storageIds.end(), warehouseIds.begin(), warehouseIds.end());
+
+		if (includeGranary) {
+			std::vector<int32> granaryIds = buildingIds(townId, CardEnum::Granary);
+			storageIds.insert(storageIds.end(), granaryIds.begin(), granaryIds.end());
+		}
 
 		//// Add markets
 		//std::vector<int32> marketIds = buildingIds(townId, CardEnum::Market);

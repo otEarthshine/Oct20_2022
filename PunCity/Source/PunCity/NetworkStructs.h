@@ -1054,7 +1054,7 @@ public:
 		command.foodAmount = 300;
 		command.woodAmount = 120;
 		command.stoneAmount = 120;
-		command.clayAmount = factionEnum == FactionEnum::Arab ? 120 : 0;
+		command.clayAmount = factionEnum == FactionEnum::Arab ? 240 : 0;
 		
 		command.medicineAmount = 240;
 		command.toolsAmount = 180;

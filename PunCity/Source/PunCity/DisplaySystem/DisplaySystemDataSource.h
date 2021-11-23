@@ -71,7 +71,10 @@ public:
 
 	virtual float GetTrailerTime() = 0;
 
-	virtual void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, DefenseOverlayEnum& defenseOverlayEnum_Out, FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, bool isMap = false) = 0;
+	virtual void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, 
+		DefenseOverlayEnum& defenseOverlayEnum_Out, DefenseColorEnum& defenseColorEnum_Out, FTransform& nodeTransform_Out,
+		TArray<FTransform>& lineTransforms_Out, TArray<DefenseColorEnum>& lineDefenseColorEnums_Out, bool isMap = false
+	) = 0;
 
 	static void SetPostProcessVolume(APostProcessVolume* postProcessVolume, UPunGameInstance* gameInstance)
 	{

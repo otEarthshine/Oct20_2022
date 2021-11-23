@@ -116,6 +116,14 @@ void ResourceTypeHolders::RefreshHolder(int32 holderId, ResourceSystem& resource
 		}
 		return;
 	}
+	case ResourceHolderType::DropManual:
+	{
+		amount = holder.pickupBalance() - holder.target();
+		if (amount > 0) {
+			pushFindType(ResourceFindType::DropManual);
+		}
+		return;
+	}
 	default:
 		return;
 	}

@@ -83,10 +83,17 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 		else if (claimProgress.attackEnum == ProvinceAttackEnum::Raze) {
 			args.Add(LOCTEXT("Raze", "Raze"));
 		}
+		else if (claimProgress.attackEnum == ProvinceAttackEnum::RazeFort) {
+			args.Add(LOCTEXT("Destroy Fort", "Destroy Fort"));
+		}
 		// Major Town Vassalize
 		else if (provincePlayerId != -1 && sim.homeProvinceId(provincePlayerId) == provinceId) 
 		{
-			args.Add(LOCTEXT("Vassalize", "Vassalize"));
+			if (claimProgress.attackEnum == ProvinceAttackEnum::DeclareIndependence) {
+				args.Add(LOCTEXT("Declare Independence", "Declare Independence"));
+			} else {
+				args.Add(LOCTEXT("Vassalize", "Vassalize"));
+			}
 		}
 		// Minor Town Vassalize
 		else if (IsMinorTown(provinceTownId))
@@ -98,7 +105,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 		}
 		
 		if (claimProgress.isWaitingForBattleFinishCountdown()) {
-			args.Add(FText::Format(LOCTEXT(" ends in {0}s", " ends in {0}s"), TEXT_NUM(claimProgress.battleFinishCountdownSecs)));
+			args.Add(FText::Format(LOCTEXT(" ends in {0}s", " ends in {0}s"), TEXT_NUM(claimProgress.battleFinishCountdownTicks / Time::TicksPerSecond)));
 		}
 		SetText(BattleText, TEXT_TAG("<Shadowed>", JOINTEXT(args)));
 	}
@@ -184,20 +191,37 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 
 				int32 currentHP = simUnit.cardStateValue2 / 100;
 				int32 unitHP = militaryInfo.hp100 / 100;
-				if (simUnit.cardEnum == CardEnum::RaidTreasure) {
+				if (simUnit.cardEnum == CardEnum::RaidTreasure ||
+					simUnit.cardEnum == CardEnum::Wall) 
+				{
 					unitHP = simUnit.cardStateValue3 / 100;
 				}
+
+				FText nameText = GetBuildingInfo(simUnit.cardEnum).name;
+				if (simUnit.cardEnum == CardEnum::RaidTreasure) {
+					nameText = FText::Format(
+						LOCTEXT("Raid_Treasure_Tooltip", "Raid Treasure <img id=\"Coin\"/>{0}"),
+						TEXT_NUM(claimProgress.raidMoney)
+					);
+				}
+
+				int32 armyCurrentHP = currentHP + unitHP * (simUnit.stackSize - 1);
+				int32 armyHP = unitHP * simUnit.stackSize;
 				
 				AddToolTip(unitIcon, FText::Format(
-					LOCTEXT("UnitIcon_Tip", "{0}<space>Unit Attack: {1} \nUnit Defense: {2}<space>Unit HP: {3}/{4}\nUnit Count: {5}<space>Army HP: {6}/{7}"),
-					GetBuildingInfo(simUnit.cardEnum).name,
+					LOCTEXT("UnitIcon_Tip", "{0}<space><img id=\"Sword\"/>{1} \n<img id=\"Shield\"/>{2}<space>HP: {3}<space>Army Attack: {4}\nArmy HP: {5}"),
+					nameText,
 					TEXT_NUM(militaryInfo.attackDisplay()),
 					TEXT_NUM(militaryInfo.defenseDisplay()),
-					TEXT_NUM(currentHP),
-					TEXT_NUM(unitHP),
-					TEXT_NUM(simUnit.stackSize),
-					TEXT_NUM(currentHP + unitHP * (simUnit.stackSize - 1)),
-					TEXT_NUM(unitHP * simUnit.stackSize)
+					TextNumberColor(
+						FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(currentHP), TEXT_NUM(unitHP)), 
+						currentHP * 100 / unitHP, 60, 30
+					),
+					TEXT_NUM(militaryInfo.attackDisplay() * simUnit.stackSize),
+					TextNumberColor(
+						FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(armyCurrentHP), TEXT_NUM(armyHP)),
+						armyCurrentHP * 100 / armyHP, 60, 30
+					)
 				));
 
 				/*
@@ -220,7 +244,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 
 				if (lastDamageTick != -1 &&
 					lastDamage > 0 &&
-					Time::Ticks() - lastDamageTick > Time::TicksPerSecond * 2 / 3 && // Damage Delay
+					//Time::Ticks() - lastDamageTick > Time::TicksPerSecond * 2 / 3 && // Damage Delay
 					Time::Ticks() - lastDamageTick < Time::TicksPerSecond * 5 / 3 && // if more than 1 sec already passed, don't show the damage
 					lastDamageTick > unitIcon->lastDamageTick) // lastDamage is still the same as the current one
 				{

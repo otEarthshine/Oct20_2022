@@ -190,7 +190,7 @@ struct FPlayerInfo
 {
 	GENERATED_BODY();
 
-	static const uint64 InvalidSteamId64 = 0;
+	static const uint64 InvalidSteamId64 = MAX_uint64;
 
 	UPROPERTY() FText name;
 	UPROPERTY() uint64 steamId64 = InvalidSteamId64;

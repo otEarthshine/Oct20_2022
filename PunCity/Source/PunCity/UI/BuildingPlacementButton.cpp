@@ -119,20 +119,25 @@ void UBuildingPlacementButton::PunInit(CardStatus cardStatusIn, int32 cardHandIn
 	}
 
 	//! 
-	if (IsUnboughtCard() ||
-		IsPermanentCard() ||
-		buildingEnum == CardEnum::Townhall ||
-		buildingEnum == CardEnum::JobManagementBureau ||
-		buildingEnum == CardEnum::StatisticsBureau ||
-		IsSeedCard(buildingEnum))
-	{
-		//SetStars(0);
-		SellButton->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	else if (isFullCard ||
-			cardHandEnum == CardHandEnum::CardInventorySlots ||
-			cardHandEnum == CardHandEnum::CardSetSlots)
-	{
+	//if (IsUnboughtCard() ||
+	//	IsPermanentCard() ||
+	//	buildingEnum == CardEnum::Townhall ||
+	//	buildingEnum == CardEnum::JobManagementBureau ||
+	//	buildingEnum == CardEnum::StatisticsBureau ||
+	//	buildingEnum == CardEnum::SpyCenter ||
+	//	buildingEnum == CardEnum::PolicyOffice ||
+	//	IsSeedCard(buildingEnum))
+	//{
+	//	//SetStars(0);
+	//	SellButton->SetVisibility(ESlateVisibility::Collapsed);
+	//}
+	//else if (isFullCard ||
+	//		cardHandEnum == CardHandEnum::CardInventorySlots ||
+	//		cardHandEnum == CardHandEnum::CardSetSlots)
+	//{
+	//	SellButton->SetVisibility(ESlateVisibility::Collapsed);
+	//}
+	if (ShouldHideSellButton(buildingEnum)) {
 		SellButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	else {
@@ -293,7 +298,7 @@ void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isR
 	//PlayAnimationIf("Flash", needExclamation);
 	//ExclamationIcon->SetShow(needExclamation);
 
-	SellButton->SetVisibility(cardHandEnum == CardHandEnum::BoughtHand ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	SellButton->SetVisibility(ShouldHideSellButton(buildingEnum) ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 }
 
 #undef LOCTEXT_NAMESPACE

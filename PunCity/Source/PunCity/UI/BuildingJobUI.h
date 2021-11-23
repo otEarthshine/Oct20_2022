@@ -76,6 +76,7 @@ public:
 		Zoo,
 		Museum,
 		CardCombiner,
+		RazeFort,
 	};
 
 	UPROPERTY(meta = (BindWidget)) UButton* RevealSpyNestButton; // Generic Button
@@ -150,39 +151,40 @@ public:
 		if (building.isEnum(CardEnum::SpyCenter))
 		{
 			if (isOwnedOrFastBuild()) {
-				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
-				RevealSpyNestButtonText->SetText(FText::Format(
-					NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest\n<img id=\"Coin\"/>{0}"), 
-					TEXT_NUM(simulation().GetRevealSpyNestPrice()))
+				SetHoverButton(
+					FText::Format(
+						NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest\n<img id=\"Coin\"/>{0}"),
+						TEXT_NUM(simulation().GetRevealSpyNestPrice())
+					),
+					GenericButtonEnum::RevealSpyNest
 				);
-				genericButtonEnum = GenericButtonEnum::RevealSpyNest;
+				//RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
+				//RevealSpyNestButtonText->SetText(FText::Format(
+				//	NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest\n<img id=\"Coin\"/>{0}"), 
+				//	TEXT_NUM(simulation().GetRevealSpyNestPrice()))
+				//);
+				//genericButtonEnum = GenericButtonEnum::RevealSpyNest;
 			}
 			return;
 		}
 		if (building.isEnum(CardEnum::Zoo))
 		{
 			if (isOwnedOrFastBuild()) {
-				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
-				RevealSpyNestButtonText->SetText(NSLOCTEXT("BuildingJobUI", "Zoo Sets Button", "Zoo Collection"));
-				genericButtonEnum = GenericButtonEnum::Zoo;
+				SetHoverButton(NSLOCTEXT("BuildingJobUI", "Zoo Sets Button", "Zoo Collection"), GenericButtonEnum::Zoo);
 			}
 			return;
 		}
 		if (building.isEnum(CardEnum::Museum))
 		{
 			if (isOwnedOrFastBuild()) {
-				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
-				RevealSpyNestButtonText->SetText(NSLOCTEXT("BuildingJobUI", "Museum Sets Button", "Artifact Collection"));
-				genericButtonEnum = GenericButtonEnum::Museum;
+				SetHoverButton(NSLOCTEXT("BuildingJobUI", "Museum Sets Button", "Artifact Collection"), GenericButtonEnum::Museum);
 			}
 			return;
 		}
 		if (building.isEnum(CardEnum::CardCombiner))
 		{
 			if (isOwnedOrFastBuild()) {
-				RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
-				RevealSpyNestButtonText->SetText(NSLOCTEXT("BuildingJobUI", "Card Combiner Sets Button", "Combine Cards"));
-				genericButtonEnum = GenericButtonEnum::CardCombiner;
+				SetHoverButton((NSLOCTEXT("BuildingJobUI", "Card Combiner Sets Button", "Combine Cards")), GenericButtonEnum::CardCombiner);
 			}
 			return;
 		}
@@ -308,6 +310,14 @@ public:
 
 			DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			SetText(DepletedText, GetHoverWarningName(building.hoverWarning));
+
+			FLinearColor color(1.0, 0.05, 0.05);
+			if (building.hoverWarning == HoverWarning::StorageTooFar ||
+				building.hoverWarning == HoverWarning::HouseTooFar) 
+			{
+				color = FLinearColor(1.0, 0.15, 0.05);
+			}
+			DepletedText->SetColorAndOpacity(color);
 		}
 		else {
 			DepletedText->SetVisibility(ESlateVisibility::Collapsed);
@@ -361,6 +371,14 @@ public:
 		}
 	}
 
+
+	void SetHoverButton(const FText& text, GenericButtonEnum genericButtonEnumIn)
+	{
+		RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
+		RevealSpyNestButtonText->SetText(text);
+		genericButtonEnum = genericButtonEnumIn;
+	}
+
 private:
 	UFUNCTION() void ArrowUpButtonDown() { ArrowButtonDown(true);  }
 	UFUNCTION() void ArrowDownButtonDown() { ArrowButtonDown(false); }
@@ -404,7 +422,7 @@ private:
 
 	UFUNCTION() void OnClickAutoTradeButton()
 	{
-		Building& building = dataSource()->simulation().building(_buildingId);
+		Building& building = simulation().building(_buildingId);
 		PUN_CHECK(building.buildingEnum() == CardEnum::TradingCompany);
 
 		GetPunHUD()->OpenTownAutoTradeUI(building.townId());
@@ -422,6 +440,10 @@ private:
 		}
 		else if (genericButtonEnum == GenericButtonEnum::CardCombiner) {
 			GetPunHUD()->OpenCardSetsUI(CardSetTypeEnum::CardCombiner);
+		}
+		else if (genericButtonEnum == GenericButtonEnum::RazeFort) {
+			int32 provinceId = simulation().building(_buildingId).provinceId();
+			GetPunHUD()->OpenReinforcementUI(provinceId, CallbackEnum::RazeFort);
 		}
 	}
 

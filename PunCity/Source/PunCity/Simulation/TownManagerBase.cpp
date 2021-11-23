@@ -4,6 +4,7 @@
 #include "TownManagerBase.h"
 #include "BuildingCardSystem.h"
 #include "PlayerOwnedManager.h"
+#include "Buildings/GathererHut.h"
 
 void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bool isReinforcingAttacker, int32 unitPlayerId)
 {
@@ -25,21 +26,25 @@ void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bo
 
 void ProvinceClaimProgress::Retreat_DeleteUnits(int32 unitPlayerId)
 {
-	auto retreat = [&](std::vector<CardStatus>& line) {
+	auto deleteUnits = [&](std::vector<CardStatus>& line) {
 		for (int32 i = line.size(); i-- > 0;) {
 			if (line[i].cardStateValue1 == unitPlayerId) {
 				line.erase(line.begin() + i);
 			}
 		}
 	};
-	retreat(attackerFrontLine);
-	retreat(attackerBackLine);
-	retreat(defenderFrontLine);
-	retreat(defenderBackLine);
+	deleteUnits(attackerFrontLine);
+	deleteUnits(attackerBackLine);
+	
+	deleteUnits(defenderFrontLine);
+	deleteUnits(defenderBackLine);
+	deleteUnits(defenderWall);
+	deleteUnits(defenderTreasure);
+	
 }
 
 
-void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
+void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 {
 	/*
 	 * cardStateValue1 = playerId
@@ -48,16 +53,13 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 	 * displayCardStateValue2 = last damage tick
 	 */
 
-	auto doDamage = [&](std::vector<CardStatus>& attackerLineCards, std::vector<CardStatus>& damageTakerLine, int32 attackBonusPercent, int32 defenseBonusPercent)
+	auto doDamage = [&](CardStatus& attackerCard, std::vector<CardStatus>& damageTakerLine, int32 attackBonusPercent, int32 defenseBonusPercent)
 	{
 		int32 randomIndex = GameRand::Rand() % damageTakerLine.size();
 		CardStatus& damageTaker = damageTakerLine[randomIndex];
 
-		int32 attack = 0;
-		for (CardStatus& card : attackerLineCards) {
-			attack += GetMilitaryInfo(card.cardEnum).attack100 * card.stackSize;
-			card.displayCardStateValue3 = Time::Ticks();
-		}
+		int32 attack = GetMilitaryInfo(attackerCard.cardEnum).attack100 * attackerCard.stackSize;
+		attackerCard.displayCardStateValue3 = Time::Ticks();
 
 		// Damage Bonus
 		attack = attack * (100 + attackBonusPercent) / 100;
@@ -65,6 +67,11 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 		MilitaryCardInfo damageTakerInfo = GetMilitaryInfo(damageTaker.cardEnum);
 
 		int32 defense100 = damageTakerInfo.defense100 * (100 + defenseBonusPercent) / 100;
+
+		// Artillery ignores wall defense
+		if (IsArtilleryMilitaryCardEnum(attackerCard.cardEnum)) {
+			defense100 = MilitaryConstants::BaseDefense100;
+		}
 		
 		int32 damage = attack * 100 / std::max(1, defense100);
 		damageTaker.displayCardStateValue1 = damage;
@@ -87,39 +94,70 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 		}
 	};
 
-	auto doDamageToArmy = [&](std::vector<CardStatus>& attackerLine, std::vector<std::vector<CardStatus>*> damageTakerLines, int32 attackBonus, int32 defenseBonus)
+	auto doDamageToArmy = [&](CardStatus& attackerCard, std::vector<std::vector<CardStatus>*> damageTakerLines, int32 attackBonus, int32 defenseBonus)
 	{
 		for (int32 i = 0; i < damageTakerLines.size(); i++)
 		{
 			if (damageTakerLines[i]->size() > 0) {
-				doDamage(attackerLine, *damageTakerLines[i], attackBonus, defenseBonus);
+				doDamage(attackerCard, *damageTakerLines[i], attackBonus, defenseBonus);
 				break;
 			}
 		}
 	};
 
 	//! Defender Turn
-	int32 secondsPerAttack = MilitaryConstants::SecondsPerAttack;
-	if (Time::Seconds() % secondsPerAttack == 0)
+	int32 ticksPerAttackRound = MilitaryConstants::SecondsPerAttack * Time::TicksPerSecond;
+	int32 tickSinceAttackRoundStart = Time::Ticks() % ticksPerAttackRound;
+
+	auto tickAttackRound = [&](int32 ticksShift, std::vector<CardStatus>& backLine, std::vector<CardStatus>& frontLine, std::vector<std::vector<CardStatus>*> damageTakerLines, int32 attackBonus, int32 defenseBonus)
 	{
-		doDamageToArmy(defenderBackLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
-	}
-	else if (Time::Seconds() % secondsPerAttack == 1)
+		int32 availableAttackTicks = Time::TicksPerSecond * 3;
+		int32 ticksBetweenAttacks = std::max(1, availableAttackTicks / std::max(1, static_cast<int32>(backLine.size() + frontLine.size())));
+		
+		for (int32 i = 0; i < backLine.size(); i++) {
+			if (tickSinceAttackRoundStart == ticksShift + i * ticksBetweenAttacks) {
+				doDamageToArmy(backLine[i], damageTakerLines, attackBonus, defenseBonus);
+			}
+		}
+		for (int32 i = 0; i < frontLine.size(); i++) {
+			if (tickSinceAttackRoundStart == ticksShift + (i + backLine.size()) * ticksBetweenAttacks) {
+				doDamageToArmy(frontLine[i], damageTakerLines, attackBonus, defenseBonus);
+			}
+		}
+	};
+	
+
+	// First Half
+	if (tickSinceAttackRoundStart < ticksPerAttackRound / 2)
 	{
-		doDamageToArmy(defenderFrontLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
+		tickAttackRound(0, defenderBackLine, defenderFrontLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
 	}
-	//! Attacker Turn
-	else if (Time::Seconds() % secondsPerAttack == 4)
+	// Second Half
+	else
 	{
-		doDamageToArmy(attackerBackLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
+		tickAttackRound(ticksPerAttackRound / 2, attackerBackLine, attackerFrontLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
 	}
-	else if (Time::Seconds() % secondsPerAttack == 5)
-	{
-		doDamageToArmy(attackerFrontLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
-	}
+	
+	//if (Time::Ticks() % ticksPerAttack == 0)
+	//{
+	//	doDamageToArmy(defenderBackLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
+	//}
+	//else if (Time::Ticks() % ticksPerAttack == 1)
+	//{
+	//	doDamageToArmy(defenderFrontLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
+	//}
+	////! Attacker Turn
+	//else if (Time::Ticks() % ticksPerAttack == 4)
+	//{
+	//	doDamageToArmy(attackerBackLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
+	//}
+	//else if (Time::Ticks() % ticksPerAttack == 5)
+	//{
+	//	doDamageToArmy(attackerFrontLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
+	//}
 
 	//! Battle Countdown once it is done
-	battleFinishCountdownSecs = std::max(0, battleFinishCountdownSecs - 1);
+	battleFinishCountdownTicks = std::max(0, battleFinishCountdownTicks - 1);
 }
 
 /*
@@ -128,11 +166,6 @@ void ProvinceClaimProgress::Tick1Sec(IGameSimulationCore* simulation)
 
 void TownManagerBase::Tick1Sec_TownBase()
 {
-	// Defense
-	for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
-		claimProgress.Tick1Sec(_simulation);
-	}
-
 
 	/*
 	 * Minor Town
@@ -151,29 +184,177 @@ void TownManagerBase::Tick1Sec_TownBase()
 			}
 		}
 
-		////! Refresh Target Wealth every 30 secs
-		//if (Time::Seconds() % 30 == 0)
-		//{
-		//	RefreshMinorCityTargetWealth();
-		//}
+		/*
+		 * Tourism
+		 */
+		if (Time::Seconds() % GameConstants::TourismCheckIntervalSec == 0)
+		{
+			std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
+
+			// Get Hotels on Trade Route
+			std::vector<Hotel*> hotels = GetConnectedHotels();
+
+			if (hotels.size() > 0)
+			{
+				// Sort Hotels by Service Quality
+				std::sort(hotels.begin(), hotels.end(), [&](Hotel* a, Hotel* b) {
+					return a->serviceQuality() > b->serviceQuality();
+				});
+
+				// 1 pop tour 1 time per rounds 
+				// TickXSec so:
+				// clusterSize = population * GameConstants::TourismCheckIntervalSec / (seconds per round)
+
+				int32 fakePopulation = GetTourismPopulation();
+				const int32 clusterSize = GameRand::RandRound(fakePopulation * GameConstants::TourismCheckIntervalSec, Time::SecondsPerRound);
+				int32 hotelIndex = 0;
+
+				for (int32 i = 0; i < clusterSize; i++)
+				{
+					if (hotelIndex >= hotels.size()) {
+						break;
+					}
+					Hotel* hotel = hotels[hotelIndex++];
+					hotel->Visit(_townId);
+
+					ChangeWealth_MinorCity(hotel->feePerVisitor());
+				}
+
+			}
+		}
+
+		
 	}
 
 
 	Tick1SecRelationship();
 }
 
+
+void TownManagerBase::StartAttack_Defender(int32 attackerPlayerId, int32 provinceId, ProvinceAttackEnum provinceAttackEnum, std::vector<CardStatus>& initialMilitaryCards)
+{
+	ProvinceClaimProgress claimProgress;
+	claimProgress.attackEnum = provinceAttackEnum;
+	claimProgress.provinceId = provinceId;
+	claimProgress.attackerPlayerId = attackerPlayerId;
+	claimProgress.defenderTownId = _townId;
+	claimProgress.battleFinishCountdownTicks = 0;
+
+
+	//! Fill Attacker Military Units
+	claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
+
+
+	//! Fill Defender Military Units
+	std::vector<CardStatus> defenderCards;
+	auto addWall = [&](int32 hpAmount) {
+		CardStatus wall(CardEnum::Wall, 1);
+		wall.cardStateValue1 = defenderPlayerId();
+		wall.cardStateValue2 = hpAmount;
+		wall.cardStateValue3 = hpAmount;
+		claimProgress.defenderWall = { wall };
+	};
+
+	if (provinceAttackEnum == ProvinceAttackEnum::Raze) {
+		defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 3 / 2) }; // More resistance if the intent is to raze...
+	}
+	else if (provinceAttackEnum == ProvinceAttackEnum::RaidBattle) {
+		claimProgress.raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
+		defenderCards = { CardStatus(CardEnum::Militia, 1) };
+	}
+	else if (provinceAttackEnum == ProvinceAttackEnum::DeclareIndependence) {
+		claimProgress.battleFinishCountdownTicks = Time::TicksPerRound;
+	}
+	else {
+		defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits()) }; // Town Population help is this is not a raid
+	}
+
+
+	//! Fill Defender Wall
+	int32 majorTownId = _simulation->provinceOwnerTown_Major(provinceId);
+	if (majorTownId != -1)
+	{
+		// Vassalize is hard
+		if (provinceAttackEnum == ProvinceAttackEnum::Vassalize)
+		{
+			addWall(Fort::GetFortHP100(IsMinorTown(_townId) ?  1 : _simulation->GetTownLvl(_townId)));
+		}
+		else {
+			const std::vector<int32>& bldIds = _simulation->buildingIds(majorTownId, CardEnum::Fort);
+			for (int32 bldId : bldIds) {
+				Fort& fort = _simulation->building(bldId).subclass<Fort>();
+				if (fort.provinceId() == provinceId) {
+					addWall(fort.GetFortHP100());
+					break;
+				}
+			}
+		}
+	}
+
+	
+	//! Reinforce defenders
+	claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
+
+
+	//! Fill Defender Raid Treasure
+	auto addRaidTreasure = [&](int32 moneyAmount)
+	{
+		CardStatus raidTreasure(CardEnum::RaidTreasure, 1);
+		raidTreasure.cardStateValue1 = defenderPlayerId();
+		raidTreasure.cardStateValue2 = moneyAmount * 100;
+		raidTreasure.cardStateValue3 = moneyAmount * 100;
+		claimProgress.defenderTreasure = { raidTreasure };
+	};
+
+	if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle)
+	{
+		int32 raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
+		raidMoney = std::max(500, raidMoney);
+
+		addRaidTreasure(raidMoney);
+	}
+	else if (claimProgress.attackEnum == ProvinceAttackEnum::ConquerProvince)
+	{
+		int32 claimMoney = 3 * _simulation->GetProvinceClaimPrice(provinceId, attackerPlayerId) / 100;
+
+		addRaidTreasure(claimMoney);
+	}
+
+	//! Fill Attacker/Defender Bonus
+	auto getBonus = [&](std::vector<BonusPair> bonuses)
+	{
+		int32 value = 0;
+		for (const BonusPair& bonus : bonuses) {
+			value += bonus.value;
+		}
+		return value;
+	};
+
+	claimProgress.attacker_attackBonus = getBonus(_simulation->GetAttackBonuses(provinceId, attackerPlayerId));
+	claimProgress.attacker_defenseBonus = getBonus(_simulation->GetDefenseBonuses(provinceId, attackerPlayerId));
+	claimProgress.defender_attackBonus = getBonus(_simulation->GetAttackBonuses(provinceId, claimProgress.defenderTownId));
+	claimProgress.defender_defenseBonus = getBonus(_simulation->GetDefenseBonuses(provinceId, claimProgress.defenderTownId));
+
+	_defendingClaimProgress.push_back(claimProgress);
+}
+
 void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerIdToReturn, bool forcedAll, bool isRetreating)
 {
 	check(_simulation->IsValidPlayer(playerIdToReturn));
-	for (CardStatus card : cards) {
+	for (CardStatus card : cards) 
+	{
+		if (card.cardEnum == CardEnum::Militia) {
+			continue;
+		}
+		
 		if (forcedAll || playerIdToReturn == card.cardStateValue1) 
-		{
+		{	
 			// Retreating death
 			if (isRetreating) {
-				card.stackSize = (card.stackSize + 1) * 2 / 3;
+				card.stackSize = GameRand::RandRound(card.stackSize * 2, 3);
 			}
-			
-			_simulation->cardSystem(playerIdToReturn).TryAddCards_BoughtHandAndInventory(card);
+
+			_simulation->cardSystem(card.cardStateValue1).TryAddCards_BoughtHandAndInventory(card);
 		}
 	}
 }
@@ -476,4 +657,27 @@ void TownManagerBase::ProposeAlliance(int32 askingPlayerId)
 
 		_relationships.SetAlliance(askingPlayerId, true);
 	}
+}
+
+
+const std::vector<Hotel*> TownManagerBase::GetConnectedHotels()
+{
+	std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
+
+	// Get Hotels on Trade Route
+	std::vector<Hotel*> hotels;
+	for (const TradeRoutePair& route : tradeRoutes) {
+		int32 destinationTownId = route.GetCounterpartTownId(_townId);
+		const std::vector<int32>& localHotelIds = _simulation->buildingIds(destinationTownId, CardEnum::Hotel);
+		for (int32 localHotelId : localHotelIds) {
+			Hotel* hotel = static_cast<Hotel*>(_simulation->buildingPtr(localHotelId));
+			if (hotel->isAvailable() &&
+				hotel->serviceQuality() >= 50)
+			{
+				hotels.push_back(hotel);
+			}
+		}
+	}
+
+	return hotels;
 }

@@ -64,14 +64,16 @@ public:
 		IconSizeBox->SetVisibility(ESlateVisibility::Collapsed);
 
 #define LOCTEXT_NAMESPACE "RegionHoverUI"
-		const FText incomeText = LOCTEXT("Income:", "Income:");
-		const FText upkeepText = LOCTEXT("Upkeep:", "Upkeep:");
+		const FText incomeText = LOCTEXT("Income", "Income");
+		//const FText upkeepText = LOCTEXT("Upkeep:", "Upkeep:");
 		
 		// Already own this province, Show real income/upkeep
 		if (provincePlayerId == playerId())
 		{
 			SetText(IncomeText, incomeText);
 			SetTextNumber(IncomeCount, sim.GetProvinceIncome100(provinceIdIn) / 100.0f, 1);
+
+			
 			
 			//if (unlockedInfluence) {
 			//	SetText(UpkeepText, upkeepText);
@@ -109,6 +111,7 @@ public:
 			const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
 			IconPair1->SetImage(nullptr);
 			IconPair1->SetText(provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected"), FText());
+			IconPair1->SetTextColor(provinceOwnerInfo.isSafe ? FLinearColor(0.2, 1, 0.2) : FLinearColor(1, 0.1, 0));
 			IconPair1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
 		else {
@@ -149,9 +152,9 @@ public:
 			}
 		}
 		
-		if (isMountain) {
-			PunBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
-		}
+		//if (isMountain) {
+		//	PunBox->AddIconPair(FText(), ResourceEnum::Stone, TEXT_NUM(node.stoneAmount));
+		//}
 
 		PunBox->AfterAdd();
 	}

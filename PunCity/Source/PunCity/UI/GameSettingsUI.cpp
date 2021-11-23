@@ -49,7 +49,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	//	gameInstance()->loadedVersion != GAME_VERSION)
 	if (!hasExistingSettings)
 	{
-		RestoreDefault();
+		RestoreDefault(true);
 		ApplyChanges(); // Save to file
 		
 		gameInstance()->RestoreDefaultsAll();
@@ -147,7 +147,7 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	MouseWheelSpeedSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnMouseWheelSpeedChanged);
 	MouseDragRotateSpeedSlider->OnValueChanged.AddDynamic(this, &UGameSettingsUI::OnMouseDragRotateSpeedChanged);
 
-	RestoreDefaultsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::RestoreDefault);
+	RestoreDefaultsButton->OnClicked.AddDynamic(this, &UGameSettingsUI::OnClickRestoreDefault);
 
 
 	/*
@@ -600,11 +600,13 @@ void UGameSettingsUI::OnRoundCountdownSoundCheckBoxChecked(bool active)
 	Spawn2DSound("UI", "DropdownChange");
 }
 
-void UGameSettingsUI::RestoreDefault()
+void UGameSettingsUI::RestoreDefault(bool restoreAll)
 {
 	_isSettingsDirty = true;
+
+	int32 activeIndex = SettingsMenu->GetActiveWidgetIndex();
 	
-	if (SettingsMenu->GetActiveWidgetIndex() == 0)
+	if (activeIndex == 0 || restoreAll)
 	{
 		auto settings = GetGameUserSettings();
 		settings->SetScreenResolution(FIntPoint(1920, 1080));
@@ -630,23 +632,23 @@ void UGameSettingsUI::RestoreDefault()
 
 		RefreshUI(false, false);
 	}
-	else if (SettingsMenu->GetActiveWidgetIndex() == 1)
+	
+	if (activeIndex == 1 || restoreAll)
 	{
 		gameInstance()->RestoreDefaultsSound();
 		RefreshUI(false, false);
 	}
-	else if (SettingsMenu->GetActiveWidgetIndex() == 2)
+	
+	if (activeIndex == 2 || restoreAll)
 	{
 		gameInstance()->RestoreDefaultsInputs();
 		RefreshUI(false, false);
 	}
-	else if (SettingsMenu->GetActiveWidgetIndex() == 3)
+
+	if (activeIndex == 3 || restoreAll)
 	{
 		gameInstance()->RestoreDefaultsOthers();
 		RefreshUI(false, false);
-	}
-	else {
-		PUN_NOENTRY();
 	}
 }
 

@@ -39,11 +39,7 @@ public:
 
 
 	UPROPERTY(EditAnywhere) USceneComponent* _mapMeshesParent;
-	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseNodeMeshes;
-	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseCityNodeMeshes;
-	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseFortNodeMeshes;
-
-	UPROPERTY(EditAnywhere) UInstancedStaticMeshComponent* _defenseLineMeshes;
+	UPROPERTY(EditAnywhere) TArray<UInstancedStaticMeshComponent*> _defenseMeshes;
 	
 
 	void SetupWorldMapMesh(IDisplaySystemDataSource* dataSource, int tileDimXIn, int tileDimYIn, int worldMapSizeX, int worldMapSizeY, MapSizeEnum mapSizeEnum, UAssetLoaderComponent* assetLoader);

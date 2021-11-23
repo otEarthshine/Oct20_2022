@@ -745,9 +745,14 @@ public:
 		return networkInterface()->GetTrailerTime();
 	}
 
-	virtual void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, DefenseOverlayEnum& defenseOverlayEnum_Out, FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, bool isMap) override
+	virtual void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, 
+		DefenseOverlayEnum& defenseOverlayEnum_Out, DefenseColorEnum& defenseColorEnum_Out,
+		FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, TArray<DefenseColorEnum>& lineDefenseColorEnums_Out, bool isMap) override
 	{
-		_territoryDisplaySystem->GetDefenseNodeDisplayInfo(provinceId, displayScaling, defenseOverlayEnum_Out, nodeTransform_Out, lineTransforms_Out, isMap);
+		_territoryDisplaySystem->GetDefenseNodeDisplayInfo(provinceId, displayScaling, 
+			defenseOverlayEnum_Out, defenseColorEnum_Out, 
+			nodeTransform_Out, lineTransforms_Out, lineDefenseColorEnums_Out, isMap
+		);
 	}
 
 

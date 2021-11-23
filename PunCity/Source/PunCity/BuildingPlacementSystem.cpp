@@ -192,8 +192,8 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 			}
 			else
 			{
-				int32 sizeX = _area.sizeX();
-				int32 sizeY = _area.sizeY();
+				int32 sizeX = _area3.sizeX();
+				int32 sizeY = _area3.sizeY();
 
 				ADDTEXT_LOCTEXT("StorageYard_BuildInstruction2", "Drag cursor to resize the storage");
 
@@ -209,7 +209,7 @@ PlacementInfo ABuildingPlacementSystem::GetPlacementInfo()
 
 					int32 woodNeeded = storageSpace * GameSimulationCore::StorageCostPerTile();
 
-					FactionEnum factionEnum = _simulation->playerOwned(_simulation->tileOwnerPlayer(_area.centerTile())).factionEnum();
+					FactionEnum factionEnum = _simulation->playerOwned(_simulation->tileOwnerPlayer(_area3.centerTile())).factionEnum();
 
 					bool isRed = true;
 					if (townId != -1) {
@@ -1988,7 +1988,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						}
 					}
 					else if (/*_buildingEnum == CardEnum::Steal ||*/
-						_buildingEnum == CardEnum::Snatch ||
+						_buildingEnum == CardEnum::Steal ||
 						_buildingEnum == CardEnum::Kidnap ||
 						_buildingEnum == CardEnum::Terrorism ||
 						_buildingEnum == CardEnum::SharingIsCaring)

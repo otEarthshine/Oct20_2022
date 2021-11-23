@@ -2476,7 +2476,13 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 						if (boughtCardCount > 0)
 						{
-							int32 cardCount = dataSource()->isShiftDown() ? boughtCardCount : 1;
+							int32 cardCount = 1;
+							if (dataSource()->isCtrlDown()) {
+								cardCount = boughtCardCount;
+							}
+							else if (dataSource()->isShiftDown()) {
+								cardCount = std::min(10, boughtCardCount);
+							}
 
 							auto tryAddPendingMilitarySlotCards = [&]()
 							{

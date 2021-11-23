@@ -213,6 +213,8 @@ enum class ResourceFindType : uint8
 
 	MarketPickup, // Market Pickup avoid markets (storage only)
 
+	DropManual,
+
 	Count,
 };
 
@@ -226,6 +228,8 @@ static const std::string ResourceFindTypeName[] =
 	"StorageDropoff",
 
 	"MarketPickup",
+
+	"DropManual",
 };
 
 // Note: 

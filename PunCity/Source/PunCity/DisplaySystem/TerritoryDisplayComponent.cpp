@@ -58,6 +58,34 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 	 * Show province connections
 	 */
 	{
+		//if (_defenseMeshes.Num() == 0)
+		//{
+		//	for (int32 i = 0; i < DefenseOverlayEnumSize * DefenseColorEnumSize; i++) {
+		//		_defenseMeshes.Add(CreateDefaultSubobject<UInstancedStaticMeshComponent>(FName("Map_defenseMesh" + FString::FromInt(i))));
+		//		_defenseMeshes[i]->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
+		//		_defenseMeshes[i]->SetReceivesDecals(false);
+		//		_defenseMeshes[i]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+		//		DefenseOverlayEnum defenseOverlayEnum = static_cast<DefenseOverlayEnum>(i / DefenseColorEnumSize);
+		//		DefenseColorEnum defenseColorEnum = static_cast<DefenseColorEnum>(i % DefenseColorEnumSize);
+		//		_defenseMeshes[i]->TranslucencySortPriority = (defenseOverlayEnum == DefenseOverlayEnum::Line ? 4000 : 5000);
+		//		_defenseMeshes[i]->SetStaticMesh(_assetLoader->GetDefenseOverlayMesh(defenseOverlayEnum, true));
+		//		_defenseMeshes[i]->SetMaterial(0, _assetLoader->GetDefenseOverlayMaterial(defenseColorEnum));
+		//		_defenseMeshes[i]->ClearInstances();
+		//	}
+
+		//	for (int32 i = 0; i < _defenseMeshes.Num(); i++)
+		//	{
+		//		DefenseOverlayEnum defenseOverlayEnum = static_cast<DefenseOverlayEnum>(i / DefenseColorEnumSize);
+		//		DefenseColorEnum defenseColorEnum = static_cast<DefenseColorEnum>(i % DefenseColorEnumSize);
+		//		_defenseMeshes[i]->TranslucencySortPriority = (defenseOverlayEnum == DefenseOverlayEnum::Line ? 4000 : 5000);
+		//		_defenseMeshes[i]->SetStaticMesh(_assetLoader->GetDefenseOverlayMesh(defenseOverlayEnum, true));
+		//		_defenseMeshes[i]->SetMaterial(0, _assetLoader->GetDefenseOverlayMaterial(defenseColorEnum));
+		//		_defenseMeshes[i]->ClearInstances();
+		//	}
+		//}
+
+		
 		int32 index = 0;
 
 		if (gameManager()->isShowingDefenseNodes() &&
@@ -97,33 +125,39 @@ void UTerritoryDisplayComponent::Display(std::vector<int>& sampleProvinceIds)
 				int32 provinceId = sampleProvinceIds[i];
 
 				DefenseOverlayEnum defenseOverlayEnum;
+				DefenseColorEnum defenseColorEnum;
 				FTransform nodeTransform;
 				TArray<FTransform> lineTransforms;
-				GetDefenseNodeDisplayInfo(provinceId, displayScaling, defenseOverlayEnum, nodeTransform, lineTransforms);
+				TArray<DefenseColorEnum> lineColorEnums;
+				GetDefenseNodeDisplayInfo(provinceId, displayScaling, defenseOverlayEnum, defenseColorEnum, nodeTransform, lineTransforms, lineColorEnums);
 
 
 				// Node
 				UStaticMeshComponent* nodeMesh = spawnMesh();
-				if (defenseOverlayEnum == DefenseOverlayEnum::CityNode) {
-					nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_CityNode);
-				}
-				else if (defenseOverlayEnum == DefenseOverlayEnum::FortNode) {
-					nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_FortNode);
-				}
-				else {
-					nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_Node);
-				}
+				//if (defenseOverlayEnum == DefenseOverlayEnum::CityNode) {
+				//	nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_CityNode);
+				//}
+				//else if (defenseOverlayEnum == DefenseOverlayEnum::FortNode) {
+				//	nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_FortNode);
+				//}
+				//else {
+				//	nodeMesh->SetStaticMesh(_assetLoader->DefenseOverlay_Node);
+				//}
+				nodeMesh->SetStaticMesh(_assetLoader->GetDefenseOverlayMesh(defenseOverlayEnum, false));
+				nodeMesh->SetMaterial(0, _assetLoader->GetDefenseOverlayMaterial(defenseColorEnum));
+				
 				nodeMesh->SetRelativeTransform(nodeTransform);
 				nodeMesh->TranslucencySortPriority = 5000;
 
 
 				// Lines
-				for (const FTransform& lineTransform : lineTransforms)
+				for (int32 j = 0; j < lineTransforms.Num(); j++)
 				{
 					UStaticMeshComponent* lineMesh = spawnMesh();
 					lineMesh->SetStaticMesh(_assetLoader->DefenseOverlay_Line);
-
-					lineMesh->SetRelativeTransform(lineTransform);
+					lineMesh->SetMaterial(0, _assetLoader->GetDefenseOverlayMaterial(lineColorEnums[j]));
+					
+					lineMesh->SetRelativeTransform(lineTransforms[j]);
 					lineMesh->TranslucencySortPriority = 4000;
 				}
 

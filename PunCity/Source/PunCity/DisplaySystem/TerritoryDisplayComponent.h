@@ -72,8 +72,9 @@ public:
 		//playerDecals.Deinit();
 	}
 
-	void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, DefenseOverlayEnum& defenseOverlayEnum_Out,
-									FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, bool isMap = false)
+	void GetDefenseNodeDisplayInfo(int32 provinceId, float displayScaling, 
+									DefenseOverlayEnum& defenseOverlayEnum_Out, DefenseColorEnum& defenseColorEnum_Out,
+									FTransform& nodeTransform_Out, TArray<FTransform>& lineTransforms_Out, TArray<DefenseColorEnum>& lineDefenseColorEnums_Out, bool isMap = false)
 	{
 		auto& sim = simulation();
 		auto& provinceSys = sim.provinceSystem();
@@ -82,10 +83,12 @@ public:
 		WorldTile2 outerProvinceCenterTile = provinceSys.GetProvinceCenterTile(provinceId);
 		const ProvinceOwnerInfo& outerProvinceOwnerInfo = provinceInfoSys.provinceOwnerInfo(provinceId);
 		check(outerProvinceOwnerInfo.provinceId == provinceId);
-		check(outerProvinceCenterTile.isValid());;
+		check(outerProvinceCenterTile.isValid());
 
 		// Node
 		{
+			defenseColorEnum_Out = DefenseColorEnum::Empty;
+			
 			// Main City Node
 			if (outerProvinceOwnerInfo.townId != -1 &&
 				sim.GetTownProvinceId(outerProvinceOwnerInfo.townId) == provinceId)
@@ -95,6 +98,7 @@ public:
 			// Minor City Node
 			else if (sim.IsValidMinorTown(outerProvinceOwnerInfo.townId)) {
 				defenseOverlayEnum_Out = DefenseOverlayEnum::CityNode;
+				defenseColorEnum_Out = DefenseColorEnum::EnemyUnprotected;
 			}
 			else if (outerProvinceOwnerInfo.fortIds.size() > 0) {
 				defenseOverlayEnum_Out = DefenseOverlayEnum::FortNode;
@@ -110,14 +114,12 @@ public:
 				displayLocation = MapUtil::DisplayLocation(gameManager()->cameraAtom(), outerProvinceCenterTile.worldAtom2());
 			}
 
-			if (sim.townPlayerId(outerProvinceOwnerInfo.townId) == playerId())
-			{
-				if (!outerProvinceOwnerInfo.isSafe) {
-					displayLocation.Z += 2; // Source Unsafe Color
-				}
+			int32 townPlayerId = sim.townPlayerId(outerProvinceOwnerInfo.townId);
+			if (townPlayerId == playerId()) {
+				defenseColorEnum_Out = outerProvinceOwnerInfo.isSafe ? DefenseColorEnum::Protected : DefenseColorEnum::Unprotected;
 			}
-			else {
-				displayLocation.Z += 1; // Enemy
+			else if (townPlayerId != -1) {
+				defenseColorEnum_Out = outerProvinceOwnerInfo.isSafe ? DefenseColorEnum::EnemyProtected : DefenseColorEnum::EnemyUnprotected;
 			}
 
 			nodeTransform_Out = FTransform(FRotator::ZeroRotator, displayLocation, FVector(displayScaling, displayScaling, displayScaling));
@@ -154,6 +156,7 @@ public:
 					check(innerProvinceCenterTile.isValid());;
 					const ProvinceOwnerInfo& innerProvinceOwnerInfo = provinceInfoSys.provinceOwnerInfo(connection.provinceId);
 
+					DefenseColorEnum colorEnum = DefenseColorEnum::Empty;
 
 					bool useSelfAsOrigin = false;
 					if (outerProvinceCenterTile.x > innerProvinceCenterTile.x) {
@@ -186,47 +189,52 @@ public:
 
 					// Coloring
 					if (connection.tileType == TerrainTileType::River) {
-						sourceVec.Z += 4; // Dotted River
+						//sourceVec.Z += 4; // Dotted River
+						colorEnum = DefenseColorEnum::River;
 					}
 					else {
-						int32 sourceIsOurs = sim.townPlayerId(sourceOwnerInfo.townId) == playerId();
-						int32 targetIsOurs = sim.townPlayerId(targetOwnerInfo.townId) == playerId();
+						int32 sourcePlayerId = sim.townPlayerId(sourceOwnerInfo.townId);
+						int32 targetPlayerId = sim.townPlayerId(targetOwnerInfo.townId);
+						
+						int32 sourceIsOurs = sourcePlayerId == playerId();
+						int32 targetIsOurs = targetPlayerId == playerId();
 
-						//if (sourceIsOurs) {
-						//	if (!sourceOwnerInfo.isSafe) {
-						//		sourceVec.Z += 4; // Source Unsafe Color
-						//	}
-						//}
-						//else {
-						//	sourceVec.Z += 2; // Source Enemy Color	
-						//}
-
-						//if (targetIsOurs) {
-						//	if (!targetOwnerInfo.isSafe) {
-						//		sourceVec.Z += 16; // Target Unsafe Color
-						//	}
-						//}
-						//else {
-						//	sourceVec.Z += 8; // Target Enemy Color	
-						//}
+						int32 sourceIsEnemy = !sourceIsOurs && sourcePlayerId != -1;
+						int32 targetIsEnemy = !targetIsOurs && targetPlayerId != -1;
 
 						if (sourceIsOurs && targetIsOurs) 
 						{
 							if (!sourceOwnerInfo.isSafe || !targetOwnerInfo.isSafe) {
-								sourceVec.Z += 2; // Unsafe Color
+								//sourceVec.Z += 2; // Unsafe ColorlineDefenseColorEnums_Out
+								colorEnum = DefenseColorEnum::Unprotected;
+							}
+							else {
+								colorEnum = DefenseColorEnum::Protected;
 							}
 
 							// Thicker line for Source/Target is ours
 							lineDisplayScalingY *= 2.0f;
 						}
+						else if (sourceIsEnemy && targetIsEnemy)
+						{
+							if (!sourceOwnerInfo.isSafe || !targetOwnerInfo.isSafe) {
+								colorEnum = DefenseColorEnum::EnemyUnprotected;
+							}
+							else {
+								colorEnum = DefenseColorEnum::EnemyProtected;
+							}
+
+							lineDisplayScalingY *= 2.0f;
+						}
 						else
 						{
-							sourceVec.Z += 1; // Enemy
+							//sourceVec.Z += 1; // Enemy
 						}
 					}
 					
 
 					lineTransforms_Out.Add(FTransform(diffVec.Rotation(), sourceVec, FVector(diffVec.Size() * 0.1f, lineDisplayScalingY, lineDisplayScalingZ)));
+					lineDefenseColorEnums_Out.Add(colorEnum);
 				}
 			}
 		}

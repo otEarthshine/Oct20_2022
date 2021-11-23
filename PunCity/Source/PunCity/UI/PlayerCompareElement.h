@@ -23,6 +23,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerZoomButton;
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* HomeTownIcon;
+	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogo;
 
 	int32 uiPlayerId = -1;
 	int32 population = -1;

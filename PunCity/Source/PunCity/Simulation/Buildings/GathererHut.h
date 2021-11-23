@@ -1423,10 +1423,21 @@ public:
 class Fort final : public ProvinceBuilding
 {
 public:
-	virtual void FinishConstruction() override {
-		Building::FinishConstruction();
+	virtual void FinishConstruction() override;
 
-		_simulation->AddFortToProvince(provinceId(), buildingId());
+	int32 GetFortHP100() {
+		return GetFortHP100(GetUpgrade(0).upgradeLevel);
+	}
+
+	static int32 GetFortHP100(int32 upgradeLevel)
+	{
+		int32 hp100 = GetMilitaryInfo(CardEnum::Wall).hp100;
+		int32 upgradeHP100 = hp100;
+		for (int32 i = 0; i < upgradeLevel; i++) {
+			hp100 += upgradeHP100;
+			upgradeHP100 *= 2;
+		}
+		return hp100;
 	}
 
 	virtual void OnDeinit() override {
@@ -1722,7 +1733,7 @@ public:
 	
 	virtual void OnPreInit_IncludeNonPlayer() override
 	{
-		const int32 maxVisitorCount = 20;
+		const int32 maxVisitorCount = 50;
 		
 		_visitors.resize(maxVisitorCount, Room());
 		_feePerVisitor = 5;
@@ -1769,7 +1780,10 @@ public:
 
 	int32 maxVisitorCount() { return _visitors.size(); }
 
-	bool isAvailable() { return currentVisitorCount() < maxVisitorCount(); }
+	bool isAvailable()
+	{
+		return currentVisitorCount() < maxVisitorCount();
+	}
 
 	TMap<int32, int32> GetTownToVisitors()
 	{
@@ -1801,8 +1815,26 @@ public:
 		UE_DEBUG_BREAK();
 	}
 
+	virtual bool RefreshHoverWarning() override
+	{
+		if (Building::RefreshHoverWarning()) {
+			return true;
+		}
+
+		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
+		if (tradeRoutes.size() == 0) {
+			hoverWarning = HoverWarning::NeedTradeRoute;
+			return true;
+		}
+
+		hoverWarning = HoverWarning::None;
+		return false;
+	}
+
 	virtual void OnTick1Sec() override
 	{
+		// TODO: Add variable to say that visitor was added this round (so hotel won't be available)
+		
 		// Remove finished visitors
 		for (int32 i = 0; i < _visitors.size(); i++) {
 			if (_visitors[i].stayCompleted()) {

@@ -212,23 +212,23 @@ public:
 
 		if (factionEnum() == FactionEnum::Arab)
 		{
-			if (_houseLvl == 7 ||
-				_houseLvl == 8)
-			{
-				// Corner
-				Direction faceDirection = Direction::S;
-				int32 localIndex = 0;
-				bool isCorner = GetCornerVariationIndexAndFaceDirection(localIndex, faceDirection);
-				
-				if (!isCorner) {
-					int32 maxLinearIndex = _houseLvl == 7 ? 3 : 2;
+			//if (_houseLvl == 7 ||
+			//	_houseLvl == 8)
+			//{
+			//	// Corner
+			//	Direction faceDirection = Direction::S;
+			//	int32 localIndex = 0;
+			//	bool isCorner = GetCornerVariationIndexAndFaceDirection(localIndex, faceDirection);
+			//	
+			//	if (!isCorner) {
+			//		int32 maxLinearIndex = _houseLvl == 7 ? 3 : 2;
 
-					// Checker board like pattern so houses doesn't look the same next to each other...
-					localIndex = 2 + (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLinearIndex;
-				}
-				
-				return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
-			}
+			//		// Checker board like pattern so houses doesn't look the same next to each other...
+			//		localIndex = 2 + (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLinearIndex;
+			//	}
+			//	
+			//	return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
+			//}
 			
 			int32 maxLocalIndex = 2;
 			switch (_houseLvl) {

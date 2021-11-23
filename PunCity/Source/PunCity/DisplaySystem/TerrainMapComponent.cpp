@@ -67,21 +67,26 @@ UTerrainMapComponent::UTerrainMapComponent()
 	// Defense Nodes
 	_mapMeshesParent = CreateDefaultSubobject<USceneComponent>("_mapMeshesParent");
 	_mapMeshesParent->AttachToComponent(this, FAttachmentTransformRules::KeepRelativeTransform);
-	
-	_defenseNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseNodeMeshes");
-	_defenseCityNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseCityNodeMeshes");
-	_defenseFortNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseFortNodeMeshes");
-	_defenseLineMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseLineMeshes");
-	
-	_defenseNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
-	_defenseCityNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
-	_defenseFortNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
-	_defenseLineMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
 
-	_defenseNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	_defenseCityNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	_defenseFortNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	_defenseLineMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	
+	for (int32 i = 0; i < DefenseOverlayEnumSize * DefenseColorEnumSize; i++) {
+		_defenseMeshes.Add(CreateDefaultSubobject<UInstancedStaticMeshComponent>(FName("Map_defenseMesh" + FString::FromInt(i))));
+		_defenseMeshes[i]->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+		_defenseMeshes[i]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	//_defenseCityNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseCityNodeMeshes");
+	//_defenseFortNodeMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseFortNodeMeshes");
+	//_defenseLineMeshes = CreateDefaultSubobject<UInstancedStaticMeshComponent>("Map_defenseLineMeshes");
+	//
+	//_defenseNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+	//_defenseCityNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+	//_defenseFortNodeMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+	//_defenseLineMeshes->AttachToComponent(_mapMeshesParent, FAttachmentTransformRules::KeepRelativeTransform);
+
+	//_defenseNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//_defenseCityNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//_defenseFortNodeMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	//_defenseLineMeshes->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void UTerrainMapComponent::UpdateTerrainMapDisplay(bool mapTerrainVisible, bool mapTerrainWaterVisible, bool tileDisplayNoRegionSkip)
@@ -681,20 +686,30 @@ void UTerrainMapComponent::RefreshDefenseMap()
 {
 	auto& sim = _dataSource->simulation();
 	
-	_defenseNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_Node_Map);
-	_defenseCityNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_CityNode_Map);
-	_defenseFortNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_FortNode_Map);
-	_defenseLineMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_Line_Map);
+	//_defenseNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_Node_Map);
+	//_defenseCityNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_CityNode_Map);
+	//_defenseFortNodeMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_FortNode_Map);
+	//_defenseLineMeshes->SetStaticMesh(_assetLoader->DefenseOverlay_Line_Map);
 
-	_defenseNodeMeshes->TranslucencySortPriority = 5000;
-	_defenseCityNodeMeshes->TranslucencySortPriority = 5000;
-	_defenseFortNodeMeshes->TranslucencySortPriority = 5000;
-	_defenseLineMeshes->TranslucencySortPriority = 4000;
+	//_defenseNodeMeshes->TranslucencySortPriority = 5000;
+	//_defenseCityNodeMeshes->TranslucencySortPriority = 5000;
+	//_defenseFortNodeMeshes->TranslucencySortPriority = 5000;
+	//_defenseLineMeshes->TranslucencySortPriority = 4000;
 
-	_defenseNodeMeshes->ClearInstances();
-	_defenseCityNodeMeshes->ClearInstances();
-	_defenseFortNodeMeshes->ClearInstances();
-	_defenseLineMeshes->ClearInstances();
+	//_defenseNodeMeshes->ClearInstances();
+	//_defenseCityNodeMeshes->ClearInstances();
+	//_defenseFortNodeMeshes->ClearInstances();
+	//_defenseLineMeshes->ClearInstances();
+
+	for (int32 i = 0; i < _defenseMeshes.Num(); i++) 
+	{
+		DefenseOverlayEnum defenseOverlayEnum = static_cast<DefenseOverlayEnum>(i / DefenseColorEnumSize);
+		DefenseColorEnum defenseColorEnum = static_cast<DefenseColorEnum>(i % DefenseColorEnumSize);
+		_defenseMeshes[i]->TranslucencySortPriority = (defenseOverlayEnum == DefenseOverlayEnum::Line ? 4000 : 5000);
+		_defenseMeshes[i]->SetStaticMesh(_assetLoader->GetDefenseOverlayMesh(defenseOverlayEnum, true));
+		_defenseMeshes[i]->SetMaterial(0, _assetLoader->GetDefenseOverlayMaterial(defenseColorEnum));
+		_defenseMeshes[i]->ClearInstances();
+	}
 
 	for (int32 provinceId = 0; provinceId < GameMapConstants::TotalRegions; provinceId++)
 	{
@@ -703,24 +718,31 @@ void UTerrainMapComponent::RefreshDefenseMap()
 		}
 
 		DefenseOverlayEnum defenseOverlayEnum;
+		DefenseColorEnum defenseColorEnum;
 		FTransform nodeTransform;
 		TArray<FTransform> lineTransforms;
-		_dataSource->GetDefenseNodeDisplayInfo(provinceId, 2.5f, defenseOverlayEnum, nodeTransform, lineTransforms, true);
+		TArray<DefenseColorEnum> lineDefenseColorEnums;
+		_dataSource->GetDefenseNodeDisplayInfo(provinceId, 2.5f, 
+			defenseOverlayEnum, defenseColorEnum, 
+			nodeTransform, lineTransforms, lineDefenseColorEnums, true);
 
 		nodeTransform.SetTranslation(nodeTransform.GetTranslation()); //  + FVector(0, 0, 128)
 
-		if (defenseOverlayEnum == DefenseOverlayEnum::CityNode) {
-			_defenseCityNodeMeshes->AddInstance(nodeTransform);
-		}
-		else if (defenseOverlayEnum == DefenseOverlayEnum::FortNode) {
-			_defenseFortNodeMeshes->AddInstance(nodeTransform);
-		}
-		else {
-			_defenseNodeMeshes->AddInstance(nodeTransform);
-		}
+		_defenseMeshes[static_cast<int32>(defenseOverlayEnum) * DefenseColorEnumSize + static_cast<int32>(defenseColorEnum)]->AddInstance(nodeTransform);
+		
+		//if (defenseOverlayEnum == DefenseOverlayEnum::CityNode) {
+		//	_defenseCityNodeMeshes->AddInstance(nodeTransform);
+		//}
+		//else if (defenseOverlayEnum == DefenseOverlayEnum::FortNode) {
+		//	_defenseFortNodeMeshes->AddInstance(nodeTransform);
+		//}
+		//else {
+		//	_defenseNodeMeshes->AddInstance(nodeTransform);
+		//}
 
-		for (const FTransform& lineTransform : lineTransforms) {
-			_defenseLineMeshes->AddInstance(lineTransform);
+		for (int32 i = 0; i < lineTransforms.Num(); i++) {
+			_defenseMeshes[static_cast<int32>(DefenseOverlayEnum::Line) * DefenseColorEnumSize + static_cast<int32>(lineDefenseColorEnums[i])]->AddInstance(lineTransforms[i]);
+			//_defenseLineMeshes->AddInstance(lineTransform);
 		}
 	}
 }

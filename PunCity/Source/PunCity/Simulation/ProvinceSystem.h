@@ -323,6 +323,7 @@ public:
 		 * Merge small provinces
 		 * - merge when very small
 		 * - or when size of both provinces doesn't exceed X
+		 * - or when distance between center is below X
 		 */
 		const int32 mergeThresholdSizeForced = CoordinateConstants::TileIdsPerRegion * 4 / 5;
 		const int32 mergeThresholdSizeBase = CoordinateConstants::TileIdsPerRegion * 6 / 5;
@@ -399,6 +400,33 @@ public:
 					MergeProvince(provinceId, provinceIdToMergeTo, tryFloodEdge);
 				}
 			}
+		}
+
+		//! Merge by Distance
+		const int32 mergeDistanceThreshold = CoordinateConstants::TilesPerRegion / 3;
+		
+		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
+		{
+			// Only use valid provinces
+			if (_provinceFlatTileCount[provinceId] == 0) {
+				continue;
+			}
+
+			WorldRegion2 region(provinceId);
+			bool alreadyMerged = false;
+			region.ExecuteOnNearbyRegions([&](WorldRegion2 curRegion)
+			{
+				if (alreadyMerged) {
+					return;
+				}
+				int32 curProvinceId = curRegion.regionId();
+				if (curProvinceId != provinceId && 
+					WorldTile2::Distance(_provinceCenters[curProvinceId].worldTile2(), _provinceCenters[provinceId].worldTile2()) < mergeDistanceThreshold) 
+				{
+					MergeProvince(provinceId, curProvinceId, tryFloodEdge);
+					alreadyMerged = true;
+				}
+			});
 		}
 		
 		/*
@@ -511,8 +539,7 @@ public:
 		}
 
 		/*
-		 * Split province into two
-		 * - if center isn't townhall placable
+		 * Check for centroid
 		 */
 
 		for (int32 provinceId = 0; provinceId < proviceIdsSize; provinceId++)
@@ -534,7 +561,8 @@ public:
 				WorldTile2 newCenter(sumX / count, sumY / count);
 
 				// check centroid
-				if (terrainGen.terrainTileType(newCenter) == TerrainTileType::None &&
+				if (_provinceId2x2[WorldTile2x2(newCenter).tile2x2Id()] == provinceId &&
+					terrainGen.terrainTileType(newCenter) == TerrainTileType::None &&
 					terrainGen.terrainTileType(newCenter + WorldTile2(3, 3)) == TerrainTileType::None &&
 					terrainGen.terrainTileType(newCenter + WorldTile2(-3, 3)) == TerrainTileType::None &&
 					terrainGen.terrainTileType(newCenter + WorldTile2(3, -3)) == TerrainTileType::None &&

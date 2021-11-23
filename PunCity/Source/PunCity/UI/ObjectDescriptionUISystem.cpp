@@ -681,24 +681,21 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
 						FText::Format(LOCTEXT("TribeName", "{0} tribe"), sim.townNameT(townId))
 					);
+					
 				}
 				else {
 					_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
-						FText::Format(LOCTEXT("TribeName", "{0} (minor town)"), sim.townNameT(townId))
+						FText::Format(LOCTEXT("TribeName", "{0} (Minor City)"), sim.townNameT(townId))
 					);
 				}
-
-				//focusBox->AddRichText(FText::Format(INVTEXT("Level {0}"), minorCityBld.minorCityLevel()));
 
 #if !UE_BUILD_SHIPPING
 				//if (PunSettings::IsOn("DebugFocusUI")) {
 					focusBox->AddRichText(FText::Format(INVTEXT("TownId {0}"), townId));
+					focusBox->AddSpacer();
+					focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townhallId));
 				//}
 #endif
-
-				focusBox->AddSpacer();
-
-				focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townhallId));
 
 				focusBox->AddSpacer();
 				
@@ -735,80 +732,95 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					),
 					assetLoader->CoinIcon
 				);
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+					LOCTEXT("Income", "Income"),
+					TEXT_NUMSIGNED(townManagerBase->GetMinorCityMoneyIncome()),
+					assetLoader->CoinIcon
+				);
 
 				focusBox->AddSpacer();
 
-				const RelationshipModifiers& relationship = townManagerBase->relationship();
-				int32 totalRelationshipToPlayer = townManagerBase->relationship().GetTotalRelationship(playerId());
-
-				if (townManagerBase->lordPlayerId() != -1) {
-					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-						LOCTEXT("Lord", "Lord"),
-						sim.playerNameT(townManagerBase->lordPlayerId())
-					);
-				}
-				else {
-					focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-						LOCTEXT("Relationship", "Relationship"),
-						FText::Format(
-							INVTEXT("{0}/{1}"),
-							TEXT_NUM(totalRelationshipToPlayer),
-							TEXT_NUM(townManagerBase->relationship().AllyRelationshipRequirement(playerId()))
-						)
-					);
-				}
-
-				focusBox->AddSpacer();
-				focusBox->AddSpacer();
-
-				//! Relationship Level
-				focusBox->AddRichText(FText::Format(
-					LOCTEXT("Relationship Tier 1", "{0}Relationship Lv 1 (exceed 30):</>\n{0}+30</><img id=\"Influence\"/> {0}per round</>"),
-					totalRelationshipToPlayer > 30 ? INVTEXT("<Default>") : INVTEXT("<Gray>")
-				));
-				focusBox->AddSpacer();
-
-				focusBox->AddRichText(FText::Format(
-					LOCTEXT("Relationship Tier 2", "{0}Relationship Lv 2 (exceed 60):</>\n{0}+60</><img id=\"Influence\"/> {0}per round</>"),
-					totalRelationshipToPlayer >60 ? INVTEXT("<Default>") : INVTEXT("<Gray>")
-				));
-				focusBox->AddSpacer();
-
-				focusBox->AddRichText(FText::Format(
-					LOCTEXT("Relationship Tier 3", "{0}Relationship Lv 3 (ally):</>\n{0}+150</><img id=\"Influence\"/> {0}per round</>"),
-					relationship.isAlly(playerId()) ? INVTEXT("<Default>") : INVTEXT("<Gray>")
-				));
-
-				focusBox->AddSpacer();
-				focusBox->AddSpacer();
-
-				//! Highest 3 relationship
+				if (!sim.IsResearched(playerId(), TechEnum::ForeignRelation))
 				{
-					std::vector<std::pair<int32, int32>> playerIdAndRelationship;
-					for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
-						if (i != playerId()) {
-							int32 totalRelationship = relationship.GetTotalRelationship(i);
-							if (totalRelationship > 0) {
-								playerIdAndRelationship.push_back({ i, totalRelationship });
+					focusBox->AddRichText(
+						LOCTEXT("TribeForeignRelationTechRequirement", "<Red>Unlock Foreign Relation Tech</>\n<Red>to engage in diplomacy</>")
+					);
+				}
+				else
+				{
+					const RelationshipModifiers& relationship = townManagerBase->relationship();
+					int32 totalRelationshipToPlayer = townManagerBase->relationship().GetTotalRelationship(playerId());
+
+					if (townManagerBase->lordPlayerId() != -1) {
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Lord", "Lord"),
+							sim.playerNameT(townManagerBase->lordPlayerId())
+						);
+					}
+					else {
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Relationship", "Relationship"),
+							FText::Format(
+								INVTEXT("{0}/{1}"),
+								TEXT_NUM(totalRelationshipToPlayer),
+								TEXT_NUM(townManagerBase->relationship().AllyRelationshipRequirement(playerId()))
+							)
+						);
+					}
+
+					focusBox->AddSpacer();
+					focusBox->AddSpacer();
+
+					//! Relationship Level
+					focusBox->AddRichText(FText::Format(
+						LOCTEXT("Relationship Tier 1", "{0}Relationship Lv 1 (exceed 30):</>\n{0}+30</><img id=\"Influence\"/> {0}per round</>"),
+						totalRelationshipToPlayer > 30 ? INVTEXT("<Default>") : INVTEXT("<Gray>")
+					));
+					focusBox->AddSpacer();
+
+					focusBox->AddRichText(FText::Format(
+						LOCTEXT("Relationship Tier 2", "{0}Relationship Lv 2 (exceed 60):</>\n{0}+60</><img id=\"Influence\"/> {0}per round</>"),
+						totalRelationshipToPlayer > 60 ? INVTEXT("<Default>") : INVTEXT("<Gray>")
+					));
+					focusBox->AddSpacer();
+
+					focusBox->AddRichText(FText::Format(
+						LOCTEXT("Relationship Tier 3", "{0}Relationship Lv 3 (ally):</>\n{0}+150</><img id=\"Influence\"/> {0}per round</>"),
+						relationship.isAlly(playerId()) ? INVTEXT("<Default>") : INVTEXT("<Gray>")
+					));
+
+					focusBox->AddSpacer();
+					focusBox->AddSpacer();
+
+					//! Highest 3 relationship
+					{
+						std::vector<std::pair<int32, int32>> playerIdAndRelationship;
+						for (int32 i = 0; i < GameConstants::MaxPlayersAndAI; i++) {
+							if (i != playerId()) {
+								int32 totalRelationship = relationship.GetTotalRelationship(i);
+								if (totalRelationship > 0) {
+									playerIdAndRelationship.push_back({ i, totalRelationship });
+								}
 							}
+						}
+
+						std::sort(playerIdAndRelationship.begin(), playerIdAndRelationship.end(), [&](std::pair<int32, int32> a, std::pair<int32, int32> b) {
+							return a.second > b.second;
+						});
+
+						int32 loopCount = std::min(3, static_cast<int>(playerIdAndRelationship.size()));
+						if (loopCount > 0) {
+							focusBox->AddRichText(LOCTEXT("Relationship with Others:", "Relationship with Others:"));
+						}
+						for (int32 i = 0; i < loopCount; i++) {
+							focusBox->AddRichText(FText::Format(
+								INVTEXT("{0} {1}"),
+								sim.playerNameT(playerIdAndRelationship[i].first),
+								playerIdAndRelationship[i].second
+							));
 						}
 					}
 
-					std::sort(playerIdAndRelationship.begin(), playerIdAndRelationship.end(), [&](std::pair<int32, int32> a, std::pair<int32, int32> b) {
-						return a.second > b.second;
-					});
-
-					int32 loopCount = std::min(3, static_cast<int>(playerIdAndRelationship.size()));
-					if (loopCount > 0) {
-						focusBox->AddRichText(LOCTEXT("Relationship with Others:", "Relationship with Others:"));
-					}
-					for (int32 i = 0; i < loopCount; i++) {
-						focusBox->AddRichText(FText::Format(
-							INVTEXT("{0} {1}"),
-							sim.playerNameT(playerIdAndRelationship[i].first),
-							playerIdAndRelationship[i].second
-						));
-					}
 				}
 			}
 			
@@ -1239,8 +1251,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							/*
 							 * Spy Nest
 							 */
-							 // TODO: show more info than Townhall ???
-							if (sim.playerBuildingFinishedCount(playerId(), CardEnum::SpyCenter))
+							if (sim.IsResearched(playerId(), TechEnum::SpyNest))
 							{
 								if (house->spyPlayerId() != playerId())
 								{
@@ -2192,11 +2203,14 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (building.isEnum(CardEnum::Fort))
 					{
-						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
-							LOCTEXT("AttackRequires", "Attacking this province requires 100% more <img id=\"Influence\"/>.")
-						);
+						//focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
+						//	LOCTEXT("AttackRequires", "Attacking this province requires 100% more <img id=\"Influence\"/>.")
+						//);
 
-						
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Fort_FocusUI_HP", "Fort HP:"),
+							TEXT_NUM(building.subclass<Fort>().GetFortHP100() / 100)
+						);
 					}
 					else if (IsPowerPlant(buildingEnum))
 					{
@@ -3991,6 +4005,11 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						ResourceNameT(drops[i].holderInfo.resourceEnum),
 						TEXT_NUM(resourceSystem.resourceCount(drops[i].holderInfo))
 					);
+
+#if !UE_BUILD_SHIPPING
+					ResourceHolderType type = resourceSystem.holder(drops[i].holderInfo).type;
+					args.Add(type == ResourceHolderType::DropManual ? INVTEXT("DropManual") : INVTEXT("Drop"));
+#endif
 				}
 				focusBox->AddRichText(args);
 
@@ -4033,8 +4052,26 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					if (provinceId == -1) {
 						AddImpassableTileInfo(tile, focusBox);
 					}
-					else if (sim.IsWater(tile)) {
-						focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Water Tile", "Water Tile"));
+					else if (sim.IsWater(tile)) 
+					{
+						const std::vector<int32>& oasisSlotIds = sim.provinceInfoSystem().oasisSlotProvinceIds();
+						bool hasOasis = false;
+						for (int32 i = 0; i < oasisSlotIds.size(); i++) {
+							const ProvinceBuildingSlot& slot = sim.provinceInfoSystem().provinceBuildingSlot(oasisSlotIds[i]);
+							if (slot.oasisSlot.isValid() && WorldTile2::Distance(slot.oasisSlot.centerTile, tile) < 20) {
+								hasOasis = true;
+								break;
+							}
+						}
+						
+						if (sim.terrainGenerator().terrainTileType(tile) == TerrainTileType::River ||
+							hasOasis)
+						{
+							focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Fresh Water Tile", "Fresh Water Tile"));
+						}
+						else {
+							focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Salt Water Tile", "Salt Water Tile"));
+						}
 					}
 					else if (sim.IsMountain(tile)) {
 						focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Mountain Tile", "Mountain Tile"));
@@ -5435,8 +5472,8 @@ void UObjectDescriptionUISystem::AddEfficiencyText(Building& building, UPunBoxWi
 
 			auto bonuses = building.GetBonuses();
 			for (BonusPair bonus : bonuses) {
-				if (bonus.value > 0) {
-					ADDTEXT(args2, INVTEXT("\n  +{0}% {1}"), TEXT_NUM(bonus.value), bonus.name);
+				if (bonus.value != 0) {
+					ADDTEXT(args2, INVTEXT("\n  {0}% {1}"), TEXT_NUMSIGNED(bonus.value), bonus.name);
 				}
 			}
 

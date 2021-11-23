@@ -178,7 +178,7 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 
 						// Can also liberate if there is an existing conquerer
 						if (uiTownManagerBase->lordPlayerId() != -1) {
-							SetText(AttackButton2RichText, LOCTEXT("LiberationButtonRichText_Text", "Liberation\n<img id=\"Influence\"/>{0}"));
+							SetText(AttackButton2RichText, LOCTEXT("LiberationButtonRichText_Text", "Liberation"));
 							AttackButton2->SetVisibility(ESlateVisibility::Visible);
 							BUTTON_ON_CLICK(AttackButton2, this, &UMinorTownWorldUI::OnClickLiberateButton);
 						}

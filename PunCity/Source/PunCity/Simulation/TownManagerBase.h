@@ -30,11 +30,11 @@ struct ProvinceClaimProgress
 	int32 defender_attackBonus = 0;
 	int32 defender_defenseBonus = 0;
 
-	int32 battleFinishCountdownSecs = -1; // Countdown after Finishing battle
+	int32 battleFinishCountdownTicks = -1; // Countdown after Finishing battle
 	
 
 	bool attackerWon() const {
-		return battleFinishCountdownSecs == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0 && defenderTreasure.size() == 0;
+		return battleFinishCountdownTicks == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0 && defenderTreasure.size() == 0;
 	}
 	bool attackerLost() const {
 		return attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
@@ -83,18 +83,33 @@ struct ProvinceClaimProgress
 	static void AddMilitaryCards(std::vector<CardStatus>& militaryCards, CardStatus militaryCard)
 	{
 		for (int32 i = 0; i < militaryCards.size(); i++) {
-			if (militaryCards[i].cardEnum == militaryCard.cardEnum) {
+			if (militaryCards[i].cardEnum == militaryCard.cardEnum &&
+				GetCardPlayer(militaryCards[i]) == GetCardPlayer(militaryCard))
+			{
 				militaryCards[i].stackSize += militaryCard.stackSize;
 				return;
 			}
 		}
 		militaryCards.push_back(militaryCard);
 	}
+
+	static int32 GetCardPlayer(const CardStatus& card) {
+		return card.cardStateValue1;
+	}
 	
 
 	void Retreat_DeleteUnits(int32 unitPlayerId);
 
-	void Tick1Sec(IGameSimulationCore* simulation);
+	void Tick(IGameSimulationCore* simulation);
+
+	template<typename Func>
+	void ExecuteOnAllUnits(Func func) const
+	{
+		for (const CardStatus& card : attackerFrontLine) func(card);
+		for (const CardStatus& card : attackerBackLine) func(card);
+		for (const CardStatus& card : defenderFrontLine) func(card);
+		for (const CardStatus& card : defenderBackLine) func(card);
+	}
 
 
 	//! Serialize
@@ -122,7 +137,7 @@ struct ProvinceClaimProgress
 		Ar << defender_attackBonus;
 		Ar << defender_defenseBonus;
 
-		Ar << battleFinishCountdownSecs;
+		Ar << battleFinishCountdownTicks;
 
 		return Ar;
 	}
@@ -151,17 +166,17 @@ struct AutoTradeElement
 	}
 
 	// Import may not complete successfully due to not having enough storage space
-	int32 GetImportLeftoverRefund100(int32 leftoverAmount) const
+	int64 GetImportLeftoverRefund100(int32 leftoverAmount) const
 	{
 		check(leftoverAmount >= 0);
-		int32 previousNetMoney = calculatedMoney + calculatedFee;
+		int64 previousNetMoney = calculatedMoney + calculatedFee;
 
-		int32 newTradeAmount = calculatedTradeAmountNextRound - leftoverAmount;
-		int32 newImportMoney = newTradeAmount * price100;
-		int32 newFeeDiscount = std::min(directTradeAmount, newTradeAmount) * price100 * feePercent / 100;
-		int32 newFee = (newImportMoney * feePercent / 100) - newFeeDiscount;
+		int64 newTradeAmount = calculatedTradeAmountNextRound - leftoverAmount;
+		int64 newImportMoney = newTradeAmount * price100;
+		int64 newFeeDiscount = std::min(static_cast<int64>(directTradeAmount), newTradeAmount) * price100 * feePercent / 100;
+		int64 newFee = (newImportMoney * feePercent / 100) - newFeeDiscount;
 
-		int32 newNetMoney = newImportMoney * newFee;
+		int64 newNetMoney = newImportMoney * newFee;
 
 		return previousNetMoney - newNetMoney;
 	}
@@ -232,6 +247,14 @@ public:
 
 	virtual ~TownManagerBase() {}
 
+	virtual void Tick()
+	{
+		// Defense
+		for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+			claimProgress.Tick(_simulation);
+		}
+	}
+
 	/*
 	 * Get
 	 */
@@ -251,7 +274,7 @@ public:
 	const std::vector<int32>& provincesClaimed() { return _provincesClaimed; }
 
 	virtual int32 baseDefenderUnits() {
-		return 10;
+		return 3 * GetMinorCityLevel();
 	}
 
 	/*
@@ -371,99 +394,7 @@ public:
 	 * Claim Province Attack
 	 */
 
-	void StartAttack_Defender(int32 attackerPlayerId, int32 provinceId, ProvinceAttackEnum provinceAttackEnum, std::vector<CardStatus>& initialMilitaryCards)
-	{
-		ProvinceClaimProgress claimProgress;
-		claimProgress.attackEnum = provinceAttackEnum;
-		claimProgress.provinceId = provinceId;
-		claimProgress.attackerPlayerId = attackerPlayerId;
-		claimProgress.defenderTownId = _townId;
-		claimProgress.battleFinishCountdownSecs = 0; // Battle Countdown (Not needed???)
-		
-		//! Fill Attacker Military Units
-		claimProgress.Reinforce(initialMilitaryCards, true, attackerPlayerId);
-
-		//! Fill Defender Military Units
-		std::vector<CardStatus> defenderCards;
-		if (provinceAttackEnum == ProvinceAttackEnum::Raze) {
-			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 3 / 2) }; // More resistance if the intent is to raze...
-		}
-		else if (provinceAttackEnum == ProvinceAttackEnum::RaidBattle) {
-			claimProgress.raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
-		}
-		else {
-			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits()) }; // Town Population help is this is not a raid
-		}
-
-		//! Fill Defender Wall
-		int32 majorTownId = _simulation->provinceOwnerTown_Major(provinceId);
-		if (majorTownId != -1) 
-		{
-			auto addWall = [&]() {
-				claimProgress.defenderWall = { CardStatus(CardEnum::Wall, 1) };
-				claimProgress.PrepareCardStatusForMilitary(defenderPlayerId(), claimProgress.defenderWall);
-
-				defenderCards.push_back(CardStatus(CardEnum::Archer, 1));
-			};
-			
-			// Vassalize is hard
-			if (provinceAttackEnum == ProvinceAttackEnum::Vassalize) {
-				addWall();
-			}
-			else {
-				const std::vector<int32>& bldIds = _simulation->buildingIds(majorTownId, CardEnum::Fort);
-				for (int32 bldId : bldIds) {
-					if (_simulation->building(bldId).provinceId() == provinceId) {
-						addWall();
-						break;
-					}
-				}
-			}
-		}
-
-		claimProgress.Reinforce(defenderCards, false, defenderPlayerId());
-
-
-		//! Fill Defender Raid Treasure
-		if (claimProgress.attackEnum == ProvinceAttackEnum::RaidBattle)
-		{
-			int32 raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
-			raidMoney = std::max(500, raidMoney);
-			
-			CardStatus raidTreasure(CardEnum::RaidTreasure, 1);
-			raidTreasure.cardStateValue1 = defenderPlayerId();
-			raidTreasure.cardStateValue2 = raidMoney * 100;
-			raidTreasure.cardStateValue3 = raidMoney * 100;
-			claimProgress.defenderTreasure = { raidTreasure };
-		}
-		else if (claimProgress.attackEnum == ProvinceAttackEnum::ConquerProvince)
-		{
-			int32 claimMoney = 3 * _simulation->GetProvinceClaimPrice(provinceId, attackerPlayerId) / 100;
-
-			CardStatus raidTreasure(CardEnum::RaidTreasure, 1);
-			raidTreasure.cardStateValue1 = defenderPlayerId();
-			raidTreasure.cardStateValue2 = claimMoney * 100;
-			raidTreasure.cardStateValue3 = claimMoney * 100;
-			claimProgress.defenderTreasure = { raidTreasure };
-		}
-
-		//! Fill Attacker/Defender Bonus
-		auto getBonus = [&](std::vector<BonusPair> bonuses)
-		{
-			int32 value = 0;
-			for (const BonusPair& bonus : bonuses) {
-				value += bonus.value;
-			}
-			return value;
-		};
-		
-		claimProgress.attacker_attackBonus = getBonus(_simulation->GetAttackBonuses(provinceId, attackerPlayerId));
-		claimProgress.attacker_defenseBonus = getBonus(_simulation->GetDefenseBonuses(provinceId, attackerPlayerId));
-		claimProgress.defender_attackBonus = getBonus(_simulation->GetAttackBonuses(provinceId, claimProgress.defenderTownId));
-		claimProgress.defender_defenseBonus = getBonus(_simulation->GetDefenseBonuses(provinceId, claimProgress.defenderTownId));
-
-		_defendingClaimProgress.push_back(claimProgress);
-	}
+	void StartAttack_Defender(int32 attackerPlayerId, int32 provinceId, ProvinceAttackEnum provinceAttackEnum, std::vector<CardStatus>& initialMilitaryCards);
 	void StartAttack_Attacker(int32 provinceId) {
 		_attackingProvinceIds.push_back(provinceId);
 	}
@@ -497,7 +428,8 @@ public:
 		for (int32 i = 0; i < _defendingClaimProgress.size(); i++)
 		{
 			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
-			if (claimProgress.provinceId == provinceId) {
+			if (claimProgress.provinceId == provinceId) 
+			{
 				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
 				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
 				if (_playerId != -1) {
@@ -660,7 +592,11 @@ public:
 	// start around 20 per round, ends at around 4000 per round
 	
 	int32 GetMinorCityMoneyIncome() {
-		return _minorCityWealth * 30 / 100 / Time::RoundsPerYear;
+		int32 incomeBefore1000 = _minorCityWealth * 30 / 100 / Time::RoundsPerYear;
+		if (incomeBefore1000 <= 1000) {
+			return incomeBefore1000;
+		}
+		return static_cast<int32>(sqrt(static_cast<double>(incomeBefore1000) / 1000) * 1000);
 	}
 	
 	void GetMinorCityLevelAndCurrentMoney(int32& level, int32& currentMoney, int32& moneyToNextLevel)
@@ -693,6 +629,10 @@ public:
 		return townhallId != -1 && 
 			_simulation->buildingEnum(townhallId) == CardEnum::MinorCity && 
 			GetMinorCityLevel() <= 1;
+	}
+
+	int32 GetTourismPopulation() {
+		return GetMinorCityLevel() * 10;
 	}
 	
 
@@ -728,10 +668,12 @@ public:
 	// 
 
 
-	void DeclareWar(int32 askingPlayerId)
+	void SetRelationshipToWar(int32 askingPlayerId)
 	{
-		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs, -100);
-		_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, 0);
+		if (_simulation->IsAIPlayer(_playerId) || IsMinorTown(_townId)) {
+			_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouAttackedUs, -100);
+			_relationships.SetModifier(askingPlayerId, RelationshipModifierEnum::YouBefriendedUs, 0);
+		}
 	}
 
 	void Tick1SecRelationship();
@@ -746,6 +688,8 @@ public:
 
 	virtual void RecalculateTax(bool showFloatup) {}
 
+	virtual const std::vector<class Hotel*> GetConnectedHotels();
+	
 	/*
 	 * Serialize
 	 */

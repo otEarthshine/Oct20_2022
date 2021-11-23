@@ -55,15 +55,15 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 {
 	{ TechEnum::MiddleAge, {
 		LOCTEXT("Middle Age", "Middle Age"),
-		LOCTEXT("Middle Age Desc", "Unlocks Townhall Level 2"),
+		LOCTEXT("Middle Age Desc", "Unlocks Townhall Level 3"),
 	} },
 	{ TechEnum::EnlightenmentAge, {
 		LOCTEXT("Enlightenment Age", "Enlightenment Age"),
-		LOCTEXT("Enlightenment Age Desc", "Unlocks Townhall Level 3"),
+		LOCTEXT("Enlightenment Age Desc", "Unlocks Townhall Level 4"),
 	} },
 	{ TechEnum::IndustrialAge, {
 		LOCTEXT("Industrial Age", "Industrial Age"),
-		LOCTEXT("Industrial Age Desc", "Unlocks Townhall Level 4"),
+		LOCTEXT("Industrial Age Desc", "Unlocks Townhall Level 5"),
 	} },
 	
 	{ TechEnum::DeepMining, { LOCTEXT("Deep Mining", "Deep Mining") }},
@@ -190,6 +190,11 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	{ TechEnum::SpyCenter, {
 		LOCTEXT("Espionage", "Espionage")
 	} },
+	{ TechEnum::SpyNest, {
+		LOCTEXT("Spy Nest", "Spy Nest"),
+		LOCTEXT("Spy Nest Desc", "Convert enemy's Houses into Spy Nests to steal influence from the target player.")
+	} },
+	
 
 	{ TechEnum::Colony, {
 		LOCTEXT("Colonization", "Colonization"),
@@ -1203,6 +1208,7 @@ public:
 			AddTech_BuildingPermanent(TechEnum::Logistics3, { TechEnum::Logistics2 },
 				{ CardEnum::Warehouse }
 			);
+			AddTech_Bonus(TechEnum::SpyNest, { TechEnum::Logistics2 });
 
 			AddTech_Building(TechEnum::Winery, { TechEnum::Baking, TechEnum::VodkaDistillery },
 				CardEnum::Winery,
@@ -1234,16 +1240,17 @@ public:
 			AddTech_Building(TechEnum::SandMine, { TechEnum::QuickBuild, TechEnum::GoldSmelting },
 				{ CardEnum::SandMine, CardEnum::GlassSmelter }
 			);
-			AddTech_Building(TechEnum::CardMaker, { TechEnum::TradeRoute },
-				{ CardEnum::CardMaker, CardEnum::PaperMaker }
-			);
+			//AddTech_Building(TechEnum::CardMaker, { TechEnum::TradeRoute },
+			//	{ CardEnum::CardMaker, CardEnum::PaperMaker }
+			//);
+			AddTech_Bonus(TechEnum::PolicyMaking, { TechEnum::TradeRoute });
 			AddTech_Building(TechEnum::School, { TechEnum::TradeRoute, TechEnum::ForeignRelation },
 				CardEnum::School
 			);
 			AddTech_Building(TechEnum::Logistics4, { TechEnum::Logistics3 },
 				{ CardEnum::ShippingDepot }
 			);
-			AddTech_BuildingPermanent(TechEnum::StoneRoad, { TechEnum::Logistics3 },
+			AddTech_BuildingPermanent(TechEnum::StoneRoad, { TechEnum::Logistics3, TechEnum::SpyNest },
 				{ CardEnum::StoneRoad }
 			);
 			
@@ -1260,9 +1267,11 @@ public:
 				TechRequirements::HouseLvlCount(5, 30)
 			);
 			AddTech_Bonus(TechEnum::BudgetAdjustment, { TechEnum::SandMine, TechEnum::CardMaker });
-			AddTech_Building(TechEnum::PolicyMaking, { TechEnum::CardMaker, TechEnum::School, TechEnum::Logistics4 },
-				{ }
+			//AddTech_Bonus(TechEnum::PolicyMaking, { TechEnum::CardMaker, TechEnum::School, TechEnum::Logistics4 });
+			AddTech_Building(TechEnum::CardMaker, { TechEnum::PolicyMaking, TechEnum::School, TechEnum::Logistics4 },
+				{ CardEnum::CardMaker, CardEnum::PaperMaker }
 			);
+			
 			AddTech_Bonus(TechEnum::Logistics5, { TechEnum::Logistics4, TechEnum::StoneRoad });
 
 			AddTech_Building(TechEnum::Theatre, { TechEnum::Winery },

@@ -364,7 +364,7 @@ public:
 		setOverlayRowText(MapCheckBox_ProvinceOverlay, 
 			NSLOCTEXT("OverlayToggleUI", "Province Overlay ", "Province Overlay "),
 			INVTEXT("[Ctrl-P]"),
-			dataSource()->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap)
+			true
 		);
 		
 

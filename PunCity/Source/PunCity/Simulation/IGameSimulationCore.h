@@ -308,6 +308,8 @@ public:
 
 	virtual void LoseVassalHelper(int32 oldLordPlayerId, int32 formerVassalTownId) = 0;
 
+	virtual std::vector<struct ProvinceClaimProgress> GetAllBattles() = 0;
+
 	virtual void AddFortToProvince(int32 provinceId, int32 fortId) = 0;
 	virtual void TryRemoveFortFromProvince(int32 provinceId, int32 fortId) = 0;
 
@@ -667,7 +669,7 @@ public:
 
 	virtual void CheckSeedAndMineCard(int32 playerId) = 0;
 
-	virtual bool isStorageAllFull(int32 townId) = 0;
+	virtual bool isStorageAllFull(int32 townId, bool includeGranary = false) = 0;
 	virtual int32 SpaceLeftFor(ResourceEnum resourceEnum, int32 storageId) = 0;
 	virtual void RefreshStorageStatus(int32 storageId) = 0;
 

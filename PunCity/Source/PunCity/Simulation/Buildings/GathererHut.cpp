@@ -1960,6 +1960,22 @@ std::vector<BonusPair> OilRig::GetBonuses()
 //	TryStartTraining(); // Try to start next training
 //}
 
+void Fort::FinishConstruction()
+{
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeLevelUpgrade(
+			LOCTEXT("FortUpgrade_WallLevel", "Wall Level"),
+			LOCTEXT("FortUpgrade_WallLevel Desc", "Higher level Wall has higher HP."),
+			ResourceEnum::Stone, 100, 100, 1000 / GetResourceInfo(ResourceEnum::Stone).basePrice
+		)
+	});
+
+
+	_simulation->AddFortToProvince(provinceId(), buildingId());
+}
+
 void ResourceOutpost::TickRound()
 {
 	if (isConstructed())
@@ -2398,12 +2414,15 @@ void SpyCenter::ResetWorkModes()
 	 * 
 	 */
 	SetupWorkMode({
-		WorkMode::Create(spyNestSupportText, LOCTEXT("Spy Nest Support Desc", "Increase Spy Nest effectiveness by 100%")),
 		WorkMode::Create(counterintelligenceText, LOCTEXT("Conserve resource desc", "Increase Counterintelligence effectiveness by 100%")),
 		WorkMode::Create(planStealText, LOCTEXT("Plan Steal desc", "")),
 		WorkMode::Create(planKidnapText, LOCTEXT("Plan Kidnap desc", "")),
 		WorkMode::Create(planTerrorismText, LOCTEXT("Plan Terrorism desc", "")),
 	});
+
+	if (_simulation->IsResearched(_playerId, TechEnum::SpyNest)) {
+		AddWorkMode(WorkMode::Create(spyNestSupportText, LOCTEXT("Spy Nest Support Desc", "Increase Spy Nest effectiveness by 100%")));
+	}
 }
 
 int32 SpyCenter::spyNestBonus() {
@@ -2429,7 +2448,7 @@ void SpyCenter::OnTick1Sec()
 	CardEnum cardEnum = CardEnum::None;
 	if (_workMode.name.IdenticalTo(planStealText)) {
 		cardCreationMode = 0;
-		cardEnum = CardEnum::Snatch;
+		cardEnum = CardEnum::Steal;
 	}
 	else if (_workMode.name.IdenticalTo(planKidnapText)) {
 		cardCreationMode = 1;
@@ -2446,7 +2465,7 @@ void SpyCenter::OnTick1Sec()
 		int32 targetCardPrice = GetBuildingInfo(cardEnum).baseCardPrice;
 		int32 secsToProduce = targetCardPrice * Time::SecondsPerRound / upkeep();
 
-		secsToProduce /= 2; // Discount
+		secsToProduce /= 4; // Discount
 
 		_secsToCardProduction = secsToProduce;
 	};

@@ -232,8 +232,9 @@ private:
 
 	UFUNCTION() void OnMaxFrameRateDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnVSyncCheckBoxChecked(bool active);
-	
-	UFUNCTION() void RestoreDefault();
+
+	UFUNCTION() void OnClickRestoreDefault() { RestoreDefault(false); }
+	void RestoreDefault(bool restoreAll);
 
 	UFUNCTION() void OnAutosaveDropdownChanged(FString sItem, ESelectInfo::Type seltype);
 	UFUNCTION() void OnLanguageDropdownChanged(FString sItem, ESelectInfo::Type seltype);

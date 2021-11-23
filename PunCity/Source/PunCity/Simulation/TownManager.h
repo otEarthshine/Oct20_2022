@@ -184,7 +184,7 @@ public:
 
 	void Tick1Sec();
 
-	void Tick();
+	virtual void Tick() override;
 
 	/*
 	 * Get Variables
@@ -670,8 +670,8 @@ public:
 		if (cardEnum == CardEnum::Raid) {
 			return Time::TicksPerSecond * 5;
 		}
-		int32 ticksPerMoneyCost = 3;
-		return GetMilitaryInfo(cardEnum).allCostCombined() * ticksPerMoneyCost;
+		//int32 ticksPerMoneyCost = 3;
+		return 60 * Time::TicksPerSecond; // Military Cost doesn't scale for now
 	}
 
 	float GetTrainingFraction()
@@ -843,11 +843,14 @@ public:
 
 	void DecreaseTourismHappinessByAction(int32 actionCost);
 
-	template <typename Func>
-	void LoopPopulation(int32 loopCount, int32& index, Func func)
+	template <typename Func, typename FuncBreak>
+	void LoopPopulation(int32 loopCount, int32& index, FuncBreak shouldBreakFunc,  Func func)
 	{
 		for (int32 i = 0; i < loopCount; i++)
 		{
+			if (shouldBreakFunc()) {
+				break;
+			}
 			if (index >= _childIds.size() + _adultIds.size()) {
 				index = 0;
 			}

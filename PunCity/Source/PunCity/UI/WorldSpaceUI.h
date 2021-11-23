@@ -13,6 +13,7 @@
 #include "Components/WidgetComponent.h"
 #include "PunCity/MapUtil.h"
 #include "BuildingJobUI.h"
+#include "PunCity/DisplaySystem/TerritoryMeshComponent.h"
 
 #include "WorldSpaceUI.generated.h"
 
@@ -338,4 +339,8 @@ private:
 	float _aboveBuildingTextSpawnTime = -1.0f;
 
 	std::vector<FloatupInfo> _floatupInfos;
+
+	//! Meshes
+	UPROPERTY() TArray<UTerritoryMeshComponent*> _provinceMeshes;
+	//UPROPERTY() TArray<UStaticMeshComponent*> _provinceMeshes;
 };

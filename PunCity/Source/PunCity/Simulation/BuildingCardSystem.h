@@ -110,6 +110,10 @@ public:
 			cardPrice = IntercityRoadTileCost;
 		}
 
+		if (IsMilitaryCardEnum(buildingEnum)) {
+			cardPrice = GetMilitaryInfo(buildingEnum).allCostCombined() / 2;
+		}
+
 		return cardPrice;
 	}
 
@@ -699,6 +703,9 @@ public:
 
 	bool TryAddCards_BoughtHandAndInventory(CardStatus cardStatus)
 	{
+		if (cardStatus.stackSize == 0) {
+			return true;
+		}
 		if (TryAddCards(cardStatus, _cardsBought, maxCardsBought)) {
 			return true;
 		}

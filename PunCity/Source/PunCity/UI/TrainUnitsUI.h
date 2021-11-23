@@ -105,6 +105,11 @@ public:
 			if (callbackEnum == CallbackEnum::TrainUnit)
 			{
 				ResourcePair resourceCost = townManager->GetTrainUnitCost(command->cardStatus.cardEnum);
+
+				if (PunSettings::IsOn("CheatFastBuild")) {
+					resourceCost = ResourcePair(ResourceEnum::Money, 1);
+				}
+				
 				int32 maxPossibleTraining = simulation().resourceCountTownWithMoney(townId, resourceCost.resourceEnum) / resourceCost.count;
 				if (maxPossibleTraining <= 0) 
 				{
@@ -138,6 +143,10 @@ public:
 	
 	void TickUI()
 	{
+		if (!IsVisible()) {
+			return;
+		}
+		
 		auto& townManager = simulation().townManager(townId);
 		const std::vector<CardStatus>& trainingQueue = townManager.trainUnitsQueueDisplay();
 
@@ -170,7 +179,7 @@ public:
 		CardEnum infantryEnum = CardEnum::Warrior;
 		if (isResearched(TechEnum::Infantry)) infantryEnum = CardEnum::Infantry;
 		else if (isResearched(TechEnum::Musketeer)) infantryEnum = CardEnum::Musketeer;
-		else if (isResearched(TechEnum::Ironworks)) infantryEnum = CardEnum::Swordsman;
+		else if (isResearched(TechEnum::Swordsman)) infantryEnum = CardEnum::Swordsman;
 
 
 		CardEnum cavalryEnum = CardEnum::None;
@@ -183,7 +192,7 @@ public:
 
 		CardEnum rangedEnum = CardEnum::None;
 		if (isResearched(TechEnum::MachineGun)) rangedEnum = CardEnum::MachineGun;
-		else if (isResearched(TechEnum::FurnitureWorkshop)) rangedEnum = CardEnum::Archer;
+		else if (isResearched(TechEnum::Archer)) rangedEnum = CardEnum::Archer;
 
 
 		CardEnum siegeEnum = CardEnum::None;

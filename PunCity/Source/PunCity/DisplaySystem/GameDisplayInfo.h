@@ -45,6 +45,7 @@ public:
 	// Things that gets added when zoomed out
 	static bool IsMiniModule(FString submeshName)
 	{
+		// !!! Only Used During Load, so it is ok to be performance intensive
 		static const TArray<FString> miniModuleList
 		{
 			"Body",
@@ -57,6 +58,10 @@ public:
 			"WindowGlass",
 			"Special",
 			"AlwaysOn",
+			
+			"_LOD01_1",
+			"_LOD01_2",
+			"_LOD01_3",
 		};
 
 		for (const FString& suffix : miniModuleList) {
@@ -112,9 +117,9 @@ private:
 			ModuleTransformGroup({ ModuleTransform("Bridge1", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
 		});
 
-		set(CardEnum::Forester, {
-			ModuleTransformGroup::CreateSet(WithFactionName("Forester"), {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
-		});
+		//set(CardEnum::Forester, {
+		//	ModuleTransformGroup::CreateSet(WithFactionName("Forester"), {}, {{ParticleEnum::Smoke, TransformFromPosition(9.5, 10.2, 29.5)}})
+		//});
 
 
 
@@ -157,7 +162,7 @@ private:
 
 
 
-		setName(CardEnum::Fort, WithFactionName("Outpost"));
+		//setName(CardEnum::Fort, WithFactionName("Outpost"));
 		setName(CardEnum::ResourceOutpost, WithFactionName("Colony"));
 		setName(CardEnum::ResearchLab, WithFactionName("InventorsWorkshop"));
 
@@ -266,6 +271,7 @@ private:
 						subMeshName = setName + FString("Floor");
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 0.5f));
 
+						// Body should be LOD01??
 						subMeshName = setName + FString("Body");
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
@@ -274,6 +280,14 @@ private:
 							subMeshName = setName + FString("Body") + FString::FromInt(i);
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 						}
+
+
+						for (int32 i = 1; i <= 3; i++) {
+							subMeshName = setName + FString("_LOD01_") + FString::FromInt(i);
+							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
+						}
+
+						
 
 						// Such as clay pit's hole...
 						subMeshName = setName + FString("AlwaysOn");

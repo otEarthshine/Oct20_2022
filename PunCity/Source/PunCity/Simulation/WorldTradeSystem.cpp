@@ -191,6 +191,21 @@ void WorldTradeSystem::TryCancelTradeRoute(const FGenericCommand& command)
 	}
 }
 
+void WorldTradeSystem::RemoveTradeRouteNode(int32 townId)
+{
+	for (int32 i = _tradeRoutePairs.size(); i-- > 0;) {
+		if (_tradeRoutePairs[i].HasTownId(townId)) {
+			_tradeRoutePairs.erase(_tradeRoutePairs.begin() + i);
+
+			int32 playerId1 = _simulation->building(_simulation->GetTownhallId(_tradeRoutePairs[i].townId1)).playerId();
+			int32 playerId2 = _simulation->building(_simulation->GetTownhallId(_tradeRoutePairs[i].townId2)).playerId();
+
+			_simulation->RecalculateTaxDelayedPlayer(playerId1);
+			_simulation->RecalculateTaxDelayedPlayer(playerId2);
+		}
+	}
+}
+
 void WorldTradeSystem::Tick1Sec()
 {
 	//PUN_LOG("WorldTrade Tick1Sec");

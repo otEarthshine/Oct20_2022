@@ -1015,7 +1015,7 @@ void UPunGameInstance::PrintPlayers()
 {
 	_LOG(PunSync, "PrintPlayerInfos (%d, inGame:%d):", _playerInfos.Num(), IsInGame());
 	for (int32 i = 0; i < _playerInfos.Num(); i++) {
-		_LOG(PunSync, " - i:%d %s steamId:%llu id:%lu ready:%d connected:%d", i, *_playerInfos[i].name.ToString(),
+		_LOG(PunSync, " - i:%d %s pid:%d steamId:%llu accountId:%lu ready:%d connected:%d", i, *_playerInfos[i].name.ToString(), _playerInfos[i].playerId,
 			_playerInfos[i].steamId64, CSteamID(_playerInfos[i].steamId64).GetAccountID(),
 			IsPlayerReady(i), (i < playerConnectedStates.Num() ? playerConnectedStates[i] : false)
 		);
@@ -1065,7 +1065,18 @@ int32 UPunGameInstance::ConnectPlayer(FString playerNameF, uint64 steamId64)
 	}
 
 	// Make new slot
-	if (IsInGame()) {
+	if (IsInGame()) 
+	{
+		// Fill _playerInfos from cache
+		if (_playerInfos.Num() == 0) {
+			_playerInfos = _playerInfosCache;
+			for (int32 i = _playerReadyStates.Num(); i < _playerInfos.Num(); i++) {
+				_playerReadyStates.Add(false);
+				playerConnectedStates.Add(false);
+				clientPacketsReceived.Add(0);
+			}
+		}
+		
 		FPlayerInfo playerInfo = GetCachedPlayerInfo(steamId64);
 
 		if (!playerInfo.IsEmpty() && playerInfo.playerId < _playerInfos.Num())
@@ -1102,6 +1113,7 @@ int32 UPunGameInstance::ConnectPlayer(FString playerNameF, uint64 steamId64)
 	FPlayerInfo playerInfo;
 	playerInfo.name = FText::FromString(playerNameF);
 	playerInfo.steamId64 = steamId64;
+	playerInfo.playerId = _playerInfos.Num();
 
 	_playerInfos.Add(playerInfo);
 	_playerReadyStates.Add(false);
@@ -1129,6 +1141,9 @@ bool UPunGameInstance::TryChangePlayerId(int32 originalId, int32 newId)
 	playerConnectedStates[newId] = playerConnectedStates[originalId];
 
 	clientPacketsReceived[newId] = clientPacketsReceived[originalId];
+
+	// Move playerId
+	_playerInfos[newId].playerId = newId;
 
 
 	_playerInfos[originalId] = FPlayerInfo();

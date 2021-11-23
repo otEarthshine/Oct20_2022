@@ -190,6 +190,8 @@ public:
 	bool TryEstablishTradeRoute(const FGenericCommand& command);
 	void TryCancelTradeRoute(const FGenericCommand& command);
 
+	void RemoveTradeRouteNode(int32 townId);
+
 	std::vector<TradeRoutePair>& tradeRoutePairs() {
 		return _tradeRoutePairs;
 	}

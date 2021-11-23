@@ -584,6 +584,9 @@ public:
 		else if (reinforcementCallbackEnum == CallbackEnum::Raze) {
 			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Raze", "Raze"));
 		}
+		else if (reinforcementCallbackEnum == CallbackEnum::RazeFort) {
+			ReinforcementTitleText2->SetText(NSLOCTEXT("ReinforceUI", "Destroy Fort", "Destroy Fort"));
+		}
 		else {
 			UE_DEBUG_BREAK();
 		}
@@ -607,16 +610,19 @@ public:
 	void TickReinforcementUI()
 	{
 		std::vector<CardStatus>& cards = simulation().cardSystem(playerId()).pendingMilitarySlotCards;
-		
-		for (int i = ReinforcementSlots->GetChildrenCount(); i-- > 0;) 
+
+		if (ReinforcementOverlay->IsVisible())
 		{
-			auto cardButton = CastChecked<UBuildingPlacementButton>(ReinforcementSlots->GetChildAt(i));
-			
-			cardButton->SetVisibility(ESlateVisibility::Visible);
-			
-			cardButton->PunInit(i < cards.size() ? cards[i] : CardStatus(), i, this, CallbackEnum::SelectDeployMilitarySlotCard, CardHandEnum::DeployMilitarySlots);
-			cardButton->SetCardStatus(CardHandEnum::DeployMilitarySlots, false, false);
-			cardButton->RefreshBuildingIcon(assetLoader());
+			for (int i = ReinforcementSlots->GetChildrenCount(); i-- > 0;)
+			{
+				auto cardButton = CastChecked<UBuildingPlacementButton>(ReinforcementSlots->GetChildAt(i));
+
+				cardButton->SetVisibility(ESlateVisibility::Visible);
+
+				cardButton->PunInit(i < cards.size() ? cards[i] : CardStatus(), i, this, CallbackEnum::SelectDeployMilitarySlotCard, CardHandEnum::DeployMilitarySlots);
+				cardButton->SetCardStatus(CardHandEnum::DeployMilitarySlots, false, false);
+				cardButton->RefreshBuildingIcon(assetLoader());
+			}
 		}
 	}
 

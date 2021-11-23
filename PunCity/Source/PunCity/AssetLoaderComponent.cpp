@@ -56,6 +56,25 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	DefenseOverlay_CityNode_Map = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_CityNode_Map");
 	DefenseOverlay_FortNode_Map = Load<UStaticMesh>("/Game/Models/Placement/DefenseOverlay_FortNode_Map");
 
+	DefenseMaterialInstances.SetNum(DefenseColorEnumSize);
+	auto loadDefenseMaterial = [&](DefenseColorEnum colorEnum, const char* path) {
+		DefenseMaterialInstances[static_cast<int32>(colorEnum)] = Load<UMaterialInstance>(path);
+	};
+	loadDefenseMaterial(DefenseColorEnum::Empty,"/Game/Models/Placement/Materials/MI_DefenseOverlay_Line_Empty");
+	loadDefenseMaterial(DefenseColorEnum::EnemyProtected, "/Game/Models/Placement/Materials/MI_DefenseOverlay_Line_EnemyProtected");
+	loadDefenseMaterial(DefenseColorEnum::EnemyUnprotected, "/Game/Models/Placement/Materials/MI_DefenseOverlay_Line_EnemyUnprotected");
+	loadDefenseMaterial(DefenseColorEnum::Protected, "/Game/Models/Placement/Materials/MI_DefenseOverlay_Line_Protected");
+	loadDefenseMaterial(DefenseColorEnum::Unprotected, "/Game/Models/Placement/Materials/MI_DefenseOverlay_Line_Unprotected");
+	loadDefenseMaterial(DefenseColorEnum::River, "/Game/Models/Placement/Materials/MI_DefenseOverlay_Line_River");
+
+	//
+
+	////UMaterialInstanceDynamic *material = UMaterialInstanceDynamic::Create(NormalBlendMaterial, this);
+	//
+	//FLinearColor color;
+	//MI_DefenseOverlay_Line_Empty->GetVectorParameterValue(TEXT("Color"), color);
+
+	
 	/**
 	 * Building
 	 */
@@ -179,7 +198,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		_factionEnumToBuildingEnumToMinEraModel[i].SetNum(BuildingEnumCount);
 	}
 	
-	LoadBuilding(CardEnum::FruitGatherer, "Fruit_GathererEra", "", "FruitGatherer", 1);
+	LoadBuilding(CardEnum::FruitGatherer, "Fruit_GathererEra", "Fruit_GathererEra", "FruitGatherer", 1);
 	LoadBuilding(CardEnum::Bank, "Bank_Era", "Bank_Era", "Bank", 3);
 
 	LoadBuilding(CardEnum::StoneToolsShop, "StoneToolsShop", "StoneToolsShop", "StoneToolShop", 1, 1);
@@ -222,7 +241,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LinkBuildingEras(FactionEnum::Europe, CardEnum::MinorCityPort, "TradingPort_Era", 1);
 	
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost_Era", "TradingPost", 1);
-	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "", "TradingCompany", 2);
+	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany_Era", "TradingCompany", 2);
 
 	//LoadBuilding(CardEnum::CardMaker, "ScholarsOffice_Era", "ScholarsOffice_Era", "ScholarsOffice", 2);
 	//LoadBuilding(CardEnum::Archives, "Archives_Era", "Archives_Era", "Archives", 2);
@@ -232,9 +251,11 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	LoadBuilding(CardEnum::HuntingLodge, "Hunting_LodgeERA", "", "HuntingLodge", 1);
 
-	LoadBuilding(CardEnum::RanchPig, "pigranchERA", "", "Ranch", 1);
+	LoadBuilding(CardEnum::RanchPig, "pigranchERA", "pigranchERA", "Ranch", 1);
 	LinkBuildingEras(FactionEnum::Europe, CardEnum::RanchSheep, "pigranchERA", 1);
 	LinkBuildingEras(FactionEnum::Europe, CardEnum::RanchCow, "pigranchERA", 1);
+	LinkBuildingEras(FactionEnum::Arab, CardEnum::RanchSheep, "pigranchERA", 1);
+	LinkBuildingEras(FactionEnum::Arab, CardEnum::RanchCow, "pigranchERA", 1);
 
 	LoadBuilding(CardEnum::GoldSmelter, "GoldSmelter_Era", "Gold_Smelter_Era", "SmelterGold", 2);
 	
@@ -285,12 +306,25 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau_Era", "EmploymentBureau", 1);
 
 
-	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub", "IntercityLogisticsHub", 0);
-	LoadBuildingEras(FactionEnum::Europe, CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort", "IntercityLogisticsPort", 0);
+	LoadBuilding(CardEnum::IntercityLogisticsHub, "IntercityLogisticsHub", 0);
+	LoadBuilding(CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort", 0);
+
+
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Forester, "Forester", "Forester", 1);
+	//LoadBuildingEras(FactionEnum::Arab, CardEnum::Windmill, "Windmill", "Windmill", 1);
+
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Fort, "Fortress", "Fortress", 3, 3);
+
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::WorldTradeOffice, "WorldTradeOffice", "WorldTradeOffice", 4);
 	
 	LoadBuilding(CardEnum::ForeignQuarter, "ForeignQuarter", 3);
 	LoadBuilding(CardEnum::ForeignPort, "ForeignPort", 3);
 	LoadBuilding(CardEnum::SpyCenter, "SpyCenter", 4);
+
+
+
+
+	
 
 	// TODO: EU era 2,3,4
 	LoadBuilding(CardEnum::Market, "Market", 2, 2);
@@ -299,8 +333,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Hotel, "Hotel", "Hotel", 3);
 
-	LoadBuilding(CardEnum::Museum, "ScholarsOffice", 3);
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Embassy, "Embassy", "Embassy", 2);
 
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Museum, "Museum", "Museum", 3);
+	LoadBuilding(CardEnum::CardCombiner, "ScholarsOffice", 3);
 
 	LoadBuilding(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity/Era0", ModuleTransformGroup::CreateAuxSet(
 		{
@@ -977,8 +1013,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::JungleTree, "JungleForestry");
 	addCardIcon(CardEnum::JungleHerbFarm, "JungleHerb");
 
-	addCardIcon(CardEnum::Snatch, "StealCard");
-	addCardIcon(CardEnum::Steal, "SnatchCard");
+	addCardIcon(CardEnum::Steal, "StealCard");
+	addCardIcon(CardEnum::StealOld, "SnatchCard");
 
 
 	// Artifacts
@@ -1623,6 +1659,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	M_TerritoryHighlightForMesh = Load<UMaterial>("/Game/Models/Decals/M_TerritoryHighlightForMesh");
 	M_TerritoryHighlightForMeshFaded = Load<UMaterial>("/Game/Models/Decals/M_TerritoryHighlightForMeshFaded");
+	M_TerritoryBattleHighlight = Load<UMaterial>("/Game/Models/Decals/M_TerritoryBattleHighlight");
+	
 	M_TerritoryMapDecal = Load<UMaterial>("/Game/Models/Decals/M_TerritoryMapDecal");
 	
 	M_RegionHighlightDecal = Load<UMaterial>("/Game/Models/Decals/M_RegionHighlightDecal");
@@ -1863,6 +1901,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 	int32 alwaysOnIndex = 1;
 	int32 frameIndex = 1;
 	int32 workStaticIndex = 1;
+	int32 lod01_index = 1;
 
 	auto loadMesh = [&](int32 fileIndex)
 	{
@@ -1884,9 +1923,6 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 			{
 				FString moduleName = moduleSetName + moduleTypeName;
 
-				//FString path = "/Game/" + buildingPath + meshSetFolder + FString("/") + foundFiles[i];
-				//const auto mesh = LoadF<UStaticMesh>(path.LeftChop(7)); // Chop out .uasset
-
 				const auto mesh = loadMesh(i);
 				check(mesh);
 
@@ -1902,8 +1938,8 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				{
 					
 				}
-				else if ((mesh->LightMapResolution == 100 || (mesh->GetMaterial(0) && mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase)))
-						&& bodyMainIndex <= 3)
+				else if ((mesh->LightMapResolution == 100 || 
+					(mesh->GetMaterial(0) && mesh->GetMaterial(0)->GetName().Contains(TEXT("Roof"), ESearchCase::Type::IgnoreCase))) && bodyMainIndex <= 3)
 				{
 					moduleName = moduleSetName + FString("Body") + FString::FromInt(bodyMainIndex);
 					bodyMainIndex++;
@@ -1943,7 +1979,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 			{
 				const auto mesh = loadMesh(i);
 
-				FString moduleName = moduleSetName + "_" + foundFiles[i];
+				FString moduleName = moduleSetName + "_LOD01_" + FString::FromInt(lod01_index++);
 				AddBuildingModule(moduleName, mesh, _moduleNames);
 				_tempAuxGroup.miniModules.push_back(ModuleTransform(moduleName));
 			}

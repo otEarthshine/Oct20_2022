@@ -819,23 +819,25 @@ void TownManager::CollectRoundIncome()
 																						- influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)];
 	
 	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100WithoutDiplomaticBuilding);
-	if (globalResourceSys.influence100() < 0)
-	{
-		FText influenceStr = INVTEXT("<img id=\"Influence\"/>");
-		FText coinStr = INVTEXT("<img id=\"Coin\"/>");
 
-		_simulation->AddEventLog(_playerId,
-			FText::Format(LOCTEXT("NegativeInfluence_Event",
-				"You have {0}0. -{1}{2} penalty is applied from negative {0} ({1}2 per {0}1)."),
-				influenceStr,
-				coinStr,
-				TEXT_NUM(abs(min(-1, globalResourceSys.influence() * 2)))
-			),
-			true
-		);
-		globalResourceSys.ChangeMoney100(globalResourceSys.influence100() * 3);
-		globalResourceSys.SetInfluence(0);
-	}
+	
+	//if (globalResourceSys.influence100() < 0)
+	//{
+	//	FText influenceStr = INVTEXT("<img id=\"Influence\"/>");
+	//	FText coinStr = INVTEXT("<img id=\"Coin\"/>");
+
+	//	_simulation->AddEventLog(_playerId,
+	//		FText::Format(LOCTEXT("NegativeInfluence_Event",
+	//			"You have {0}0. -{1}{2} penalty is applied from negative {0} ({1}2 per {0}1)."),
+	//			influenceStr,
+	//			coinStr,
+	//			TEXT_NUM(abs(min(-1, globalResourceSys.influence() * 2)))
+	//		),
+	//		true
+	//	);
+	//	globalResourceSys.ChangeMoney100(globalResourceSys.influence100() * 3);
+	//	globalResourceSys.SetInfluence(0);
+	//}
 
 	//// Disband army if out of cash
 	//const int32 maxDisbandPerRound = 3;
@@ -855,6 +857,8 @@ void TownManager::CollectRoundIncome()
 
 void TownManager::Tick()
 {
+	TownManagerBase::Tick();
+	
 	if (_needTaxRecalculation) {
 		_needTaxRecalculation = false;
 		RecalculateTax(false);
@@ -1111,23 +1115,12 @@ void TownManager::Tick1Sec()
 	/*
 	 * Tourism
 	 */
+	if (Time::Seconds() % GameConstants::TourismCheckIntervalSec == 0)
 	{
 		std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
 
 		// Get Hotels on Trade Route
-		std::vector<Hotel*> hotels;
-		for (const TradeRoutePair& route : tradeRoutes) {
-			int32 destinationTownId = route.GetCounterpartTownId(_townId);
-			const std::vector<int32>& localHotelIds = _simulation->buildingIds(destinationTownId, CardEnum::Hotel);
-			for (int32 localHotelId : localHotelIds) {
-				Hotel* hotel = static_cast<Hotel*>(_simulation->buildingPtr(localHotelId));
-				if (hotel->isAvailable() &&
-					hotel->serviceQuality() >= 50)
-				{
-					hotels.push_back(hotel);
-				}
-			}
-		}
+		std::vector<Hotel*> hotels = GetConnectedHotels();
 
 		if (hotels.size() > 0)
 		{
@@ -1136,32 +1129,39 @@ void TownManager::Tick1Sec()
 				return a->serviceQuality() > b->serviceQuality();
 			});
 
-			const int32 clusterSize = GameRand::RandRound(population(), Time::SecondsPerRound);
+			// 1 pop tour 1 time per rounds 
+			// TickXSec so:
+			// clusterSize = population * GameConstants::TourismCheckIntervalSec / (seconds per round)
+
+			const int32 clusterSize = GameRand::RandRound(population() * GameConstants::TourismCheckIntervalSec, Time::SecondsPerRound);
 
 			int32 hotelIndex = 0;
 
-			LoopPopulation(clusterSize, _tourismIncreaseIndex, [&](int32 unitId)
-			{
-				HumanStateAI& humanAI = _simulation->unitAI(unitId).subclass<HumanStateAI>(UnitEnum::Human);
-
-				hotelIndex = (hotelIndex + 1) % hotels.size();
-
-				Hotel* hotel = hotels[hotelIndex];
-				hotel->Visit(_townId);
-
-				_simulation->ChangeMoney(hotel->playerId(), hotel->feePerVisitor());
-				_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
-
-				// Embassy Hotel Chain
-				if (_simulation->HasForeignBuildingWithUpgrade(hotel->foreignBuilderId(), _townId, CardEnum::Embassy, 1))
+			LoopPopulation(clusterSize, _tourismIncreaseIndex, 
+				[&]() {
+					return hotelIndex >= hotels.size(); // Loop through each hotel only once
+				}, 
+				[&](int32 unitId)
 				{
-					int32 moneyGain100 = hotel->feePerVisitor() * 20; // feeVisitor -> moneyGain100 (100 cancels out)
-					_simulation->ChangeMoney100(hotel->foreignBuilderId(), moneyGain100);
-					_simulation->uiInterface()->ShowFloatupInfo(hotel->foreignBuilderId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_100SIGNED(moneyGain100));
-				}
+					HumanStateAI& humanAI = _simulation->unitAI(unitId).subclass<HumanStateAI>(UnitEnum::Human);
 
-				humanAI.SetHappiness(HappinessEnum::Tourism, hotel->serviceQuality());
-			});
+					Hotel* hotel = hotels[hotelIndex++];
+					hotel->Visit(_townId);
+
+					_simulation->ChangeMoney(hotel->playerId(), hotel->feePerVisitor());
+					_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
+
+					// Embassy Hotel Chain
+					if (_simulation->HasForeignBuildingWithUpgrade(hotel->foreignBuilderId(), _townId, CardEnum::Embassy, 1))
+					{
+						int32 moneyGain100 = hotel->feePerVisitor() * 20; // feeVisitor -> moneyGain100 (100 cancels out)
+						_simulation->ChangeMoney100(hotel->foreignBuilderId(), moneyGain100);
+						_simulation->uiInterface()->ShowFloatupInfo(hotel->foreignBuilderId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_100SIGNED(moneyGain100));
+					}
+
+					humanAI.SetHappiness(HappinessEnum::Tourism, hotel->serviceQuality());
+				}
+			);
 
 		}
 	}
@@ -1254,9 +1254,12 @@ void TownManager::TickRound()
 		
 		//! AutoTrade Exchange goods
 		auto& resourceSys = _simulation->resourceSystem(_townId);
+		auto& worldTradeSys = _simulation->worldTradeSystem();
 		
 		for (const AutoTradeElement& element : _autoExportElements) {
 			resourceSys.RemoveResourceGlobal(element.resourceEnum, element.calculatedTradeAmountNextRound);
+
+			worldTradeSys.ChangeSupply(_playerId, element.resourceEnum, element.calculatedTradeAmountNextRound); // Buying is decreasing world supply
 		}
 
 		int32 totalRefundAmount100 = 0;
@@ -1270,6 +1273,8 @@ void TownManager::TickRound()
 				totalRefundAmount100 += refundAmount100;
 				netTotal100 -= refundAmount100;
 			}
+
+			worldTradeSys.ChangeSupply(_playerId, element.resourceEnum, -(element.calculatedTradeAmountNextRound - leftOverAmount)); // Buying is decreasing world supply
 		}
 
 		
@@ -1494,6 +1499,16 @@ void TownManager::RecalculateTax(bool showFloatup)
 				incomes100[static_cast<int>(IncomeEnum::ArmyUpkeep)] -= card.stackSize * GetMilitaryInfo(card.cardEnum).upkeep * 100;
 			}
 		}
+
+		// Need to get all battles because we might be helping allied troops
+		std::vector<ProvinceClaimProgress> battles = _simulation->GetAllBattles();
+		for (const ProvinceClaimProgress& battle : battles) {
+			battle.ExecuteOnAllUnits([&](const CardStatus& card) {
+				if (ProvinceClaimProgress::GetCardPlayer(card) == _playerId) {
+					incomes100[static_cast<int>(IncomeEnum::ArmyUpkeep)] -= card.stackSize * GetMilitaryInfo(card.cardEnum).upkeep * 100;
+				}
+			});
+		}
 	}
 
 	//// Stock market
@@ -1714,7 +1729,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		{
 			if (House* nest = _simulation->buildingPtr<House>(spyNestId, CardEnum::House))
 			{
-				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)] += _simulation->GetSpyNestInfluenceGainPerRound(_playerId, nest->townId());
+				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)] += 100 * _simulation->GetSpyNestInfluenceGainPerRound(_playerId, nest->townId());
 			}
 		}
 	}
@@ -1729,7 +1744,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 			{
 				if (nest->playerId() == _playerId)
 				{
-					influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::EnemySpyNest)] -= _simulation->GetSpyNestInfluenceGainPerRound(enemyPlayerId, nest->townId());
+					influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::EnemySpyNest)] -= 100 * _simulation->GetSpyNestInfluenceGainPerRound(enemyPlayerId, nest->townId());
 				}
 			}
 		}
@@ -1789,7 +1804,7 @@ void TownManager::DecreaseTourismHappinessByAction(int32 actionCost)
 
 	const int32 deductionClusterSize = 20;
 
-	LoopPopulation(deductionClusterSize, _tourismDecreaseIndex, [&](int32 unitId)
+	LoopPopulation(deductionClusterSize, _tourismDecreaseIndex, [&]() { return false; }, [&](int32 unitId)
 	{
 		int32 deductionValue = GameRand::RandRound(happinessDeduction, deductionClusterSize);
 		HumanStateAI& humanAI = _simulation->unitAI(unitId).subclass<HumanStateAI>(UnitEnum::Human);
@@ -1866,8 +1881,13 @@ void TownManager::TrainUnits_Helper(const FUseCard& command, std::vector<CardSta
 	{
 		ResourcePair trainingCost = GetTrainUnitCost(cardEnum);
 
+		if (PunSettings::IsOn("CheatFastBuild")) {
+			trainingCost = ResourcePair(ResourceEnum::Money, 1);
+		}
+
 		// Must be able to train at least one unit
 		int32 maxPossibleTraining = _simulation->resourceCountTownWithMoney(_townId, trainingCost.resourceEnum) / trainingCost.count;
+		
 		if (maxPossibleTraining > 0)
 		{
 			// Can't train more than money allows

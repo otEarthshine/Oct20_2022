@@ -49,6 +49,25 @@ public:
 	bool IsPermanentCard() { return cardHandIndex == -1; }
 	int32 IsUnboughtCard() { return cardHandIndex >= 0 && cardStatus.cardStateValue1 == -1; }
 
+	bool ShouldHideSellButton(CardEnum buildingEnum)
+	{
+		bool isFullCard = _cardHandEnum == CardHandEnum::DrawHand ||
+			_cardHandEnum == CardHandEnum::ConverterHand ||
+			_cardHandEnum == CardHandEnum::RareHand;
+		
+		return IsUnboughtCard() ||
+			IsPermanentCard() ||
+			buildingEnum == CardEnum::Townhall ||
+			buildingEnum == CardEnum::JobManagementBureau ||
+			buildingEnum == CardEnum::StatisticsBureau ||
+			buildingEnum == CardEnum::SpyCenter ||
+			buildingEnum == CardEnum::PolicyOffice ||
+			IsSeedCard(buildingEnum) ||
+			isFullCard ||
+			_cardHandEnum == CardHandEnum::CardInventorySlots ||
+			_cardHandEnum == CardHandEnum::CardSetSlots;
+	}
+
 	void PunInit(CardStatus cardStatusIn, int32 cardHandIndexIn, UPunWidget* callbackParent, CallbackEnum callbackEnum, CardHandEnum cardHandEnum);
 
 	void SetCardStatus(CardHandEnum cardHandEnum, bool isReservedForBuying, bool needResource, bool isRareCardHand = false, bool tryShowBuyText = true);

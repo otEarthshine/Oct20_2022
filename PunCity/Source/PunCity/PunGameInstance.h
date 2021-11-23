@@ -851,18 +851,18 @@ public:
 		RestoreDefaultsOthers();
 	}
 
-	void SerializeOtherSettings(FArchive& Ar)
+	bool SerializeOtherSettings(FArchive& Ar)
 	{
 		LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 
 		if (Ar.IsSaving()) {
-			loadedVersion = GAME_VERSION;
+			loadedVersion = GAME_SETTINGS_VERSION;
 		}
 		Ar << loadedVersion;
 
 		if (Ar.IsLoading() &&
-			loadedVersion != GAME_VERSION) {
-			return;
+			loadedVersion != GAME_SETTINGS_VERSION) {
+			return false;
 		}
 		
 		Ar << _masterVolume;
@@ -889,6 +889,8 @@ public:
 		if (!languageTags.Contains(preferredCultureTag)) { 
 			preferredCultureTag = "en"; // Invalid culture tag
 		}
+
+		return true;
 	}
 
 	void RefreshSoundSettings()
@@ -989,13 +991,13 @@ public:
 		LoadArchive.SetIsSaving(false);
 		LoadArchive.SetIsLoading(true);
 
-		SerializeOtherSettings(LoadArchive);
+		bool succeed = SerializeOtherSettings(LoadArchive);
 
 		LoadArchive.FlushCache();
 		binary.Empty();
 		LoadArchive.Close();
 
-		return true;
+		return succeed;
 	}
 
 	FString GetSettingsSavePath() {

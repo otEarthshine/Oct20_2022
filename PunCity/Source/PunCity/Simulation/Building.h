@@ -2056,7 +2056,12 @@ public:
 		// Storage Full (Warn on production building)
 		if (products().size() > 0 || isEnum(CardEnum::Farm))
 		{
-			if (_simulation->isStorageAllFull(_townId)) {
+			bool includeGranary = products().size() > 0 && IsFoodEnum(products()[0]);
+			if (isEnum(CardEnum::Farm)) {
+				includeGranary = true;
+			}
+			
+			if (_simulation->isStorageAllFull(_townId, includeGranary)) {
 				hoverWarning = HoverWarning::StorageFull;
 				return true;
 			}

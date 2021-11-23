@@ -140,7 +140,8 @@ public:
 				}
 
 				int32 pop = simulation().populationPlayer(curId);
-				FString name = dataSource()->playerNameF(curId);
+				FPlayerInfo playerInfo = dataSource()->playerInfo(curId);
+				FString name = playerInfo.name.ToString();
 
 				auto element = CastChecked<UPlayerCompareElement>(PlayerCompareBox->GetChildAt(i));
 				if (element->uiPlayerId != curId ||
@@ -152,6 +153,8 @@ public:
 					auto setHomeTownIcon = [&]() {
 						element->HomeTownIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 						element->HomeTownIcon->SetRenderOpacity(gameInstance()->IsPlayerConnected(curId) ? 1.0f : 0.2f);
+						
+						PunUIUtils::SetPlayerLogo(element->PlayerLogo->GetDynamicMaterial(), playerInfo, assetLoader());
 					};
 
 					bool isPlayer = (curId == playerId());

@@ -64,7 +64,9 @@ public:
 			buildingEnum == CardEnum::PolicyOffice ||
 			IsSeedCard(buildingEnum) ||
 			isFullCard ||
+			_cardHandEnum == CardHandEnum::CardSlots ||
 			_cardHandEnum == CardHandEnum::CardInventorySlots ||
+			_cardHandEnum == CardHandEnum::DeployMilitarySlots ||
 			_cardHandEnum == CardHandEnum::CardSetSlots;
 	}
 

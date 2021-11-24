@@ -15,7 +15,7 @@ void ProvinceClaimProgress::Reinforce(std::vector<CardStatus>& militaryCards, bo
 
 	for (const CardStatus& card : militaryCards)
 	{
-		check(IsLandMilitaryCardEnum(card.cardEnum));
+		check(IsMilitaryCardEnum(card.cardEnum));
 		if (IsFrontlineCardEnum(card.cardEnum)) {
 			AddMilitaryCards(frontLine, card);
 		} else {
@@ -350,7 +350,7 @@ void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, in
 		if (forcedAll || playerIdToReturn == card.cardStateValue1) 
 		{	
 			// Retreating death
-			if (isRetreating) {
+			if (isRetreating && !IsNavyCardEnum(card.cardEnum)) {
 				card.stackSize = GameRand::RandRound(card.stackSize * 2, 3);
 			}
 

@@ -114,7 +114,8 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 
 			// Vassalize
 			// (Declare Independence)
-			if (uiTownManagerBase->lordPlayerId() != -1)
+			if (uiTownManagerBase->lordPlayerId() != -1 &&
+				!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
 			{
 				SetText(AttackButton1RichText, LOCTEXT("Declare Independence", "Declare Independence"));
 				BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);

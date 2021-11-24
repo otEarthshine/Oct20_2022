@@ -411,7 +411,14 @@ void GameSimulationCore::InitProvinceBuildings()
 	{	
 		check(placement.isValid());
 
-		int32 townId = AddMinorTown(provinceId, FactionEnum::Europe, CardEnum::MinorCity);
+		BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
+		FactionEnum factionEnum = FactionEnum::Europe;
+		if (biomeEnum == BiomeEnum::Desert ||
+			biomeEnum == BiomeEnum::Savanna) {
+			factionEnum = FactionEnum::Arab;
+		}
+
+		int32 townId = AddMinorTown(provinceId, factionEnum, CardEnum::MinorCity);
 
 		int32 minorCityBuildingId = createBuilding(townId, CardEnum::MinorCity, placement.centerTile, placement.faceDirection, 7);
 		if (minorCityBuildingId != -1) {
@@ -914,6 +921,31 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 				});
 
 
+				// Special don't let any animal go extinct
+				ExecuteOnWildAnimalEnums([&](UnitEnum unitEnum) 
+				{
+					if (unitEnumCount(unitEnum) == 0) 
+					{
+						// Try adding animal to some random province
+						int16 randX = GameRand::Rand() % GameMapConstants::TilesPerWorldX;
+						int16 randY = GameRand::Rand() % GameMapConstants::TilesPerWorldY;
+						WorldTile2 tile(randX, randY);
+
+						if (pathAI()->isWalkable(randX, randY) &&
+							GetProvinceIdClean(tile) != -1)
+						{
+							BiomeInfo biomeInfo = GetBiomeInfo(GetBiomeEnum(tile));
+
+							if (CppUtils::Contains(biomeInfo.animals, unitEnum) ||
+								CppUtils::Contains(biomeInfo.rareAnimals, unitEnum))
+							{
+								int32 ageTicks = GameRand::Rand() % GetUnitInfo(unitEnum).maxAgeTicks;
+
+								AddUnit(unitEnum, GameInfo::PlayerIdNone, tile.worldAtom2(), ageTicks);
+							}
+						}
+					}
+				});
 			}
 
 			// Event ticks
@@ -4718,8 +4750,8 @@ void GameSimulationCore::CompleteRaid(int32 provinceId, int32 raiderPlayerId, in
 {
 	int32 raidInfluence = raidMoney / 2;
 
-	//ChangeMoney(raiderPlayerId, raidMoney);
-	//ChangeInfluence(raiderPlayerId, raidInfluence);
+	ChangeMoney(raiderPlayerId, raidMoney);
+	ChangeInfluence(raiderPlayerId, raidInfluence);
 
 	int32 defenderPlayerId = townPlayerId(defenderTownId);
 	
@@ -5667,7 +5699,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	else if (command.claimEnum == CallbackEnum::BattleRetreat)
 	{
 		PopupInfo popupInfo(command.playerId,
-			LOCTEXT("RetreatConfirm_Pop", "Are you sure you want to retreat?<space>1/3 of your troops will be lost as a result"),
+			LOCTEXT("RetreatConfirm_Pop", "Are you sure you want to retreat?<space>1/3 of your troops will be lost as a result (except navy)"),
 			{ LOCTEXT("Yes", "Yes"), LOCTEXT("No", "No") }, PopupReceiverEnum::RetreatConfirmDecision
 		);
 		popupInfo.replyVar1 = command.provinceId;

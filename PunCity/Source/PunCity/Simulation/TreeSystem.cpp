@@ -1128,7 +1128,11 @@ int32 TreeSystem::MarkArea(int32 playerId, TileArea area, bool isRemoving, Resou
 		}
 		else if (resourceEnum == ResourceEnum::Orange) {
 			PUN_CHECK(!isRemoving);
-			isValid = isValidTree && (info.treeEnum != TileObjEnum::Orange && info.treeEnum != TileObjEnum::Papaya && info.treeEnum != TileObjEnum::Coconut);
+			isValid = isValidTree && 
+				(info.treeEnum != TileObjEnum::Orange && 
+					info.treeEnum != TileObjEnum::Papaya && 
+					info.treeEnum != TileObjEnum::Coconut &&
+					info.treeEnum != TileObjEnum::DesertDatePalm);
 		}
 		else if (resourceEnum == ResourceEnum::Stone) {
 			isValid = isValidDeposit;

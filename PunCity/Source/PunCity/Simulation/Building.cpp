@@ -760,13 +760,14 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 		if (upgrade.isEraUpgrade()) 
 		{
 			check(upgrade.upgradeLevel != -1);
-			if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel(buildingEnum())) {
+			if (upgrade.upgradeLevel < upgrade.maxUpgradeLevel(buildingEnum())) 
+			{
 				upgrade.upgradeLevel++;
-				ResetDisplay();
-				
 				if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
 					upgrade.isUpgraded = true;
 				}
+				
+				ResetDisplay();
 			}
 		}
 		else if (upgrade.isLevelUpgrade())
@@ -774,6 +775,10 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 			check(upgrade.upgradeLevel != -1);
 
 			upgrade.upgradeLevel++;
+			if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
+				upgrade.isUpgraded = true;
+			}
+
 			ResetDisplay();
 		}
 		else {
@@ -890,7 +895,7 @@ FText Building::GetUpgradeDisplayName(int32 index)
 		check(upgrade.upgradeLevel != -1);
 		
 		int32 currentEraLevel = upgrade.upgradeLevel + buildingInfo().minEra();
-		if (upgrade.upgradeLevel == upgrade.maxUpgradeLevel(buildingEnum())) {
+		if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
 			return NSLOCTEXT("BuildingUpgrade", "Level Maxed", "Level Maxed");
 		}
 		if (currentEraLevel == 4) {
@@ -909,6 +914,9 @@ FText Building::GetUpgradeDisplayName(int32 index)
 	
 	if (upgrade.isLevelUpgrade())
 	{
+		if (upgrade.upgradeLevel >= upgrade.maxUpgradeLevel(buildingEnum())) {
+			return FText::Format(NSLOCTEXT("BuildingUpgrade", "LevelUpgradeDisplay Maxed", "{0} Lv Maxed"), upgrade.name);
+		}
 		return FText::Format(NSLOCTEXT("BuildingUpgrade", "LevelUpgradeDisplay", "{0} Lv {1}"), upgrade.name, TEXT_NUM(upgrade.upgradeLevel + 1));
 	}
 	return upgrade.name;

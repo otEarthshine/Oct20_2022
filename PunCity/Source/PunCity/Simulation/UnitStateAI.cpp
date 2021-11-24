@@ -102,7 +102,7 @@ void UnitStateAI::AddUnit(UnitEnum unitEnum, int32 townId, UnitFullId fullId, IU
 	_tryWorkFailEnum = TryWorkFailEnum::None;
 
 
-	if (IsWildAnimal(unitEnum)) 
+	if (IsWildAnimalOrMan(unitEnum))
 	{
 		WorldTile2 tile = _unitData->atomLocation(_id).worldTile2();
 		_homeProvinceId = _simulation->GetProvinceIdClean(tile);
@@ -176,7 +176,7 @@ void UnitStateAI::Update()
 		{
 			
 		}
-		else if (IsWildAnimal(unitEnum())) {
+		else if (IsWildAnimalOrMan(unitEnum())) {
 			_food -= ticksPassed / 10;
 			_heat += ticksPassed * _lastTickCelsiusRate;
 		}
@@ -369,7 +369,7 @@ void UnitStateAI::Update()
 		}
 
 
-		if (IsWildAnimal(unitEnum()))
+		if (IsWildAnimalOrMan(unitEnum()))
 		{
 			if (_heat < minWarnHeat()) {
 				_heat = minWarnHeat();
@@ -754,7 +754,7 @@ void UnitStateAI::Die()
 	}
 
 	// Animal's workplaceId is regionId
-	if (IsWildAnimal(_unitEnum) && _simulation->IsProvinceValid(_homeProvinceId)) {
+	if (IsWildAnimalOrMan(_unitEnum) && _simulation->IsProvinceValid(_homeProvinceId)) {
 		_simulation->RemoveProvinceAnimals(_homeProvinceId, _id);
 	}
 
@@ -889,7 +889,7 @@ void UnitStateAI::CalculateActions()
 	if (TryStoreAnimalInventory()) return;
 
 	// Wild Animal: No Home
-	if (IsWildAnimalNoHome(unitEnum())) 
+	if (IsWildAnimalNoHome(unitEnum()) || unitEnum() == UnitEnum::WildMan) 
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnitCalcWildNoHome);
 
@@ -3291,7 +3291,7 @@ void UnitStateAI::AddDebugSpeech(std::string message)
 	SCOPE_CYCLE_COUNTER(STAT_PunUnitAddDebugSpeech);
 	_debugSpeech << message << " Time:" << Time::Ticks() << ", " << nextActiveTick() << " act:" << _actions.size();
 
-	if (!IsWildAnimal(_unitEnum) && _workplaceId != -1) 
+	if (!IsWildAnimalOrMan(_unitEnum) && _workplaceId != -1)
 	{
 		_debugSpeech << ", workType:" << workplace()->buildingInfo().name
 			<< ", isConstructed:" << to_string(workplace()->isConstructed())

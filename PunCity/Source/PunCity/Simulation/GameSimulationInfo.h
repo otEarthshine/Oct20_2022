@@ -5726,7 +5726,7 @@ static const int32 GrassToBushValue = 3;
  */
 static const int32 GatherUnitsPerYear = 6; // 6;  // GatherBaseYield 4 gives 60 fruits per year... So 15 estimated gather per year...
 static const int32 GatherBaseYield100 = AssumedFoodProduction100PerYear / GatherUnitsPerYear;
-static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 2;
+static const int32 JungleGatherBaseYield100 = GatherBaseYield100 * 130 / 100;
 
 static const int32 HayBaseYield = 50; // 50 is from tuning
 static const ResourcePair defaultWood100(ResourceEnum::Wood, WoodGatherYield_Base100);
@@ -7321,22 +7321,22 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 		setMilitaryCost(200); // 675 era 4
 	}
 	else if (IsInfantryMilitaryCardEnum(cardEnum)) {
-		setMilitaryCost(1000); // 3375 era 4
+		setMilitaryCost(1500); // 3375 era 4
 	}
 	else if (cardEnum == CardEnum::Knight) {
-		setMilitaryCost(2000, ResourceEnum::Iron);
+		setMilitaryCost(3000, ResourceEnum::Iron);
 	}
 	else if (cardEnum == CardEnum::Tank) {
 		setMilitaryCost(3000, ResourceEnum::Steel);
 	}
 	else if (IsRangedMilitaryCardEnum(cardEnum)) {
-		setMilitaryCost(1000);
+		setMilitaryCost(1500);
 	}
 	else if (IsArtilleryMilitaryCardEnum(cardEnum)) {
-		setMilitaryCost(1500, cardEnum == CardEnum::Artillery ? ResourceEnum::Steel : ResourceEnum::Money);
+		setMilitaryCost(2250, cardEnum == CardEnum::Artillery ? ResourceEnum::Steel : ResourceEnum::Money);
 	}
 	else if (IsNavyCardEnum(cardEnum)) {
-		setMilitaryCost(3000, cardEnum == CardEnum::Battleship ? ResourceEnum::Steel : ResourceEnum::Money);
+		setMilitaryCost(4500, cardEnum == CardEnum::Battleship ? ResourceEnum::Steel : ResourceEnum::Money);
 	}
 	else if (cardEnum == CardEnum::RaidTreasure ||
 			cardEnum == CardEnum::Wall) 
@@ -7366,7 +7366,7 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 
 	if (IsConscriptMilitaryCardEnum(cardEnum)) {
 		result.attack100 = result.attack100 * 50 / 100;
-		result.hp100 = result.hp100 * 150 / 100;
+		result.hp100 = result.hp100 * 100 / 100;
 		//result.hp100 = MilitaryConstants::BaseHP100 * (cardEnum == CardEnum::Conscript ? 100 : 50) / 100; // conscript meat shield...
 	}
 	else if (IsInfantryMilitaryCardEnum(cardEnum)) {
@@ -7383,9 +7383,9 @@ static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
 		result.hp100 = result.hp100 * 20 / 100;
 		result.attack100 = result.attack100 * 170 / 100; // 1500
 	}
-	else if (IsNavyCardEnum(cardEnum)) {
-		result.hp100 = result.hp100 * 150 / 100;
-		result.attack100 = result.attack100 * 150 / 100;
+	else if (IsNavyCardEnum(cardEnum)) { // x3 the cost
+		result.hp100 = result.hp100 * 400 / 100;
+		result.attack100 = result.attack100 * 400 / 100;
 	}
 	else if (cardEnum == CardEnum::RaidTreasure) {
 		int32 roundsToWin = 2;
@@ -7553,7 +7553,7 @@ static const int32 FunTicksAt100Percent = Time::TicksPerYear * 100 / FunPercentL
 
 static const UnitEnum WildAnimalNoHomeEnums[] =
 {
-	UnitEnum::Alpaca,
+	//UnitEnum::Alpaca,
 	UnitEnum::RedDeer,
 	UnitEnum::YellowDeer,
 	UnitEnum::DarkDeer,
@@ -7562,15 +7562,24 @@ static const UnitEnum WildAnimalNoHomeEnums[] =
 	UnitEnum::BlackBear,
 	UnitEnum::Panda,
 
-	UnitEnum::Hippo,
-	UnitEnum::Penguin,
-	UnitEnum::WildMan,
+	//UnitEnum::Hippo,
+	//UnitEnum::Penguin,
 };
 
 static const UnitEnum WildAnimalWithHomeEnums[] =
 {
 	UnitEnum::Boar,
 };
+
+template<typename Func>
+void ExecuteOnWildAnimalEnums(Func func) {
+	for (const UnitEnum& unitEnum : WildAnimalNoHomeEnums) {
+		func(unitEnum);
+	}
+	for (const UnitEnum& unitEnum : WildAnimalWithHomeEnums) {
+		func(unitEnum);
+	}
+}
 
 
 static bool IsWildAnimalNoHome(UnitEnum unitEnum) {
@@ -7619,6 +7628,10 @@ static bool IsDomesticatedAnimal(UnitEnum unitEnum)
 
 static bool IsWildAnimal(UnitEnum unitEnum) {
 	return IsWildAnimalWithHome(unitEnum) || IsWildAnimalNoHome(unitEnum);
+}
+
+static bool IsWildAnimalOrMan(UnitEnum unitEnum) {
+	return IsWildAnimalWithHome(unitEnum) || IsWildAnimalNoHome(unitEnum) || unitEnum == UnitEnum::WildMan;
 }
 
 static bool IsAnimalWithHome(UnitEnum unitEnum) {

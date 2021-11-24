@@ -1611,10 +1611,6 @@ public:
 	virtual void OnDeinit() override;
 
 	virtual int32 displayVariationIndex() override;
-
-	virtual FactionEnum factionEnum() const override {
-		return FactionEnum::Europe;
-	}
 };
 
 

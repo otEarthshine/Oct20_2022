@@ -1875,7 +1875,7 @@ public:
 
 		flood(originProvinceId);
 
-		totalRaidIncome100 = std::min(totalRaidIncome100, static_cast<int64>(moneyCap32(townPlayerId(originTownId)) * 100));
+		totalRaidIncome100 = Clamp(totalRaidIncome100, 0, static_cast<int64>(moneyCap32(townPlayerId(originTownId)) * 100));
 		
 		return totalRaidIncome100;
 	}

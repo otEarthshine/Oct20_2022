@@ -2,32 +2,22 @@
 
 #pragma once
 
-#include "PunWidget.h"
+#include "BattleFieldMiniUI.h"
 #include "BattleFieldUI.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class PROTOTYPECITY_API UBattleFieldUI : public UPunWidget
+class PROTOTYPECITY_API UBattleFieldUI : public UBattleFieldMiniUI
 {
 	GENERATED_BODY()
 public:
-	UPROPERTY(meta = (BindWidget)) UOverlay* BattleOverlay;
-
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* BattleText;
-	
-	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoLeft;
-	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoRight;
-	UPROPERTY(meta = (BindWidget)) UImage* BattleBarImage;
 
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftAttackBonus;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftDefenseBonus;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightAttackBonus;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightDefenseBonus;
-
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftArmyStrength;
-	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightArmyStrength;
 	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftArmyBackOuterBox;
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* LeftArmyFrontOuterBox;
@@ -50,7 +40,7 @@ public:
 
 	void UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress);
 	
-
+	virtual bool IsMiniUI() override { return false; }
 
 	UFUNCTION() void OnClickReinforceLeft() {
 		OnClickReinforce(CallbackEnum::ReinforceAttackProvince);

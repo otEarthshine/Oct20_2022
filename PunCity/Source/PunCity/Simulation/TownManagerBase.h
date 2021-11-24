@@ -39,9 +39,16 @@ struct ProvinceClaimProgress
 	bool attackerLost() const {
 		return attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
 	}
-	bool isWaitingForBattleFinishCountdown() {
+	bool isWaitingForBattleFinishCountdown() const {
 		return (defenderFrontLine.size() == 0 && defenderBackLine.size() == 0) || 
 				(attackerFrontLine.size() == 0 && attackerBackLine.size() == 0);
+	}
+
+	bool defenderStillAlive() const {
+		return defenderFrontLine.size() > 0 ||
+			defenderBackLine.size() > 0 ||
+			defenderWall.size() > 0 ||
+			defenderTreasure.size() > 0;
 	}
 
 	bool IsPlayerReinforcingAttacker(int32 playerId)

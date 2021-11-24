@@ -2467,9 +2467,9 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 			{
 				PUN_LOG("Not Building Card %s", *GetBuildingInfo(buildingEnum).nameF());
 				
-				if (ReinforcementOverlay->IsVisible())
+				if (ReinforcementOverlay->IsVisible() && reinforcementProvinceId != -1)
 				{
-					if (IsLandMilitaryCardEnum(buildingEnum))
+					auto addMililtaryCards = [&]()
 					{
 						std::vector<CardStatus>& cards = cardSystem.pendingMilitarySlotCards;
 						int32 boughtCardCount = cardSystem.DisplayedBoughtCardCount(buildingEnum, false);
@@ -2500,19 +2500,70 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 							tryAddPendingMilitarySlotCards();
 						}
+					};
+					
+					if (simulation().provinceSystem().provinceIsCoastal(reinforcementProvinceId))
+					{
+						if (IsMilitaryCardEnum(buildingEnum))
+						{
+							addMililtaryCards();
+						}
+						else {
+							simulation().AddPopupToFront(playerId(),
+								LOCTEXT("NeedLandMilitaryCard_Pop", "Requires Military Cards to be deployed."),
+								ExclusiveUIEnum::None, "PopupCannot"
+							);
+						}
 					}
-					else {
-						simulation().AddPopupToFront(playerId(),
-							LOCTEXT("NeedLandMilitaryCard_Pop", "This battle requires Land Military Cards to be deployed."),
-							ExclusiveUIEnum::None, "PopupCannot"
-						);
+					else
+					{
+						if (IsLandMilitaryCardEnum(buildingEnum))
+						{
+							addMililtaryCards();
+							/*std::vector<CardStatus>& cards = cardSystem.pendingMilitarySlotCards;
+							int32 boughtCardCount = cardSystem.DisplayedBoughtCardCount(buildingEnum, false);
+
+							if (boughtCardCount > 0)
+							{
+								int32 cardCount = 1;
+								if (dataSource()->isCtrlDown()) {
+									cardCount = boughtCardCount;
+								}
+								else if (dataSource()->isShiftDown()) {
+									cardCount = std::min(10, boughtCardCount);
+								}
+
+								auto tryAddPendingMilitarySlotCards = [&]()
+								{
+									for (int32 i = 0; i < cards.size(); i++) {
+										if (cards[i].cardEnum == buildingEnum) {
+											cards[i].stackSize += cardCount;
+											return;
+										}
+									}
+
+									if (cards.size() < ReinforcementSlots->GetChildrenCount()) {
+										cards.push_back(CardStatus(buildingEnum, cardCount));
+									}
+								};
+
+								tryAddPendingMilitarySlotCards();
+							}*/
+						}
+						else {
+							simulation().AddPopupToFront(playerId(),
+								LOCTEXT("NeedLandMilitaryCard_Pop", "This battle requires Land Military Cards to be deployed."),
+								ExclusiveUIEnum::DeployMilitaryUI, "PopupCannot"
+							);
+						}
 					}
+					
 					return;
 				}
 
 				simulation().AddPopupToFront(playerId(),
 					LOCTEXT("MilitaryCardsAreUsedInBattle_Pop", "Military Unit Cards are used in battles.<space>Deploy them when you defend or attack your enemy."),
-					ExclusiveUIEnum::None, "PopupCannot"
+					ExclusiveUIEnum::DeployMilitaryUI, "PopupCannot"
 				);
 				return;
 			}

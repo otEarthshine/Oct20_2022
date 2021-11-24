@@ -347,6 +347,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	));
 	LoadBuildingEras(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 3);
 
+	LoadBuilding(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity/Era0", ModuleTransformGroup::CreateAuxSet(
+		{
+			{ParticleEnum::CampFire, TransformFromPositionYawScale(-5.4, -0.82, 0.62, 0, 0.17)}
+		},
+		{}, {},
+		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector} }
+	));
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 3);
 	
 	
 	/*

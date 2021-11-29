@@ -1123,6 +1123,7 @@ enum class ResourceEnum : uint8
 	Carpet,
 	DateFruit,
 	ToiletPaper,
+	Spices,
 
 	// --- End
 	None,
@@ -1268,7 +1269,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::GameMeat,		LOCTEXT("Game Meat", "Game Meat"), FoodCost,  LOCTEXT("Game Meat Desc", "Delicious meat from wild animals")),
 	ResourceInfo(ResourceEnum::Beef,			LOCTEXT("Beef", "Beef"),		FoodCost,  LOCTEXT("Beef Desc", "Delicious meat from ranched Cattle")),
 	ResourceInfo(ResourceEnum::Lamb,			LOCTEXT("Lamb", "Lamb"),		FoodCost, LOCTEXT("Lamb Desc", "Delicious meat from ranched Sheep")),
-	ResourceInfo(ResourceEnum::Cocoa,		LOCTEXT("Cocoa", "Cocoa"),		FoodCost + 4, LOCTEXT("Cocoa Desc", "Raw cocoa used in Chocolate-making")),
+	ResourceInfo(ResourceEnum::Cocoa,		LOCTEXT("Cocoa", "Cocoa"),		17, LOCTEXT("Cocoa Desc", "Raw cocoa used in Chocolate-making")),
 
 	ResourceInfo(ResourceEnum::Wool,			LOCTEXT("Wool", "Wool"),	7, LOCTEXT("Wool Desc", "Fine, soft fiber used to make Clothes")),
 	ResourceInfo(ResourceEnum::Leather,		LOCTEXT("Leather", "Leather"), 6, LOCTEXT("Leather Desc", "Animal skin that can be used to make Clothes")),
@@ -1313,8 +1314,8 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Blueberries,	LOCTEXT("Blueberries", "Blueberries"),	FoodCost, LOCTEXT("Blueberries Desc", "Blue-skinned fruit with refreshing taste.")),
 	ResourceInfo(ResourceEnum::Melon,		LOCTEXT("Melon", "Melon"),			FoodCost + 5, LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +5<img id=\"Coin\"/> each unit when consumed.")),
 	ResourceInfo(ResourceEnum::Pumpkin,		LOCTEXT("Pumpkin", "Pumpkin"),		FoodCost, LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
-	ResourceInfo(ResourceEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	FoodCost + 4, LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
-	ResourceInfo(ResourceEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),				FoodCost + 3, LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
+	ResourceInfo(ResourceEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	15, LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
+	ResourceInfo(ResourceEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),				12, LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
 	ResourceInfo(ResourceEnum::Coffee,		LOCTEXT("Coffee", "Coffee"),	37, LOCTEXT("Coffee Desc", "Keeps you awake. (Luxury tier 2)")), // +5<img id=\"Science\"/> each unit when consumed.
 	ResourceInfo(ResourceEnum::Vodka,		LOCTEXT("Vodka", "Vodka"),		42, LOCTEXT("Vodka Desc", "Clear alcoholic beverage made from Potato. (Luxury tier 2)")),
@@ -1335,7 +1336,8 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 75, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
 	ResourceInfo(ResourceEnum::DateFruit, LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
-	
+
+	ResourceInfo(ResourceEnum::Spices, LOCTEXT("Spices", "Spices"), 30, LOCTEXT("Spices Desc", "Luxury tier 2 used for housing upgrade.")),
 };
 
 //!!! Remember that resources other than Food shouldn't cost 5 !!!
@@ -3814,7 +3816,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(10, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
 	),
 	BldInfo(CardEnum::Embassy, _LOCTEXT("Embassy", "Embassy"), LOCTEXT("Embassy (Plural)", "Embassy"), LOCTEXT("Embassy Desc", "+50<img id=\"Influence\"/> income for builder and host player."),
-		WorldTile2(6, 6), GetBldResourceInfoManual({ 200 })
+		WorldTile2(6, 10), GetBldResourceInfoManual({ 200 })
 	),
 	BldInfo(CardEnum::ForeignQuarter, _LOCTEXT("Foreign Quarter", "Foreign Quarter"), LOCTEXT("Foreign Quarter (Plural)", "Foreign Quarters"), LOCTEXT("Foreign Quarter Desc", "+100<img id=\"Influence\"/> income for builder and host player."),
 		WorldTile2(12, 18), GetBldResourceInfoManual({ 500 })
@@ -5144,7 +5146,7 @@ struct BuildingUpgrade
 			return 20;
 		}
 		if (cardEnum == CardEnum::Fort) {
-			return 3;
+			return 2;
 		}
 		
 		return 10 + (5 - startEra); // 10 lvl without era+electricity
@@ -5489,6 +5491,8 @@ enum class TileObjEnum : uint8
 	Pumpkin,
 	RawCoffee,
 	Tulip,
+
+	Spices,
 	
 	Herb,
 	//BaconBush,
@@ -5733,6 +5737,10 @@ static const ResourcePair defaultWood100(ResourceEnum::Wood, WoodGatherYield_Bas
 static const ResourcePair defaultHay100(ResourceEnum::Hay, HayBaseYield);
 static const ResourcePair defaultGrass100(ResourceEnum::Hay, HayBaseYield / GrassToBushValue);
 
+static int32 GetFarmSpecialYield100(ResourceEnum resourceEnum, int32 yieldBonusPercent) {
+	return std::max(100, FarmBaseYield100 * (yieldBonusPercent + 100) / 100 * GetResourceInfo(resourceEnum).basePrice100() / GetResourceInfo(ResourceEnum::Wheat).basePrice100());
+}
+
 #define LOCTEXT_NAMESPACE "TileObjInfo"
 
 static const TileObjInfo TreeInfos[] = {
@@ -5790,23 +5798,25 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::WheatBush, LOCTEXT("Wheat", "Wheat"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), TileObjInfo::wheatGrassDesc()),
 	TileObjInfo(TileObjEnum::BarleyBush, LOCTEXT("Barley", "Barley"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), TileObjInfo::wheatGrassDesc()),
 	TileObjInfo(TileObjEnum::Grapevines, LOCTEXT("Grapevines", "Grapevines"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Grape, FarmBaseYield100), LOCTEXT("Grapevines Desc", "Produces delicious Grape that can be eaten fresh or make expensive wine.")),
-	TileObjInfo(TileObjEnum::Cannabis, LOCTEXT("Cannabis", "Cannabis"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, FarmBaseYield100 * 70 / 100), LOCTEXT("Cannabis Desc", "Plant whose parts can be smoked or added to food for recreational purposes.")),
+	TileObjInfo(TileObjEnum::Cannabis, LOCTEXT("Cannabis", "Cannabis"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cannabis, GetFarmSpecialYield100(ResourceEnum::Cannabis, 30)), LOCTEXT("Cannabis Desc", "Plant whose parts can be smoked or added to food for recreational purposes.")),
 
 	//TileObjInfo(TileObjEnum::PlumpCob, "Plump cob",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces large soft yellow tasty cob. Need 2 years before it is ready for harvest, but has 3x yield."),
 	//TileObjInfo(TileObjEnum::CreamPod, "Cream pod",	ResourceTileType::Bush,				1,	0,	170,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Wheat, FarmBaseYield100), "Produces round pods, which, when cut open, reveals thick sweet cream substance."),
 	TileObjInfo(TileObjEnum::Cabbage, LOCTEXT("Cabbage", "Cabbage"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cabbage, FarmBaseYield100 * 120 / 100), LOCTEXT("Cabbage Desc", "Healthy vegetable great for making salad.")),
 
-	TileObjInfo(TileObjEnum::Cocoa,	LOCTEXT("Cocoa", "Cocoa"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, FarmBaseYield100), LOCTEXT("Cocoa Desc", "Cocoa used to make delicious chocolate.")),
-	TileObjInfo(TileObjEnum::Cotton,	LOCTEXT("Cotton", "Cotton"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, FarmBaseYield100), LOCTEXT("Cotton Desc",  "Cotton used to make Cotton Fabric.")),
-	TileObjInfo(TileObjEnum::Dye,		LOCTEXT("Dye", "Dye"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, FarmBaseYield100), LOCTEXT("Dye Desc", "Dye used to dye Cotton Fabric or print Book.")),
+	TileObjInfo(TileObjEnum::Cocoa,	LOCTEXT("Cocoa", "Cocoa"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cocoa, GetFarmSpecialYield100(ResourceEnum::Cocoa, 70)), LOCTEXT("Cocoa Desc", "Cocoa used to make delicious chocolate.")),
+	TileObjInfo(TileObjEnum::Cotton,	LOCTEXT("Cotton", "Cotton"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Cotton, GetFarmSpecialYield100(ResourceEnum::Cotton, 70)), LOCTEXT("Cotton Desc",  "Cotton used to make Cotton Fabric.")),
+	TileObjInfo(TileObjEnum::Dye,		LOCTEXT("Dye", "Dye"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, GetFarmSpecialYield100(ResourceEnum::Dye, 70)), LOCTEXT("Dye Desc", "Dye used to dye Cotton Fabric or print Book.")),
 
 	// Dec 17
 	TileObjInfo(TileObjEnum::Potato,	LOCTEXT("Potato", "Potato"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), LOCTEXT("Potato Desc", "Common tuber.")),
 	TileObjInfo(TileObjEnum::Blueberry,	LOCTEXT("Blueberries", "Blueberries"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Blueberries, FarmBaseYield100), LOCTEXT("Blueberries Desc", "Blue-skinned fruit with refreshing taste.")),
 	TileObjInfo(TileObjEnum::Melon,		LOCTEXT("Melon", "Melon"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +5<img id=\"Coin\"/> each unit when consumed.")),
 	TileObjInfo(TileObjEnum::Pumpkin,	LOCTEXT("Pumpkin", "Pumpkin"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
-	TileObjInfo(TileObjEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, FarmBaseYield100), LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
-	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, FarmBaseYield100 * 70 / 100), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
+	TileObjInfo(TileObjEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, GetFarmSpecialYield100(ResourceEnum::RawCoffee, 50)), LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
+	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, GetFarmSpecialYield100(ResourceEnum::Tulip, 30)), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
+
+	TileObjInfo(TileObjEnum::Spices,		LOCTEXT("Spices", "Spices"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Spices, GetFarmSpecialYield100(ResourceEnum::Spices, 100)), LOCTEXT("Spices Desc", "Aromatic food seasoning. (Luxury tier 2)")),
 
 	
 	TileObjInfo(TileObjEnum::Herb,		LOCTEXT("Medicinal Herb", "Medicinal Herb"),		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), LOCTEXT("Medicinal Herb Desc", "Herb used to heal sickness or make medicine.")),
@@ -8396,6 +8406,8 @@ enum class PopupReceiverEnum : uint8
 
 	RaidHandleDecision,
 	RetreatConfirmDecision,
+
+	YearlyImmigrationEvent,
 };
 
 struct PopupInfo

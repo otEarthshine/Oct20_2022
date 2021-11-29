@@ -313,7 +313,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Forester, "Forester", "Forester", 1);
 	//LoadBuildingEras(FactionEnum::Arab, CardEnum::Windmill, "Windmill", "Windmill", 1);
 
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::Fort, "Fortress", "Fortress", 3, 3);
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::Fort, "Fortress", "Fortress", 1, 3);
 
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::WorldTradeOffice, "WorldTradeOffice", "WorldTradeOffice", 4);
 	
@@ -345,7 +345,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{}, {},
 		{{0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector}}
 	));
-	LoadBuildingEras(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 3);
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 4);
 
 	LoadBuilding(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity/Era0", ModuleTransformGroup::CreateAuxSet(
 		{
@@ -354,7 +354,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{}, {},
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector} }
 	));
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 3);
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 4);
 	
 	
 	/*
@@ -508,7 +508,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::IrrigationPump, "", "IrrigationPump_Era", "IrrigationPump", 2);
 
-	
+
+	LoadBuilding(CardEnum::Windmill, "Windmill", 2, 2);
 
 	/*
 	 * Irrigation
@@ -763,7 +764,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//TryLoadBuildingModuleSet("Barrack", "Barrack");
 
 	//TryLoadBuildingModuleSet("Bakery", "Bakery");
-	TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Windmill", "Windmill");
+	//TryLoadBuildingModuleSet_Old(FactionEnum::Europe, "Windmill", "Windmill");
 
 	//TryLoadBuildingModuleSet("Beekeeper", "Beekeeper");
 	//TryLoadBuildingModuleSet("Brickworks", "Brickworks");
@@ -1418,6 +1419,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::Carpet, "PocketWatch/Pocketwatch");
 	LoadResource2(ResourceEnum::DateFruit, "Dates/Dates");
 	LoadResource2(ResourceEnum::ToiletPaper, "ToiletPaper/ToiletPaper");
+
+	LoadResource2(ResourceEnum::Spices, "Spices/Spices");
 	
 	
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
@@ -1604,6 +1607,12 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		"Trees/Blueberry/BlueberryPlantFruit",
 	});
 	LoadTileObject(TileObjEnum::Melon, {
+		"Trees/Melon/MelonPlant",
+		"Trees/Melon/MelonPlantFruit",
+	});
+
+	// November 2021
+	LoadTileObject(TileObjEnum::Spices, {
 		"Trees/Melon/MelonPlant",
 		"Trees/Melon/MelonPlantFruit",
 	});
@@ -2036,6 +2045,10 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				else if (buildingEnum == CardEnum::CoffeeRoaster) {
 					transform = era == 3 ? TransformFromPosition(-6.8, 9, 0) : TransformFromPosition(-7.2, 9, 0);
 					moduleTypeEnum = ModuleTypeEnum::RotateZAxis;
+				}
+				else if (buildingEnum == CardEnum::Windmill) {
+					transform = TransformFromPosition(0, 0, 60);
+					moduleTypeEnum = ModuleTypeEnum::RotateRoll;
 				}
 				else {
 					UE_DEBUG_BREAK();

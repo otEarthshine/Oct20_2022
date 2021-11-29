@@ -94,8 +94,8 @@ public:
 		}
 		return result;
 	}
-	int32 totalIncome100() {
-		int32 result = 0;
+	int64 totalIncome100() {
+		int64 result = 0;
 		for (int32 townId : _townIds) {
 			result += _simulation->townManager(townId).totalIncome100();
 		}

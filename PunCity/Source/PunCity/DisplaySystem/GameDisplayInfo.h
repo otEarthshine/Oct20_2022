@@ -153,12 +153,12 @@ private:
 
 		
 
-		set(CardEnum::Windmill, {
-			ModuleTransformGroup::CreateSet(WithFactionName("Windmill"), {}, {},
-			{
-				ModuleTransform("WindmillEuropeWorkRotation1", TransformFromPosition(0, 0, 60), 0.0f, ModuleTypeEnum::RotateRoll),
-			})
-		});
+		//set(CardEnum::Windmill, {
+		//	ModuleTransformGroup::CreateSet(WithFactionName("Windmill"), {}, {},
+		//	{
+		//		ModuleTransform("WindmillEuropeWorkRotation1", TransformFromPosition(0, 0, 60), 0.0f, ModuleTypeEnum::RotateRoll),
+		//	})
+		//});
 
 
 

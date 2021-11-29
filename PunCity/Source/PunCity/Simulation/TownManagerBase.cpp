@@ -256,7 +256,7 @@ void TownManagerBase::StartAttack_Defender(int32 attackerPlayerId, int32 provinc
 	};
 
 	if (provinceAttackEnum == ProvinceAttackEnum::Raze) {
-		defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 3 / 2) }; // More resistance if the intent is to raze...
+		defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 2) }; // More resistance if the intent is to raze...
 	}
 	else if (provinceAttackEnum == ProvinceAttackEnum::RaidBattle) {
 		claimProgress.raidMoney = _simulation->GetProvinceRaidMoney100(provinceId) / 100;
@@ -278,6 +278,7 @@ void TownManagerBase::StartAttack_Defender(int32 attackerPlayerId, int32 provinc
 		if (provinceAttackEnum == ProvinceAttackEnum::Vassalize)
 		{
 			addWall(Fort::GetFortHP100(IsMinorTown(_townId) ?  1 : _simulation->GetTownLvl(_townId)));
+			defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits() * 3 / 2) };
 		}
 		else {
 			const std::vector<int32>& bldIds = _simulation->buildingIds(majorTownId, CardEnum::Fort);

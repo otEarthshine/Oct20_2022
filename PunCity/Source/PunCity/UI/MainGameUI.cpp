@@ -1544,7 +1544,7 @@ void UMainGameUI::Tick()
 				jobRow->Init(this, jobEnum);
 				JobPriorityScrollBox->AddChild(jobRow);
 				JobPriorityRows.Add(jobRow);
-				jobRow->Rename(*(FString("Job_") + FString::FromInt(static_cast<int>(jobEnum))));
+				//jobRow->Rename(*(FString("Job_") + FString::FromInt(static_cast<int>(jobEnum)))); // Causes Crash??
 			}
 		}
 

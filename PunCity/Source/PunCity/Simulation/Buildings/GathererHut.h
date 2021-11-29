@@ -1440,6 +1440,10 @@ public:
 		return hp100;
 	}
 
+	virtual int32 displayVariationIndex() override {
+		return GetUpgrade(0).upgradeLevel;
+	}
+
 	virtual void OnDeinit() override {
 		_simulation->TryRemoveFortFromProvince(provinceId(), buildingId());
 	}

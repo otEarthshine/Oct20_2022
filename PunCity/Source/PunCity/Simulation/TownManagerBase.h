@@ -649,7 +649,7 @@ public:
 	}
 
 	// Revenue depends on minorCityWealth
-	virtual int32 totalRevenue100() { return GetMinorCityMoneyIncome() * 100; }
+	virtual int64 totalRevenue100() { return GetMinorCityMoneyIncome() * 100; }
 	virtual int32 totalInfluenceIncome100() { return totalRevenue100() / 2; } // TODO: Not used yet??
 
 	/*

@@ -4518,12 +4518,17 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 
 	PopupReceiverEnum replyReceiver = static_cast<PopupReceiverEnum>(command.replyReceiverIndex);
 	
-	if (replyReceiver == PopupReceiverEnum::ImmigrationEvent) 
+	if (replyReceiver == PopupReceiverEnum::ImmigrationEvent ||
+		replyReceiver == PopupReceiverEnum::YearlyImmigrationEvent)
 	{
 		if (command.choiceIndex == 0) {
 			AddPopupToFront(command.playerId, 
 				LOCTEXT("LetImmigrantsIn", "You can't help but notice the wide smile that spread across an immigrant child as she enters her promised land."));
 			town.AddRequestedImmigrants();
+
+			if (replyReceiver == PopupReceiverEnum::YearlyImmigrationEvent) {
+				GenerateRareCardSelection(command.playerId, RareHandEnum::BuildingSlotCards, LOCTEXT("A gift from immigrants.", "A gift from the immigrants."));
+			}
 		}
 		else if(command.choiceIndex == 1) {
 			//if (Time::Years() % 2 == 0) {
@@ -7153,6 +7158,7 @@ void GameSimulationCore::TestCityNetworkStage()
 			}
 
 			quickBuild(CardEnum::Warehouse);
+			return;
 		}
 	}
 	
@@ -7168,6 +7174,7 @@ void GameSimulationCore::TestCityNetworkStage()
 		}
 		
 		quickBuild(CardEnum::House);
+		return;
 	}
 
 	// Research
@@ -7199,6 +7206,10 @@ void GameSimulationCore::TestCityNetworkStage()
 		}
 		if (static_cast<int32>(buildingEnum) < PunSettings::Get("TestCityNetwork_BuildingEnumToStart")) {
 			continue;
+		}
+
+		if (buildingCount(townId, buildingEnum) >= 1) {
+			continue; // Done, go to next building
 		}
 		
 		if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end() &&

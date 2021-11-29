@@ -230,9 +230,9 @@ public:
 	}
 	
 
-	virtual int32 totalRevenue100() override
+	virtual int64 totalRevenue100() override
 	{
-		int32 revenue100 = 0;
+		int64 revenue100 = 0;
 		for (size_t i = 0; i < incomes100.size(); i++) {
 			if (incomes100[i] > 0) revenue100 += incomes100[i];
 		}
@@ -257,15 +257,15 @@ public:
 		return revenue100;
 	}
 
-	int32 totalExpense100() {
-		int32 expense100 = 0;
+	int64 totalExpense100() {
+		int64 expense100 = 0;
 		for (size_t i = 0; i < incomes100.size(); i++) {
 			if (incomes100[i] < 0) expense100 += std::abs(incomes100[i]);
 		}
 		return expense100;
 	}
 
-	int32 totalIncome100() {
+	int64 totalIncome100() {
 		return totalRevenue100() - totalExpense100();
 	}
 

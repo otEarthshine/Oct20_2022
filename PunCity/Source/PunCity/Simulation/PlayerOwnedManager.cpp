@@ -141,7 +141,7 @@ void PlayerOwnedManager::TickRound()
 		}
 	}
 
-	if (_simulation->playerBuildingFinishedCount(_playerId, CardEnum::ImmigrationOffice) == 0)
+	// Beyond 1 year, get immigration event every mid spring
 	{
 		if (Time::IsSpring() &&
 			Time::Ticks() % Time::TicksPerSeason != 0 &&
@@ -149,7 +149,7 @@ void PlayerOwnedManager::TickRound()
 		{
 			_simulation->ImmigrationEvent(_playerId, 3,
 				LOCTEXT("YearlyImmigrantAsk_Pop", "3 Immigrants wishes to join your City."),
-				PopupReceiverEnum::TribalJoinEvent
+				PopupReceiverEnum::YearlyImmigrationEvent
 			);
 		}
 	}

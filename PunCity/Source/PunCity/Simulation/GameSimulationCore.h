@@ -547,7 +547,8 @@ public:
 	//	}
 	//}
 
-	FactionEnum playerFactionEnum(int32 playerId) { return playerOwned(playerId).factionEnum(); }
+	virtual FactionEnum playerFactionEnum(int32 playerId) override { return playerOwned(playerId).factionEnum(); }
+	virtual FactionEnum townFactionEnum(int32 townId) override { return townId != -1 ? townManagerBase(townId)->factionEnum() : FactionEnum::Europe; }
 
 	int32 GetHouseLvlCount(int32 townId, int32 houseLvl, bool includeHigherLvl) final {
 		return _buildingSystem->GetHouseLvlCount(townId, houseLvl, includeHigherLvl);
@@ -1793,7 +1794,7 @@ public:
 		if (provinceBuildingId != -1)
 		{
 			if (IsAncientWonderCardEnum(building(provinceBuildingId).buildingEnum())) {
-				income100 += 50 * 100;
+				income100 += 200 * 100;
 			}
 		}
 		
@@ -1930,7 +1931,7 @@ public:
 		if (provinceBuildingId != -1)
 		{
 			if (IsAncientWonderCardEnum(building(provinceBuildingId).buildingEnum())) {
-				result.push_back({ NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_AncientWonder", "ancient wonder"), 500 });
+				result.push_back({ NSLOCTEXT("ProvinceClaim", "ClaimPricePenalty_AncientWonder", "ancient wonder"), 2000 });
 			}
 		}
 

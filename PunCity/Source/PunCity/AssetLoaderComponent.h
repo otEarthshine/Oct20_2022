@@ -94,7 +94,7 @@ static bool IsModuleTypeConstructionOnly(ModuleTypeEnum moduleTypeEnum)
 
 struct ModuleTransform
 {
-	FString moduleName;
+	FName moduleName;
 
 	float relativeConstructionTime = 0;
 	ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal;
@@ -120,7 +120,7 @@ struct ModuleTransform
 		return (constructionFraction - constructionFractionBegin) / (constructionFractionEnd - constructionFractionBegin);
 	}
 
-	ModuleTransform(FString moduleName,
+	ModuleTransform(FName moduleName,
 		FTransform transform = FTransform::Identity, float relativeConstructionTime = 0.0f, ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal,
 		int32 upgradeStates = 0)
 		: moduleName(moduleName),
@@ -238,7 +238,7 @@ enum class TileSubmeshEnum
 	Stump,
 };
 
-const std::string TileSubmeshName[]
+const TArray<FString> TileSubmeshNames
 {
 	"Trunk",
 	"Leaf",
@@ -247,7 +247,7 @@ const std::string TileSubmeshName[]
 	"LeafShadow",
 	"Stump",
 };
-static const int32 TileSubmeshCount = _countof(TileSubmeshName);
+static const int32 TileSubmeshCount = TileSubmeshNames.Num();
 
 
 enum class DefenseOverlayEnum : uint8
@@ -353,7 +353,7 @@ private:
 	void TraverseTris_July10(uint32 groupIndex_PositionMerge, int32 groupIndex_Parent, const TArray<int32>& indexBuffer, const TArray<FVector>& vertexPositions);
 
 public:
-	UStaticMesh* moduleMesh(FString moduleName);
+	UStaticMesh* moduleMesh(FName moduleName);
 
 	//FBuildingAsset buildingAsset(FString buildingAssetName) {
 	//	if (_buildingNameToAsset.Contains(buildingAssetName)) {
@@ -365,13 +365,13 @@ public:
 	//bool HasConstructionMesh(FString moduleName) { return false; } // _moduleNameToConstructionMesh.Contains(moduleName);
 
 	//! Module types are used to create separate mesh sets
-	const TArray<FString>& moduleNames()
+	const TArray<FName>& moduleNames()
 	{
 		//PUN_CHECK(_moduleNames.Num() == ModuleMeshCount);
 		return _moduleNames;
 	}
-	TArray<FString>& animModuleNames() { return _animModuleNames; }
-	TArray<FString>& togglableModuleNames() { return _togglableModuleNames; }
+	TArray<FName>& animModuleNames() { return _animModuleNames; }
+	TArray<FName>& togglableModuleNames() { return _togglableModuleNames; }
 
 	TArray<TArray<ModuleTransformGroup>> buildingEnumToVariationToModuleTransforms(FactionEnum factionEnum) { return _factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)]; }
 	int32 GetMinEraDisplay(FactionEnum factionEnum, CardEnum buildingEnum) { return _factionEnumToBuildingEnumToMinEraModel[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)]; }
@@ -538,8 +538,8 @@ public:
 					_moduleNames.RemoveAt(i);
 				}
 				else {
-					if (_moduleNames[i] == FString("ClayPit_Era1Special4")) {
-						FString newName = FString("ClayPit_Era1Special1");
+					if (_moduleNames[i] == FName("ClayPit_Era1Special4")) {
+						FName newName = FName("ClayPit_Era1Special1");
 						_moduleNameToMesh.Add(newName, _moduleNameToMesh[_moduleNames[i]]);
 						_moduleNameToMesh.Remove(_moduleNames[i]);
 						_moduleNames[i] = newName;
@@ -921,9 +921,9 @@ private:
 	void LoadResource(ResourceEnum resourceEnum, std::string meshFile);
 	void LoadResource2(ResourceEnum resourceEnum, std::string meshFilePrefix);
 
-	void LoadModule(FString moduleName , FString meshFile, bool paintConstructionVertexColor = false, bool isTogglable = false);
-	void LoadTogglableModule(FString moduleName, FString meshFile);
-	void LoadAnimModule(FString moduleName, FString meshFile);
+	void LoadModule(FName moduleName , FString meshFile, bool paintConstructionVertexColor = false, bool isTogglable = false);
+	void LoadTogglableModule(FName moduleName, FString meshFile);
+	void LoadAnimModule(FName moduleName, FString meshFile);
 
 	//! Auxiliary requiring full folder name (doesn't automatically add /Era)
 	void LoadBuilding(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1, int32 era = 1)
@@ -1034,7 +1034,7 @@ private:
 	void LoadTileObject(TileObjEnum treeEnum, std::vector<std::string> meshFiles);
 
 
-	void AddBuildingModule(FString moduleName, UStaticMesh* mesh, TArray<FString>& nameListToAdd)
+	void AddBuildingModule(FName moduleName, UStaticMesh* mesh, TArray<FName>& nameListToAdd)
 	{
 		check(!_moduleNameToMesh.Contains(moduleName));
 		_moduleNameToMesh.Add(moduleName, mesh);
@@ -1053,22 +1053,22 @@ private:
 	
 	void DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh);
 	
-	void PaintMeshForConstruction(FString moduleName);
+	void PaintMeshForConstruction(FName moduleName);
 
 
 private:
-	UPROPERTY() TMap<FString, UStaticMesh*> _moduleNameToMesh;
+	UPROPERTY() TMap<FName, UStaticMesh*> _moduleNameToMesh;
 
-	UPROPERTY() TArray<FString> _recentlyAddedModuleNames;
+	UPROPERTY() TArray<FName> _recentlyAddedModuleNames;
 
 	TArray<TArray<TArray<ModuleTransformGroup>>> _factionEnumToBuildingEnumToModuleGroups; // _buildingEnumToModuleGroups
 	TArray<TArray<int32>> _factionEnumToBuildingEnumToMinEraModel;
 	ModuleTransformGroup _tempAuxGroup; // Temp variable for particleSystem detection
 	ModuleTransformGroup _lastTempAuxGroup; // Temp variable
 	
-	UPROPERTY() TArray<FString> _moduleNames;
-	UPROPERTY() TArray<FString> _animModuleNames;
-	UPROPERTY() TArray<FString> _togglableModuleNames;
+	UPROPERTY() TArray<FName> _moduleNames;
+	UPROPERTY() TArray<FName> _animModuleNames;
+	UPROPERTY() TArray<FName> _togglableModuleNames;
 	
 	//std::unordered_map<UnitEnum, std::vector<UStaticMesh*>> _unitToMeshes;
 
@@ -1121,5 +1121,5 @@ private:
 	UPROPERTY() TMap<int32, FSpineAsset> _spineAssets;
 
 private:
-	UPROPERTY() TArray<FString> _modulesNeedingPaintConstruction;
+	UPROPERTY() TArray<FName> _modulesNeedingPaintConstruction;
 };

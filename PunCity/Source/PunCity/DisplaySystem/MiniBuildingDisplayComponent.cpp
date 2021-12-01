@@ -14,7 +14,7 @@ int UMiniBuildingDisplayComponent::CreateNewDisplay(int regionId)
 		_moduleMeshes.Add(NewObject<UStaticFastInstancedMeshesComp>(this));
 		_moduleMeshes[meshId]->Init("MiniBuildingModules" + to_string(meshId) + "_", this, 20, "", meshId);
 
-		const TArray<FString>& moduleNames = _assetLoader->moduleNames();
+		const TArray<FName>& moduleNames = _assetLoader->moduleNames();
 		for (int i = 0; i < moduleNames.Num(); i++) 
 		{
 			// Only keep body and roof

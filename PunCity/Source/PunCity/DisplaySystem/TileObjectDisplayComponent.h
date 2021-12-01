@@ -35,7 +35,7 @@ public:
 
 			for (int j = 0; j < tileProtoMeshes.assets.Num(); j++) {
 				if (tileProtoMeshes.assets[j]) {
-					FString meshName = GetFallingMeshName(static_cast<TileSubmeshEnum>(j), info.treeEnum); // TODO: Can this cause problem with translation?
+					FName meshName = GetFallingMeshName(static_cast<TileSubmeshEnum>(j), info.treeEnum); // TODO: Can this cause problem with translation?
 					//PUN_LOG("FALLING mesh: j=%d, %s", j, *meshName);
 					
 					_fallingMeshes->AddProtoMesh(meshName, tileProtoMeshes.assets[j]);
@@ -49,7 +49,7 @@ public:
 #endif
 	}
 
-	int32 GetObjectId(int32 meshId, FString protoName, int32 instanceIndex) {
+	int32 GetObjectId(int32 meshId, FName protoName, int32 instanceIndex) {
 #if TILE_OBJ_CACHE
 		return meshId;
 #else
@@ -162,11 +162,33 @@ protected:
 	void HideDisplay(int32 meshId, int32 regionId) override;
 
 private:
-	static FString GetMeshName(TileObjEnum tileObjEnum, int32 variationIndex) {
-		return "TileObj" + FString::FromInt(static_cast<int>(tileObjEnum)) + "_" + FString::FromInt(variationIndex);
+	TArray<FName> TileObjMeshNames;
+	FName GetMeshName(TileObjEnum tileObjEnum, int32 variationIndex) {
+		if (TileObjMeshNames.Num() == 0)
+		{
+			for (int32 j = 0; j < TileObjEnumSize; j++) {
+				for (int32 i = 0; i < TileSubmeshCount; i++) {
+					TileObjMeshNames.Add(FName(*("TileObj" + FString::FromInt(j) + "_" + FString::FromInt(i))));
+				}
+			}
+		}
+		return TileObjMeshNames[static_cast<int>(tileObjEnum) * TileSubmeshCount + variationIndex];
+		//return "TileObj" + FString::FromInt(static_cast<int>(tileObjEnum)) + "_" + FString::FromInt(variationIndex);
 	}
-	static FString GetFallingMeshName(TileSubmeshEnum submeshEnum, TileObjEnum tileObjEnum) {
-		return ToFString(TileSubmeshName[static_cast<int>(submeshEnum)]) + FString::FromInt(static_cast<int>(tileObjEnum));
+
+	TArray<FName> FallingMeshNames;
+	FName GetFallingMeshName(TileSubmeshEnum submeshEnum, TileObjEnum tileObjEnum)
+	{
+		if (FallingMeshNames.Num() == 0)
+		{
+			for (int32 j = 0; j < TileObjEnumSize; j++) {
+				for (int32 i = 0; i < TileSubmeshCount; i++) {
+					FallingMeshNames.Add(FName(*("FallingTileObj" + TileSubmeshNames[i] + "_" + FString::FromInt(j))));
+				}
+			}
+		}
+		return FallingMeshNames[static_cast<int>(tileObjEnum) * TileSubmeshCount + static_cast<int>(submeshEnum)];
+		//return ToFString(TileSubmeshNames[static_cast<int>(submeshEnum)]) + FString::FromInt(static_cast<int>(tileObjEnum));
 	}
 	
 private:

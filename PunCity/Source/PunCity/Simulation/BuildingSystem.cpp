@@ -204,6 +204,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		// Dec 29
 		CASE_BUILDING(CardEnum::MagicMushroomFarm, ShroomFarm);
 		CASE_BUILDING(CardEnum::VodkaDistillery, VodkaDistillery);
+		CASE_BUILDING(CardEnum::TequilaDistillery, VodkaDistillery);
 		CASE_BUILDING(CardEnum::CoffeeRoaster, CoffeeRoaster);
 
 		// Feb 2

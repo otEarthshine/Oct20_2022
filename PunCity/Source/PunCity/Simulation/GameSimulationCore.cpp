@@ -2376,7 +2376,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	// FastBuild should be able to place outside player's territory
 	else if (cardEnum != CardEnum::BoarBurrow &&
 			!IsRegionalBuilding(cardEnum) &&
-			PunSettings::IsOn("CheatFastBuild"))
+			PunSettings::IsOn("CheatFastBuild") &&
+			Time::Ticks() > Time::TicksPerMinute) // Need this, else it messes up Init
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			if (!IsBuildable(tile)) {
@@ -7208,24 +7209,23 @@ void GameSimulationCore::TestCityNetworkStage()
 			continue;
 		}
 
-		if (buildingCount(townId, buildingEnum) >= 1) {
-			continue; // Done, go to next building
-		}
-		
-		if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end() &&
-			buildingCount(townId, buildingEnum) < 1 && 
-			buildingEnum != CardEnum::Bridge &&
-			buildingEnum != CardEnum::ClayPit &&
-			buildingEnum != CardEnum::IrrigationReservoir &&
-			!IsPortBuilding(buildingEnum) &&
-			!IsMountainMine(buildingEnum))
+		if (buildingCount(townId, buildingEnum) < 1)
 		{
-			if (placeBuilding(buildingEnum)) {
-				return;
+			if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end() &&
+				buildingCount(townId, buildingEnum) < 1 &&
+				buildingEnum != CardEnum::Bridge &&
+				buildingEnum != CardEnum::ClayPit &&
+				buildingEnum != CardEnum::IrrigationReservoir &&
+				!IsPortBuilding(buildingEnum) &&
+				!IsMountainMine(buildingEnum))
+			{
+				if (placeBuilding(buildingEnum)) {
+					PUN_LOG("TestCityNetworkStage placeBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
+					quickBuild(buildingEnum);
+					return;
+				}
 			}
 		}
-
-		quickBuild(buildingEnum);
 
 		// check resources
 		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
@@ -7248,6 +7248,14 @@ void GameSimulationCore::TestCityNetworkStage()
 
 			fillResource(bld.input1());
 			fillResource(bld.input2());
+		}
+	}
+
+	for (CardEnum buildingEnum : buildingsToSpawn)
+	{
+		if (townBuildingFinishedCount(townId, buildingEnum) < 1) {
+			quickBuild(buildingEnum);
+			return;
 		}
 	}
 }

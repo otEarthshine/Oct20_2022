@@ -24,7 +24,7 @@ struct FStaticFastInstancedMeshState
 {
 	GENERATED_BODY();
 
-	FString name;
+	FName name;
 	UPROPERTY() UStaticMesh* protoMesh = nullptr;
 	UPROPERTY() UMaterialInterface* protoMaterial = nullptr;
 	bool hasCollision = false;
@@ -93,7 +93,7 @@ public:
 		}
 
 		SetStaticMesh(meshState.protoMesh);
-		Rename(*meshState.name);
+		//Rename(meshState.name);
 	}
 
 
@@ -115,7 +115,7 @@ public:
 
 public:
 	// For its parent
-	FString meshName;
+	FName meshName = NAME_None;
 	int32 poolIndex = -1;
 
 	bool shouldBatchAdd = false;

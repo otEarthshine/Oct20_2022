@@ -1798,6 +1798,11 @@ void UnitStateAI::HarvestTileObj()
 				efficiency += 30;
 			}
 
+			// Arab -50% wood cutting yield
+			if (_simulation->townFactionEnum(_townId) == FactionEnum::Arab) {
+				efficiency -= 50;
+			}
+
 			efficiency += (unlockSys->GetTechnologyUpgradeCount(TechEnum::ForestryTechnologies) * 5);
 
 			if (_simulation->HasTownBonus(_townId, CardEnum::BorealPineForesting)) {

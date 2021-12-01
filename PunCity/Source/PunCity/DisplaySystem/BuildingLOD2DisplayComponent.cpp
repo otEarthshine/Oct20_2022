@@ -7,7 +7,7 @@ void UBuildingLOD2DisplayComponent::InitAnnotations()
 {
 	_buildingsMeshes->Init("BuildingModules_Map", this, 100, "", 0);
 
-	const TArray<FString>& moduleNames = _assetLoader->moduleNames();
+	const TArray<FName>& moduleNames = _assetLoader->moduleNames();
 	for (int i = 0; i < moduleNames.Num(); i++) {
 		UStaticMesh* protoMesh = _assetLoader->moduleMesh(moduleNames[i]);
 		if (protoMesh) {

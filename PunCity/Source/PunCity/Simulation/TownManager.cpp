@@ -1614,7 +1614,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 			// Tax
  			vassalTownManager->RecalculateTax(false);
-			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += std::max(0, vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100);
+			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += std::max(0LL, vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100);
 			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += std::max(0, vassalTownManager->totalInfluenceIncome100() * vassalTownManager->vassalInfluencePercent() / 100);
 		}
 	}
@@ -1623,7 +1623,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 * Pay lord the tax...
 	 */
 	if (lordPlayerId() != -1) {
-		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= std::max(0, totalRevenue100() * vassalTaxPercent() / 100);
+		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= std::max(0LL, totalRevenue100() * vassalTaxPercent() / 100);
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::LoseToLord)] += std::max(0, totalInfluenceIncome100() * vassalInfluencePercent() / 100);
 	}
 

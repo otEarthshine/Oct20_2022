@@ -43,7 +43,7 @@ public:
 	}
 
 	// Things that gets added when zoomed out
-	static bool IsMiniModule(FString submeshName)
+	static bool IsMiniModule(FName submeshName)
 	{
 		// !!! Only Used During Load, so it is ok to be performance intensive
 		static const TArray<FString> miniModuleList
@@ -65,7 +65,7 @@ public:
 		};
 
 		for (const FString& suffix : miniModuleList) {
-			if (submeshName.Right(suffix.Len()) == suffix) {
+			if (submeshName.ToString().Right(suffix.Len()) == suffix) {
 				return true;
 			}
 		}
@@ -239,6 +239,11 @@ private:
 					// Load building set and replace this moduleTransform with building set..
 					FString setName = moduleTransforms.setName;
 
+					FName subMeshName;
+					auto setSubMeshName = [&](FString meshTypeName) {
+						subMeshName = FName(*(setName + meshTypeName));
+					};
+					
 					{
 						//std::vector<ModuleTransform>& transforms = moduleTransforms.transforms;
 						std::vector<ModuleTransform> transforms;
@@ -255,42 +260,41 @@ private:
 						// Such as clay pit's hole...
 						//FString subMeshName = setName + FString("SpecialInstant");
 						//if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 0.0f));
-						FString subMeshName;
 						
 						for (int32 i = 1; i <= 3; i++) {
-							subMeshName = setName + FString("Frame") + FString::FromInt(i);
+							setSubMeshName(FString("Frame") + FString::FromInt(i));
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::Frame));
 						}
 
 						//subMeshName = setName + FString("FrameConstructionOnly");
 						//if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 10.0f, ModuleTypeEnum::FrameConstructionOnly));
 
-						subMeshName = setName + FString("Chimney");
+						setSubMeshName(FString("Chimney"));
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 1.0f));
 
-						subMeshName = setName + FString("Floor");
+						setSubMeshName(FString("Floor"));
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName, FTransform::Identity, 0.5f));
 
 						// Body should be LOD01??
-						subMeshName = setName + FString("Body");
+						setSubMeshName(FString("Body"));
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
 						}
 						for (int32 i = 1; i <= 3; i++) {
-							subMeshName = setName + FString("Body") + FString::FromInt(i);
+							setSubMeshName(FString("Body") + FString::FromInt(i));
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 						}
 
 
 						for (int32 i = 1; i <= 3; i++) {
-							subMeshName = setName + FString("_LOD01_") + FString::FromInt(i);
+							setSubMeshName(FString("_LOD01_") + FString::FromInt(i));
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 						}
 
 						
 
 						// Such as clay pit's hole...
-						subMeshName = setName + FString("AlwaysOn");
+						setSubMeshName(FString("AlwaysOn"));
 						if (assetLoader->moduleMesh(subMeshName)) {
 							// AlwaysOn Goes to the front so it gets displayed right away
 							ModuleTransform transform(subMeshName, FTransform::Identity, 0.0f, ModuleTypeEnum::AlwaysOn);
@@ -298,27 +302,27 @@ private:
 							miniTransforms.push_back(transform);
 						}
 
-						subMeshName = setName + FString("Roof");
+						setSubMeshName(FString("Roof"));
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
 						}
 
-						subMeshName = setName + FString("RoofEdge");
+						setSubMeshName(FString("RoofEdge"));
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 
-						subMeshName = setName + FString("WindowFrame");
+						setSubMeshName(FString("WindowFrame"));
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 
-						subMeshName = setName + FString("FrameAux");
+						setSubMeshName(FString("FrameAux"));
 						if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 
-						subMeshName = setName + FString("Special");
+						setSubMeshName(FString("Special"));
 						if (assetLoader->moduleMesh(subMeshName)) {
 							addTransform(ModuleTransform(subMeshName));
 						}
 
 						for (int32 i = 0; i < 30; i++) {
-							subMeshName = setName + FString("Special") + FString::FromInt(i);
+							setSubMeshName(FString("Special") + FString::FromInt(i));
 							if (assetLoader->moduleMesh(subMeshName)) addTransform(ModuleTransform(subMeshName));
 						}
 
@@ -331,15 +335,14 @@ private:
 					// Togglables
 					{
 						std::vector<ModuleTransform>& togglableTransforms = moduleTransforms.togglableTransforms;
-						FString subMeshName;
-						
+
 						for (int32 i = 1; i <= 3; i++) {
-							subMeshName = setName + FString("WorkStatic") + FString::FromInt(i);
+							setSubMeshName(FString("WorkStatic") + FString::FromInt(i));
 							if (assetLoader->moduleMesh(subMeshName)) togglableTransforms.push_back(ModuleTransform(subMeshName));
 						}
 
 						// Window
-						subMeshName = setName + FString("WindowGlass");
+						setSubMeshName(FString("WindowGlass"));
 						if (assetLoader->moduleMesh(subMeshName)) togglableTransforms.push_back(ModuleTransform(subMeshName, FTransform::Identity, 0.0f, ModuleTypeEnum::Window));
 					}
 				}
@@ -360,7 +363,7 @@ private:
 					std::vector<ModuleTransform>& curEraModules = moduleGroups[era].transforms;
 					bool hasFrame = false;
 					for (int32 i = 0; i < curEraModules.size(); i++) {
-						if (FStringCompareRight(curEraModules[i].moduleName, FString("Frame"), 1)) {
+						if (FStringCompareRight(curEraModules[i].moduleName.ToString(), FString("Frame"), 1)) {
 							hasFrame = true;
 							break;
 						}
@@ -368,7 +371,7 @@ private:
 					if (!hasFrame) {
 						const std::vector<ModuleTransform>& firstEraModules = moduleGroups[0].transforms;
 						for (int32 i = 0; i < firstEraModules.size(); i++) {
-							if (FStringCompareRight(firstEraModules[i].moduleName, FString("Frame"), 1)) {
+							if (FStringCompareRight(firstEraModules[i].moduleName.ToString(), FString("Frame"), 1)) {
 								ModuleTransform moduleTransform = firstEraModules[i];
 								moduleTransform.moduleTypeEnum = ModuleTypeEnum::FrameConstructionOnly;
 								curEraModules.insert(curEraModules.begin(), moduleTransform);
@@ -491,7 +494,7 @@ public:
 
 	struct BridgeModule
 	{
-		FString moduleName;
+		FName moduleName;
 		WorldTile2 tile;
 		float rotation;
 	};
@@ -508,10 +511,10 @@ public:
 			WorldTile2 end = isXDirection ? WorldTile2(start.x + areaLength - 1, start.y) : WorldTile2(start.x, start.y + areaLength - 1);
 			
 			// Ramps
-			modules.push_back({ FString("Ramp"), start, rotation });
-			modules.push_back({ FString("Ramp"), end, rotation + 180 });
-			modules.push_back({ isXDirection ? FString("RampPlane") : FString("RampPlane90"), start, rotation });
-			modules.push_back({ isXDirection ? FString("RampPlane") : FString("RampPlane90"), end, rotation + 180 });
+			modules.push_back({ FName("Ramp"), start, rotation });
+			modules.push_back({ FName("Ramp"), end, rotation + 180 });
+			modules.push_back({ isXDirection ? FName("RampPlane") : FName("RampPlane90"), start, rotation });
+			modules.push_back({ isXDirection ? FName("RampPlane") : FName("RampPlane90"), end, rotation + 180 });
 
 			GetBridgeModulesHelper(area.min(), isXDirection, 1, areaLength - 2, modules);
 		} else {
@@ -542,8 +545,8 @@ public:
 			int32_t bridgeStartIndex = (endIndex + beginIndex - 3) / 2;
 			int32_t bridgeEndIndex = bridgeStartIndex + 3;
 
-			modules.push_back({ FString("Bridge4"), getTileAtIndex(bridgeStartIndex), rotation });
-			modules.push_back({ isXDirection ? FString("Bridge4Plane") : FString("Bridge4Plane90"), getTileAtIndex(bridgeStartIndex), rotation });
+			modules.push_back({ FName("Bridge4"), getTileAtIndex(bridgeStartIndex), rotation });
+			modules.push_back({ isXDirection ? FName("Bridge4Plane") : FName("Bridge4Plane90"), getTileAtIndex(bridgeStartIndex), rotation });
 
 			GetBridgeModulesHelper(start, isXDirection, beginIndex, bridgeStartIndex - 1, modules);
 			GetBridgeModulesHelper(start, isXDirection, bridgeEndIndex + 1, endIndex, modules);
@@ -553,8 +556,8 @@ public:
 			int32 bridgeStartIndex = (endIndex + beginIndex - 1) / 2; // 1,0 -> 0 ...  2,0 -> 0 ... 3,0 -> 1 ... 3,2 -> 2
 			int32 bridgeEndIndex = bridgeStartIndex + 1;
 
-			modules.push_back({ FString("Bridge2"), getTileAtIndex(bridgeStartIndex), rotation });
-			modules.push_back({ isXDirection ? FString("Bridge2Plane") : FString("Bridge2Plane90"), getTileAtIndex(bridgeStartIndex), rotation });
+			modules.push_back({ FName("Bridge2"), getTileAtIndex(bridgeStartIndex), rotation });
+			modules.push_back({ isXDirection ? FName("Bridge2Plane") : FName("Bridge2Plane90"), getTileAtIndex(bridgeStartIndex), rotation });
 
 			GetBridgeModulesHelper(start, isXDirection, beginIndex, bridgeStartIndex - 1, modules);
 			GetBridgeModulesHelper(start, isXDirection, bridgeEndIndex + 1, endIndex, modules);
@@ -562,8 +565,8 @@ public:
 		else {
 			PUN_CHECK(endIndex == beginIndex);
 			
-			modules.push_back({ FString("Bridge1"), getTileAtIndex(beginIndex), rotation});
-			modules.push_back({ isXDirection ? FString("Bridge1Plane") : FString("Bridge1Plane90"), getTileAtIndex(beginIndex), rotation });
+			modules.push_back({ FName("Bridge1"), getTileAtIndex(beginIndex), rotation});
+			modules.push_back({ isXDirection ? FName("Bridge1Plane") : FName("Bridge1Plane90"), getTileAtIndex(beginIndex), rotation });
 		}
 	}
 

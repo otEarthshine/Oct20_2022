@@ -1137,9 +1137,23 @@ public:
 			AddTech_Building(TechEnum::AgriculturalRevolution, { TechEnum::BeerBrewery, TechEnum::RanchSheep, techLinkEnum_MushroomSubstrateSterilization },
 				CardEnum::Granary
 			);
-			AddTech_Building(TechEnum::PotatoFarming, { techLinkEnum_MushroomSubstrateSterilization },
-				{ CardEnum::PotatoSeed }
-			);
+			//AddTech_Building(TechEnum::PotatoFarming, { techLinkEnum_MushroomSubstrateSterilization },
+			//	{ CardEnum::PotatoSeed }
+			//);
+
+			TechEnum techLinkEnum_Potato = TechEnum::PotatoFarming;
+			if (factionEnum == FactionEnum::Arab) {
+				techLinkEnum_Potato = TechEnum::AgaveFarming;
+				AddTech_Building(techLinkEnum_Potato, { techLinkEnum_MushroomSubstrateSterilization },
+					{ CardEnum::AgaveSeeds, CardEnum::CactusFruitSeeds }
+				);
+			}
+			else
+			{
+				AddTech_Building(techLinkEnum_Potato, { techLinkEnum_MushroomSubstrateSterilization },
+					{ CardEnum::PotatoSeed }
+				);
+			}
 
 			
 			//
@@ -1162,32 +1176,39 @@ public:
 			);
 
 			if (factionEnum == FactionEnum::Arab) {
-				AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, TechEnum::PotatoFarming },
+				AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, techLinkEnum_Potato },
 					{ CardEnum::Windmill, CardEnum::PitaBakery }
 				);
 			} else {
-				AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, TechEnum::PotatoFarming },
+				AddTech_Building(TechEnum::Baking, { TechEnum::AgriculturalRevolution, techLinkEnum_Potato },
 					{ CardEnum::Windmill, CardEnum::Bakery }
 				);
 			}
 
 			
-			AddTech_Building(TechEnum::VodkaDistillery, { TechEnum::PotatoFarming },
-				{ CardEnum::VodkaDistillery }
-			);
 
 			/// - Arab
+			TechEnum techLinkEnum_VodkaDistillery = TechEnum::VodkaDistillery;
 			TechEnum techLinkEnum_Beekeeper = TechEnum::Beekeeper;
-			if (factionEnum == FactionEnum::Arab) {
-				techLinkEnum_Beekeeper = TechEnum::CarpetWeaver;
+			if (factionEnum == FactionEnum::Arab) 
+			{
+				techLinkEnum_VodkaDistillery = TechEnum::TequilaDistillery;
+				AddTech_Building(techLinkEnum_VodkaDistillery, { techLinkEnum_Potato },
+					{ CardEnum::TequilaDistillery }
+				);
 				
-				AddTech_Building(techLinkEnum_Beekeeper, { TechEnum::PotatoFarming },
+				techLinkEnum_Beekeeper = TechEnum::CarpetWeaver;
+				AddTech_Building(techLinkEnum_Beekeeper, { techLinkEnum_Potato },
 					CardEnum::CarpetWeaver,
 					TechRequirements::HouseLvlCount(2, 30)
 				);
 			}
 			else {
-				AddTech_Building(techLinkEnum_Beekeeper, { TechEnum::PotatoFarming },
+				AddTech_Building(techLinkEnum_VodkaDistillery, { techLinkEnum_Potato },
+					{ CardEnum::VodkaDistillery }
+				);
+				
+				AddTech_Building(techLinkEnum_Beekeeper, { techLinkEnum_Potato },
 					CardEnum::Beekeeper
 				);
 			}
@@ -1210,11 +1231,11 @@ public:
 			);
 			AddTech_Bonus(TechEnum::SpyNest, { TechEnum::Logistics2 });
 
-			AddTech_Building(TechEnum::Winery, { TechEnum::Baking, TechEnum::VodkaDistillery },
+			AddTech_Building(TechEnum::Winery, { TechEnum::Baking, techLinkEnum_VodkaDistillery },
 				CardEnum::Winery,
 				TechRequirements::HouseLvlCount(4, 15)
 			);
-			AddTech_Building(TechEnum::Medicine, { TechEnum::VodkaDistillery, techLinkEnum_Beekeeper },
+			AddTech_Building(TechEnum::Medicine, { techLinkEnum_VodkaDistillery, techLinkEnum_Beekeeper },
 				CardEnum::MedicineMaker
 			);
 
@@ -1282,7 +1303,9 @@ public:
 			TechEnum techLinkEnum_ShroomFarm = TechEnum::ShroomFarm;
 			if (factionEnum == FactionEnum::Arab) {
 				techLinkEnum_ShroomFarm = TechEnum::SpiceFarming;
-				AddTech_Bonus(techLinkEnum_ShroomFarm, { TechEnum::CoffeeRoaster });
+				AddTech_CardGiving(techLinkEnum_ShroomFarm, { TechEnum::CoffeeRoaster },
+					CardEnum::SpicesSeeds
+				);
 			}
 			else {
 				AddTech_Building(techLinkEnum_ShroomFarm, { TechEnum::CoffeeRoaster },

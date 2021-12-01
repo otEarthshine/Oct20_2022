@@ -183,10 +183,10 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 	{
 		OverlayType overlayType = gameManager()->GetOverlayType();
 		int32 customDepth = overlayType == OverlayType::Gatherer ? 1 : 0;
-		FString orangeMeshName = GetMeshName(TileObjEnum::Orange, 2); //  GetTileObjInfo(TileObjEnum::Orange).nameFStr() + FString::FromInt(2);
-		FString papayaMeshName = GetMeshName(TileObjEnum::Papaya, 2); //GetTileObjInfo(TileObjEnum::Papaya).nameFStr() + FString::FromInt(2);
-		FString cococutMeshName = GetMeshName(TileObjEnum::Coconut, 2); //GetTileObjInfo(TileObjEnum::Coconut).nameFStr() + FString::FromInt(2);
-		FString dateMeshName = GetMeshName(TileObjEnum::DesertDatePalm, 2);
+		FName orangeMeshName = GetMeshName(TileObjEnum::Orange, 2); //  GetTileObjInfo(TileObjEnum::Orange).nameFStr() + FString::FromInt(2);
+		FName papayaMeshName = GetMeshName(TileObjEnum::Papaya, 2); //GetTileObjInfo(TileObjEnum::Papaya).nameFStr() + FString::FromInt(2);
+		FName cococutMeshName = GetMeshName(TileObjEnum::Coconut, 2); //GetTileObjInfo(TileObjEnum::Coconut).nameFStr() + FString::FromInt(2);
+		FName dateMeshName = GetMeshName(TileObjEnum::DesertDatePalm, 2);
 		meshes->SetCustomDepth(orangeMeshName, customDepth);
 		meshes->SetCustomDepth(papayaMeshName, customDepth);
 		meshes->SetCustomDepth(cococutMeshName, customDepth);
@@ -297,8 +297,8 @@ void UTileObjectDisplayComponent::UpdateDisplay(int32 regionId, int32 meshId, Wo
 			//	transform.GetScale3D().X, transform.GetScale3D().Y, transform.GetScale3D().Z,
 			//	transform.GetTranslation().X, transform.GetTranslation().Y, transform.GetTranslation().Z);
 
-			FString fallingTrunkMeshName = GetFallingMeshName(TileSubmeshEnum::Trunk, info.treeEnum);
-			FString fallingLeafMeshName = GetFallingMeshName(TileSubmeshEnum::Leaf, info.treeEnum);
+			FName fallingTrunkMeshName = GetFallingMeshName(TileSubmeshEnum::Trunk, info.treeEnum);
+			FName fallingLeafMeshName = GetFallingMeshName(TileSubmeshEnum::Leaf, info.treeEnum);
 
 			// Note: If Crash here might be forgetting to change TreeEnumSize
 			_fallingMeshes->Add(fallingTrunkMeshName, worldTileId, transform, 0);

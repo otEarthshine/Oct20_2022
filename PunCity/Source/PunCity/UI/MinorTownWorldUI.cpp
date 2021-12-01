@@ -245,11 +245,11 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 	AttackButton3->SetVisibility(ESlateVisibility::Collapsed);
 
 	// Not already a vassal? Might be able to attack
-	if (!sim.townManagerBase(playerId())->IsVassal(townId()))
+	if (!sim.townManagerBase(playerId())->IsVassal(townId()) &&
+		!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
 	{
 		// Vassalize
-		if (canVassalize &&
-			!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
+		if (canVassalize)
 		{
 			//! Vassalize (AttackButton1)
 			SetText(AttackButton1RichText, 

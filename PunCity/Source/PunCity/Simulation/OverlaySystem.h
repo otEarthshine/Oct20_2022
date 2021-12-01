@@ -39,12 +39,14 @@ struct DitchTile
 {
 	WorldTile2 tile;
 	bool isVisible = false;
+	bool isFilled = false;
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar)
 	{
 		tile >> Ar;
 		Ar << isVisible;
+		Ar << isFilled;
 		return Ar;
 	}
 };
@@ -68,7 +70,13 @@ public:
 		_simulation = simulation;
 	}
 
-	void Tick() {
+	void Tick()
+	{
+		for (int32 townId : _townToRefreshIrrigation) {
+			RefreshIrrigationFill(townId);
+		}
+		_townToRefreshIrrigation.clear();
+
 		RefreshHumanFertility();
 	}
 
@@ -171,6 +179,7 @@ public:
 	void AddIrrigationDitch(WorldTile2 tile, bool isVisible = true)
 	{
 		AddTileForHumanFertilityRefresh(tile);
+		RefreshIrrigationFillDelayed(_simulation->tileOwnerTown(tile));
 		
 		DitchTile newDitchTile;
 		newDitchTile.tile = tile;
@@ -183,12 +192,22 @@ public:
 	bool RemoveIrrigationDitch(WorldTile2 tile)
 	{
 		AddTileForHumanFertilityRefresh(tile);
+		RefreshIrrigationFillDelayed(_simulation->tileOwnerTown(tile));
 		
 		return CppUtils::TryRemoveIf(_regionToIrrigationDitch[tile.regionId()], [&](const DitchTile& ditchTile) {
 			return ditchTile.tile == tile;
 		});
 	}
+
+	void RefreshIrrigationFillDelayed(int32 townId) {
+		if (townId != -1) {
+			CppUtils::TryAdd(_townToRefreshIrrigation, townId);
+		}
+	}
+	void RefreshIrrigationFill(int32 townId);
+
 	
+	//
 
 	uint8 GetHumanFertility(WorldTile2 tile)
 	{
@@ -219,7 +238,9 @@ public:
 				region.ExecuteOnNearbyRegions([&](WorldRegion2 nearbyRegions) {
 					const std::vector<DitchTile>& ditchTiles = _regionToIrrigationDitch[nearbyRegions.regionId()];
 					for (const DitchTile& ditchTile : ditchTiles) {
-						fertility = std::max(fertility, (10 - WorldTile2::Distance(ditchTile.tile, tile)) * 100 / 5);
+						if (ditchTile.isFilled) {
+							fertility = std::max(fertility, (10 - WorldTile2::Distance(ditchTile.tile, tile)) * 100 / 5);
+						}
 					}
 				});
 
@@ -238,17 +259,34 @@ public:
 	{
 		SerializeVecVecObj(Ar, _regionToRoad);
 		SerializeVecVecObj(Ar, _regionToIrrigationDitch);
+		
 		SerializeVecVecValue(Ar, _regionToHumanFertility);
+		SerializeVecObj(Ar, _regionsToRefreshHumanFertility);
+
+		SerializeVecValue(Ar, _townToRefreshIrrigation);
+	}
+
+private:
+	DitchTile* GetIrrigationDitch(WorldTile2 tile) {
+		std::vector<DitchTile>& ditchTiles = _regionToIrrigationDitch[tile.regionId()];
+		for (DitchTile& ditchTile : ditchTiles) {
+			if (ditchTile.tile == tile) {
+				return &ditchTile;
+			}
+		}
+		return nullptr;
 	}
 
 private:
 	std::vector<std::vector<RoadTile>> _regionToRoad;
 
 	std::vector<std::vector<DitchTile>> _regionToIrrigationDitch;
+	
 	std::vector<std::vector<uint8>> _regionToHumanFertility;
+	std::vector<WorldRegion2> _regionsToRefreshHumanFertility;
+
+	std::vector<int32> _townToRefreshIrrigation;
 
 	//! Not Serialized
 	IGameSimulationCore* _simulation = nullptr;
-
-	std::vector<WorldRegion2> _regionsToRefreshHumanFertility;
 };

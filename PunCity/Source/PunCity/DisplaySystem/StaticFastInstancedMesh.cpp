@@ -82,7 +82,7 @@ void UStaticFastInstancedMesh::BeforeBatchAdd()
 void UStaticFastInstancedMesh::BatchAdd(int32 key, FTransform transform, int32 state, int32 objectId)
 {
 	PUN_LOG("Mesh BatchAdd key:%d transform:%s", key, *transform.ToString());
-	PUN_LOG("Mesh BatchAdd name:%s toAdd:%d instances:%d disabled:%d keyToInst:%d", *meshName, _instancesToBatchAdd.Num(), GetInstanceCount(), _disabledInstanceIndices.Num(), _keyToInstanceInfo.count());
+	PUN_LOG("Mesh BatchAdd name:%s toAdd:%d instances:%d disabled:%d keyToInst:%d", *meshName.ToString(), _instancesToBatchAdd.Num(), GetInstanceCount(), _disabledInstanceIndices.Num(), _keyToInstanceInfo.count());
 	
 	_instancesToBatchAdd.Add(transform);
 

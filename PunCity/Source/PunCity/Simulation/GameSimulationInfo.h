@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 64 // 3 digit
+#define MINOR_VERSION 65 // 3 digit
 
-#define VERSION_DAY 23
+#define VERSION_DAY 30
 #define VERSION_MONTH 11
 #define VERSION_YEAR 21
 
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 40 // 3 digit
+#define MINOR_SAVE_VERSION 41 // 3 digit
 
-#define VERSION_SAVE_DAY 18
+#define VERSION_SAVE_DAY 30
 #define VERSION_SAVE_MONTH 11
 #define VERSION_SAVE_YEAR 21
 
@@ -1124,6 +1124,9 @@ enum class ResourceEnum : uint8
 	DateFruit,
 	ToiletPaper,
 	Spices,
+	Agave,
+	CactusFruit,
+	Tequila,
 
 	// --- End
 	None,
@@ -1242,7 +1245,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Hay,			LOCTEXT("Hay", "Hay"),		1, LOCTEXT("Hay Desc", "Dried grass that can be used as animal feed")),
 
 	ResourceInfo(ResourceEnum::Paper,		LOCTEXT("Paper", "Paper"),	20, LOCTEXT("Paper Desc", "Used for research and book making")),
-	ResourceInfo(ResourceEnum::Clay,		LOCTEXT("Clay", "Clay"),		3, LOCTEXT("Clay Desc", "Fine-grained earth used to make Pottery and Bricks")),
+	ResourceInfo(ResourceEnum::Clay,		LOCTEXT("Clay", "Clay"),		6, LOCTEXT("Clay Desc", "Fine-grained earth used to make Pottery and Bricks")),
 	ResourceInfo(ResourceEnum::Brick,		LOCTEXT("Brick", "Brick"),	12, LOCTEXT("Brick Desc", "Sturdy, versatile construction material")),
 
 	ResourceInfo(ResourceEnum::Coal,		LOCTEXT("Coal", "Coal"),		7, LOCTEXT("Coal Desc", "Fuel used to heat houses or smelt ores. When heating houses, provides x2 heat vs. Wood")),
@@ -1337,7 +1340,10 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::DateFruit, LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
 
-	ResourceInfo(ResourceEnum::Spices, LOCTEXT("Spices", "Spices"), 30, LOCTEXT("Spices Desc", "Luxury tier 2 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Spices, LOCTEXT("Spices", "Spices"), 30, LOCTEXT("Spices Desc", "Aromatic food seasoning. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::Agave, LOCTEXT("Agave", "Agave"), 8, LOCTEXT("Agave Desc", "Succulent plant used to make Tequila")),
+	ResourceInfo(ResourceEnum::CactusFruit, LOCTEXT("Cactus Fruit", "Cactus Fruit"), FoodCost, LOCTEXT("Cactus Fruit Desc", "TODO: TEXT")),
+	ResourceInfo(ResourceEnum::Tequila, LOCTEXT("Tequila", "Tequila"), 42, LOCTEXT("Tequila Desc", "Clear alcoholic beverage made from Agave. (Luxury tier 2)")),
 };
 
 //!!! Remember that resources other than Food shouldn't cost 5 !!!
@@ -1416,8 +1422,18 @@ inline FText ResourceName_WithNone(ResourceEnum resourceEnum) {
 inline FString ResourceNameF(ResourceEnum resourceEnum) {
 	return ResourceInfos[static_cast<int>(resourceEnum)].name.ToString();
 }
-inline FString ResourceDisplayNameF(ResourceEnum resourceEnum) {
-	return FString("Resource") + FString::FromInt(static_cast<int>(resourceEnum));
+
+static TArray<FName> ResourceDisplaySystemNames;
+static FName ResourceDisplaySystemName(ResourceEnum resourceEnum, bool isHand = false) {
+	if (ResourceDisplaySystemNames.Num() == 0) {
+		for (int32 i = 0; i < ResourceEnumCount; i++) {
+			ResourceDisplaySystemNames.Add(FName(*(FString("Resource") + FString::FromInt(i))));
+		}
+		for (int32 i = 0; i < ResourceEnumCount; i++) {
+			ResourceDisplaySystemNames.Add(FName(*(FString("ResourceHand") + FString::FromInt(i))));
+		}
+	}
+	return ResourceDisplaySystemNames[static_cast<int>(resourceEnum) + (isHand ? ResourceEnumCount : 0)];
 }
 
 
@@ -1690,7 +1706,7 @@ static const std::vector<std::vector<ResourceEnum>> TierToLuxuryEnums =
 {
 	{},
 	{ResourceEnum::Beer, ResourceEnum::Cannabis, ResourceEnum::Furniture, ResourceEnum::Pottery, ResourceEnum::Tulip },
-	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware, ResourceEnum::Carpet },
+	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::Tequila, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware, ResourceEnum::Carpet },
 	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate, ResourceEnum::PocketWatch},
 };
 
@@ -2264,6 +2280,7 @@ enum class CardEnum : uint16
 	// Dec 29
 	MagicMushroomFarm,
 	VodkaDistillery,
+	TequilaDistillery,
 	CoffeeRoaster,
 
 	// Feb 2
@@ -2387,6 +2404,8 @@ enum class CardEnum : uint16
 	Passion2,
 	
 	DesertPilgrim,
+	MinersFortune,
+	KnowledgeTrade,
 
 	WheatSeed,
 	CabbageSeed,
@@ -2403,6 +2422,9 @@ enum class CardEnum : uint16
 	DyeSeeds,
 	CoffeeSeeds,
 	TulipSeeds,
+	SpicesSeeds,
+	AgaveSeeds,
+	CactusFruitSeeds,
 
 	ChimneyRestrictor,
 	SellFood,
@@ -3633,6 +3655,9 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::VodkaDistillery, _LOCTEXT("Vodka Distillery", "Vodka Distillery"), LOCTEXT("Vodka Distillery (Plural)", "Vodka Distilleries"), LOCTEXT("Vodka Distillery Desc", "Brew Potato into Vodka."),
 		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Potato, ResourceEnum::Vodka }, { 1, 1, 1 }, 20)
 	),
+	BldInfo(CardEnum::TequilaDistillery, _LOCTEXT("Tequila Distillery", "Tequila Distillery"), LOCTEXT("Tequila Distillery (Plural)", "Tequila Distilleries"), LOCTEXT("Tequila Distillery Desc", "Brew Agave into Tequila."),
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Agave, ResourceEnum::Tequila }, { 1, 1, 1 }, 20)
+	),
 	BldInfo(CardEnum::CoffeeRoaster, _LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee."),
 		WorldTile2(5, 5), GetBldResourceInfo(3, { ResourceEnum::RawCoffee, ResourceEnum::Coffee }, { 2, 0, 1, 3 }, 20, 100, -2)
 	),
@@ -3915,6 +3940,8 @@ static const BldInfo CardInfos[]
 
 	
 	BldInfo(CardEnum::DesertPilgrim,		_LOCTEXT("Desert Pilgrim", "Desert Pilgrim"), 200, LOCTEXT("Desert Pilgrim Desc", "Houses built on Desert get +10<img id=\"Coin\"/>.")),
+	BldInfo(CardEnum::MinersFortune,		_LOCTEXT("Miner's Fortune", "Miner's Fortune"), 200, LOCTEXT("Miner's Fortune Desc", "+20% mining bonus.")),
+	BldInfo(CardEnum::KnowledgeTrade,		_LOCTEXT("Knowledge Trade", "Knowledge Trade"), 200, LOCTEXT("Knowledge Trade Desc", "")),
 
 	BldInfo(CardEnum::WheatSeed,			_LOCTEXT("Wheat Seeds", "Wheat Seeds"), 300, LOCTEXT("Wheat Seeds Desc", "Unlock Wheat farming. Wheat can be eaten or brewed into Beer.")),
 	BldInfo(CardEnum::CabbageSeed,		_LOCTEXT("Cabbage Seeds", "Cabbage Seeds"), 350, LOCTEXT("Cabbage Seeds Desc", "Unlock Cabbage farming. Cabbage has high fertility sensitivity.")),
@@ -3931,7 +3958,10 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::DyeSeeds,				_LOCTEXT("Dye Seeds", "Dye Seeds"), 0, LOCTEXT("Dye Seeds Desc", "Unlock Dye farming. Requires region suitable for Dye.")),
 	BldInfo(CardEnum::CoffeeSeeds,			_LOCTEXT("Coffee Seeds", "Coffee Seeds"), 0, LOCTEXT("Coffee Seeds Desc", "Unlock Coffee farming. Requires region suitable for Coffee.")),
 	BldInfo(CardEnum::TulipSeeds,			_LOCTEXT("Tulip Seeds", "Tulip Seeds"), 0, LOCTEXT("Tulip Seeds Desc", "Unlock Tulip farming. Requires region suitable for Tulip.")),
-
+	BldInfo(CardEnum::SpicesSeeds,			_LOCTEXT("Spices Seeds", "Spices Seeds"), 0, LOCTEXT("Spices Seeds Desc", "Unlock Spices farming.")),
+	BldInfo(CardEnum::AgaveSeeds,			_LOCTEXT("Agave Seeds", "Agave Seeds"), 0, LOCTEXT("Agave Seeds Desc", "Unlock Agave farming.")),
+	BldInfo(CardEnum::CactusFruitSeeds,		_LOCTEXT("Cactus Fruit Seeds", "Cactus Fruit Seeds"), 0, LOCTEXT("Cactus Fruit Seeds Desc", "Unlock Cactus Fruit farming.")),
+	
 	BldInfo(CardEnum::ChimneyRestrictor,	_LOCTEXT("Chimney Restrictor", "Chimney Restrictor"), 250, LOCTEXT("Chimney Restrictor Desc", "Wood/Coal gives 15% more heat")),
 	BldInfo(CardEnum::SellFood,				_LOCTEXT("Sell Food", "Sell Food"), 90, LOCTEXT("Sell Food Desc", "Sell half of city's food for 5<img id=\"Coin\"/> each.")),
 	BldInfo(CardEnum::BuyWood,				_LOCTEXT("Buy Wood", "Buy Wood"), 50, LOCTEXT("Buy Wood Desc", "Buy Wood with half of your treasury for 6<img id=\"Coin\"/> each. (max: 1000)")),
@@ -4199,6 +4229,8 @@ static bool IsTownSlotCard(CardEnum cardEnum)
 	case CardEnum::FarmWaterManagement:
 
 	case CardEnum::BookWorm:
+
+	case CardEnum::MinersFortune:
 
 		return true;
 	default:
@@ -4922,6 +4954,40 @@ static bool IsForeignOnlyBuilding(CardEnum buildingEnum) {
 	return IsBuildingInList_Loop(buildingEnum, ForeignOnlyBuildingEnums);
 }
 
+/*
+ * Ancient Wonders
+ */
+
+enum class BiomeEnum
+{
+	Forest,
+	GrassLand,
+	Desert,
+	Jungle,
+	Savanna,
+	BorealForest,
+	Tundra,
+};
+
+static const std::vector<CardEnum> AncientWonderEnums =
+{
+	CardEnum::MayanPyramid,
+	CardEnum::EgyptianPyramid,
+	CardEnum::StoneHenge,
+	CardEnum::EasterIsland,
+};
+static const std::vector<std::vector<BiomeEnum>> AncientWonderToBiomeEnums =
+{
+	{ BiomeEnum::Jungle, BiomeEnum::Savanna, BiomeEnum::Forest },
+	{ BiomeEnum::Desert, BiomeEnum::Savanna, BiomeEnum::Forest  },
+	{ BiomeEnum::BorealForest, BiomeEnum::Forest,  BiomeEnum::Tundra },
+	{ BiomeEnum::Forest, BiomeEnum::Jungle,  BiomeEnum::Savanna },
+};
+
+static bool IsAncientWonderCardEnum(CardEnum cardEnum) {
+	return IsCardEnumBetween(cardEnum, CardEnum::MayanPyramid, CardEnum::EasterIsland);
+}
+
 
 /*
  * Province Buildings
@@ -5004,6 +5070,10 @@ static AppealInfo GetBuildingAppealInfo(CardEnum cardEnum)
 	case CardEnum::FlowerBed: return { 5, 5 };
 	case CardEnum::GardenShrubbery1: return { 5, 5 };
 	case CardEnum::GardenCypress: return { 5, 8 };
+	}
+
+	if (IsAncientWonderCardEnum(cardEnum)) {
+		return { 30, 50 };
 	}
 
 	if (IsPollutingHeavyIndustryOrMine(cardEnum) ||
@@ -5493,6 +5563,8 @@ enum class TileObjEnum : uint8
 	Tulip,
 
 	Spices,
+	Agave,
+	CactusFruit,
 	
 	Herb,
 	//BaconBush,
@@ -5809,14 +5881,16 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Dye,		LOCTEXT("Dye", "Dye"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Dye, GetFarmSpecialYield100(ResourceEnum::Dye, 70)), LOCTEXT("Dye Desc", "Dye used to dye Cotton Fabric or print Book.")),
 
 	// Dec 17
-	TileObjInfo(TileObjEnum::Potato,	LOCTEXT("Potato", "Potato"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), LOCTEXT("Potato Desc", "Common tuber.")),
+	TileObjInfo(TileObjEnum::Potato,	LOCTEXT("Potato", "Potato"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Potato, FarmBaseYield100), LOCTEXT("Potato CropDesc", "Common tuber.")),
 	TileObjInfo(TileObjEnum::Blueberry,	LOCTEXT("Blueberries", "Blueberries"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Blueberries, FarmBaseYield100), LOCTEXT("Blueberries Desc", "Blue-skinned fruit with refreshing taste.")),
 	TileObjInfo(TileObjEnum::Melon,		LOCTEXT("Melon", "Melon"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Melon, FarmBaseYield100), LOCTEXT("Melon Desc", "Sweet and refreshing fruit. +5<img id=\"Coin\"/> each unit when consumed.")),
 	TileObjInfo(TileObjEnum::Pumpkin,	LOCTEXT("Pumpkin", "Pumpkin"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Pumpkin, FarmBaseYield100), LOCTEXT("Pumpkin Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	TileObjInfo(TileObjEnum::RawCoffee,	LOCTEXT("Raw Coffee", "Raw Coffee"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::RawCoffee, GetFarmSpecialYield100(ResourceEnum::RawCoffee, 50)), LOCTEXT("Raw Coffee Desc", "Fruit that can be roasted to make Coffee.")),
 	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, GetFarmSpecialYield100(ResourceEnum::Tulip, 30)), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
-	TileObjInfo(TileObjEnum::Spices,		LOCTEXT("Spices", "Spices"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Spices, GetFarmSpecialYield100(ResourceEnum::Spices, 100)), LOCTEXT("Spices Desc", "Aromatic food seasoning. (Luxury tier 2)")),
+	TileObjInfo(TileObjEnum::Spices,		LOCTEXT("Spices", "Spices"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Spices, GetFarmSpecialYield100(ResourceEnum::Spices, 100)), ResourceNameT(ResourceEnum::Spices)),
+	TileObjInfo(TileObjEnum::Agave,		LOCTEXT("Agave", "Agave"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Agave, GetFarmSpecialYield100(ResourceEnum::Agave, 100)), ResourceNameT(ResourceEnum::Agave)),
+	TileObjInfo(TileObjEnum::CactusFruit,	LOCTEXT("Cactus Fruit", "Cactus Fruit"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::CactusFruit, GetFarmSpecialYield100(ResourceEnum::CactusFruit, 100)), ResourceNameT(ResourceEnum::CactusFruit)),
 
 	
 	TileObjInfo(TileObjEnum::Herb,		LOCTEXT("Medicinal Herb", "Medicinal Herb"),		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), LOCTEXT("Medicinal Herb Desc", "Herb used to heal sickness or make medicine.")),
@@ -6155,6 +6229,7 @@ enum class OverlayType
 	Forester,
 
 	Windmill,
+	IrrigationPump,
 	IrrigationReservoir,
 	Market,
 	ShippingDepot,
@@ -6465,6 +6540,8 @@ enum class TechEnum : uint8
 	BlueberryFarming,
 	MelonFarming,
 	PumpkinFarming,
+
+	AgaveFarming,
 	
 	Plantation,
 	
@@ -6528,6 +6605,7 @@ enum class TechEnum : uint8
 	//
 	ShroomFarm,
 	VodkaDistillery,
+	TequilaDistillery,
 	CoffeeRoaster,
 
 	// Mar 12
@@ -6806,17 +6884,6 @@ enum class PolicyMenuStateEnum
 };
 
 //! Terrains
-
-enum class BiomeEnum
-{
-	Forest,
-	GrassLand,
-	Desert,
-	Jungle,
-	Savanna,
-	BorealForest,
-	Tundra,
-};
 
 static bool IsGrassDominant(BiomeEnum biomeEnum) {
 	return biomeEnum == BiomeEnum::Savanna || biomeEnum == BiomeEnum::GrassLand;
@@ -9238,6 +9305,10 @@ static const std::vector<SeedInfo> CommonSeedCards
 	{ CardEnum::BlueberrySeed, TileObjEnum::Blueberry },
 	{ CardEnum::PumpkinSeed, TileObjEnum::Pumpkin },
 	{ CardEnum::MelonSeed, TileObjEnum::Melon },
+
+	{ CardEnum::SpicesSeeds, TileObjEnum::Spices },
+	{ CardEnum::AgaveSeeds, TileObjEnum::Agave },
+	{ CardEnum::CactusFruitSeeds, TileObjEnum::CactusFruit },
 };
 
 static const std::vector<SeedInfo> SpecialSeedCards
@@ -10688,7 +10759,7 @@ public:
 static const std::vector<FactionInfo> FactionInfos =
 {
 	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), LOCTEXT("Europe Ability Description", "+5% research speed")),
-	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), LOCTEXT("Arab Ability Description", "+10% industrial production"))
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield"))
 };
 
 #undef LOCTEXT_NAMESPACE
@@ -10811,29 +10882,6 @@ static const AIArchetypeInfo& GetAIArchetypeInfo(AIArchetypeEnum aiArchetypeEnum
 
 
 /*
- * Ancient Wonders
- */
-
-static const std::vector<CardEnum> AncientWonderEnums =
-{
-	CardEnum::MayanPyramid,
-	CardEnum::EgyptianPyramid,
-	CardEnum::StoneHenge,
-	CardEnum::EasterIsland,
-};
-static const std::vector<std::vector<BiomeEnum>> AncientWonderToBiomeEnums =
-{
-	{ BiomeEnum::Jungle, BiomeEnum::Savanna, BiomeEnum::Forest },
-	{ BiomeEnum::Desert, BiomeEnum::Savanna, BiomeEnum::Forest  },
-	{ BiomeEnum::BorealForest, BiomeEnum::Forest,  BiomeEnum::Tundra },
-	{ BiomeEnum::Forest, BiomeEnum::Jungle,  BiomeEnum::Savanna },
-};
-
-static bool IsAncientWonderCardEnum(CardEnum cardEnum) {
-	return IsCardEnumBetween(cardEnum, CardEnum::MayanPyramid, CardEnum::EasterIsland);
-}
-
-/*
  * Artifacts
  */
 
@@ -10854,16 +10902,37 @@ enum class CardSetTypeEnum : uint8
 	CardCombiner,
 };
 
+enum class CardSetEnum : uint8
+{
+	DeerSet,
+	BoarSet,
+	BearSet,
+
+	Prosperity,
+	Mummification,
+	Pilgrimage,
+	IslanderLife,
+	AFulfilledLife,
+	Remembrance,
+	RoyalHeritage,
+
+	Productivity,
+	Sustainability,
+	Motivation,
+	Passion,
+};
+
 class CardSetInfo
 {
 public:
+	CardSetEnum cardSetEnum;
 	FText name;
 	FText description;
 	
 	std::vector<CardEnum> cardEnums;
 
-	CardSetInfo(FText name, FText description, std::vector<CardEnum> cardEnums) :
-		name(name), description(description), cardEnums(cardEnums)
+	CardSetInfo(CardSetEnum zooSetEnum, FText name, FText description, std::vector<CardEnum> cardEnums) :
+		cardSetEnum(zooSetEnum), name(name), description(description), cardEnums(cardEnums)
 	{}
 };
 
@@ -10871,31 +10940,31 @@ public:
 
 static const std::vector<CardSetInfo> ZooSetInfos
 {
-	CardSetInfo(LOCTEXT("Deer Set", "Deer Set"), LOCTEXT("Deer Set Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::RedDeer, CardEnum::YellowDeer, CardEnum::DarkDeer }),
-	CardSetInfo(LOCTEXT("Boar Set", "Boar Set"), LOCTEXT("Boar Set Desc", "-5% food consumption"), { CardEnum::Boar }),
-	CardSetInfo(LOCTEXT("Bear Set", "Bear Set"), LOCTEXT("Bear Set Desc", "+50% City Attractiveness"), { CardEnum::BrownBear, CardEnum::BlackBear, CardEnum::Panda }),
+	CardSetInfo(CardSetEnum::DeerSet, LOCTEXT("Deer Set", "Deer Set"), LOCTEXT("Deer Set Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::RedDeer, CardEnum::YellowDeer, CardEnum::DarkDeer }),
+	CardSetInfo(CardSetEnum::BoarSet, LOCTEXT("Boar Set", "Boar Set"), LOCTEXT("Boar Set Desc", "-5% food consumption"), { CardEnum::Boar }),
+	CardSetInfo(CardSetEnum::BearSet, LOCTEXT("Bear Set", "Bear Set"), LOCTEXT("Bear Set Desc", "+50% City Attractiveness"), { CardEnum::BrownBear, CardEnum::BlackBear, CardEnum::Panda }),
 };
 
 static const std::vector<CardSetInfo> MuseumSetInfos
 {
-	CardSetInfo(LOCTEXT("Prosperity", "Prosperity"),		LOCTEXT("Prosperity Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::DecorativePlate, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
-	CardSetInfo(LOCTEXT("Mummification", "Mummification"), LOCTEXT("Mummification Desc", ""), { CardEnum::CanopicJars, CardEnum::DepartureScrolls, CardEnum::DeathMask }),
-	CardSetInfo(LOCTEXT("Pilgrimage", "Pilgrimage"),		LOCTEXT("Pilgrimage Desc", "Hotel gives +50% influence bonus"), { CardEnum::FeastRemains, CardEnum::ForeignTrinkets, CardEnum::ChalkPlaque }),
-	CardSetInfo(LOCTEXT("Islander Life", "Islander Life"), LOCTEXT("Islander Life Desc", "+50%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::TatooingNeedles, CardEnum::Petroglyphs, CardEnum::StoneFishhooks }),
+	CardSetInfo(CardSetEnum::Prosperity, LOCTEXT("Prosperity", "Prosperity"),		LOCTEXT("Prosperity Desc", "+50%<img id=\"Coin\"/> from Caravan"), { CardEnum::DecorativePlate, CardEnum::SacrificialAltar, CardEnum::StoneStele }),
+	CardSetInfo(CardSetEnum::Mummification, LOCTEXT("Mummification", "Mummification"), LOCTEXT("Mummification Desc", ""), { CardEnum::CanopicJars, CardEnum::DepartureScrolls, CardEnum::DeathMask }),
+	CardSetInfo(CardSetEnum::Pilgrimage, LOCTEXT("Pilgrimage", "Pilgrimage"),		LOCTEXT("Pilgrimage Desc", "Hotel gives +50% influence bonus"), { CardEnum::FeastRemains, CardEnum::ForeignTrinkets, CardEnum::ChalkPlaque }),
+	CardSetInfo(CardSetEnum::IslanderLife, LOCTEXT("Islander Life", "Islander Life"), LOCTEXT("Islander Life Desc", "+50%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::TatooingNeedles, CardEnum::Petroglyphs, CardEnum::StoneFishhooks }),
 
-	CardSetInfo(LOCTEXT("A Fulfilled Life", "A Fulfilled Life"), LOCTEXT("A Fulfilled Life Desc", "Every 2% Happiness above 70%,\ngives +1% productivity (town)"), { CardEnum::BallCourtGoals, CardEnum::SolarBarque }),
-	CardSetInfo(LOCTEXT("Remembrance", "Remembrance"),		LOCTEXT("Remembrance Desc", "+1% City Attractiveness for each House Lv 8\n(per city, max 100%)"), { CardEnum::OfferingCup, CardEnum::CoralEyes }),
+	CardSetInfo(CardSetEnum::AFulfilledLife, LOCTEXT("A Fulfilled Life", "A Fulfilled Life"), LOCTEXT("A Fulfilled Life Desc", "Every 2% Happiness above 70%,\ngives +1% productivity (town)"), { CardEnum::BallCourtGoals, CardEnum::SolarBarque }),
+	CardSetInfo(CardSetEnum::Remembrance, LOCTEXT("Remembrance", "Remembrance"),		LOCTEXT("Remembrance Desc", "+1% City Attractiveness for each House Lv 8\n(per city, max 100%)"), { CardEnum::OfferingCup, CardEnum::CoralEyes }),
 
-	CardSetInfo(LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("Royal Heritage Desc", "Every 1% City Attractiveness gives \n+1%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::Codex, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
+	CardSetInfo(CardSetEnum::RoyalHeritage, LOCTEXT("Royal Heritage", "Royal Heritage"), LOCTEXT("Royal Heritage Desc", "Every 1% City Attractiveness gives \n+1%<img id=\"Influence\"/> from Minor Cities Bonus"), { CardEnum::Codex, CardEnum::GoldCapstone, CardEnum::OrnateTrinkets, CardEnum::AncientStaff }),
 };
 
 static const std::vector<CardSetInfo> CardCombinerSetInfos
 {
-	CardSetInfo(LOCTEXT("Productivity+ Book", "Productivity+ Book"), LOCTEXT("", ""), { CardEnum::ProductivityBook, CardEnum::ProductivityBook, CardEnum::ProductivityBook }),
-	CardSetInfo(LOCTEXT("Sustainanility+ Book", "Sustainanility+ Book"), LOCTEXT("", ""), { CardEnum::SustainabilityBook, CardEnum::SustainabilityBook, CardEnum::SustainabilityBook }),
+	CardSetInfo(CardSetEnum::Productivity, LOCTEXT("Productivity+ Book", "Productivity+ Book"), LOCTEXT("", ""), { CardEnum::ProductivityBook, CardEnum::ProductivityBook, CardEnum::ProductivityBook }),
+	CardSetInfo(CardSetEnum::Sustainability, LOCTEXT("Sustainability+ Book", "Sustainanility+ Book"), LOCTEXT("", ""), { CardEnum::SustainabilityBook, CardEnum::SustainabilityBook, CardEnum::SustainabilityBook }),
 	
-	CardSetInfo(LOCTEXT("Motivation+ Book", "Motivation+ Book"), LOCTEXT("", ""), { CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation }),
-	CardSetInfo(LOCTEXT("Passion+ Book", "Passion+ Book"), LOCTEXT("", ""), { CardEnum::Passion, CardEnum::Passion, CardEnum::Passion, CardEnum::Passion, CardEnum::Passion }),
+	CardSetInfo(CardSetEnum::Motivation, LOCTEXT("Motivation+ Book", "Motivation+ Book"), LOCTEXT("", ""), { CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation, CardEnum::Motivation }),
+	CardSetInfo(CardSetEnum::Passion, LOCTEXT("Passion+ Book", "Passion+ Book"), LOCTEXT("", ""), { CardEnum::Passion, CardEnum::Passion, CardEnum::Passion, CardEnum::Passion, CardEnum::Passion }),
 };
 
 #undef LOCTEXT_NAMESPACE

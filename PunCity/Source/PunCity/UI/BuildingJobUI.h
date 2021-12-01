@@ -158,6 +158,13 @@ public:
 					),
 					GenericButtonEnum::RevealSpyNest
 				);
+
+				SpyCenter& spyCenter = building.subclass<SpyCenter>();
+
+				int32 countdownSecs = spyCenter.secsToCardProduction();
+				int32 fullSecs = spyCenter.fullSecsForCardProduction();
+				SetSpecialProducerProgress(static_cast<float>(fullSecs - countdownSecs) / fullSecs, building, countdownSecs);
+				
 				//RevealSpyNestButton->SetVisibility(ESlateVisibility::Visible);
 				//RevealSpyNestButtonText->SetText(FText::Format(
 				//	NSLOCTEXT("BuildingJobUI", "Reveal Spy Nest Button", "Reveal Spy Nest\n<img id=\"Coin\"/>{0}"), 

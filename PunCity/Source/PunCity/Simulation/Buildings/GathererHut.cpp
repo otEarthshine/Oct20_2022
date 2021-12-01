@@ -976,7 +976,7 @@ void VodkaDistillery::FinishConstruction() {
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Improved Fermentation", "Improved Fermentation"), LOCTEXT("Consumes 30% less input.", "Consumes 30% less input."), ResourceEnum::Stone, 50),
 		MakeProductionUpgrade(LOCTEXT("Improved Filtration", "Improved Filtration"), ResourceEnum::Stone, ProductionUpgrade30),
-		MakeComboUpgrade(LOCTEXT("Vodka Town", "Vodka Town"), ResourceEnum::Stone),
+		MakeComboUpgrade(LOCTEXT("Distillery District", "Distillery District"), ResourceEnum::Stone),
 	});
 }
 
@@ -1392,6 +1392,10 @@ std::vector<BonusPair> Mine::GetBonuses()
 		if (_simulation->buildingCount(_townId, CardEnum::Blacksmith) >= 1) {
 			bonuses.push_back({ LOCTEXT("Mining Equipment", "Mining Equipment"), 30 });
 		}
+	}
+
+	if (_simulation->TownhallCardCountTown(_townId, CardEnum::MinersFortune) > 0) {
+		bonuses.push_back({ GetBuildingInfo(CardEnum::MinersFortune).name, 20 });
 	}
 
 	if (_workMode.name.IdenticalTo(conserveResourceText)) {
@@ -2231,6 +2235,25 @@ int32 ProvinceRuin::GetDigDistanceFactor(int32 upgraderPlayerId) const
 }
 
 /*
+ * Hotel
+ */
+std::vector<BonusPair> Hotel::GetBonuses()
+{
+	std::vector<BonusPair> bonuses = Building::GetBonuses();
+
+	// Ancient Wonder
+	int32 provinceBuildingId = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceId()).buildingId;
+	if (provinceBuildingId != -1)
+	{
+		if (IsAncientWonderCardEnum(_simulation->building(provinceBuildingId).buildingEnum())) {
+			bonuses.push_back({ LOCTEXT("Ancient Wonder", "Ancient Wonder"), 30 });
+		}
+	}
+
+	return bonuses;
+}
+
+/*
  * Zoo
  */
 
@@ -2468,6 +2491,7 @@ void SpyCenter::OnTick1Sec()
 		secsToProduce /= 4; // Discount
 
 		_secsToCardProduction = secsToProduce;
+		_fullSecsForCardProduction = secsToProduce;
 	};
 	
 	if (_cardCreationMode != cardCreationMode)
@@ -2479,6 +2503,7 @@ void SpyCenter::OnTick1Sec()
 		}
 		else {
 			_secsToCardProduction = -1;
+			_fullSecsForCardProduction = -1;
 		}
 	}
 	else if (_cardCreationMode != -1) 
@@ -2502,12 +2527,17 @@ void PolicyOffice::FinishConstruction()
 	AddUpgrades({
 		MakeLevelUpgrade(
 			LOCTEXT("PolicyOfficeUpgrade_NationalPride", "National Pride"),
-			LOCTEXT("PolicyOfficeUpgrade_NationalPride Desc", "+5% City Attractiveness if you have more than X Influence"),
+			LOCTEXT("PolicyOfficeUpgrade_NationalPride Desc", "+5% City Attractiveness (per level)"),
 			ResourceEnum::Influence, 0, 50, 1000
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony", "Economic Hegemony"),
-			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony Desc", "+3% production bonus for the Town"),
+			LOCTEXT("PolicyOfficeUpgrade_EconomicHegemony Desc", "+3% production bonus (per level)"),
+			ResourceEnum::Influence, 0, 50, 2000
+		),
+		MakeLevelUpgrade(
+			LOCTEXT("PolicyOfficeUpgrade_TradeRoutesControl", "Trade Routes Control"),
+			LOCTEXT("PolicyOfficeUpgrade_TradeRoutesControl Desc", "-2% Trade Fee (per level)"),
 			ResourceEnum::Influence, 0, 50, 1000
 		),
 	});

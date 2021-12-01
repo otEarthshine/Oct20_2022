@@ -695,30 +695,31 @@ public:
 	void FinishConstruction() final;
 	std::vector<BonusPair> GetBonuses() final;
 
-	// Check other nearby windmill for efficiency
-	static int32 WindmillBaseEfficiency(int32 townId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
-	{
-		const std::vector<int32>& windmills = simulation->buildingIds(townId, CardEnum::Windmill);
+	//// Check other nearby windmill for efficiency
+	//static int32 WindmillBaseEfficiency(int32 townId, WorldTile2 centerTileIn, IGameSimulationCore* simulation)
+	//{
+	//	const std::vector<int32>& windmills = simulation->buildingIds(townId, CardEnum::Windmill);
 
-		// Adjust efficiency by distance linearly
-		// efficiency from pairing with other windmill gets multiplied together for the final efficiency
-		int32 efficiency = 100;
-		int32 radiusTouchAtom = 2 * Radius * CoordinateConstants::AtomsPerTile; // 2*Radius because that is when two windmill's radii starts to overlap
-		for (int32 windmillId : windmills) {
-			WorldTile2 centerTile = simulation->building(windmillId).centerTile();
-			if (centerTileIn != centerTile) {
-				int32 atomDist = WorldAtom2::Distance(centerTileIn.worldAtom2(), centerTile.worldAtom2());
-				if (atomDist < radiusTouchAtom) {
-					int32 pairEfficiency = atomDist * 100 / radiusTouchAtom;
-					efficiency = efficiency * pairEfficiency / 100;
-				}
-			}
-		}
-		return efficiency;
-	}
+	//	// Adjust efficiency by distance linearly
+	//	// efficiency from pairing with other windmill gets multiplied together for the final efficiency
+	//	int32 efficiency = 100;
+	//	int32 radiusTouchAtom = 2 * Radius * CoordinateConstants::AtomsPerTile; // 2*Radius because that is when two windmill's radii starts to overlap
+	//	for (int32 windmillId : windmills) {
+	//		WorldTile2 centerTile = simulation->building(windmillId).centerTile();
+	//		if (centerTileIn != centerTile) {
+	//			int32 atomDist = WorldAtom2::Distance(centerTileIn.worldAtom2(), centerTile.worldAtom2());
+	//			if (atomDist < radiusTouchAtom) {
+	//				int32 pairEfficiency = atomDist * 100 / radiusTouchAtom;
+	//				efficiency = efficiency * pairEfficiency / 100;
+	//			}
+	//		}
+	//	}
+	//	return efficiency;
+	//}
 	
 	int32 efficiencyBeforeBonus() override {
-		return WindmillBaseEfficiency(_townId, centerTile(), _simulation);
+		return GetDistanceBasedEfficiency(_townId, centerTile(), CardEnum::Windmill, Radius, _simulation);
+		//return WindmillBaseEfficiency(_townId, centerTile(), _simulation);
 	}
 
 	static const int32 Radius = 24;
@@ -1441,7 +1442,8 @@ public:
 	}
 
 	virtual int32 displayVariationIndex() override {
-		return GetUpgrade(0).upgradeLevel;
+		const BuildingUpgrade& upgrade = GetUpgrade(0);
+		return isConstructed() ? upgrade.upgradeLevel : 0;
 	}
 
 	virtual void OnDeinit() override {
@@ -1601,9 +1603,29 @@ public:
 		return isConstructed();
 	}
 
+	int32 availableWater() { return efficiency() + 16; }
+
 	virtual void OnDeinit() override;
 
-	int32 maxCardSlots() override { return 0; }
+	WorldTile2 GetFirstIrrigationDitchTile() {
+		return centerTile() + WorldTile2::RotateTileVector(WorldTile2(-3, 1), _faceDirection);
+	}
+
+	virtual int32 efficiencyBeforeBonus() override {
+		return GetDistanceBasedEfficiency(_townId, centerTile(), buildingEnum(), Radius, _simulation);
+	}
+
+	virtual int32 maxCardSlots() override { return 0; }
+	
+	virtual void Serialize(FArchive& Ar) override {
+		Building::Serialize(Ar);
+		Ar << waterLeft;
+	}
+
+public:
+	int32 waterLeft = 0;
+	
+	static const int32 Radius = 8;
 };
 
 
@@ -1746,7 +1768,8 @@ public:
 	int32 serviceQuality()
 	{
 		std::vector<BonusPair> bonuses = GetBonuses();
-		int32 quality = 100 + std::max(0, GetAppealPercent() / 4);
+		//int32 quality = 100 + std::max(0, GetAppealPercent() / 4);
+		int32 quality = GetServiceQualityFromAppeal(GetAppealPercent());
 		for (BonusPair bonus : bonuses) {
 			quality += bonus.value;
 		}
@@ -1759,6 +1782,15 @@ public:
 		
 		return quality;
 	}
+
+	static int32 GetServiceQualityFromAppeal(int32 appealPercent) {
+		return 70 + std::max(0, appealPercent / 4);
+	}
+
+	virtual std::vector<BonusPair> GetBonuses() override;
+	
+
+	//
 
 	int32 feePerVisitor() { return _feePerVisitor; }
 	int32 feePerVisitorDisplay() {
@@ -1782,7 +1814,7 @@ public:
 
 	bool isAvailable()
 	{
-		return currentVisitorCount() < maxVisitorCount();
+		return !_visitedThisSec && currentVisitorCount() < maxVisitorCount();
 	}
 
 	TMap<int32, int32> GetTownToVisitors()
@@ -1809,6 +1841,7 @@ public:
 			if (_visitors[i].isAvailable()) {
 				_visitors[i] = { Time::Ticks() + visitorStayLength(), originTownId };
 				_currentVisitorCount++;
+				_visitedThisSec = true;
 				return;
 			}
 		}
@@ -1842,9 +1875,11 @@ public:
 				_currentVisitorCount--;
 			}
 		}
+
+		_visitedThisSec = false;
 	}
 
-	
+	virtual int32 maxCardSlots() override { return 0; }
 
 	virtual void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
@@ -1853,6 +1888,8 @@ public:
 		SerializeVecObj(Ar, _visitors);
 
 		Ar << _currentVisitorCount;
+		
+		Ar << _visitedThisSec;
 	}
 
 private:
@@ -1861,6 +1898,8 @@ private:
 	std::vector<Room> _visitors;
 
 	int32 _currentVisitorCount = 0;
+
+	bool _visitedThisSec = false;
 
 	//! Non Serialized
 	int32 _pendingFeePerVisitor = -1;
@@ -2002,13 +2041,16 @@ public:
 		Building::Serialize(Ar);
 		Ar << _cardCreationMode;
 		Ar << _secsToCardProduction;
+		Ar << _fullSecsForCardProduction;
 	}
 
 	int32 secsToCardProduction() { return _secsToCardProduction; }
+	int32 fullSecsForCardProduction() { return _fullSecsForCardProduction; }
 
 private:
 	int32 _cardCreationMode = -1;
 	int32 _secsToCardProduction = -1;
+	int32 _fullSecsForCardProduction = -1;
 };
 
 

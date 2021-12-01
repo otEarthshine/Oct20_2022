@@ -399,13 +399,13 @@ public:
 		return displayLocationScope;
 	}
 
-	int32 GetBuildingDisplayObjectId(int32 meshId, FString protoName, int32 instanceIndex) final {
+	int32 GetBuildingDisplayObjectId(int32 meshId, FName protoName, int32 instanceIndex) final {
 #if !DISPLAY_BUILDING
 		return 0;
 #endif
 		return _buildingDisplaySystem->GetObjectId(meshId, protoName, instanceIndex);
 	}
-	int32 GetTileObjDisplayObjectId(int32 meshId, FString protoName, int32 instanceIndex) final {
+	int32 GetTileObjDisplayObjectId(int32 meshId, FName protoName, int32 instanceIndex) final {
 #if !DISPLAY_TILEOBJ
 		return 0;
 #endif

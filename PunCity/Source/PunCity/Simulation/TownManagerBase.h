@@ -549,7 +549,7 @@ public:
 	}
 
 
-	int32 vassalTaxPercent() {
+	int64 vassalTaxPercent() {
 		return 5;
 		//switch (taxLevel)
 		//{

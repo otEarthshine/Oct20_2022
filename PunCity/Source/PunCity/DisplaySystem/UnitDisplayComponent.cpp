@@ -596,7 +596,7 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 			resourceRotator.Yaw -= 90;
 			FTransform resourceTransform(resourceRotator, transform.GetTranslation(), transform.GetScale3D());
 
-			_resourceMeshes->Add(ResourceDisplayNameF(heldEnum), unitId, resourceTransform, 0, unitId);
+			_resourceMeshes->Add(ResourceDisplaySystemName(heldEnum), unitId, resourceTransform, 0, unitId);
 		}
 	};
 	
@@ -607,7 +607,7 @@ void UUnitDisplayComponent::UpdateResourceDisplay(int32 unitId, UnitStateAI& uni
 	else if (_currentDisplayState.unitEnum == UnitEnum::HorseLogistics ||
 			_currentDisplayState.unitEnum == UnitEnum::HorseMarket)
 	{
-		FString meshName = _currentDisplayState.unitEnum == UnitEnum::HorseLogistics ? "HorseLogistics" : "HorseMarket";
+		FName meshName = _currentDisplayState.unitEnum == UnitEnum::HorseLogistics ? "HorseLogistics" : "HorseMarket";
 		_auxMeshes->Add(meshName, unitId, getAuxTransform(), 0);
 
 		displayResource(-15, 5);

@@ -77,7 +77,7 @@ public:
 				GameDisplayUtils::SetCustomDepth(meshes[_meshIndexIterator], customDepthIndex);
 
 				// Set Transform
-				FString moduleName = modules[i].moduleName;
+				FName moduleName = modules[i].moduleName;
 				FTransform moduleTransform = modules[i].transform;
 
 
@@ -114,7 +114,7 @@ public:
 		auto spawnEntrance = [&](WorldTile2 tile, int32 rotationInt) {
 			FVector displayLocation = (tile - building.centerTile()).displayLocation();
 			FTransform transform(FRotator(0, rotationInt, 0), displayLocation);
-			modules.push_back(ModuleTransform(FString("Tunnel"), transform));
+			modules.push_back(ModuleTransform(FName("Tunnel"), transform));
 		};
 
 		TileArea area = building.area();

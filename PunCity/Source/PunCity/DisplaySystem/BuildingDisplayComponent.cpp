@@ -109,7 +109,7 @@ int UBuildingDisplayComponent::CreateNewDisplay(int objectId)
 
 		_lastModuleMeshesOverlayType.push_back(OverlayType::None);
 
-		const TArray<FString>& moduleNames = _assetLoader->moduleNames();
+		const TArray<FName>& moduleNames = _assetLoader->moduleNames();
 		
 		//PUN_CHECK(_assetLoader->moduleMesh("Townhall3Special2"));
 		//PUN_LOG("CreateNewDisplay _moduleNames %d", moduleNames.Num());
@@ -134,7 +134,7 @@ int UBuildingDisplayComponent::CreateNewDisplay(int objectId)
 		_togglableModuleMeshes.Add(NewObject<UStaticFastInstancedMeshesComp>(this));
 		_togglableModuleMeshes[meshId]->Init("BuildingTogglableModules" + to_string(meshId) + "_", _moduleMeshes[meshId], 20, "", meshId);
 
-		const TArray<FString>& moduleNames = _assetLoader->togglableModuleNames();
+		const TArray<FName>& moduleNames = _assetLoader->togglableModuleNames();
 		for (int i = 0; i < moduleNames.Num(); i++) {
 			UStaticMesh* protoMesh = _assetLoader->moduleMesh(moduleNames[i]);
 			PUN_CHECK(protoMesh);
@@ -270,7 +270,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 				auto spawnEntrance = [&](WorldTile2 tile, int32 rotationInt) {
 					int32 instanceKey = tile.tileId();
 					FTransform transform(FRotator(0, rotationInt, 0), tile.localTile(region).localDisplayLocation());
-					_moduleMeshes[meshId]->Add(FString("Tunnel"), instanceKey, transform, 0, buildingId);
+					_moduleMeshes[meshId]->Add(FName("Tunnel"), instanceKey, transform, 0, buildingId);
 				};
 
 				int32 rotationShift = (area.sizeX() > 1) ? 0 : 90;
@@ -309,32 +309,32 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 			if (building.isBurnedRuin())
 			{
-				WorldTile2 size = building.buildingSize();
-				FVector siteMarkingScale(size.x, size.y, 1);
+				//WorldTile2 size = building.buildingSize();
+				//FVector siteMarkingScale(size.x, size.y, 1);
 
-				FVector position(size.x % 2 == 0 ? 5 : 0, size.y % 2 == 0 ? 5 : 0, 0.0f);
-				FTransform siteMarkTransform(FRotator::ZeroRotator, position, siteMarkingScale);
-				
-				float constructionFraction = 0.5f;
-				int32 constructionPercent = constructionFraction * 100;
-				int32_t instanceKey = centerTile.tileId();
+				//FVector position(size.x % 2 == 0 ? 5 : 0, size.y % 2 == 0 ? 5 : 0, 0.0f);
+				//FTransform siteMarkTransform(FRotator::ZeroRotator, position, siteMarkingScale);
+				//
+				//float constructionFraction = 0.5f;
+				//int32 constructionPercent = constructionFraction * 100;
+				//int32_t instanceKey = centerTile.tileId();
 
-				// Add burned ground
-				{
-					FTransform finalTransform;
-					FTransform::Multiply(&finalTransform, &siteMarkTransform, &transform);
-					_moduleMeshes[meshId]->Add("BuildingBaseBurnt", instanceKey, finalTransform, constructionPercent, buildingId);
-					instanceKey += GameMapConstants::TilesPerWorld;
-				}
-				
-				// Add burned frame
-				for (size_t i = 0; i < modules.size(); i++) {
-					FString& moduleName = modules[i].moduleName;
-					if (moduleName.Len() > 5 && FStringCompareRight(moduleName, FString("Frame"), 1)) {
-						_moduleMeshes[meshId]->Add(moduleName + FString("Burnt"), instanceKey, transform, constructionPercent, buildingId);
-						break;
-					}
-				}
+				//// Add burned ground
+				//{
+				//	FTransform finalTransform;
+				//	FTransform::Multiply(&finalTransform, &siteMarkTransform, &transform);
+				//	_moduleMeshes[meshId]->Add("BuildingBaseBurnt", instanceKey, finalTransform, constructionPercent, buildingId);
+				//	instanceKey += GameMapConstants::TilesPerWorld;
+				//}
+				//
+				//// Add burned frame
+				//for (size_t i = 0; i < modules.size(); i++) {
+				//	FString& moduleName = modules[i].moduleName;
+				//	if (moduleName.Len() > 5 && FStringCompareRight(moduleName, FString("Frame"), 1)) {
+				//		_moduleMeshes[meshId]->Add(moduleName + FString("Burnt"), instanceKey, transform, constructionPercent, buildingId);
+				//		break;
+				//	}
+				//}
 			}
 			// Special case: Farm
 			else if (buildingEnum == CardEnum::Farm)
@@ -477,7 +477,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 
 				// Special cases:
 				if (buildingEnum == CardEnum::SandMine) {
-					_moduleMeshes[meshId]->SetCastShadow(FString("SandMine_Era3Special1"), false);
+					_moduleMeshes[meshId]->SetCastShadow(FName("SandMine_Era3Special1"), false);
 				}
 				
 			}
@@ -547,7 +547,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					// Check if this mesh should be displayed during this construction phase
 					if (modules[i].constructionFractionBegin <= constructionFraction)
 					{
-						FString moduleName = modules[i].moduleName;
+						FName moduleName = modules[i].moduleName;
 						//int32_t instanceKey = localTile.tileId() + i * (CoordinateConstants::TileIdsPerRegion + 1); // +1 so it doesn't overlap (in hash?)
 						int32_t instanceKey = centerTile.tileId() + i * GameMapConstants::TilesPerWorld;
 
@@ -623,22 +623,20 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 					auto addMeshes = [&](int32 displayVariationIndex)
 					{
 						const ModuleTransformGroup& modulePrototype = displayInfo.GetDisplayModules(FactionEnum::Arab, CardEnum::IrrigationDitch, displayVariationIndex);
-						std::vector<ModuleTransform> modules = modulePrototype.transforms;
-						for (const ModuleTransform& moduleTransform : modules) {
-							_moduleMeshes[meshId]->Add(moduleTransform.moduleName, ditchTile.tile.tileId(), transform, 0);
+						std::vector<ModuleTransform> moduleTransforms = modulePrototype.transforms;
+						for (int32 i = 0; i < moduleTransforms.size(); i++) {
+							if (i != 0 || ditchTile.isFilled) {
+								_moduleMeshes[meshId]->Add(moduleTransforms[i].moduleName, ditchTile.tile.tileId(), transform, 0);
+							}
 						}
 					};
 
-					// Some building upgrade according to Town Lvl
-					//int32 townLvl = sim.GetTownLvl(sim.tileOwnerTown(ditchTile.tile));
-					//int32 variationIndexShift = (townLvl - 1) * 6;
-					int32 variationIndexShift = 0;
-
-					addMeshes(static_cast<int32_t>(connectInfo.first) + variationIndexShift);
+					// Display the correct mesh variation
+					addMeshes(static_cast<int32_t>(connectInfo.first));
 
 					// Ditch Road Bridge
 					if (sim.IsRoadTile(ditchTile.tile)) {
-						addMeshes(5 + variationIndexShift);
+						addMeshes(5);
 					}
 				}
 			}
@@ -1037,6 +1035,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 		
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Forester, overlayType == OverlayType::Forester);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Windmill, overlayType == OverlayType::Windmill);
+		SetHighlight(_moduleMeshes[meshId], CardEnum::IrrigationPump, overlayType == OverlayType::IrrigationPump);
 
 		SetHighlight(_moduleMeshes[meshId], CardEnum::IrrigationReservoir, overlayType == OverlayType::IrrigationReservoir);
 		SetHighlight(_moduleMeshes[meshId], CardEnum::Market, overlayType == OverlayType::Market);
@@ -1126,6 +1125,9 @@ void UBuildingDisplayComponent::UpdateDisplayOverlay(Building& building, Overlay
 	}
 	else if (overlayType == OverlayType::Windmill && building.isEnum(CardEnum::Windmill)) {
 		ShowRadius(Windmill::Radius, centerAtom, building);
+	}
+	else if (overlayType == OverlayType::IrrigationPump && building.isEnum(CardEnum::IrrigationPump)) {
+		ShowRadius(IrrigationPump::Radius, centerAtom, building);
 	}
 	
 	SHOW_RADIUS(IrrigationReservoir)

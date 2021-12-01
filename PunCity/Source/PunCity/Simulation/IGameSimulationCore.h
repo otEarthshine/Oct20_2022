@@ -133,6 +133,7 @@ public:
 	virtual int32 GetNextTown(bool forward, int32 currentTownId, int32 playerId) = 0;
 
 	virtual FactionEnum playerFactionEnum(int32 playerId) = 0;
+	virtual FactionEnum townFactionEnum(int32 townId) = 0;
 	
 	virtual bool IsTownOwnedByPlayer(int32 townIdIn, int32 playerId) = 0;
 	virtual bool IsTownhallOverlapProvince(int32 provinceId, int32 townId) = 0;

@@ -101,11 +101,11 @@ public:
 		_resourceMeshes->Init("UnitResource", this, 100, "", 0, true);
 		for (int i = 0; i < ResourceEnumCount; i++) {
 			ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
-			_resourceMeshes->AddProtoMesh(ResourceDisplayNameF(resourceEnum), assetLoader->resourceHandMesh(resourceEnum));
+			_resourceMeshes->AddProtoMesh(ResourceDisplaySystemName(resourceEnum), assetLoader->resourceHandMesh(resourceEnum));
 		}
 
 		_animatingModuleMeshes->Init("BuildingAnim", this, 20, "", 0, true);
-		TArray<FString>& animModuleNames = _assetLoader->animModuleNames();
+		TArray<FName>& animModuleNames = _assetLoader->animModuleNames();
 		for (int i = 0; i < animModuleNames.Num(); i++) {
 			UStaticMesh* protoMesh = _assetLoader->moduleMesh(animModuleNames[i]);
 			if (protoMesh) {

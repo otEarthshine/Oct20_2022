@@ -869,6 +869,8 @@ public:
 		return _cardSetEnumToCardSets[static_cast<int>(cardSetTypeEnum)];
 	}
 
+	
+
 	bool CanAddCardsSet(CardEnum cardEnum, CardSetTypeEnum cardSetTypeEnum)
 	{
 		std::vector<std::vector<CardStatus>>& cardSets = _cardSetEnumToCardSets[static_cast<int>(cardSetTypeEnum)];

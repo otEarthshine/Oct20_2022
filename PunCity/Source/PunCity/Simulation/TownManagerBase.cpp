@@ -217,7 +217,8 @@ void TownManagerBase::Tick1Sec_TownBase()
 					Hotel* hotel = hotels[hotelIndex++];
 					hotel->Visit(_townId);
 
-					ChangeWealth_MinorCity(hotel->feePerVisitor());
+					_simulation->ChangeMoney(hotel->playerId(), hotel->feePerVisitor());
+					_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
 				}
 
 			}
@@ -264,6 +265,8 @@ void TownManagerBase::StartAttack_Defender(int32 attackerPlayerId, int32 provinc
 	}
 	else if (provinceAttackEnum == ProvinceAttackEnum::DeclareIndependence) {
 		claimProgress.battleFinishCountdownTicks = Time::TicksPerRound;
+	}
+	else if (provinceAttackEnum == ProvinceAttackEnum::RazeFort) {
 	}
 	else {
 		defenderCards = { CardStatus(CardEnum::Militia, baseDefenderUnits()) }; // Town Population help is this is not a raid

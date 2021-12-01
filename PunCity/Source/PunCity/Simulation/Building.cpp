@@ -743,6 +743,10 @@ bool Building::UpgradeBuilding(int upgradeIndex, bool showPopups, ResourceEnum& 
 	else {
 		resourceCount = resourceSystem().resourceCount(resourceNeeded.resourceEnum);
 	}
+
+	if (PunSettings::IsOn("CheatFastBuild")) {
+		resourceNeeded.count = 0;
+	}
 	
 	if (resourceCount >= resourceNeeded.count)
 	{
@@ -1439,9 +1443,9 @@ std::vector<BonusPair> Building::GetBonuses()
 			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 20 });
 		}
 
-		if (factionEnum() == FactionEnum::Arab) {
-			bonuses.push_back({ LOCTEXT("Faction Bonus", "Faction Bonus"), 10 });
-		}
+		//if (factionEnum() == FactionEnum::Arab) {
+		//	bonuses.push_back({ LOCTEXT("Faction Bonus", "Faction Bonus"), 10 });
+		//}
 
 		if (int32 industrialTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::IndustrialTechnologies)) {
 			bonuses.push_back({ LOCTEXT("Industrial Technologies", "Industrial Technologies"), 3 * industrialTechUpgradeCount });
@@ -1521,7 +1525,7 @@ std::vector<BonusPair> Building::GetBonuses()
 	
 	// Policy Office
 	{
-		const std::vector<int32>& policyOfficeIds = _simulation->buildingIds(_townId, CardEnum::PolicyOffice);
+		const std::vector<int32>& policyOfficeIds = _simulation->buildingIds(_playerId, CardEnum::PolicyOffice);
 		if (policyOfficeIds.size() > 0)
 		{
 			PolicyOffice& policyOffice = _simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
@@ -1696,6 +1700,20 @@ std::vector<BonusPair> Building::GetTradingFeeBonuses(int32 townId, IGameSimulat
 
 	if (int32 tradeRelationsTechUpgradeCount = simulation->GetTechnologyUpgradeCount(playerId, TechEnum::TradeRelations)) {
 		bonuses.push_back({ LOCTEXT("Trade Relations", "Trade Relations"), -2 * tradeRelationsTechUpgradeCount });
+	}
+
+	if (simulation->townFactionEnum(townId) == FactionEnum::Arab) {
+		bonuses.push_back({ LOCTEXT("Faction Bonus", "Faction Bonus"), -20 });
+	}
+
+
+	const std::vector<int32>& policyOfficeIds = simulation->buildingIds(playerId, CardEnum::PolicyOffice);
+	if (policyOfficeIds.size() > 0)
+	{
+		PolicyOffice& policyOffice = simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
+		if (policyOffice.isConstructed()) {
+			bonuses.push_back({ LOCTEXT("Trade Routes Control", "Trade Routes Control"), -2 * policyOffice.GetUpgrade(2).upgradeLevel });
+		}
 	}
 
 	return bonuses;

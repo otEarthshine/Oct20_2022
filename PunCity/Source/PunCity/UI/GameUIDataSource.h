@@ -361,8 +361,8 @@ public:
 	virtual class USoundSystemComponent* soundSystem() = 0;
 	virtual float NearestSeaDistance() = 0;
 
-	virtual int32 GetBuildingDisplayObjectId(int32 meshId, FString protoName, int32 instanceIndex) = 0;
-	virtual int32 GetTileObjDisplayObjectId(int32 meshId, FString protoName, int32 instanceIndex) = 0;
+	virtual int32 GetBuildingDisplayObjectId(int32 meshId, FName protoName, int32 instanceIndex) = 0;
+	virtual int32 GetTileObjDisplayObjectId(int32 meshId, FName protoName, int32 instanceIndex) = 0;
 
 	//virtual void SetObjectFocusSound(bool active, USoundCue* soundCue = nullptr, FVector location = FVector::ZeroVector) = 0;
 

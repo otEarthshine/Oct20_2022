@@ -2119,6 +2119,29 @@ public:
 		_justFinishedConstructionJobUIDirty = value;
 	}
 
+	
+	// Check other nearby windmill for efficiency
+	static int32 GetDistanceBasedEfficiency(int32 townId, WorldTile2 centerTileIn, CardEnum buildingEnum, int32 radius, IGameSimulationCore* simulation)
+	{
+		const std::vector<int32>& bldIds = simulation->buildingIds(townId, buildingEnum);
+
+		// Adjust efficiency by distance linearly
+		// efficiency from pairing with other windmill gets multiplied together for the final efficiency
+		int32 efficiency = 100;
+		int32 radiusTouchAtom = 2 * radius * CoordinateConstants::AtomsPerTile; // 2*Radius because that is when two windmill's radii starts to overlap
+		for (int32 bldId : bldIds) {
+			WorldTile2 centerTile = simulation->building(bldId).centerTile();
+			if (centerTileIn != centerTile) {
+				int32 atomDist = WorldAtom2::Distance(centerTileIn.worldAtom2(), centerTile.worldAtom2());
+				if (atomDist < radiusTouchAtom) {
+					int32 pairEfficiency = atomDist * 100 / radiusTouchAtom;
+					efficiency = efficiency * pairEfficiency / 100;
+				}
+			}
+		}
+		return efficiency;
+	}
+
 public:
 	// Debug
 #if DEBUG_BUILD
@@ -2149,6 +2172,8 @@ protected:
 	void ResetOccupants();
 
 	void TrailerAddResource();
+
+
 
 protected:
 	IGameSimulationCore* _simulation = nullptr;

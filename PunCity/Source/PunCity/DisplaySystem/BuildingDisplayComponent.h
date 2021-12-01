@@ -42,7 +42,7 @@ public:
 	}
 	void AfterAdd() override;
 
-	int32 GetObjectId(int32 meshId, FString protoName, int32 instanceIndex) {
+	int32 GetObjectId(int32 meshId, FName protoName, int32 instanceIndex) {
 		return _moduleMeshes[meshId]->GetObjectId(protoName, instanceIndex);
 	}
 
@@ -62,7 +62,7 @@ public:
 					modules[i].upgradeStates == 0)
 				{
 					FString setName = modulePrototype.setName;
-					if (setName == modules[i].moduleName.Mid(0, setName.Len())) {
+					if (setName == modules[i].moduleName.ToString().Mid(0, setName.Len())) {
 						moduleMesh->SetCustomDepth(modules[i].moduleName, customDepthIndex);
 					}
 				}

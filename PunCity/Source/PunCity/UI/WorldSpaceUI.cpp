@@ -1639,8 +1639,13 @@ void UWorldSpaceUI::TickPlacementInstructions()
 	}
 	else if (placementInfo.buildingEnum == CardEnum::Windmill)
 	{
-		int32 efficiency = Windmill::WindmillBaseEfficiency(tileTownId, placementInfo.mouseOnTile, &simulation());
-		//ss << "Efficiency: " << efficiency << "%";
+		int32 efficiency = Building::GetDistanceBasedEfficiency(tileTownId, placementInfo.mouseOnTile, placementInfo.buildingEnum, Windmill::Radius, &simulation());
+		addEfficiencyText(efficiency);
+		punBox->AddSpacer(12);
+	}
+	else if (placementInfo.buildingEnum == CardEnum::IrrigationPump)
+	{
+		int32 efficiency = Building::GetDistanceBasedEfficiency(tileTownId, placementInfo.mouseOnTile, placementInfo.buildingEnum, IrrigationPump::Radius, &simulation());
 		addEfficiencyText(efficiency);
 		punBox->AddSpacer(12);
 	}
@@ -1688,7 +1693,13 @@ void UWorldSpaceUI::TickPlacementInstructions()
 		punBox->AddRichTextCenter(TextRedOrange(FText::Format(LOCTEXT("PlaceInfo_ServiceQuality", "Service Quality: {0}%"), TEXT_NUM(serviceQuality)), appealPercent, 80, 60));
 		punBox->AddSpacer(12);
 	}
-
+	else if (placementInfo.buildingEnum == CardEnum::Hotel)
+	{
+		int32 appealPercent = simulation().overlaySystem().GetAppealPercent(placementInfo.mouseOnTile);
+		int32 serviceQuality = Hotel::GetServiceQualityFromAppeal(appealPercent);
+		punBox->AddRichTextCenter(TextRedOrange(FText::Format(LOCTEXT("PlaceInfo_ServiceQuality", "Base Service Quality: {0}%"), TEXT_NUM(serviceQuality)), appealPercent, 80, 60));
+		punBox->AddSpacer(12);
+	}
 	
 
 	// Show building resource need...

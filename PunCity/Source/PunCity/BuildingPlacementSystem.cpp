@@ -582,6 +582,9 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 	else if (buildingEnum == CardEnum::Windmill) {
 		ShowRadius(Windmill::Radius, OverlayType::Windmill);
 	}
+	else if (buildingEnum == CardEnum::IrrigationPump) {
+		ShowRadius(IrrigationPump::Radius, OverlayType::IrrigationPump);
+	}
 	SHOW_RADIUS(IrrigationReservoir)
 	SHOW_RADIUS(Market)
 	SHOW_RADIUS(ShippingDepot)
@@ -639,6 +642,10 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 		}
 		
 		ShowRadius(Theatre::Radius, overlayType);
+		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
+	}
+	else if (buildingEnum == CardEnum::Hotel)
+	{
 		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
 	}
 	// Shrine

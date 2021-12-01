@@ -119,6 +119,16 @@ void BuildingCardSystem::RollRareHandExecute()
 			CardEnum::Investment,
 		};
 
+		FactionEnum factionEnum = _simulation->playerFactionEnum(_playerId);
+		if (factionEnum == FactionEnum::Arab)
+		{
+			_cardsRareHand = {
+				CardEnum::TradingPost,
+				CardEnum::Investment,
+				CardEnum::MinersFortune,
+			};
+		}
+
 		PopupInfo popup(_playerId,
 			LOCTEXT("GuideAsk_Pop", "Would you like some guidance?"),
 			{ LOCTEXT("ChoiceGuide", "Yes, guide me"),

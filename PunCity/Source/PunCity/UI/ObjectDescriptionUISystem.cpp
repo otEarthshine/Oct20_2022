@@ -1785,7 +1785,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						const ProvinceRuin& provinceRuin = building.subclass<ProvinceRuin>();
 
 						focusBox->AddRichText(
-							LOCTEXT("AncientWonder Desc", "+50<img id=\"Coin\"/> Province Base Income")
+							LOCTEXT("AncientWonder Desc", "+200<img id=\"Coin\"/> Province Base Income")
+						);
+
+						focusBox->AddSpacer();
+
+						focusBox->AddRichText(
+							LOCTEXT("AncientWonder Desc2", "+30% Hotel Service Quality\n     in this province.")
 						);
 
 						if (sim.IsResearched(playerId(), TechEnum::Museum))
@@ -2131,6 +2137,16 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							addDropDown(1, bld.lastResourceEnumToDecreasePrice);
 
 						}
+					}
+					else if (building.isEnum(CardEnum::IrrigationPump))
+					{
+						auto& pump = building.subclass<IrrigationPump>();
+						int32 waterTotal = pump.efficiency();
+						
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Water usage", "Water usage"),
+							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(waterTotal - pump.waterLeft), TEXT_NUM(waterTotal))
+						);
 					}
 					else if (IsMountainMine(building.buildingEnum()))
 					{

@@ -1377,7 +1377,8 @@ public:
 		}
 		return DropInfo::Invalid();
 	}
-	// Used in Farm pickup (small area less than region's width/height)
+
+
 	std::vector<DropInfo> GetDropsFromArea_Pickable(TileArea area, bool isSmallArea = false)
 	{
 		LEAN_PROFILING_R(GetDropsFromArea_Pickable);
@@ -1397,6 +1398,8 @@ public:
 		}
 		return results;
 	}
+	// Used in Farm pickup (small area less than region's width/height)
+	std::vector<DropInfo> GetDropsFromArea_PickableFarm(TileArea area, int32 buildingId);
 
 	//! Add/Remove Resources
 	void AddResource(ResourceHolderInfo info, int amount) {

@@ -881,7 +881,11 @@ void TownManager::Tick()
 				std::vector<int32> childIdsTemp = childIds();
 				humanIds.insert(humanIds.end(), childIdsTemp.begin(), childIdsTemp.end());
 
-				int32 killCount = std::min(GetMilitaryInfo(_trainUnitsQueue[0].cardEnum).humanCost, static_cast<int>(humanIds.size()));
+				int32 humanCost = 0;
+				if (IsMilitaryCardEnum(_trainUnitsQueue[0].cardEnum)) {
+					humanCost = GetMilitaryInfo(_trainUnitsQueue[0].cardEnum).humanCost;
+				}
+				int32 killCount = std::min(humanCost, static_cast<int>(humanIds.size()));
 				for (int32 i = 0; i < killCount; i++) {
 					_simulation->unitAI(humanIds[i]).Die();
 				}

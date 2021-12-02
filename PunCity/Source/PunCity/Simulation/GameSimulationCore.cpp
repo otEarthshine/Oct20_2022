@@ -2848,7 +2848,7 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 
 						// Change all drops
 						auto& resourceSys = resourceSystem(bld.playerId());
-						std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(bld.area(), true);
+						std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_PickableFarm(bld.area(), bld.buildingId());
 						for (DropInfo drop : drops) {
 							resourceSys.SetHolderTypeAndTarget(drop.holderInfo, ResourceHolderType::Drop, 0);
 						}
@@ -4518,6 +4518,8 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 	CloseCurrentPopup(command.playerId);
 
 	PopupReceiverEnum replyReceiver = static_cast<PopupReceiverEnum>(command.replyReceiverIndex);
+
+	const FText immigrantsGloom = LOCTEXT("ImmigrantsGloom", "Their earlier joyful smiles of hope turned into gloom as the immigrants leave the town.");
 	
 	if (replyReceiver == PopupReceiverEnum::ImmigrationEvent ||
 		replyReceiver == PopupReceiverEnum::YearlyImmigrationEvent)
@@ -4532,14 +4534,14 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			}
 		}
 		else if(command.choiceIndex == 1) {
-			//if (Time::Years() % 2 == 0) {
-				int32 sneakedIns = town.migrationPull() / 2;
+			if (Time::Years() % 2 == 0) {
+				int32 sneakedIns = std::max(1, town.migrationPull() / 2);
 				AddPopupToFront(command.playerId, 
 					FText::Format(LOCTEXT("ImmigrantsSneakedIn", "{0} immigrants decided to illegally sneaked in anyway..."), TEXT_NUM(sneakedIns)));
 				town.AddImmigrants(sneakedIns);
-			//} else {
-			//	AddPopupToFront(command.playerId, "Their earlier joyful smiles of hope turned into gloom as the immigrants leave the town.");
-			//}
+			} else {
+				AddPopupToFront(command.playerId, immigrantsGloom);
+			}
 		}
 		else {
 			AddPopupToFront(command.playerId, 
@@ -4560,7 +4562,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		}
 		else if (command.choiceIndex == 1) {
 			AddPopupToFront(command.playerId, 
-				LOCTEXT("ImmigrantsGloom", "Their earlier joyful smiles of hope turned into gloom as the immigrants left your town.")
+				immigrantsGloom
 			);
 		}
 		else {
@@ -4685,10 +4687,10 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 
 		if (claimProgress) {
 			// Return Military Units owned by command.playerId from any army
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, command.playerId, false, true);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerBackLine, command.playerId, false, true);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId, false, true);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerBackLine, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, false, true);
+			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, false, true);
 
 			claimProgress->Retreat_DeleteUnits(command.playerId);
 		}

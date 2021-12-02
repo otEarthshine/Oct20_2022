@@ -31,6 +31,15 @@ struct ProvinceClaimProgress
 	int32 defender_defenseBonus = 0;
 
 	int32 battleFinishCountdownTicks = -1; // Countdown after Finishing battle
+
+	// Non-Serialized
+	std::vector<CardStatus> attackerFrontLine_pendingRemoval;
+	std::vector<CardStatus> attackerBackLine_pendingRemoval;
+	std::vector<CardStatus> defenderFrontLine_pendingRemoval;
+	std::vector<CardStatus> defenderBackLine_pendingRemoval;
+
+	std::vector<CardStatus> defenderWall_pendingRemoval;
+	std::vector<CardStatus> defenderTreasure_pendingRemoval;
 	
 
 	bool attackerWon() const {
@@ -408,8 +417,24 @@ public:
 
 	const std::vector<ProvinceClaimProgress>& defendingClaimProgress() { return _defendingClaimProgress; }
 
+	const std::vector<ProvinceClaimProgress>& defendingClaimProgress_pendingRemoval() { return _defendingClaimProgress_pendingRemoval; }
+
 	ProvinceClaimProgress GetDefendingClaimProgress(int32 provinceId) const {
 		for (const ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				return claimProgress;
+			}
+		}
+		return ProvinceClaimProgress();
+	}
+
+	ProvinceClaimProgress GetDefendingClaimProgressDisplay(int32 provinceId) const {
+		for (const ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
+			if (claimProgress.provinceId == provinceId) {
+				return claimProgress;
+			}
+		}
+		for (const ProvinceClaimProgress& claimProgress : _defendingClaimProgress_pendingRemoval) {
 			if (claimProgress.provinceId == provinceId) {
 				return claimProgress;
 			}
@@ -427,8 +452,8 @@ public:
 	}
 
 
-	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerIdToReturn, bool forcedAll = true, bool isRetreating = false);
-
+	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, bool forcedAll = true, bool isRetreating = false);
+	
 	void EndConquer(int32 provinceId)
 	{
 		// Return Military Units
@@ -437,17 +462,26 @@ public:
 			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
 			if (claimProgress.provinceId == provinceId) 
 			{
-				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine, claimProgress.attackerPlayerId);
-				ReturnMilitaryUnitCards(claimProgress.attackerBackLine, claimProgress.attackerPlayerId);
-				if (_playerId != -1) {
-					ReturnMilitaryUnitCards(claimProgress.defenderFrontLine, _playerId);
-					ReturnMilitaryUnitCards(claimProgress.defenderBackLine, _playerId);
-				}
+				ReturnMilitaryUnitCards(claimProgress.attackerFrontLine);
+				ReturnMilitaryUnitCards(claimProgress.attackerBackLine);
+				ReturnMilitaryUnitCards(claimProgress.defenderFrontLine);
+				ReturnMilitaryUnitCards(claimProgress.defenderBackLine);
 				break;
 			}
 		}
 
-		CppUtils::RemoveOneIf(_defendingClaimProgress, [&](ProvinceClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; });
+		for (int32 i = _defendingClaimProgress.size(); i-- > 0;)
+		{
+			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
+			if (claimProgress.provinceId == provinceId)
+			{
+				_defendingClaimProgress_pendingRemoval.push_back(claimProgress);
+				_defendingClaimProgress.erase(_defendingClaimProgress.begin() + i);
+				break;
+			}
+		}
+
+		//CppUtils::RemoveOneIf(_defendingClaimProgress, [&](ProvinceClaimProgress& claimProgress) { return claimProgress.provinceId == provinceId; });
 	}
 	void EndConquer_Attacker(int32 provinceId)
 	{
@@ -775,4 +809,6 @@ protected:
 	 * Non-Serialize
 	 */
 	IGameSimulationCore* _simulation = nullptr;
+	
+	std::vector<ProvinceClaimProgress> _defendingClaimProgress_pendingRemoval;
 };

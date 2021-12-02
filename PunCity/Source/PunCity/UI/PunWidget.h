@@ -63,6 +63,8 @@ public:
 	}
 
 	virtual void OnInit() {}
+
+	virtual void OnDespawnWidget() {}
 	
 	IPunHUDInterface* GetPunHUD() {
 		check(_punHUD);

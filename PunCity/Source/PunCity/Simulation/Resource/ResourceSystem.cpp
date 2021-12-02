@@ -380,6 +380,29 @@ void ResourceSystem::UpdateResourceDisplay(const ResourceHolder& holder) const
 }
 
 
+std::vector<DropInfo> ResourceSystem::GetDropsFromArea_PickableFarm(TileArea area, int32 buildingId)
+{
+	LEAN_PROFILING_R(GetDropsFromArea_Pickable);
+
+	std::vector<DropInfo> results;
+
+	std::vector<WorldRegion2> regions = area.GetOverlapRegions(true);
+
+	for (WorldRegion2 region : regions)
+	{
+		const std::vector<DropInfo>& drops = _simulation->dropSystem().DropsInRegion(region);
+		for (const DropInfo& drop : drops) {
+			if (IsValidDrop_Helper(area, drop) &&
+				_simulation->buildingIdAtTile(drop.tile) == buildingId)
+			{
+				results.push_back(drop);
+			}
+		}
+	}
+	return results;
+}
+
+
 #if CHECK_TICKHASH
 std::vector<int32> ResourceSystem::GetResourcesSyncHashes() {
 	std::vector<int32> hashes;

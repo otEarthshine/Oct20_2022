@@ -24,4 +24,5 @@ public:
 
 	int32 lastDamageTick = -1;
 	int32 lastAttackTick = -1;
+	int32 lastDeathTick = -1;
 };

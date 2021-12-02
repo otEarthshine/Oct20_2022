@@ -3,6 +3,8 @@
 #pragma once
 
 #include "BattleFieldMiniUI.h"
+#include "PunSpineWidget.h"
+
 #include "BattleFieldUI.generated.h"
 
 /**
@@ -35,10 +37,14 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* LeftRetreatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* RightRetreatButton;
+
+	UPROPERTY(meta = (BindWidget)) UOverlay* GroundAttacher;
+
+	UPROPERTY(meta = (BindWidget)) UPunSpineWidget* BattleOpeningSpine;
 	
 	int32 provinceId = -1;
 
-	void UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress);
+	void UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher);
 	
 	virtual bool IsMiniUI() override { return false; }
 
@@ -71,4 +77,5 @@ public:
 		RightReinforceButton->SetVisibility(showRightReinforce ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		RightRetreatButton->SetVisibility(showRightRetreat ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 	}
+
 };

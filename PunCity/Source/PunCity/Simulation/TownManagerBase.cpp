@@ -53,7 +53,10 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 	 * displayCardStateValue2 = last damage tick
 	 */
 
-	auto doDamage = [&](CardStatus& attackerCard, std::vector<CardStatus>& damageTakerLine, int32 attackBonusPercent, int32 defenseBonusPercent)
+	auto doDamage = [&](CardStatus& attackerCard, 
+		std::vector<CardStatus>& damageTakerLine, 
+		std::vector<CardStatus>& damageTakerLine_PendingRemoval, 
+		int32 attackBonusPercent, int32 defenseBonusPercent)
 	{
 		int32 randomIndex = GameRand::Rand() % damageTakerLine.size();
 		CardStatus& damageTaker = damageTakerLine[randomIndex];
@@ -89,17 +92,31 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 			}
 		}
 
-		if (damageTaker.stackSize <= 0) {
+		if (damageTaker.stackSize <= 0) 
+		{
+			// pending removal
+			// - displayCardStateValue3 to mark deathAnim start tick (also used to calculate end point); replaces attackDisplay
+			// pending removal card is easily detected by checking stackSize == 0
+			damageTaker.displayCardStateValue3 = Time::Ticks();
+			damageTakerLine_PendingRemoval.push_back(damageTaker);
+
+			// Erase
 			damageTakerLine.erase(damageTakerLine.begin() + randomIndex);
 		}
 	};
 
-	auto doDamageToArmy = [&](CardStatus& attackerCard, std::vector<std::vector<CardStatus>*> damageTakerLines, int32 attackBonus, int32 defenseBonus)
+	auto doDamageToArmy = [&](CardStatus& attackerCard, 
+		std::vector<std::vector<CardStatus>*> damageTakerLines, 
+		std::vector<std::vector<CardStatus>*> damageTakerLines_PendingRemoval, 
+		int32 attackBonus, int32 defenseBonus)
 	{
 		for (int32 i = 0; i < damageTakerLines.size(); i++)
 		{
 			if (damageTakerLines[i]->size() > 0) {
-				doDamage(attackerCard, *damageTakerLines[i], attackBonus, defenseBonus);
+				doDamage(attackerCard, 
+					*damageTakerLines[i], 
+					*damageTakerLines_PendingRemoval[i], 
+					attackBonus, defenseBonus);
 				break;
 			}
 		}
@@ -109,19 +126,32 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 	int32 ticksPerAttackRound = MilitaryConstants::SecondsPerAttack * Time::TicksPerSecond;
 	int32 tickSinceAttackRoundStart = Time::Ticks() % ticksPerAttackRound;
 
-	auto tickAttackRound = [&](int32 ticksShift, std::vector<CardStatus>& backLine, std::vector<CardStatus>& frontLine, std::vector<std::vector<CardStatus>*> damageTakerLines, int32 attackBonus, int32 defenseBonus)
+	auto tickAttackRound = [&](int32 ticksShift, 
+		std::vector<CardStatus>& backLine, 
+		std::vector<CardStatus>& frontLine, 
+		std::vector<std::vector<CardStatus>*> damageTakerLines,
+		std::vector<std::vector<CardStatus>*> damageTakerLines_pendingRemoval,
+		int32 attackBonus, int32 defenseBonus)
 	{
 		int32 availableAttackTicks = Time::TicksPerSecond * 3;
 		int32 ticksBetweenAttacks = std::max(1, availableAttackTicks / std::max(1, static_cast<int32>(backLine.size() + frontLine.size())));
 		
 		for (int32 i = 0; i < backLine.size(); i++) {
 			if (tickSinceAttackRoundStart == ticksShift + i * ticksBetweenAttacks) {
-				doDamageToArmy(backLine[i], damageTakerLines, attackBonus, defenseBonus);
+				doDamageToArmy(backLine[i], 
+					damageTakerLines,
+					damageTakerLines_pendingRemoval,
+					attackBonus, defenseBonus
+				);
 			}
 		}
 		for (int32 i = 0; i < frontLine.size(); i++) {
 			if (tickSinceAttackRoundStart == ticksShift + (i + backLine.size()) * ticksBetweenAttacks) {
-				doDamageToArmy(frontLine[i], damageTakerLines, attackBonus, defenseBonus);
+				doDamageToArmy(frontLine[i], 
+					damageTakerLines,
+					damageTakerLines_pendingRemoval,
+					attackBonus, defenseBonus
+				);
 			}
 		}
 	};
@@ -130,31 +160,43 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 	// First Half
 	if (tickSinceAttackRoundStart < ticksPerAttackRound / 2)
 	{
-		tickAttackRound(0, defenderBackLine, defenderFrontLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
+		tickAttackRound(0, 
+			defenderBackLine, 
+			defenderFrontLine, 
+			{
+				&attackerFrontLine,
+				&attackerBackLine
+			},
+			{
+				&attackerFrontLine_pendingRemoval,
+				&attackerBackLine_pendingRemoval
+			},
+			defender_attackBonus, 
+			attacker_defenseBonus
+		);
 	}
 	// Second Half
 	else
 	{
-		tickAttackRound(ticksPerAttackRound / 2, attackerBackLine, attackerFrontLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
+		tickAttackRound(ticksPerAttackRound / 2, 
+			attackerBackLine, 
+			attackerFrontLine, 
+			{
+				&defenderWall,
+				&defenderFrontLine,
+				&defenderBackLine,
+				&defenderTreasure
+			},
+			{
+				&defenderWall_pendingRemoval,
+				&defenderFrontLine_pendingRemoval,
+				&defenderBackLine_pendingRemoval,
+				&defenderTreasure_pendingRemoval
+			},
+			attacker_attackBonus, 
+			defender_defenseBonus
+		);
 	}
-	
-	//if (Time::Ticks() % ticksPerAttack == 0)
-	//{
-	//	doDamageToArmy(defenderBackLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
-	//}
-	//else if (Time::Ticks() % ticksPerAttack == 1)
-	//{
-	//	doDamageToArmy(defenderFrontLine, { &attackerFrontLine, &attackerBackLine }, defender_attackBonus, attacker_defenseBonus);
-	//}
-	////! Attacker Turn
-	//else if (Time::Ticks() % ticksPerAttack == 4)
-	//{
-	//	doDamageToArmy(attackerBackLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
-	//}
-	//else if (Time::Ticks() % ticksPerAttack == 5)
-	//{
-	//	doDamageToArmy(attackerFrontLine, { &defenderWall, &defenderFrontLine, &defenderBackLine, &defenderTreasure }, attacker_attackBonus, defender_defenseBonus);
-	//}
 
 	//! Battle Countdown once it is done
 	battleFinishCountdownTicks = std::max(0, battleFinishCountdownTicks - 1);
@@ -342,22 +384,20 @@ void TownManagerBase::StartAttack_Defender(int32 attackerPlayerId, int32 provinc
 	_defendingClaimProgress.push_back(claimProgress);
 }
 
-void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerIdToReturn, bool forcedAll, bool isRetreating)
+void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, bool forcedAll, bool isRetreating)
 {
-	check(_simulation->IsValidPlayer(playerIdToReturn));
 	for (CardStatus card : cards) 
 	{
 		if (card.cardEnum == CardEnum::Militia) {
 			continue;
 		}
 		
-		if (forcedAll || playerIdToReturn == card.cardStateValue1) 
-		{	
-			// Retreating death
-			if (isRetreating && !IsNavyCardEnum(card.cardEnum)) {
-				card.stackSize = GameRand::RandRound(card.stackSize * 2, 3);
-			}
+		// Retreating death
+		if (isRetreating && !IsNavyCardEnum(card.cardEnum)) {
+			card.stackSize = GameRand::RandRound(card.stackSize * 2, 3);
+		}
 
+		if (_simulation->IsValidPlayer(card.cardStateValue1)) {
 			_simulation->cardSystem(card.cardStateValue1).TryAddCards_BoughtHandAndInventory(card);
 		}
 	}

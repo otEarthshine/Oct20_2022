@@ -43,5 +43,7 @@ public:
 	//UFUNCTION() void OnAnimationComplete(UTrackEntry* entry) {
 	//	SetAnimation(0, "Idle", true);
 	//}
+
+	float animationDoneSec = -1;
 	
 };

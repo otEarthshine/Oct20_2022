@@ -1428,9 +1428,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadResource2(ResourceEnum::ToiletPaper, "ToiletPaper/ToiletPaper");
 
 	LoadResource2(ResourceEnum::Spices, "Spices/Spices");
-	LoadResource2(ResourceEnum::Agave, "Spices/Spices");
-	LoadResource2(ResourceEnum::CactusFruit, "Spices/Spices");
-	LoadResource2(ResourceEnum::Tequila, "Spices/Spices");
+	LoadResource2(ResourceEnum::Agave, "Agave/Agave");
+	LoadResource2(ResourceEnum::CactusFruit, "CactusFruit/CactusFruit");
+	LoadResource2(ResourceEnum::Tequila, "Tequila/Tequila");
 	
 	//LoadResource2(ResourceEnum::Oyster, "Pottery/Pottery");
 	//LoadResource2(ResourceEnum::Truffle, "Pottery/Pottery");
@@ -1623,12 +1623,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// November 2021
 	LoadTileObject(TileObjEnum::Spices, {
 		"Trees/Spices/SpicesV1",
+		"Trees/Spices/SpicesV2",
 	});
 	LoadTileObject(TileObjEnum::Agave, {
-		"Trees/Spices/SpicesV1",
+		"Trees/Agave/SM_Agave_Crop",
 	});
 	LoadTileObject(TileObjEnum::CactusFruit, {
-		"Trees/Spices/SpicesV1",
+		"Trees/CactusFruit/SM_Cactus_Crop_01",
+		"Trees/CactusFruit/SM_Cactus_Crop_02",
+		"Trees/CactusFruit/SM_Cactus_Crop_03",
 	});
 
 	/**
@@ -2029,6 +2032,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 
 				FTransform transform;
 				ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+				bool extendsNegY = false;
 
 				if (buildingEnum == CardEnum::Quarry) {
 					transform = TransformFromPosition(0, -11.122, 7.325);
@@ -2040,40 +2044,47 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				}
 				else if (buildingEnum == CardEnum::FurnitureWorkshop) {
 					if (factionEnum == FactionEnum::Arab) {
-						if (era == 2) {
-							transform = TransformFromPosition(0.5, 16, 13.5);
-						}
-						else if (era == 3) {
-							transform = TransformFromPosition(.67, 15.9, 14.1);
-						}
-						else if (era == 4) {
-							transform = TransformFromPosition(.5, 16, 13.7);
-						}
+						moduleTypeEnum = ModuleTypeEnum::RotateNewY;
 					}
 					else {
 						transform = TransformFromPosition(6.506, 0, 13.303);
+						moduleTypeEnum = ModuleTypeEnum::RotateRollFurniture;
 					}
-					moduleTypeEnum = ModuleTypeEnum::RotateRollFurniture;
 				}
 				else if (buildingEnum == CardEnum::PaperMaker) {
 					transform = TransformFromPosition(0, 0, 7.388654);
 				}
 				else if (buildingEnum == CardEnum::IrrigationPump) {
-					transform = TransformFromPosition(0, 4.76, 6.64);
+					moduleTypeEnum = ModuleTypeEnum::RotateNewX;
 				}
 				else if (buildingEnum == CardEnum::CoffeeRoaster) {
-					transform = era == 3 ? TransformFromPosition(-6.8, 9, 0) : TransformFromPosition(-7.2, 9, 0);
-					moduleTypeEnum = ModuleTypeEnum::RotateZAxis;
+					if (factionEnum == FactionEnum::Arab) {
+						moduleTypeEnum = ModuleTypeEnum::RotateNewZ;
+						extendsNegY = true;
+					}
+					else {
+						transform = era == 3 ? TransformFromPosition(-6.8, 9, 0) : TransformFromPosition(-7.2, 9, 0);
+						moduleTypeEnum = ModuleTypeEnum::RotateZAxis;
+					}
 				}
 				else if (buildingEnum == CardEnum::Windmill) {
-					transform = TransformFromPosition(0, 0, 60);
-					moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+					if (factionEnum == FactionEnum::Arab) {
+						moduleTypeEnum = ModuleTypeEnum::RotateNewZ;
+					}
+					else {
+						transform = TransformFromPosition(0, 0, 60);
+						moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+					}
 				}
 				else {
 					UE_DEBUG_BREAK();
 				}
 
-				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
+				FVector rotatorPosition = DetectRotatorPosition(moduleName.ToString(), mesh, extendsNegY);
+				ModuleTransform moduleTransform(moduleName, transform, 0.0f, moduleTypeEnum);
+				moduleTransform.moduleTypeSpecialState = rotatorPosition;
+
+				_tempAuxGroup.animTransforms.push_back(moduleTransform);
 			}
 			else if (foundFiles[i].Contains("_WorkRotation2"))
 			{
@@ -2474,15 +2485,12 @@ void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 gr
 	}
 };
 
-void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh)
+void UAssetLoaderComponent::DetectOrLoadMeshVertexInfo(FString meshName, UStaticMesh* mesh)
 {
-	TArray<FVector> vertexPositions;
-
-	FString meshName = WithFactionName(factionEnum, mesh->GetName());
 
 #if (WITH_EDITOR && 0)
 	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
-	
+
 	isPrinting = true;
 	DetectMeshGroups(mesh, vertexPositions);
 	isPrinting = false;
@@ -2498,7 +2506,7 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 	{
 		FString path = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
 		FString saveFileName = "Paks/SmokePositions.json";
-		
+
 		FString jsonString;
 		FFileHelper::LoadFileToString(jsonString, *(path + saveFileName));
 
@@ -2519,8 +2527,8 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 				TSharedPtr<FJsonObject> vertexPosition_jsonObj = vertexPositions_jsonArray[j]->AsObject();
 				meshName_to_vertexPositions[meshNameTemp].Add(
 					FVector(vertexPosition_jsonObj->GetNumberField("X"),
-								vertexPosition_jsonObj->GetNumberField("Y"),
-								vertexPosition_jsonObj->GetNumberField("Z"))
+						vertexPosition_jsonObj->GetNumberField("Y"),
+						vertexPosition_jsonObj->GetNumberField("Z"))
 				);
 			}
 
@@ -2528,14 +2536,14 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 			for (auto& groups_jsonObj_it : groups_jsonObj->Values)
 			{
 				std::vector<int32> connectedIndices;
-				
+
 				const FString& groupIndex = groups_jsonObj_it.Key;
-				
+
 				const TArray<TSharedPtr<FJsonValue>>& vertIndices_jsonObj = groups_jsonObj->GetArrayField(groupIndex);
 				for (int32 i = 0; i < vertIndices_jsonObj.Num(); i++) {
 					connectedIndices.push_back(FMath::RoundToInt(vertIndices_jsonObj[i]->AsNumber()));
 				}
-				
+
 				meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshNameTemp)][FCString::Atoi(*groupIndex)] = connectedIndices;
 			}
 		}
@@ -2544,12 +2552,47 @@ void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, 
 	if (!meshName_to_vertexPositions.Contains(meshName)) {
 		return;
 	}
-	
 
-	vertexPositions = meshName_to_vertexPositions[meshName];
 	groupIndexToConnectedVertIndices = meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshName)];
 
 #endif
+}
+
+FVector UAssetLoaderComponent::DetectRotatorPosition(FString meshName, UStaticMesh* mesh, bool extendsNegY)
+{
+	DetectOrLoadMeshVertexInfo(meshName, mesh);
+
+	const TArray<FVector>& vertexPositions = meshName_to_vertexPositions[meshName];
+
+	FVector minBound(10000.0f, 10000.0f, 10000.0f);
+	FVector maxBound = -minBound;
+	for (FVector pos : vertexPositions) {
+		if (pos.X < minBound.X) minBound.X = pos.X;
+		if (pos.Y < minBound.Y) minBound.Y = pos.Y;
+		if (pos.Z < minBound.Z) minBound.Z = pos.Z;
+
+		if (pos.X > maxBound.X) maxBound.X = pos.X;
+		if (pos.Y > maxBound.Y) maxBound.Y = pos.Y;
+		if (pos.Z > maxBound.Z) maxBound.Z = pos.Z;
+	}
+
+	if (extendsNegY) {
+		minBound.Y -= (maxBound.Y - minBound.Y) / 3;
+	}
+
+	FVector center = (minBound + maxBound) / 2;
+
+	return center;
+}
+
+void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh)
+{
+	FString meshName = WithFactionName(factionEnum, mesh->GetName());
+
+	DetectOrLoadMeshVertexInfo(meshName, mesh);
+
+	const TArray<FVector>& vertexPositions = meshName_to_vertexPositions[meshName];
+	groupIndexToConnectedVertIndices = meshName_to_groupIndexToConnectedVertIndices[ToStdString(meshName)];
 
 	for (const auto& it : groupIndexToConnectedVertIndices) 
 	{

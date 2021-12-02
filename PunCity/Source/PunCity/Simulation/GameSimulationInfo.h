@@ -129,6 +129,15 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 	#endif
 #endif
 
+#if !defined(PUN_CHECK_DEBUG)
+	#if UE_BUILD_DEBUG
+		#define PUN_CHECK_DEBUG(x) if (!(x)) { FDebug::DumpStackTraceToLog(); checkNoEntry(); }
+	#else
+		#define PUN_CHECK_DEBUG(x)
+	#endif
+#endif
+
+
 #if !defined(PUN_ENSURE)
 	#if DEBUG_BUILD
 		#define PUN_ENSURE(condition, backupStatement) if (!(condition)) { FDebug::DumpStackTraceToLog(); UE_DEBUG_BREAK(); backupStatement; }
@@ -1266,7 +1275,7 @@ static const ResourceInfo ResourceInfos[]
 	//ResourceInfo(ResourceEnum::WhaleMeat, "WhaleMeat", 7, 100, "Luxury food obtained from Fishing Lodge"),
 	ResourceInfo(ResourceEnum::Grape,		LOCTEXT("Grape", "Grape"),			FoodCost, LOCTEXT("Grape Desc", "Juicy, delicious fruit used in Wine-making.")),
 	ResourceInfo(ResourceEnum::Wine,		LOCTEXT("Wine", "Wine"),			52, LOCTEXT("Wine Desc", "Luxury tier 2 used for housing upgrade. Alcoholic drink that makes everything tastes better.")),
-	ResourceInfo(ResourceEnum::MagicMushroom,		LOCTEXT("Magic Mushroom", "Magic Mushroom"),	30,		LOCTEXT("Magic Mushroom Desc", "Psychedelic mushroom that can bring you on a hallucination trip. (Luxury tier 2)")),
+	ResourceInfo(ResourceEnum::MagicMushroom,		LOCTEXT("Magic Mushroom", "Magic Mushroom"),	30,		LOCTEXT("Magic Mushroom Desc", "Psych mushroom that can bring you on a trip. (Luxury tier 2)")),
 
 	ResourceInfo(ResourceEnum::Pork,			LOCTEXT("Pork", "Pork"),		FoodCost, LOCTEXT("Pork Desc", "Delicious meat from farmed Pigs")),
 	ResourceInfo(ResourceEnum::GameMeat,		LOCTEXT("Game Meat", "Game Meat"), FoodCost,  LOCTEXT("Game Meat Desc", "Delicious meat from wild animals")),
@@ -1489,8 +1498,9 @@ static const std::vector<ResourceEnum> FoodEnums_NonInput
 	ResourceEnum::Papaya,
 	ResourceEnum::Coconut,
 	ResourceEnum::DateFruit,
+	ResourceEnum::CactusFruit,
 	ResourceEnum::Fish,
-
+	
 	ResourceEnum::Pork,
 	ResourceEnum::GameMeat,
 	ResourceEnum::Beef,
@@ -3659,7 +3669,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Agave, ResourceEnum::Tequila }, { 1, 1, 1 }, 20)
 	),
 	BldInfo(CardEnum::CoffeeRoaster, _LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee."),
-		WorldTile2(5, 5), GetBldResourceInfo(3, { ResourceEnum::RawCoffee, ResourceEnum::Coffee }, { 2, 0, 1, 3 }, 20, 100, -2)
+		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::RawCoffee, ResourceEnum::Coffee }, { 2, 0, 1, 3 }, 20, 100, -2)
 	),
 
 	// February 2
@@ -3859,7 +3869,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
 	BldInfo(CardEnum::CardCombiner, _LOCTEXT("Card Combiner", "Card Combiner"), LOCTEXT("Card Combiner (Plural)", "Card Combiner"), LOCTEXT("Card Combiner Desc", ""),
-		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+		WorldTile2(12, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
 
 	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Stepped Ruin", "Stepped Ruin"), LOCTEXT("Stepped Ruin (Plural)", "Stepped Ruins"), LOCTEXT("Stepped Ruin Desc", ""),
@@ -5810,7 +5820,7 @@ static const ResourcePair defaultHay100(ResourceEnum::Hay, HayBaseYield);
 static const ResourcePair defaultGrass100(ResourceEnum::Hay, HayBaseYield / GrassToBushValue);
 
 static int32 GetFarmSpecialYield100(ResourceEnum resourceEnum, int32 yieldBonusPercent) {
-	return std::max(100, FarmBaseYield100 * (yieldBonusPercent + 100) / 100 * GetResourceInfo(resourceEnum).basePrice100() / GetResourceInfo(ResourceEnum::Wheat).basePrice100());
+	return std::max(100, FarmBaseYield100 * (yieldBonusPercent + 100) / 100 * GetResourceInfo(ResourceEnum::Wheat).basePrice100() / GetResourceInfo(resourceEnum).basePrice100());
 }
 
 #define LOCTEXT_NAMESPACE "TileObjInfo"
@@ -10279,6 +10289,7 @@ enum class CallbackEnum : uint8
 	//ChoosePlayerColor2,
 	ChoosePlayerCharacter,
 
+	BattleOpeningAnimationComplete,
 
 	// TEMP move up later since it might break saves
 	RazeFort,

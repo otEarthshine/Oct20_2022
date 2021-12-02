@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "BattleFieldUI.h"
 #include "PunWidget.h"
 #include "MinorTownWorldUI.generated.h"
 
@@ -13,6 +14,8 @@ class PROTOTYPECITY_API UMinorTownWorldUI : public UPunWidget
 {
 	GENERATED_BODY()
 public:
+	UPROPERTY(meta = (BindWidget)) UBattleFieldUI* BattlefieldUI;
+	
 	UPROPERTY(meta = (BindWidget)) UButton* GiftButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DiplomacyButton;
 	UPROPERTY(meta = (BindWidget)) UButton* ConnectTradeRouteButton;
@@ -46,7 +49,9 @@ public:
 	
 	void UpdateMinorTownUI(bool isMini);
 
-
+	virtual void OnDespawnWidget() override {
+		//BattlefieldUI->provinceId = -1;
+	}
 		
 
 	UFUNCTION() void OnClickGiftButton() {

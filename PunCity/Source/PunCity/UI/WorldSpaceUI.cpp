@@ -191,8 +191,12 @@ void UWorldSpaceUI::TickBuildings()
 			int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
 
 			ProvinceClaimProgress claimProgress;
-			if (provinceTownId != -1) {
-				claimProgress = sim.townManagerBase(provinceTownId)->GetDefendingClaimProgress(provinceId);
+			if (IsValidMajorTown(provinceTownId))
+			{
+				TownHall* townhall = sim.GetTownhallPtr(provinceTownId);
+				if (townhall && townhall->provinceId() == provinceId) {
+					claimProgress = sim.townManagerBase(provinceTownId)->GetDefendingClaimProgressDisplay(provinceId);
+				}
 			}
 
 			WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(provinceId);
@@ -300,6 +304,7 @@ void UWorldSpaceUI::TickBuildings()
 
 						regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 						regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
+						//regionHoverUI->BattlefieldUI->provinceId = -1;
 					}
 				}
 			}

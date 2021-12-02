@@ -912,7 +912,7 @@ bool HumanStateAI::TryFindFood()
 				Farm& farm = _simulation->building<Farm>(farmId, CardEnum::Farm);
 				if (farm.IsStage(FarmStage::Harvesting))
 				{
-					std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
+					std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_PickableFarm(farm.area(), farm.buildingId());
 
 
 					int32 targetAmount = 10;
@@ -1705,7 +1705,7 @@ bool HumanStateAI::TryFarm()
 		}
 
 		// Ensure there is no drop left
-		std::vector<DropInfo> drops = resourceSystem().GetDropsFromArea_Pickable(farm.area(), true);
+		std::vector<DropInfo> drops = resourceSystem().GetDropsFromArea_PickableFarm(farm.area(), farm.buildingId());
 		if (drops.size() > 0) {
 			WorkFailed(TryWorkFailEnum::WaitingForAnotherFarmerToHarvest);
 			return false;
@@ -1733,7 +1733,7 @@ bool HumanStateAI::TryFarm()
 bool HumanStateAI::TryClearFarmDrop(Farm& farm, int32 minDropCount)
 {
 	auto& resourceSys = resourceSystem();
-	std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_Pickable(farm.area(), true);
+	std::vector<DropInfo> drops = resourceSys.GetDropsFromArea_PickableFarm(farm.area(), farm.buildingId());
 	
 	if (drops.size() < minDropCount) {
 		return false;

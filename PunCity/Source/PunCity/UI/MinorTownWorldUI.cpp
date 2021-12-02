@@ -152,6 +152,21 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	}
 
 
+	/*
+	 * Battle
+	 */
+	ProvinceClaimProgress claimProgress = sim.townManagerBase(uiTownId)->GetDefendingClaimProgressDisplay(townProvinceId());
+	if (claimProgress.isValid())
+	{
+		SetChildHUD(BattlefieldUI);
+		BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		BattlefieldUI->UpdateBattleFieldUI(townProvinceId(), claimProgress, false);
+	}
+	else 
+	{
+		BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
+		//BattlefieldUI->provinceId = -1;
+	}
 	
 
 	/*

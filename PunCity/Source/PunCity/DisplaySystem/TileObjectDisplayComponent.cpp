@@ -390,6 +390,22 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 				}
 				continue;
 			}
+			if (info.treeEnum == TileObjEnum::CactusFruit)
+			{
+				// Randomized
+				if (i == worldTileId % submeshCount) {
+					meshes->Add(GetMeshName(info.treeEnum, i), worldTileId, transform, ageState, worldTileId, true);
+				}
+				continue;
+			}
+			if (info.treeEnum == TileObjEnum::Spices)
+			{
+				// Row swaps
+				if (i == localTile.x % submeshCount) {
+					meshes->Add(GetMeshName(info.treeEnum, i), worldTileId, transform, ageState, worldTileId, true);
+				}
+				continue;
+			}
 
 			bool castShadow = (info.treeEnum != TileObjEnum::GrassGreen);
 

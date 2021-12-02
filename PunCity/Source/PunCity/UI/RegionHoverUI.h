@@ -39,13 +39,17 @@ public:
 	UPROPERTY(meta = (BindWidget)) UIconTextPairWidget* IconPair1;
 
 	int32 provinceId = -1;
+
+	virtual void OnDespawnWidget() override {
+		//BattlefieldUI->provinceId = -1;
+	}
 	
 	void UpdateBattlefieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress)
 	{
 		provinceId = provinceIdIn;
 
 		SetChildHUD(BattlefieldUI);
-		BattlefieldUI->UpdateUI(provinceId, claimProgress);
+		BattlefieldUI->UpdateBattleFieldUI(provinceId, claimProgress, true);
 	}
 
 	void UpdateProvinceOverlayInfo(int32 provinceIdIn)

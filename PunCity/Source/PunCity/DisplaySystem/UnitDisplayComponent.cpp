@@ -465,12 +465,7 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 							_lastWorkRotatorRotation.Add(moduleHash, rotation);
 						}
 						
-						bool shouldRotate = (moduleTypeEnum == ModuleTypeEnum::RotateRoll || 
-											moduleTypeEnum == ModuleTypeEnum::RotateRollMine ||
-											moduleTypeEnum == ModuleTypeEnum::RotateRollMine2 ||
-											moduleTypeEnum == ModuleTypeEnum::RotateRollQuarry ||
-											moduleTypeEnum == ModuleTypeEnum::RotateRollFurniture ||
-											moduleTypeEnum == ModuleTypeEnum::RotateZAxis) &&
+						bool shouldRotate = IsModuleTypeRotate(moduleTypeEnum) &&
 											building.shouldDisplayParticles();
 
 						float targetDegreePerSec = 90;
@@ -535,8 +530,28 @@ void UUnitDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2 c
 					else if (moduleTypeEnum == ModuleTypeEnum::RotateZAxis) {
 						rotator = FRotator(0, rotation.rotationFloat, 0);
 					}
-					
-					FTransform localTransform = FTransform(rotator, modules[i].transform.GetTranslation(), scale);
+					else if (IsModuleTypeRotateNew(moduleTypeEnum)) {
+						rotator = FRotator(moduleTypeEnum == ModuleTypeEnum::RotateNewY ? rotation.rotationFloat : 0,
+							moduleTypeEnum == ModuleTypeEnum::RotateNewZ ? rotation.rotationFloat : 0,
+							moduleTypeEnum == ModuleTypeEnum::RotateNewX ? rotation.rotationFloat : 0
+						);
+					}
+
+					FTransform localTransform;
+					if (IsModuleTypeRotateNew(moduleTypeEnum)) {
+						// in game, use the center position to adjust to 0,0,0 -> Rotate -> move back
+						FVector centerShift = modules[i].moduleTypeSpecialState;
+						FTransform shiftToCenterTransform = FTransform(-centerShift);
+						FTransform rotatorTransform(rotator);
+						FTransform shiftToFinalTransform = FTransform(centerShift);
+
+						FTransform rotatedTransform;
+						FTransform::Multiply(&rotatedTransform, &shiftToCenterTransform, &rotatorTransform);
+						FTransform::Multiply(&localTransform, &rotatedTransform, &shiftToFinalTransform);
+					}
+					else {
+						localTransform = FTransform(rotator, modules[i].transform.GetTranslation(), scale);
+					}
 
 					FTransform moduleTransform;
 					FTransform::Multiply(&moduleTransform, &localTransform, &transform);

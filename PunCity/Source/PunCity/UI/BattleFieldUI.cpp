@@ -10,17 +10,32 @@
 
 #define LOCTEXT_NAMESPACE "BattleFieldUI"
 
-void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress)
+void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher)
 {
 	// Initialize
-	if (provinceId == -1) {
+	if (provinceId == -1 || provinceId != provinceIdIn) {
 		LeftArmyFrontOuterBox->ClearChildren();
 		LeftArmyBackOuterBox->ClearChildren();
 		RightArmyFrontOuterBox->ClearChildren();
 		RightArmyBackOuterBox->ClearChildren();
+
+		float openDuration = BattleOpeningSpine->GetAnimationDuration("Open") - 0.2;
+		BattleOpeningSpine->animationDoneSec = openDuration + GetWorld()->GetTimeSeconds();
+		BattleOpeningSpine->SetAnimation(0, "Open", true);
+		BattleOpeningSpine->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
+
+	if (GetWorld()->GetTimeSeconds() > BattleOpeningSpine->animationDoneSec) {
+		BattleOpeningSpine->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	BattleOpeningSpine->PunTick();
+
+	
 	
 	provinceId = provinceIdIn;
+
+	GroundAttacher->SetVisibility(showAttacher ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
 	BUTTON_ON_CLICK(LeftReinforceButton, this, &UBattleFieldUI::OnClickReinforceLeft);
 	BUTTON_ON_CLICK(RightReinforceButton, this, &UBattleFieldUI::OnClickReinforceRight);
@@ -89,8 +104,20 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 	int32 calculatedRowCount = std::max(1, std::max(attackerMinRowCount, defenderMinRowsCount));
 
 	//! Fill Unit UI
-	auto addUnits = [&](std::vector<CardStatus>& simUnits, UHorizontalBox* armyOuterBox, bool isLeft)
+	auto addUnits = [&](std::vector<CardStatus> simUnits, 
+						const std::vector<CardStatus>& simUnits_pendingRemoval, 
+						UHorizontalBox* armyOuterBox, bool isLeft)
 	{
+		// Sort units by card enum
+		// so they are in same order even with pending removal added
+		simUnits.insert(simUnits.end(), simUnits_pendingRemoval.begin(), simUnits_pendingRemoval.end());
+		std::sort(simUnits.begin(), simUnits.end(), [&](const CardStatus& a, const CardStatus& b) {
+			if (static_cast<int32>(a.cardEnum) == static_cast<int32>(b.cardEnum)) {
+				return a.cardStateValue1 > b.cardStateValue1; // compare playerId
+			}
+			return static_cast<int32>(a.cardEnum) > static_cast<int32>(b.cardEnum);
+		});
+		
 		int32 columnIndex = 0;
 		int32 simUnitIndex = 0;
 		
@@ -101,7 +128,7 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 
 			for (int32 i = 0; i < calculatedRowCount; i++)
 			{
-				CardStatus& simUnit = simUnits[simUnitIndex];
+				const CardStatus& simUnit = simUnits[simUnitIndex];
 				int32 unitPlayerId = simUnit.cardStateValue1;
 				
 				auto unitIcon = GetBoxChild<UBattleFieldUnitIcon>(armyColumn->ArmyBox, unitIndex, UIEnum::WG_BattlefieldUnitIcon, true);
@@ -136,35 +163,57 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 					);
 				}
 
-				int32 armyCurrentHP = currentHP + unitHP * (simUnit.stackSize - 1);
-				int32 armyHP = unitHP * simUnit.stackSize;
-				
-				AddToolTip(unitIcon, FText::Format(
-					LOCTEXT("UnitIcon_Tip", "{0}<space><img id=\"Sword\"/>{1} \n<img id=\"Shield\"/>{2}<space>HP: {3}<space>Army Attack: {4}\nArmy HP: {5}"),
-					nameText,
-					TEXT_NUM(militaryInfo.attackDisplay()),
-					TEXT_NUM(militaryInfo.defenseDisplay()),
-					TextNumberColor(
-						FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(currentHP), TEXT_NUM(unitHP)), 
-						currentHP * 100 / unitHP, 60, 30
-					),
-					TEXT_NUM(militaryInfo.attackDisplay() * simUnit.stackSize),
-					TextNumberColor(
-						FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(armyCurrentHP), TEXT_NUM(armyHP)),
-						armyCurrentHP * 100 / armyHP, 60, 30
-					)
-				));
-
-				/*
-				 * Attack
-				 */
-				int32 lastAttackTick = simUnit.displayCardStateValue3;
-				if (lastAttackTick != -1 &&
-					Time::Ticks() - lastAttackTick < Time::TicksPerSecond && // if more than 1 sec already passed, don't show the damage
-					lastAttackTick > unitIcon->lastAttackTick) // lastAttack is still the same as the current one
+				if (simUnit.stackSize == 0)
 				{
-					unitIcon->lastAttackTick = lastAttackTick;
-					unitIcon->UnitImage->SetAnimation(0, "Attack", false);
+					/*
+					 * Pending Death
+					 */
+					int32 deathTick = simUnit.displayCardStateValue3;
+					if (deathTick != -1 &&
+						deathTick > unitIcon->lastDeathTick) // lastAttack is still the same as the current one
+					{
+						unitIcon->lastDeathTick = deathTick;
+						unitIcon->UnitImage->SetAnimation(0, "Dead", false);
+						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+					}
+
+					AddToolTip(unitIcon,
+						LOCTEXT("DeadUnitIcon_Tip", "Dead Unit")
+					);
+				}
+				else
+				{
+					int32 armyCurrentHP = currentHP + unitHP * (simUnit.stackSize - 1);
+					int32 armyHP = unitHP * simUnit.stackSize;
+
+					AddToolTip(unitIcon, FText::Format(
+						LOCTEXT("UnitIcon_Tip", "{0}<space><img id=\"Sword\"/>{1} \n<img id=\"Shield\"/>{2}<space>HP: {3}<space>Army Attack: {4}\nArmy HP: {5}"),
+						nameText,
+						TEXT_NUM(militaryInfo.attackDisplay()),
+						TEXT_NUM(militaryInfo.defenseDisplay()),
+						TextNumberColor(
+							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(currentHP), TEXT_NUM(unitHP)),
+							currentHP * 100 / unitHP, 60, 30
+						),
+						TEXT_NUM(militaryInfo.attackDisplay() * simUnit.stackSize),
+						TextNumberColor(
+							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(armyCurrentHP), TEXT_NUM(armyHP)),
+							armyCurrentHP * 100 / max(1, armyHP), 60, 30
+						)
+					));
+					
+					/*
+					 * Attack
+					 */
+					int32 lastAttackTick = simUnit.displayCardStateValue3;
+					if (lastAttackTick != -1 &&
+						Time::Ticks() - lastAttackTick < Time::TicksPerSecond && // if more than 1 sec already passed, don't show the damage
+						lastAttackTick > unitIcon->lastAttackTick) // lastAttack is still the same as the current one
+					{
+						unitIcon->lastAttackTick = lastAttackTick;
+						unitIcon->UnitImage->SetAnimation(0, "Attack", false);
+						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+					}
 				}
 				
 				/*
@@ -199,8 +248,12 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 					auto animation = GetAnimation(damageFloatup, FString("Floatup"));
 					damageFloatup->PlayAnimation(animation);
 
-					unitIcon->UnitImage->SetAnimation(0, "Hit", false);
-
+					// Don't hit if stack size is 0 (die instead)
+					if (simUnit.stackSize > 0) {
+						unitIcon->UnitImage->SetAnimation(0, "Hit", false);
+						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+					}
+					
 					//PUN_LOG("DamageOverlay: %d", unitUI->DamageOverlay->GetChildrenCount());
 				}
 				
@@ -221,17 +274,29 @@ void UBattleFieldUI::UpdateUI(int32 provinceIdIn, ProvinceClaimProgress claimPro
 
 	//! Attacker
 	{
-		addUnits(claimProgress.attackerBackLine, LeftArmyBackOuterBox, true);
-		addUnits(claimProgress.attackerFrontLine, LeftArmyFrontOuterBox, true);
+		addUnits(claimProgress.attackerBackLine, claimProgress.attackerBackLine_pendingRemoval, 
+			LeftArmyBackOuterBox, true
+		);
+		addUnits(claimProgress.attackerFrontLine, claimProgress.attackerFrontLine_pendingRemoval,
+			LeftArmyFrontOuterBox, true
+		);
 	}
 
 	//! Defender
 	{
-		addUnits(claimProgress.defenderBackLine, RightArmyBackOuterBox, false);
-		addUnits(claimProgress.defenderFrontLine, RightArmyFrontOuterBox, false);
+		addUnits(claimProgress.defenderBackLine, claimProgress.defenderBackLine_pendingRemoval,
+			RightArmyBackOuterBox, false
+		);
+		addUnits(claimProgress.defenderFrontLine, claimProgress.defenderFrontLine_pendingRemoval,
+			RightArmyFrontOuterBox, false
+		);
 
-		addUnits(claimProgress.defenderWall, RightArmyWall, false);
-		addUnits(claimProgress.defenderTreasure, RightArmyTreasure, false);
+		addUnits(claimProgress.defenderWall, claimProgress.defenderWall_pendingRemoval,
+			RightArmyWall, false
+		);
+		addUnits(claimProgress.defenderTreasure, claimProgress.defenderTreasure_pendingRemoval,
+			RightArmyTreasure, false
+		);
 	}
 
 	//! Battle Bar

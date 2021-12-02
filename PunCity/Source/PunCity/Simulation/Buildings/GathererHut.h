@@ -198,7 +198,7 @@ public:
 	}
 
 	bool HasDropsLeft() {
-		return resourceSystem().GetDropsFromArea_Pickable(area(), true).size() > 0;
+		return resourceSystem().GetDropsFromArea_PickableFarm(area(), buildingId()).size() > 0;
 	}
 	
 
@@ -208,7 +208,8 @@ public:
 		{
 			// Farm can return to seeding spring to mid summer (round 1 summer)
 			if (Time::IsValidFarmBeginTime() &&
-				!_simulation->IsOutputTargetReached(_townId, product())) 
+				!_simulation->IsOutputTargetReached(_townId, product()) &&
+				resourceSystem().GetDropsFromArea_PickableFarm(area(), buildingId()).size() < 10)
 			{
 				ResetStageTo(FarmStage::Seeding);
 			}

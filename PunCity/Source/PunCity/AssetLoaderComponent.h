@@ -70,16 +70,31 @@ enum class ModuleTypeEnum : uint8
 	Frame,
 	FrameConstructionOnly,
 	Window,
+	ShaderAnimate,
+	ShaderOnOff,
+	AlwaysOn,
+
 	RotateRoll,
 	RotateRollMine,
 	RotateRollMine2,
 	RotateRollQuarry,
 	RotateRollFurniture,
 	RotateZAxis,
-	ShaderAnimate,
-	ShaderOnOff,
-	AlwaysOn,
+	RotateNewX,
+	RotateNewY,
+	RotateNewZ,
 };
+
+static bool IsModuleTypeRotate(ModuleTypeEnum moduleTypeEnum)
+{
+	int32 moduleTypeInt = static_cast<int32>(moduleTypeEnum);
+	return static_cast<int32>(ModuleTypeEnum::RotateRoll) <= moduleTypeInt && moduleTypeInt <= static_cast<int32>(ModuleTypeEnum::RotateNewZ);
+}
+static bool IsModuleTypeRotateNew(ModuleTypeEnum moduleTypeEnum)
+{
+	int32 moduleTypeInt = static_cast<int32>(moduleTypeEnum);
+	return static_cast<int32>(ModuleTypeEnum::RotateNewX) <= moduleTypeInt && moduleTypeInt <= static_cast<int32>(ModuleTypeEnum::RotateNewZ);
+}
 
 static bool IsModuleTypeFrame(ModuleTypeEnum moduleTypeEnum)
 {
@@ -98,6 +113,7 @@ struct ModuleTransform
 
 	float relativeConstructionTime = 0;
 	ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::Normal;
+	FVector moduleTypeSpecialState = FVector::ZeroVector;
 
 	// !! Note that cannot do scaling on mesh with constructionMesh... (But then we don't need it?)
 	// !! Beware... rotator is Pitch Yaw Roll
@@ -860,6 +876,8 @@ public:
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Militia_SpineData;
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* Musketeer_SpineAtlas;
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Musketeer_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* NationalGuard_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* NationalGuard_SpineData;
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* Swordsman_SpineAtlas;
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Swordsman_SpineData;
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* Tank_SpineAtlas;
@@ -867,12 +885,17 @@ public:
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* Warrior_SpineAtlas;
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Warrior_SpineData;
 
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* WoodWall_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* WoodWall_SpineData;
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* StoneWall_SpineAtlas;
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* StoneWall_SpineData;
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* RaidTreasure_SpineAtlas;
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* RaidTreasure_SpineData;
-	//UPROPERTY(EditAnywhere) USpineAtlasAsset* ProvinceOwnershipFlag_SpineAtlas;
-	//UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* ProvinceOwnershipFlag_SpineData;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* ProvinceOwnershipFlag_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* ProvinceOwnershipFlag_SpineData;
+
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* BattleOpening_SpineAtlas;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* BattleOpening_SpineData;
 	
 	/*
 	 * Sounds
@@ -900,7 +923,7 @@ private:
 	T* Load(const char* path)
 	{
 		ConstructorHelpers::FObjectFinder<T> objectFinder(*FString(path));
-		check(objectFinder.Succeeded());
+		PUN_CHECK_DEBUG(objectFinder.Succeeded());
 		return objectFinder.Object;
 	}
 
@@ -908,7 +931,7 @@ private:
 	T* LoadF(FString path)
 	{
 		ConstructorHelpers::FObjectFinder<T> objectFinder(*path);
-		check(objectFinder.Succeeded());
+		PUN_CHECK_DEBUG(objectFinder.Succeeded());
 		return objectFinder.Object;
 	}
 
@@ -1048,8 +1071,11 @@ private:
 	/*
 	 * Mesh Processing
 	 */
-	
 	void DetectMeshGroups(UStaticMesh* mesh, TArray<FVector>& vertexPositions);
+
+	void DetectOrLoadMeshVertexInfo(FString meshName, UStaticMesh* mesh);
+
+	FVector DetectRotatorPosition(FString meshName, UStaticMesh* mesh, bool extendsNegY = false);
 	
 	void DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh);
 	

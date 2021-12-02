@@ -128,6 +128,7 @@ private:
 			for (int i = hoverWidgetComps.Num(); i--;)
 			{
 				UPunWidget* widget = CastChecked<UPunWidget>(hoverWidgetComps[i]->GetUserWidgetObject());
+				widget->OnDespawnWidget();
 				int objectId = widget->punId;
 				check(objectId != -1);
 

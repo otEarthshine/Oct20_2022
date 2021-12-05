@@ -43,6 +43,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* EraPopupButton;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* EraPopupButtonText;
 
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ImageBoxEra1;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ImageBoxEra2;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ImageBoxEra3;
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* ImageBoxEra4;
+
 private:
 	UFUNCTION() void ClickPopupButton1();
 	UFUNCTION() void ClickPopupButton2();

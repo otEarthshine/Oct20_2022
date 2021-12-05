@@ -40,6 +40,9 @@ struct ProvinceClaimProgress
 
 	std::vector<CardStatus> defenderWall_pendingRemoval;
 	std::vector<CardStatus> defenderTreasure_pendingRemoval;
+
+	static const int32 AnimationLengthSecs = 3;
+	static const int32 AnimationLengthTicks = AnimationLengthSecs * Time::TicksPerSecond;
 	
 
 	bool attackerWon() const {
@@ -125,6 +128,37 @@ struct ProvinceClaimProgress
 		for (const CardStatus& card : attackerBackLine) func(card);
 		for (const CardStatus& card : defenderFrontLine) func(card);
 		for (const CardStatus& card : defenderBackLine) func(card);
+	}
+
+	template<typename Func>
+	void ExecuteOnAll_PendingRemoval(Func func) const
+	{
+		for (const CardStatus& card : attackerFrontLine_pendingRemoval) func(card);
+		for (const CardStatus& card : attackerBackLine_pendingRemoval) func(card);
+		for (const CardStatus& card : defenderFrontLine_pendingRemoval) func(card);
+		for (const CardStatus& card : defenderBackLine_pendingRemoval) func(card);
+		
+		for (const CardStatus& card : defenderWall_pendingRemoval) func(card);
+		for (const CardStatus& card : defenderTreasure_pendingRemoval) func(card);
+	}
+
+	void RemoveExpired_PendingRemovalUnits()
+	{
+		auto removedExpired = [&](std::vector<CardStatus>& cards)
+		{
+			for (int32 i = cards.size(); i-- > 0;) {
+				if (Time::Ticks() - cards[i].displayCardStateValue3 > AnimationLengthTicks) {
+					cards.erase(cards.begin() + i);
+				}
+			}
+		};
+		removedExpired(attackerFrontLine_pendingRemoval);
+		removedExpired(attackerBackLine_pendingRemoval);
+		removedExpired(defenderFrontLine_pendingRemoval);
+		removedExpired(defenderBackLine_pendingRemoval);
+
+		removedExpired(defenderWall_pendingRemoval);
+		removedExpired(defenderTreasure_pendingRemoval);
 	}
 
 
@@ -268,6 +302,13 @@ public:
 		// Defense
 		for (ProvinceClaimProgress& claimProgress : _defendingClaimProgress) {
 			claimProgress.Tick(_simulation);
+		}
+
+		for (int32 i = _defendingClaimProgress_pendingRemoval.size(); i-- > 0;) {
+			_defendingClaimProgress_pendingRemoval[i].battleFinishCountdownTicks--;
+			if (_defendingClaimProgress_pendingRemoval[i].battleFinishCountdownTicks <= 0) {
+				_defendingClaimProgress_pendingRemoval.erase(_defendingClaimProgress_pendingRemoval.begin() + i);
+			}
 		}
 	}
 
@@ -452,7 +493,8 @@ public:
 	}
 
 
-	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, bool forcedAll = true, bool isRetreating = false);
+	void ReturnMilitaryUnitCards(std::vector<CardStatus>& cards);
+	void RetreatMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId);
 	
 	void EndConquer(int32 provinceId)
 	{
@@ -475,6 +517,12 @@ public:
 			ProvinceClaimProgress& claimProgress = _defendingClaimProgress[i];
 			if (claimProgress.provinceId == provinceId)
 			{
+				int32 lastDeadCompleteTick = Time::Ticks();
+				claimProgress.ExecuteOnAll_PendingRemoval([&](const CardStatus& card)
+				{
+					lastDeadCompleteTick = std::max(lastDeadCompleteTick, card.displayCardStateValue3 + ProvinceClaimProgress::AnimationLengthTicks);
+				});
+				claimProgress.battleFinishCountdownTicks = lastDeadCompleteTick - Time::Ticks();
 				_defendingClaimProgress_pendingRemoval.push_back(claimProgress);
 				_defendingClaimProgress.erase(_defendingClaimProgress.begin() + i);
 				break;

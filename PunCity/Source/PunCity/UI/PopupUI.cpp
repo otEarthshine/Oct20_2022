@@ -133,6 +133,21 @@ void UPopupUI::Tick()
 				default: break;
 			}
 			EraSwitcher->SetActiveWidgetIndex(activeWidgetIndex);
+
+			int32 imageIndex = 0;
+			if (simulation().playerFactionEnum(playerId()) == FactionEnum::Arab) {
+				imageIndex = 1;
+			}
+			auto setImage = [&](UVerticalBox* box)
+			{
+				for (int32 i = 0; i < box->GetChildrenCount(); i++) {
+					box->GetChildAt(i)->SetVisibility(i == imageIndex ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+				}
+			};
+			setImage(ImageBoxEra1);
+			setImage(ImageBoxEra2);
+			setImage(ImageBoxEra3);
+			setImage(ImageBoxEra4);
 			
 			EraPopupButtonText->SetText((receiverEnum == PopupReceiverEnum::StartGame_Story) ? LOCTEXT("CheersBeginning", "Cheers to the new beginning!") : LOCTEXT("Continue", "Continue"));
 		}

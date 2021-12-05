@@ -10,10 +10,89 @@
 
 #define LOCTEXT_NAMESPACE "BattleFieldUI"
 
+static const std::unordered_map<CardEnum, std::string> AttackSoundNames
+{
+	{ CardEnum::Archer, "Battle_Attack_Archer" },
+	{ CardEnum::Artillery, "Battle_Attack_Artillery" },
+	{ CardEnum::Battleship, "Battle_Attack_Battleship" },
+	{ CardEnum::Cannon, "Battle_Attack_Cannon" },
+	{ CardEnum::Catapult, "Battle_Attack_Catapult" },
+
+	{ CardEnum::Conscript, "Battle_Attack_Conscript" },
+	{ CardEnum::Frigate, "Battle_Attack_Frigate" },
+	{ CardEnum::Galley, "Battle_Attack_Galley" },
+	{ CardEnum::Infantry, "Battle_Attack_Infantry" },
+	//{ CardEnum::KnightArab, "Battle_Attack_KnightArab" },
+
+	{ CardEnum::Knight, "Battle_Attack_Knight" },
+	{ CardEnum::MachineGun, "Battle_Attack_MachineGun" },
+	//{ CardEnum::Conscript, "Battle_Attack_MilitiaArab" },
+	{ CardEnum::Militia, "Battle_Attack_Militia" },
+	{ CardEnum::Musketeer, "Battle_Attack_Musketeer" },
+
+	//{ CardEnum::Conscript, "Battle_Attack_NationalGuard" },
+	{ CardEnum::Swordsman, "Battle_Attack_Swordman" },
+	{ CardEnum::Tank, "Battle_Attack_Tank" },
+	{ CardEnum::Warrior, "Battle_Attack_Warrior" },
+};
+
+std::string GetAttackSoundName(CardEnum cardEnum)
+{
+	auto it = AttackSoundNames.find(cardEnum);
+	if (it != AttackSoundNames.end()) {
+		return it->second;
+	}
+	return AttackSoundNames.find(CardEnum::Archer)->second;
+}
+
+static const std::unordered_map<CardEnum, std::string> UnitLossSoundNames
+{
+	{ CardEnum::Archer, "Battle_Loss_Human" },
+	{ CardEnum::Artillery, "Battle_Loss_Metal" },
+	{ CardEnum::Battleship, "Battle_Loss_Battleship" },
+	{ CardEnum::Cannon, "Battle_Loss_Metal" },
+	{ CardEnum::Catapult, "Battle_Loss_Wood" },
+
+	{ CardEnum::Conscript, "Battle_Loss_Human" },
+	{ CardEnum::Frigate, "Battle_Loss_Frigate" },
+	{ CardEnum::Galley, "Battle_Loss_Galley" },
+	{ CardEnum::Infantry, "Battle_Loss_Human" },
+	//{ CardEnum::KnightArab, "Battle_Attack_KnightArab" },
+
+	{ CardEnum::Knight, "Battle_Loss_Human" },
+	{ CardEnum::MachineGun, "Battle_Loss_Human" },
+	//{ CardEnum::Conscript, "Battle_Attack_MilitiaArab" },
+	{ CardEnum::Militia, "Battle_Loss_Human" },
+	{ CardEnum::Musketeer, "Battle_Loss_Human" },
+
+	//{ CardEnum::Conscript, "Battle_Attack_NationalGuard" },
+	{ CardEnum::Swordsman, "Battle_Loss_Human" },
+	{ CardEnum::Tank, "Battle_Loss_Metal" },
+	{ CardEnum::Warrior, "Battle_Loss_Human" },
+
+	{ CardEnum::Wall, "Battle_Loss_StoneBuilding" },
+	{ CardEnum::RaidTreasure, "Battle_Loss_Treasure" },
+};
+
+
+std::string GetUnitLossSoundName(CardEnum cardEnum)
+{
+	auto it = UnitLossSoundNames.find(cardEnum);
+	if (it != UnitLossSoundNames.end()) {
+		return it->second;
+	}
+	return UnitLossSoundNames.find(CardEnum::Archer)->second;
+}
+
+
+
 void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher)
 {
 	// Initialize
-	if (provinceId == -1 || provinceId != provinceIdIn) {
+	if (provinceId == -1 || provinceId != provinceIdIn) 
+	{
+		provinceId = provinceIdIn;
+		
 		LeftArmyFrontOuterBox->ClearChildren();
 		LeftArmyBackOuterBox->ClearChildren();
 		RightArmyFrontOuterBox->ClearChildren();
@@ -23,6 +102,8 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		BattleOpeningSpine->animationDoneSec = openDuration + GetWorld()->GetTimeSeconds();
 		BattleOpeningSpine->SetAnimation(0, "Open", true);
 		BattleOpeningSpine->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+		simulation().soundInterface()->Spawn3DSound("CitizenAction", "BattleBegin", simulation().GetProvinceCenterTile(provinceId).worldAtom2());
 	}
 
 	if (GetWorld()->GetTimeSeconds() > BattleOpeningSpine->animationDoneSec) {
@@ -31,9 +112,6 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 
 	BattleOpeningSpine->PunTick();
 
-	
-	
-	provinceId = provinceIdIn;
 
 	GroundAttacher->SetVisibility(showAttacher ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
@@ -145,6 +223,15 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 				unitIcon->UnitImage->Atlas = spineAsset.atlas;
 				unitIcon->UnitImage->SkeletonData = spineAsset.skeletonData;
 
+				if (GetWorld()->GetTimeSeconds() < unitIcon->FXCompleteTime)
+				{
+					unitIcon->FXImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					unitIcon->FXImage->PunTick();
+				}
+				else {
+					unitIcon->FXImage->SetVisibility(ESlateVisibility::Collapsed);
+				}
+
 				MilitaryCardInfo militaryInfo = GetMilitaryInfo(simUnit.cardEnum);
 
 				int32 currentHP = simUnit.cardStateValue2 / 100;
@@ -175,6 +262,9 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 						unitIcon->lastDeathTick = deathTick;
 						unitIcon->UnitImage->SetAnimation(0, "Dead", false);
 						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+
+						std::string unitLossName = GetUnitLossSoundName(simUnit.cardEnum);
+						sim.soundInterface()->Spawn3DSound("CitizenAction", unitLossName, sim.GetProvinceCenterTile(provinceId).worldAtom2());
 					}
 
 					AddToolTip(unitIcon,
@@ -213,6 +303,8 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 						unitIcon->lastAttackTick = lastAttackTick;
 						unitIcon->UnitImage->SetAnimation(0, "Attack", false);
 						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+
+						sim.soundInterface()->Spawn3DSound("CitizenAction", GetAttackSoundName(simUnit.cardEnum), sim.GetProvinceCenterTile(provinceId).worldAtom2());
 					}
 				}
 				
@@ -252,6 +344,15 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 					if (simUnit.stackSize > 0) {
 						unitIcon->UnitImage->SetAnimation(0, "Hit", false);
 						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+
+						CardEnum attackerEnum = static_cast<CardEnum>(simUnit.displayCardStateValue4);
+						FSpineAsset attackerSpineAsset = assetLoader()->GetSpine(attackerEnum);
+
+						unitIcon->FXImage->Atlas = attackerSpineAsset.atlas_fx;
+						unitIcon->FXImage->SkeletonData = attackerSpineAsset.skeletonData_fx;
+						unitIcon->FXImage->SetAnimation(0, "Attack", false);
+						unitIcon->FXImage->SetTimeScale(sim.gameSpeedFloat());
+						unitIcon->FXCompleteTime = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / sim.gameSpeedFloat();
 					}
 					
 					//PUN_LOG("DamageOverlay: %d", unitUI->DamageOverlay->GetChildrenCount());

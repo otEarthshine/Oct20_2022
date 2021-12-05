@@ -209,6 +209,8 @@ public:
 	 * Sync data to be given to clients
 	 */
 	bool HasSyncData() { return _syncSaveInfo.IsValid(); }
+
+	bool IsLobbyLoadingSavedGame() { return HasSyncData(); }
 	
 	bool IsSyncDataReady() {
 		return _syncSaveInfo.IsValid() && _receivedPacketCount == _receivedData.Num();
@@ -228,6 +230,9 @@ public:
 		_lastSyncSaveInfo = _syncSaveInfo;
 		_syncSaveInfo = GameSaveInfo();
 		_syncCompressedData.Empty();
+		_receivedData.Empty();
+		_receivedPacketCount = 0;
+		_receivedPacketIterator = 0;
 	}
 	
 	const GameSaveInfo& GetSyncSaveInfo() { return _syncSaveInfo; }

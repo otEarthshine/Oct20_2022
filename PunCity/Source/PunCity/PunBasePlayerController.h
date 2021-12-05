@@ -5,6 +5,12 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "PunCity/PunGameInstance.h"
+
+#include "Runtime/Networking/Public/Networking.h"
+#include "Networking/Public/Common/TcpListener.h"
+#include "Interfaces/IPv4/IPv4Endpoint.h"
+#include "SocketSubsystem.h"
+
 #include "PunBasePlayerController.generated.h"
 
 
@@ -81,6 +87,28 @@ public:
 	UFUNCTION(Reliable, Server) void RequestDataChunks_ToServer(int32 clientPacketsReceived, const TArray<int32>& packetIndices);
 	UFUNCTION(Reliable, Client) void SendSaveDataChunk_ToClient(int32 packetIndex, const TArray<uint8>& saveDataChunk);
 
+	UFUNCTION(Exec) void SetPacketsPerRequest(int32 packetsPerRequestIn, int32 ticksPerDataSyncIn)
+	{
+		packetsPerRequest = packetsPerRequestIn;
+		packetCountThreshold = packetsPerRequest * 2;
+
+		TicksPerDataSync = std::max(1, ticksPerDataSyncIn);
+	}
+	
+	int32 packetsPerRequest = 40;
+	int32 packetCountThreshold = packetsPerRequest * 2; // 80
+
+	int32 TicksPerDataSync = 3;
+	
+	std::vector<int32> dataReceivedCounts;
+	int32 currentDataReceivedCount = 0;
+	float lastStatRecordSec = 0;
+
+	int32 GetDataSyncBytesPerSecond() {
+		return CppUtils::Sum(dataReceivedCounts) / std::max(1ULL, dataReceivedCounts.size());
+	}
+	
+	
 	/*
 	 * Commands
 	 */
@@ -131,6 +159,18 @@ public:
 	UFUNCTION(Exec) void SetCulture(FString preferredCultureTag) {
 		UKismetInternationalizationLibrary::SetCurrentCulture(preferredCultureTag, true);
 	}
+
+	/*
+	 * TCP
+	 */
+	
+	UFUNCTION(Exec) void StartTCPListener(int32 ip1, int32 ip2, int32 ip3, int32 ip4, int32 port);
+	UFUNCTION(Exec) void ConnectSocket(int32 ip1, int32 ip2, int32 ip3, int32 ip4, int32 port);
+
+	//bool NotificationReceived(FSocket* InSocket, const FIPv4Endpoint& ClientEndPoint);
+
+	FTcpListener* NotificationListener = nullptr;
+	FSocket* Socket = nullptr;
 	
 public:
 	UPunGameInstance* gameInstance() { return Cast<UPunGameInstance>(GetGameInstance()); }
@@ -141,7 +181,7 @@ private:
 	int32 _controllerPlayerId = -1;
 
 
-	int32 _dataSyncTick = 0;
+	//int32 _dataSyncTick = 0;
 	int32 _packetsRequested = 0;
 
 	float _dataSendTime = 0;

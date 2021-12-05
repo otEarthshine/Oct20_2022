@@ -34,6 +34,9 @@ public class PrototypeCity : ModuleRules
             "RHI",
             "SpinePlugin",
             //"OnlineSubsystemSteam",
+
+            "Networking",
+            "Sockets",
         });
 
         DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");

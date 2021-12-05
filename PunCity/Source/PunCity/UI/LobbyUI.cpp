@@ -612,7 +612,7 @@ void ULobbyUI::OnChatInputBoxTextCommitted(const FText& text, ETextCommit::Type 
 		FInputModeGameAndUI_Pun inputModeData;
 		inputModeData.SetWidgetToFocus(LobbyChatInputBox->TakeWidget());
 		inputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		controller->SetInputMode(inputModeData);
+		GetFirstController()->SetInputMode(inputModeData);
 	}
 }
 
@@ -787,7 +787,7 @@ void ULobbyUI::UpdateLobbyUI()
 
 	
 
-	LastPlayerColumnText->SetVisibility(saveInfo.IsValid() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	//LastPlayerColumnText->SetVisibility(saveInfo.IsValid() ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 
 	// Show player list
 	for (int i = 0; i < names.Num(); i++)
@@ -811,6 +811,38 @@ void ULobbyUI::UpdateLobbyUI()
 	for (int32 i = names.Num(); i < LobbyPlayerListBox->GetChildrenCount(); i++) {
 		LobbyPlayerListBox->GetChildAt(i)->SetVisibility(ESlateVisibility::Collapsed);
 	}
+
+
+	/*
+	 * Sync Debug
+	 */
+	DebugText->SetVisibility(ESlateVisibility::Collapsed);
+	APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this));
+	if (gameMode && gameInst->saveSystem().IsLobbyLoadingSavedGame())
+	{
+		const TArray<APunBasePlayerController*>& controllers = gameMode->ConnectedControllers();
+
+		DebugText->SetVisibility(ESlateVisibility::Visible);
+		TArray<FText> args;
+
+		for (int32 i = 0; i < controllers.Num(); i++) 
+		{
+			int32 controllerPlayerId = controllers[i]->controllerPlayerId();
+			args.Add(FText::Format(
+				INVTEXT("[{0}] {1} bps ... {2} / {3} \n"),
+				TEXT_NUM(i),
+				TEXT_NUM(controllers[i]->GetDataSyncBytesPerSecond()),
+				TEXT_NUM(gameInst->clientPacketsReceived[controllerPlayerId != -1 ? controllerPlayerId : 0]),
+				TEXT_NUM(gameInst->saveSystem().totalPackets())
+			));
+		}
+		
+		DebugText->SetText(JOINTEXT(args));
+	}
+}
+
+static bool SteamID64Equals(uint64 steamId64A, uint64 steamId64B) {
+	return  CSteamID(steamId64A).GetAccountID() == CSteamID(steamId64B).GetAccountID();
 }
 
 void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playerId, const GameSaveInfo& saveInfo)
@@ -839,6 +871,7 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 	element->SaveGameTransferText->SetVisibility(ESlateVisibility::Collapsed);
 
 	element->EmptyText->SetVisibility(ESlateVisibility::Collapsed);
+	element->PreviousPlayerText->SetVisibility(ESlateVisibility::Collapsed);
 	
 	
 	if (gameInst->playerConnectedStates.Num() > 0 &&
@@ -851,7 +884,7 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 			(gameInst->isMultiplayer() && gameInst->hostPlayerId == i ? LOCTEXT("(Host)", "(Host)").ToString() : "")
 		));
 		element->PlayerName->SetVisibility(ESlateVisibility::Visible);
-		
+
 		element->FactionName->SetText(GetFactionInfo(playerInfos[i].factionEnum()).name);
 		element->FactionName->SetVisibility(ESlateVisibility::Visible);
 
@@ -867,20 +900,37 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 
 		// if this is the ui controlling player, allow clicking too ready from this button
 		// Note:  GetFirstController()->PlayerState doesn't work on clients
-		if (i == GetFirstController()->controllerPlayerId()) 
+		if (i == GetFirstController()->controllerPlayerId())
 		{
 			element->PlayerReadyButton->OnClicked.RemoveAll(this);
 			element->PlayerReadyButton->OnClicked.AddDynamic(this, &ULobbyUI::OnClickReadyButton);
 			element->PlayerReadyButton->SetColorAndOpacity(FLinearColor(1, 1, 1, 1));
 			element->PlayerReadyButton->SetVisibility(ESlateVisibility::Visible);
 
-			element->PlayerLogoChangeButton->SetVisibility(ESlateVisibility::Visible);
+			if (!gameInst->saveSystem().IsLobbyLoadingSavedGame()) {
+				element->PlayerLogoChangeButton->SetVisibility(ESlateVisibility::Visible);
+			}
 		}
 		else {
 			element->PlayerReadyButton->OnClicked.RemoveAll(this);
 			element->PlayerReadyButton->SetColorAndOpacity(FLinearColor(1, 1, 1, 0.5));
 			element->PlayerReadyButton->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
+
+		if (saveInfo.IsValid())
+		{
+			if (!SteamID64Equals(saveInfo.playerNames[i].steamId64, playerInfos[i].steamId64))
+			{
+				FText name = saveInfo.playerNames[i].name;
+				
+				element->PreviousPlayerText->SetVisibility(ESlateVisibility::HitTestInvisible);
+				element->PreviousPlayerText->SetText(FText::Format(
+					LOCTEXT("PreviousPlayerWarning", "Previously\n{0}"),
+					!name.IsEmpty() ? name : LOCTEXT("Empty", "Empty")
+				));
+			}
+		}
+		
 
 		bool showKicker = gameInst->IsServer(this) && gameInst->hostPlayerId != i;
 		element->PlayerKickButton->SetVisibility(showKicker ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);

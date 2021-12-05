@@ -35,6 +35,9 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerLogoChangeButton;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* PreviousPlayerText;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* DebugText;
+
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoBackground;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoForeground;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerCharacterImage;

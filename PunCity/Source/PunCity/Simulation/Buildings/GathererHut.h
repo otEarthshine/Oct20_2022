@@ -191,6 +191,8 @@ public:
 	FText farmStageName();
 
 	bool ShouldAddWorker_ConstructedNonPriority() override {
+		//if (HasDropsLeft() && !_simulation->isStorageAllFull(_townId)) {
+		// TODO: Need to check storage thoroughly if drops can be removed (to )...
 		if (HasDropsLeft()) {
 			return true;
 		}

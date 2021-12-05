@@ -249,11 +249,20 @@ void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isR
 		BuildingIcon->GetDynamicMaterial()->SetScalarParameterValue("IsGray", showNeedResourceUI ? 1.0f : 0.0f);
 
 		BuildingIcon->SetOpacity(isEmptyCollectionSlot ? 0.3 : 1);
-		
 
-		NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
-		NeedResourcesText->SetVisibility(showNeedResourceUI ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
+		BuildingIcon->SetRenderTranslation(FVector2D(0, cardHandEnum == CardHandEnum::TrainUnits ? 15 : 0));
+
+		
+		if (cardHandEnum == CardHandEnum::TrainUnits) {
+			NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
+			NeedResourcesText->SetVisibility(simulation().townManager(playerId()).population() <= 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+			NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Citizens", "Need\nCitizens"));
+		}
+		else {
+			NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
+			NeedResourcesText->SetVisibility(showNeedResourceUI ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+			NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
+		}
 	}
 
 	//! Exclamation

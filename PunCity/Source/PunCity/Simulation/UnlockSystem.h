@@ -409,7 +409,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	} },
 	{ TechEnum::ForeignRelation, {
 		LOCTEXT("Foreign Relation", "Foreign Relation"),
-		LOCTEXT("Foreign Relation Desc", "Unlocks Diplomacy, Gifting, and Trade Deal"),
+		LOCTEXT("Foreign Relation Desc", "Unlocks Diplomacy, Trade Deal, and Minor City Interactions"),
 	} },
 	{ TechEnum::PolicyMaking, {
 		LOCTEXT("Policy Making", "Policy Making"),
@@ -1101,19 +1101,25 @@ public:
 				CardEnum::BeerBrewery
 			);
 
-			AddTech_Building(TechEnum::RanchSheep, { TechEnum::HerbFarming },
-				{ CardEnum::RanchSheep }
-			);
 
 			/// - Arab
+			TechEnum techLinkEnum_RanchSheep = TechEnum::RanchSheep;
 			TechEnum techLinkEnum_MushroomSubstrateSterilization = TechEnum::MushroomSubstrateSterilization;
 			if (factionEnum == FactionEnum::Arab) {
+				techLinkEnum_RanchSheep = TechEnum::Forester;
+				AddTech_Building(TechEnum::Forester, { TechEnum::HerbFarming },
+					{ CardEnum::Forester }
+				);
+				
 				techLinkEnum_MushroomSubstrateSterilization = TechEnum::Irrigation;
 				AddTech_Building(techLinkEnum_MushroomSubstrateSterilization, { TechEnum::HerbFarming },
 					{ CardEnum::IrrigationPump }
 				);
 			}
 			else {
+				AddTech_Building(TechEnum::RanchSheep, { TechEnum::HerbFarming },
+					{ CardEnum::RanchSheep }
+				);
 				AddTech_Bonus(techLinkEnum_MushroomSubstrateSterilization, { TechEnum::HerbFarming });
 			}
 			
@@ -1134,7 +1140,7 @@ public:
 			AddTech_Building(TechEnum::Logistics1, {},
 				CardEnum::HaulingServices
 			);
-			AddTech_Building(TechEnum::AgriculturalRevolution, { TechEnum::BeerBrewery, TechEnum::RanchSheep, techLinkEnum_MushroomSubstrateSterilization },
+			AddTech_Building(TechEnum::AgriculturalRevolution, { TechEnum::BeerBrewery, techLinkEnum_RanchSheep, techLinkEnum_MushroomSubstrateSterilization },
 				CardEnum::Granary
 			);
 			//AddTech_Building(TechEnum::PotatoFarming, { techLinkEnum_MushroomSubstrateSterilization },

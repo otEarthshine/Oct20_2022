@@ -236,9 +236,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Potter, "potterEra", "DesertPotte", "Potter", 1);
 
 	LoadBuilding(CardEnum::TradingPort, "TradingPort_Era", "TradingPort_Era", "TradingPort", 1);
-
-	// TODO:
-	LinkBuildingEras(FactionEnum::Europe, CardEnum::MinorCityPort, "TradingPort_Era", 1);
 	
 	LoadBuilding(CardEnum::TradingPost, "TradingPost_Era", "TradingPost_Era", "TradingPost", 1);
 	LoadBuilding(CardEnum::TradingCompany, "TradingCompany_Era", "TradingCompany_Era", "TradingCompany", 2);
@@ -249,7 +246,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::ImmigrationOffice, "Immigration_Office_Era_", "ImmigrationOffice_Era", "ImmigrationOffice", 1);
 	
-	LoadBuilding(CardEnum::HuntingLodge, "HuntingLodge", "", "HuntingLodge", 1);
+	LoadBuilding(CardEnum::HuntingLodge, "HuntingLodge", 1);
 
 	LoadBuilding(CardEnum::RanchPig, "pigranchERA", "pigranchERA", "Ranch", 1);
 	LinkBuildingEras(FactionEnum::Europe, CardEnum::RanchSheep, "pigranchERA", 1);
@@ -311,18 +308,19 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::IntercityLogisticsPort, "IntercityLogisticsPort", 0);
 
 
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::Forester, "Forester", "Foresterv2",  1);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Forester, "Forester", "Forester", 1);
 	//LoadBuildingEras(FactionEnum::Arab, CardEnum::Windmill, "Windmill", "Windmill", 1);
 
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::Fort, "Fortress", "Fortress", 1, 3);
+	LoadBuilding(CardEnum::Fort, "Fortress", 1, 3);
 
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::WorldTradeOffice, "WorldTradeOffice", "WorldTradeOffice", 4);
+	LoadBuilding(CardEnum::WorldTradeOffice, "WorldTradeOffice", 4);
 	
 	LoadBuilding(CardEnum::ForeignQuarter, "ForeignQuarter", 3);
 	LoadBuilding(CardEnum::ForeignPort, "ForeignPort", 3);
 	LoadBuilding(CardEnum::SpyCenter, "SpyCenter", 4);
 
-
+	LoadBuilding(CardEnum::Zoo, "Zoo", 3);
 
 
 	
@@ -334,7 +332,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Hotel, "Hotel", "Hotel", 3);
 
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::Embassy, "Embassy", "Embassy", 2);
+	LoadBuilding(CardEnum::Embassy, "Embassy", 2);
 
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Museum, "Museum", "Museum", 3);
 	LoadBuilding(CardEnum::CardCombiner, "ScholarsOffice", 3);
@@ -356,7 +354,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector} }
 	));
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 4);
-	
+
+
+	LoadBuilding(CardEnum::MinorCityPort, "MinorCityPort", 0,4);
 	
 	/*
 	 * Townhall
@@ -507,8 +507,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::PitaBakery, "", "PitaBakery_Era", "Bakery", 2);
 	LoadBuilding(CardEnum::IronSmelter, "Iron_Smelter_Era", "Iron_Smelter_Era", "IronSmelter", 2, 2);
 
-	LoadBuilding(CardEnum::IrrigationPump, "", "IrrigationPump_Era", "IrrigationPump", 2);
-
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::IrrigationPump, "IrrigationPump", "IrrigationPump", 2);
+	LoadBuildingEras(FactionEnum::Europe, CardEnum::IrrigationPump, "IrrigationPump", "IrrigationPump", 3);
 
 	LoadBuilding(CardEnum::Windmill, "Windmill", 2, 2);
 
@@ -1096,6 +1096,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::Swordsman, "Swordsman");
 	addCardIcon(CardEnum::Tank, "Tank");
 	addCardIcon(CardEnum::Warrior, "Warrior");
+
+	addCardIcon(CardEnum::Raid, "Raid");
 	
 
 	// Screenshot images
@@ -1736,6 +1738,7 @@ void UAssetLoaderComponent::InitNiagara()
 	NiagaraByEnum.Add(NS_OnPlacement);
 	NiagaraByEnum.Add(NS_OnTownhall);
 	NiagaraByEnum.Add(NS_OnUpgrade);
+	NiagaraByEnum.Add(NS_OnReveal);
 }
 
 UMaterialInstanceDynamic* UAssetLoaderComponent::GetResourceIconMaterial(ResourceEnum resourceEnum)
@@ -2490,7 +2493,8 @@ void UAssetLoaderComponent::DetectOrLoadMeshVertexInfo(FString meshName, UStatic
 
 #if (WITH_EDITOR && 0)
 	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
-
+	TArray<FVector> vertexPositions;
+	
 	isPrinting = true;
 	DetectMeshGroups(mesh, vertexPositions);
 	isPrinting = false;
@@ -3357,41 +3361,43 @@ void UAssetLoaderComponent::LoadTileObject(TileObjEnum treeEnum, std::vector<std
 
 FSpineAsset UAssetLoaderComponent::GetSpine(CardEnum cardEnum)
 {
-	auto makeAsset = [&](USpineAtlasAsset* atlas, USpineSkeletonDataAsset* data)
+	auto makeAsset = [&](USpineAtlasAsset* atlas, USpineSkeletonDataAsset* data, USpineAtlasAsset* atlas_fx, USpineSkeletonDataAsset* data_fx)
 	{
 		FSpineAsset asset;
 		asset.atlas = atlas;
 		asset.skeletonData = data;
+		asset.atlas_fx = atlas_fx;
+		asset.skeletonData_fx = data_fx;
 		return asset;
 	};
 
 	switch(cardEnum)
 	{
-	case CardEnum::Archer: return makeAsset(Archer_SpineAtlas, Archer_SpineData);
-	case CardEnum::Artillery: return makeAsset(Artillery_SpineAtlas, Artillery_SpineData);
-	case CardEnum::Battleship: return makeAsset(Battleship_SpineAtlas, Battleship_SpineData);
+	case CardEnum::Archer: return makeAsset(Archer_SpineAtlas, Archer_SpineData, Arrow_SpineAtlasFX, Arrow_SpineDataFX);
+	case CardEnum::Artillery: return makeAsset(Artillery_SpineAtlas, Artillery_SpineData, Cannonlv2_SpineAtlasFX, Cannonlv2_SpineDataFX);
+	case CardEnum::Battleship: return makeAsset(Battleship_SpineAtlas, Battleship_SpineData, Cannonlv2_SpineAtlasFX, Cannonlv2_SpineDataFX);
 
-	case CardEnum::Cannon: return makeAsset(Cannon_SpineAtlas, Cannon_SpineData);
-	case CardEnum::Catapult: return makeAsset(Catapult_SpineAtlas, Catapult_SpineData);
-	case CardEnum::Conscript: return makeAsset(Conscript_SpineAtlas, Conscript_SpineData);
+	case CardEnum::Cannon: return makeAsset(Cannon_SpineAtlas, Cannon_SpineData, Cannon_SpineAtlasFX, Cannon_SpineDataFX);
+	case CardEnum::Catapult: return makeAsset(Catapult_SpineAtlas, Catapult_SpineData, Rock_SpineAtlasFX, Rock_SpineDataFX);
+	case CardEnum::Conscript: return makeAsset(Conscript_SpineAtlas, Conscript_SpineData, Shoot_SpineAtlasFX, Shoot_SpineDataFX);
 
-	case CardEnum::Frigate: return makeAsset(Frigate_SpineAtlas, Frigate_SpineData);
-	case CardEnum::Galley: return makeAsset(Galley_SpineAtlas, Galley_SpineData);
-	case CardEnum::Infantry: return makeAsset(Infantry_SpineAtlas, Infantry_SpineData);
+	case CardEnum::Frigate: return makeAsset(Frigate_SpineAtlas, Frigate_SpineData, Cannon_SpineAtlasFX, Cannon_SpineDataFX);
+	case CardEnum::Galley: return makeAsset(Galley_SpineAtlas, Galley_SpineData, FireArrow_SpineAtlasFX, FireArrow_SpineDataFX);
+	case CardEnum::Infantry: return makeAsset(Infantry_SpineAtlas, Infantry_SpineData, Shoot_SpineAtlasFX, Shoot_SpineDataFX);
 
-	case CardEnum::Knight: return makeAsset(Knight_SpineAtlas, Knight_SpineData);
-	case CardEnum::MachineGun: return makeAsset(MachineGun_SpineAtlas, MachineGun_SpineData);
-	case CardEnum::Militia: return makeAsset(Militia_SpineAtlas, Militia_SpineData);
-	case CardEnum::Musketeer: return makeAsset(Musketeer_SpineAtlas, Musketeer_SpineData);
-	case CardEnum::Swordsman: return makeAsset(Swordsman_SpineAtlas, Swordsman_SpineData);
-	case CardEnum::Tank: return makeAsset(Tank_SpineAtlas, Tank_SpineData);
-	case CardEnum::Warrior: return makeAsset(Warrior_SpineAtlas, Warrior_SpineData);
+	case CardEnum::Knight: return makeAsset(Knight_SpineAtlas, Knight_SpineData, HeavyCurveSlash_SpineAtlasFX, HeavyCurveSlash_SpineDataFX);
+	case CardEnum::MachineGun: return makeAsset(MachineGun_SpineAtlas, MachineGun_SpineData, Shoot_SpineAtlasFX, Shoot_SpineDataFX);
+	case CardEnum::Militia: return makeAsset(Militia_SpineAtlas, Militia_SpineData, Stab_SpineAtlasFX, Stab_SpineDataFX);
+	case CardEnum::Musketeer: return makeAsset(Musketeer_SpineAtlas, Musketeer_SpineData, LongGun_SpineAtlasFX, LongGun_SpineDataFX);
+	case CardEnum::Swordsman: return makeAsset(Swordsman_SpineAtlas, Swordsman_SpineData, Slash_SpineAtlasFX, Slash_SpineDataFX);
+	case CardEnum::Tank: return makeAsset(Tank_SpineAtlas, Tank_SpineData, Cannonlv2_SpineAtlasFX, Cannonlv2_SpineDataFX);
+	case CardEnum::Warrior: return makeAsset(Warrior_SpineAtlas, Warrior_SpineData, Smash_SpineAtlasFX, Smash_SpineDataFX);
 
-	case CardEnum::Wall: return makeAsset(StoneWall_SpineAtlas, StoneWall_SpineData);
-	case CardEnum::RaidTreasure: return makeAsset(RaidTreasure_SpineAtlas, RaidTreasure_SpineData);
+	case CardEnum::Wall: return makeAsset(StoneWall_SpineAtlas, StoneWall_SpineData, nullptr, nullptr);
+	case CardEnum::RaidTreasure: return makeAsset(RaidTreasure_SpineAtlas, RaidTreasure_SpineData, nullptr, nullptr);
 
 	default:
 		UE_DEBUG_BREAK();
-		return makeAsset(Archer_SpineAtlas, Archer_SpineData);
+		return makeAsset(Archer_SpineAtlas, Archer_SpineData, Arrow_SpineAtlasFX, Arrow_SpineDataFX);
 	}
 }

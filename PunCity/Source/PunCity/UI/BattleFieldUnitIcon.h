@@ -16,6 +16,8 @@ class PROTOTYPECITY_API UBattleFieldUnitIcon : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UPunSpineWidget* UnitImage;
+	UPROPERTY(meta = (BindWidget)) UPunSpineWidget* FXImage;
+	
 	UPROPERTY(meta = (BindWidget)) UImage* BackgroundImage;
 	
 	UPROPERTY(meta = (BindWidget)) UOverlay* DamageFloatupOverlay;
@@ -25,4 +27,6 @@ public:
 	int32 lastDamageTick = -1;
 	int32 lastAttackTick = -1;
 	int32 lastDeathTick = -1;
+
+	float FXCompleteTime = -1;
 };

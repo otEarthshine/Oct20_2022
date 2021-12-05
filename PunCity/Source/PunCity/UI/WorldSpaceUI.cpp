@@ -194,7 +194,7 @@ void UWorldSpaceUI::TickBuildings()
 			if (IsValidMajorTown(provinceTownId))
 			{
 				TownHall* townhall = sim.GetTownhallPtr(provinceTownId);
-				if (townhall && townhall->provinceId() == provinceId) {
+				if (townhall && townhall->provinceId() != provinceId) { // Only show non-capital provinces
 					claimProgress = sim.townManagerBase(provinceTownId)->GetDefendingClaimProgressDisplay(provinceId);
 				}
 			}

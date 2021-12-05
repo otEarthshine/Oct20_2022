@@ -327,6 +327,9 @@ struct FSpineAsset
 
 	UPROPERTY() USpineAtlasAsset* atlas;
 	UPROPERTY() USpineSkeletonDataAsset* skeletonData;
+
+	UPROPERTY() USpineAtlasAsset* atlas_fx;
+	UPROPERTY() USpineSkeletonDataAsset* skeletonData_fx;
 };
 
 USTRUCT()
@@ -760,6 +763,7 @@ public:
 	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnPlacement;
 	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnTownhall;
 	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnUpgrade;
+	UPROPERTY(EditAnywhere) UNiagaraSystem* NS_OnReveal;
 	//!
 
 	UPROPERTY(EditAnywhere, Category = "Mesh Import") UStaticMesh* EmptyMesh;
@@ -896,6 +900,36 @@ public:
 
 	UPROPERTY(EditAnywhere) USpineAtlasAsset* BattleOpening_SpineAtlas;
 	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* BattleOpening_SpineData;
+
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Arrow_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Arrow_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Cannon_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Cannon_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Cannonlv2_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Cannonlv2_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* CurveSlash_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* CurveSlash_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* DoubleHeavySlash_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* DoubleHeavySlash_SpineDataFX;
+
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* FireArrow_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* FireArrow_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* HeavyCurveSlash_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* HeavyCurveSlash_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* LongGun_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* LongGun_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Rock_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Rock_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Shoot_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Shoot_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Slash_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Slash_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Smash_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Smash_SpineDataFX;
+	UPROPERTY(EditAnywhere) USpineAtlasAsset* Stab_SpineAtlasFX;
+	UPROPERTY(EditAnywhere) USpineSkeletonDataAsset* Stab_SpineDataFX;
+
+	
 	
 	/*
 	 * Sounds

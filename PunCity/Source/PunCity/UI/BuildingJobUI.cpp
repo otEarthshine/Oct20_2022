@@ -70,6 +70,7 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	SetShowBar(false);
 
 	ResourceCompletionIconBox->ClearChildren();
+	FarmIconBox->SetVisibility(ESlateVisibility::Collapsed);
 	OtherIconsBox->ClearChildren();
 
 	ClockBox->SetVisibility(ESlateVisibility::Collapsed);
@@ -321,6 +322,27 @@ void UBuildingJobUI::SetTradeProgress(TradeBuilding& tradeBuilding, float fracti
 void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building)
 {
 	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobResourceComplete);
+
+	if (building.isEnum(CardEnum::Farm) && outputs.size() > 0)
+	{
+		UMaterialInstanceDynamic* material = FarmIconBox->GetDynamicMaterial();
+		material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(outputs[0]));
+		material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(outputs[0]));
+		FarmIconBox->SetVisibility(ESlateVisibility::Visible);
+
+		if (FarmIconBox->IsHovered())
+		{
+			TArray<FText> args;
+			ADDTEXT_(LOCTEXT("Farm Hover Icon Tip", "{0} Farm"), ResourceNameT(outputs[0]));
+
+			auto tooltip = AddToolTip(FarmIconBox, args);
+			if (tooltip) {
+				tooltip->TipSizeBox->SetMinDesiredWidth(150);
+			}
+		}
+		return;
+	}
+	
 	
 	int32 index = 0;
 

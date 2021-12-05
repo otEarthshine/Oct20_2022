@@ -216,6 +216,8 @@ public:
 
 		FMapSettings mapSettings = gameInstance()->GetMapSettings();
 		setServerVsClientUI(LobbyMapSeedInputBox, LobbyMapSeedText, mapSettings.mapSeed);
+		LobbyMapSeedRandomizeButton->SetVisibility(!isLoading && isServer() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
 		setServerVsClientUI(LobbyMapSizeDropdown, LobbyMapSizeText, MapSizeNames[mapSettings.mapSizeEnumInt].ToString());
 		setServerVsClientUI(LobbySeaLevelDropdown, LobbySeaLevelText, MapSettingsLevelNames[static_cast<int>(mapSettings.mapSeaLevel)].ToString());
 		setServerVsClientUI(LobbyMoistureDropdown, LobbyMoistureText, MapMoistureNames[static_cast<int>(mapSettings.mapMoisture)].ToString());

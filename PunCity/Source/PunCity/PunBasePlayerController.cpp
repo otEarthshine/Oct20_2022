@@ -126,12 +126,11 @@ void APunBasePlayerController::Tick(float DeltaTime)
 	//	GEngine->GameViewport->Viewport->SetMouse(TargetMousePosition.X, TargetMousePosition.Y);
 	//	TargetMousePosition = FVector2D::ZeroVector;
 	//}
-
 	
-	_dataSyncTick++;
-	if (_dataSyncTick % 5 != 0) {
-		return;
-	}
+	//_dataSyncTick++;
+	//if (_dataSyncTick % TicksPerDataSync != 0) {
+	//	return;
+	//}
 
 	/*
 	 * Lobby Load Data Transfer
@@ -141,7 +140,7 @@ void APunBasePlayerController::Tick(float DeltaTime)
 	if (!IsServer() && saveSys.NeedSyncData())
 	{
 		_dataSendTime += DeltaTime; // Tick by fixed delta time to prevent buffer overflow
-		const float fixedDeltaTime = 0.02;
+		const float fixedDeltaTime = 0.02 * TicksPerDataSync;
 		
 		if (_dataSendTime >= fixedDeltaTime &&
 			controllerPlayerId() < gameInstance()->clientPacketsReceived.Num() &&
@@ -156,8 +155,8 @@ void APunBasePlayerController::Tick(float DeltaTime)
 			//_LOG(PunNetwork, "Sync - Controller Tick %d/%d", receivedPacketsCount, _packetsRequested);
 			
 			// Don't overflow the buffer
-			const int32 packetsPerRequest = 40;
-			const int32 packetCountThreshold = 80;
+			//packetsPerRequest = 40;
+			//packetCountThreshold = 80;
 			if (_packetsRequested - receivedPacketsCount <= packetCountThreshold)
 			{
 				TArray<int32> packets = gameInstance()->saveSystem().GetSyncPacketIndices(packetsPerRequest);
@@ -218,6 +217,21 @@ void APunBasePlayerController::RequestDataChunks_ToServer_Implementation(int32 c
 		}
 
 		SendSaveDataChunk_ToClient(packetIndex, dataChunk);
+
+		
+		// Stats
+		currentDataReceivedCount += dataChunk.Num();
+
+		if (GetWorld()->GetTimeSeconds() > lastStatRecordSec + 1.0f)
+		{
+			lastStatRecordSec += 1.0f;
+
+			dataReceivedCounts.push_back(currentDataReceivedCount);
+			currentDataReceivedCount = 0;
+			if (dataReceivedCounts.size() > 5) {
+				dataReceivedCounts.erase(dataReceivedCounts.begin());
+			}
+		}
 	}
 
 	auto gameMode = CastChecked<APunGameMode>(UGameplayStatics::GetGameMode(this));
@@ -258,3 +272,74 @@ void APunBasePlayerController::PunTog(const FString& setting)
 	bool value = PunSettings::Get(setting) == 0;
 	PunSettings::Set(setting, value);
 }
+
+/*
+ * TCP
+ */
+
+void APunBasePlayerController::StartTCPListener(int32 ip1, int32 ip2, int32 ip3, int32 ip4, int32 port) {
+
+	// listening socket
+	FIPv4Address Addr(ip1, ip2, ip3, ip4);
+	FIPv4Endpoint Endpoint(Addr, port);
+
+	FSocket* ListenerSocket = FTcpSocketBuilder("NotificationListeningSocket")
+		.AsReusable()
+		.BoundToEndpoint(Endpoint)
+		.Listening(8);
+
+	//Set Buffer Size
+	int32 ReceiveBufferSize = 2 * 1024 * 1024;
+	int32 NewSize = 0;
+	ListenerSocket->SetReceiveBufferSize(ReceiveBufferSize, NewSize);
+
+	NotificationListener = new FTcpListener(*ListenerSocket);
+	//NotificationListener->OnConnectionAccepted().BindUObject(this, &APunBasePlayerController::NotificationReceived);
+
+	if (NotificationListener->Init()) {
+		GEngine->AddOnScreenDebugMessage(-1, 60.f, FColor::Red, "TCP Listener Started");
+	}
+	else {
+		GEngine->AddOnScreenDebugMessage(-1, 60.f, FColor::Red, "TCP Listener Failed To Start");
+	}
+}
+
+void APunBasePlayerController::ConnectSocket(int32 ip1, int32 ip2, int32 ip3, int32 ip4, int32 port)
+{
+	Socket = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateSocket(NAME_Stream, TEXT("default"), false);
+
+	FIPv4Address ip(ip1, ip2, ip3, ip4);
+	TSharedRef<FInternetAddr> addr = ISocketSubsystem::Get(PLATFORM_SOCKETSUBSYSTEM)->CreateInternetAddr();
+	addr->SetIp(ip.Value);
+	addr->SetPort(port);
+
+	bool connected = Socket->Connect(*addr);
+
+	GEngine->AddOnScreenDebugMessage(-1, 60.f, FColor::Red, "Socket Created " + Socket->GetDescription() + " connected:" + FString::FromInt(connected));
+}
+
+//bool APunBasePlayerController::NotificationReceived(FSocket* InSocket, const FIPv4Endpoint& ClientEndPoint)
+//{
+//	GEngine->AddOnScreenDebugMessage(-1, 60.f, FColor::Red, "TCP Notification Received!");
+//
+//	//Binary Array!
+//	TArray<uint8> ReceivedData;
+//
+//	uint32 Size;
+//	uint32 MaxPacketSize = 65535u;
+//	while (InSocket->HasPendingData(Size))
+//	{
+//		ReceivedData.Init(0, FMath::Min(Size, MaxPacketSize));
+//
+//		int32 Read = 0;
+//		InSocket->Recv(ReceivedData.GetData(), ReceivedData.Num(), Read);
+//
+//		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Blue, FString::Printf(TEXT("Data Read! %d"), ReceivedData.Num()));
+//	}
+//
+//	for (int i = 0; i < ReceivedData.Num(); i++) {
+//		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Green, FString::Printf(TEXT("Data = %d"), ReceivedData[i]));
+//	}
+//
+//	return true;
+//}

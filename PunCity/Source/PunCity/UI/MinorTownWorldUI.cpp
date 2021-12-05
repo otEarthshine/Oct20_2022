@@ -58,17 +58,6 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 		PlayerColorCircle->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-	if (uiPlayerId != playerId() &&
-		simulation().IsResearched(playerId(), TechEnum::TradeRoute) &&
-		!simulation().worldTradeSystem().HasTradeRoute(playerId(), uiTownId))
-	{
-		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Visible);
-		BUTTON_ON_CLICK(ConnectTradeRouteButton, this, &UMinorTownWorldUI::OnClickConnectTradeButton);
-	}
-	else {
-		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Collapsed);
-	}
-
 
 	//! BottomCaptionText
 	auto& sim = simulation();
@@ -167,7 +156,21 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 		BattlefieldUI->SetVisibility(ESlateVisibility::Collapsed);
 		//BattlefieldUI->provinceId = -1;
 	}
-	
+
+	/*
+	 * Trade Route
+	 */
+	if (!claimProgress.isValid() &&
+		uiPlayerId != playerId() &&
+		simulation().IsResearched(playerId(), TechEnum::TradeRoute) &&
+		!simulation().worldTradeSystem().HasTradeRoute(playerId(), uiTownId))
+	{
+		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Visible);
+		BUTTON_ON_CLICK(ConnectTradeRouteButton, this, &UMinorTownWorldUI::OnClickConnectTradeButton);
+	}
+	else {
+		ConnectTradeRouteButton->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
 	/*
 	 * Show Foreign Army
@@ -218,6 +221,7 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 	auto& sim = simulation();
 	TownManagerBase* uiTownManagerBase = sim.townManagerBase(uiTownId);
 
+	bool hasNoBattle = !uiTownManagerBase->GetDefendingClaimProgressDisplay(townProvinceId()).isValid();
 	bool canRaze = sim.IsUnlocked(playerId(), UnlockStateEnum::Raze);
 	bool canVassalize = sim.CanVassalizeOtherPlayers(playerId());
 	bool canDiplo = sim.IsResearched(playerId(), TechEnum::ForeignRelation);
@@ -234,8 +238,10 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 
 
 
+	GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+	DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 	
-	if (canDiplo)
+	if (canDiplo && hasNoBattle)
 	{
 		// Gift
 		GiftButton->SetVisibility(ESlateVisibility::Visible);
@@ -244,11 +250,6 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 		// Diplomacy
 		DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
 		BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
-	}
-	else
-	{
-		GiftButton->SetVisibility(ESlateVisibility::Collapsed);
-		DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 	}
 	
 
@@ -261,7 +262,7 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 
 	// Not already a vassal? Might be able to attack
 	if (!sim.townManagerBase(playerId())->IsVassal(townId()) &&
-		!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
+		hasNoBattle)
 	{
 		// Vassalize
 		if (canVassalize)

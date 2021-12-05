@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 65 // 3 digit
+#define MINOR_VERSION 66 // 3 digit
 
-#define VERSION_DAY 30
-#define VERSION_MONTH 11
+#define VERSION_DAY 3
+#define VERSION_MONTH 12
 #define VERSION_YEAR 21
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -32,10 +32,10 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 41 // 3 digit
+#define MINOR_SAVE_VERSION 42 // 3 digit
 
-#define VERSION_SAVE_DAY 30
-#define VERSION_SAVE_MONTH 11
+#define VERSION_SAVE_DAY 3
+#define VERSION_SAVE_MONTH 12
 #define VERSION_SAVE_YEAR 21
 
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
@@ -3866,10 +3866,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0 })
 	),
 	BldInfo(CardEnum::WorldTradeOffice, _LOCTEXT("World Trade Office", "World Trade Office"), LOCTEXT("World Trade Office (Plural)", "World Trade Office"), LOCTEXT("World Trade Office Desc", ""),
-		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
 	BldInfo(CardEnum::CardCombiner, _LOCTEXT("Card Combiner", "Card Combiner"), LOCTEXT("Card Combiner (Plural)", "Card Combiner"), LOCTEXT("Card Combiner Desc", ""),
-		WorldTile2(12, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+		WorldTile2(10, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
 
 	BldInfo(CardEnum::MayanPyramid, _LOCTEXT("Stepped Ruin", "Stepped Ruin"), LOCTEXT("Stepped Ruin (Plural)", "Stepped Ruins"), LOCTEXT("Stepped Ruin Desc", ""),
@@ -4269,6 +4269,8 @@ struct CardStatus
 	int32 displayCardStateValue1 = -1;
 	int32 displayCardStateValue2 = -1;
 	int32 displayCardStateValue3 = -1;
+	int32 displayCardStateValue4 = -1;
+	int32 displayCardStateValue5 = -1;
 	
 
 	FVector2D lastPosition() const {
@@ -5899,8 +5901,8 @@ static const TileObjInfo TreeInfos[] = {
 	TileObjInfo(TileObjEnum::Tulip,		LOCTEXT("Tulip", "Tulip"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Tulip, GetFarmSpecialYield100(ResourceEnum::Tulip, 30)), LOCTEXT("Tulip Desc", "Beautiful decorative flower. (Luxury tier 1)")),
 
 	TileObjInfo(TileObjEnum::Spices,		LOCTEXT("Spices", "Spices"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Spices, GetFarmSpecialYield100(ResourceEnum::Spices, 100)), ResourceNameT(ResourceEnum::Spices)),
-	TileObjInfo(TileObjEnum::Agave,		LOCTEXT("Agave", "Agave"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Agave, GetFarmSpecialYield100(ResourceEnum::Agave, 100)), ResourceNameT(ResourceEnum::Agave)),
-	TileObjInfo(TileObjEnum::CactusFruit,	LOCTEXT("Cactus Fruit", "Cactus Fruit"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::CactusFruit, GetFarmSpecialYield100(ResourceEnum::CactusFruit, 100)), ResourceNameT(ResourceEnum::CactusFruit)),
+	TileObjInfo(TileObjEnum::Agave,		LOCTEXT("Agave", "Agave"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Agave, GetFarmSpecialYield100(ResourceEnum::Agave, 20)), ResourceNameT(ResourceEnum::Agave)),
+	TileObjInfo(TileObjEnum::CactusFruit,	LOCTEXT("Cactus Fruit", "Cactus Fruit"),	ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::CactusFruit, GetFarmSpecialYield100(ResourceEnum::CactusFruit, 0)), ResourceNameT(ResourceEnum::CactusFruit)),
 
 	
 	TileObjInfo(TileObjEnum::Herb,		LOCTEXT("Medicinal Herb", "Medicinal Herb"),		ResourceTileType::Bush,	ResourcePair::Invalid(), ResourcePair(ResourceEnum::Herb, FarmBaseYield100), LOCTEXT("Medicinal Herb Desc", "Herb used to heal sickness or make medicine.")),
@@ -7539,6 +7541,15 @@ static MilitaryCardInfo GetMilitaryInfo(CardEnum cardEnum) {
 	return MilitaryCardInfoBaseList[static_cast<int>(cardEnum) - static_cast<int>(CardEnum::Militia)];
 }
 
+static int32 GetMilitaryHumanCost(CardEnum cardEnum)
+{
+	int32 humanCost = 0;
+	if (IsMilitaryCardEnum(cardEnum)) {
+		humanCost = GetMilitaryInfo(cardEnum).humanCost;
+	}
+	return humanCost;
+}
+
 static FText GetMilitaryInfoDescription(CardEnum cardEnum)
 {
 	MilitaryCardInfo militaryInfo = GetMilitaryInfo(cardEnum);
@@ -8243,6 +8254,7 @@ enum class ParticleEnum
 	OnPlacement,
 	OnTownhall,
 	OnUpgrade,
+	OnReveal,
 
 	Count,
 };

@@ -59,6 +59,8 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ClockText;
 	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* ResourceCompletionIconBox;
+	UPROPERTY(meta = (BindWidget)) UImage* FarmIconBox;
+	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OtherIconsBox;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* DepletedText;

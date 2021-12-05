@@ -1419,7 +1419,7 @@ void ABuildingPlacementSystem::HighlightDemolishAreaBuildingRed()
 	for (int32 buildingId : buildingIds) {
 		Building& building = _gameInterface->simulation().building(buildingId);
 		if (building.isConstructed()) {
-			_gameInterface->ShowBuildingMesh(building, 3);
+			_gameInterface->ShowBuildingMesh(building, 4);
 		}
 	}
 }
@@ -1677,6 +1677,10 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 		if (_dragState == DragState::Dragging) {
 			_demolishHighlightArea = _area;
+		}
+
+		if (_dragState == DragState::NeedDragStart) {
+			_demolishHighlightArea = TileArea(_mouseOnTile, 0);
 		}
 		
 		HighlightDemolishAreaBuildingRed();

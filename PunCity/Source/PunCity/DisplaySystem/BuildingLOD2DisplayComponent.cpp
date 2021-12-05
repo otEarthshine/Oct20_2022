@@ -50,8 +50,8 @@ void UBuildingLOD2DisplayComponent::RefreshAnnotations()
 
 
 				WorldTile2 centerTile = building.displayCenterTile();
-				FVector displayLocation(centerTile.x * CoordinateConstants::DisplayUnitPerTile,
-					centerTile.y * CoordinateConstants::DisplayUnitPerTile, 0);
+				FVector displayLocation(centerTile.x * CoordinateConstants::DisplayUnitPerTile + 5.0f,
+										centerTile.y * CoordinateConstants::DisplayUnitPerTile + 5.0f, 0);
 				//FVector displayLocation(centerTile.x * _tileToWorldMapX, centerTile.y * _tileToWorldMapY, 0);
 
 				//FVector displayLocation(0, 0, 0);

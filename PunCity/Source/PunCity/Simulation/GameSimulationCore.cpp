@@ -1873,17 +1873,27 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		
 		ChangeMoney(parameters.playerId, -GetRevealSpyNestPrice());
 
-		TileArea(parameters.center, GetRevealSpyNestRadius()).ExecuteOnAreaSkip4_WorldTile2([&](WorldTile2 tile)
+		TileArea revealArea(parameters.center, GetRevealSpyNestRadius());
+
+		int32 spyNestsRevealed = 0;
+		revealArea.ExecuteOnAreaSkip4_WorldTile2([&](WorldTile2 tile)
 		{
 			if (Building* bld = buildingAtTile(tile)) {
 				if (bld->isEnum(CardEnum::House)) {
 					House& house = bld->subclass<House>();
 					if (house.spyPlayerId() != -1) {
 						house.RemoveSpyNest();
+						spyNestsRevealed++;
 					}
 				}
 			}
 		});
+
+		if (spyNestsRevealed == 0) {
+			AddPopup(parameters.playerId, LOCTEXT("RevealSpyNest_NoSpyNest", "No Spy Nest found in this area."));
+		}
+
+		AddFireOnceParticleInfo(ParticleEnum::OnReveal, revealArea);
 
 		return -1;
 	}
@@ -2047,6 +2057,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					}
 
 					int32 terrorismInfluenceLost = ApplySpyEffectiveness(1000, playerId, targetPlayerId);
+
+					terrorismInfluenceLost = std::min(influence(targetPlayerId), terrorismInfluenceLost);
 					
 					AddPopup(targetPlayerId, FText::Format(
 						LOCTEXT("Terrorism_TargetPop", "Terrorism act, {0} died... {1} is the culprit.. fear lead to {2} influence lost"), 
@@ -2373,10 +2385,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			}
 		});
 	}
-	// FastBuild should be able to place outside player's territory
 	else if (cardEnum != CardEnum::BoarBurrow &&
 			!IsRegionalBuilding(cardEnum) &&
-			PunSettings::IsOn("CheatFastBuild") &&
 			Time::Ticks() > Time::TicksPerMinute) // Need this, else it messes up Init
 	{
 		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
@@ -4535,7 +4545,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		}
 		else if(command.choiceIndex == 1) {
 			if (Time::Years() % 2 == 0) {
-				int32 sneakedIns = std::max(1, town.migrationPull() / 2);
+				int32 sneakedIns = std::max(1, town.askedMigration / 2);
 				AddPopupToFront(command.playerId, 
 					FText::Format(LOCTEXT("ImmigrantsSneakedIn", "{0} immigrants decided to illegally sneaked in anyway..."), TEXT_NUM(sneakedIns)));
 				town.AddImmigrants(sneakedIns);
@@ -4687,10 +4697,10 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 
 		if (claimProgress) {
 			// Return Military Units owned by command.playerId from any army
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerFrontLine, false, true);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->attackerBackLine, false, true);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderFrontLine, false, true);
-			provinceTownManager->ReturnMilitaryUnitCards(claimProgress->defenderBackLine, false, true);
+			provinceTownManager->RetreatMilitaryUnitCards(claimProgress->attackerFrontLine, command.playerId);
+			provinceTownManager->RetreatMilitaryUnitCards(claimProgress->attackerBackLine, command.playerId);
+			provinceTownManager->RetreatMilitaryUnitCards(claimProgress->defenderFrontLine, command.playerId);
+			provinceTownManager->RetreatMilitaryUnitCards(claimProgress->defenderBackLine, command.playerId);
 
 			claimProgress->Retreat_DeleteUnits(command.playerId);
 		}
@@ -5689,7 +5699,20 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
 		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
 		
-		if (claimProgress) {
+		if (claimProgress) 
+		{
+			// Reinforcement Notification
+			AddPopup(claimProgress->defenderTownId, 
+				LOCTEXT("ReinforcementAttack_NotificationToDefender", "Your enemies have reinforced their attack.")
+			);
+			if (claimProgress->attackerPlayerId != command.playerId)
+			{
+				AddPopup(claimProgress->attackerPlayerId, FText::Format(
+					LOCTEXT("ReinforcementAttack_NotificationToAttacker", "Reinforcements from {0} have arrived to help your attack."),
+					playerNameT(command.playerId)
+				));
+			}
+			
 			claimProgress->Reinforce(militaryCards, true, command.playerId);
 		}
 	}
@@ -5699,7 +5722,20 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
 		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
 
-		if (claimProgress) {
+		if (claimProgress) 
+		{
+			// Reinforcement Notification
+			AddPopup(claimProgress->attackerPlayerId,
+				LOCTEXT("ReinforcementDefend_NotificationToAttack", "Your enemy have reinforced their defense.")
+			);
+			if (claimProgress->defenderTownId != command.playerId)
+			{
+				AddPopup(claimProgress->defenderTownId, FText::Format(
+					LOCTEXT("ReinforcementDefend_NotificationToDefender", "Reinforcements from {0} have arrived to help your defense."),
+					playerNameT(command.playerId)
+				));
+			}
+			
 			claimProgress->Reinforce(militaryCards, false, command.playerId);
 		}
 	}
@@ -7200,6 +7236,7 @@ void GameSimulationCore::TestCityNetworkStage()
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ForeignQuarter);
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ForeignPort);
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::Embassy);
+	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ResourceOutpost);
 	
 	
 	for (CardEnum buildingEnum : buildingsToSpawn)

@@ -1045,8 +1045,7 @@ public:
 			return false;
 		}
 		if (tileOwnerPlayer(tile) != playerId) {
-			return PunSettings::IsOn("CheatFastBuild") ||
-					IsResearched(playerId, TechEnum::ForeignInvestment) ||
+			return IsResearched(playerId, TechEnum::ForeignInvestment) ||
 					IsAIPlayer(playerId);
 		}
 		return false;

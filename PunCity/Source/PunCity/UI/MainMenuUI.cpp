@@ -62,6 +62,7 @@ void UMainMenuUI::Init()
 
 	gameInstance()->bIsCreatingSession = false;
 	gameInstance()->isJoiningGame = false;
+	gameInstance()->CleanupSession();
 
 	// Popup
 	MainMenuPopupCloseButton->OnClicked.AddDynamic(this, &UMainMenuUI::OnClickPopupCloseButton);
@@ -78,6 +79,9 @@ void UMainMenuUI::Init()
 	// No longer caring about a game save now that the mainMenu is brought up
 	gameInstance()->SetSavedGameToLoad(GameSaveInfo());
 
+	// Clear any sync data
+	gameInstance()->saveSystem().ClearSyncData();
+	gameInstance()->ResetPlayerCount();
 
 	// TEST:
 	// TestSpine

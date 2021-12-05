@@ -357,6 +357,7 @@ public:
 	void FindGame();
 	void JoinGame(const FOnlineSessionSearchResult& searchResult);
 	void DestroyGame();
+	void CleanupSession();
 
 	void UpdateSession();
 	void ServerOnStartedGame();

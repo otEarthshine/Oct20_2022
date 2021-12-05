@@ -290,7 +290,7 @@ void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 	
 	FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
 	if (Session) {
-		PUN_DEBUG2("[ERROR]JoinGame: failed, already as session");
+		PUN_DEBUG2("[ERROR]JoinGame: failed, already in a session");
 		mainMenuPopup = LOCTEXT("JoinGame_AlreadyASession", "Join game failed, try again in a moment.");
 
 		sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
@@ -306,6 +306,17 @@ void UPunGameInstance::DestroyGame()
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
 	
 	sessionInterface->DestroySession(PUN_SESSION_NAME);
+}
+
+void UPunGameInstance::CleanupSession()
+{
+	if (sessionInterface)
+	{
+		FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
+		if (Session) {
+			sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
+		}
+	}
 }
 
 void UPunGameInstance::UpdateSession()

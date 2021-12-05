@@ -108,8 +108,51 @@ void USoundSystemComponent::LoadRawSoundFolders()
 	LoadRawSoundFolder("BuildingSmelter_OneShot", "Building/Smelter_OneShot");
 	LoadRawSoundFolder("BuildingQuarry", "Building/Quarry");
 	LoadRawSoundFolder("BuildingQuarry_OneShot", "Building/Quarry_OneShot");
+
+
+	//! Military
+	LoadRawSoundFolder("Battle_Attack_Archer", "Battle/UnitAttack/Archer");
+	LoadRawSoundFolder("Battle_Attack_Artillery", "Battle/UnitAttack/Artillery");
+	LoadRawSoundFolder("Battle_Attack_Battleship", "Battle/UnitAttack/Battleship");
+	LoadRawSoundFolder("Battle_Attack_Cannon", "Battle/UnitAttack/Cannon");
+	LoadRawSoundFolder("Battle_Attack_Catapult", "Battle/UnitAttack/Catapult");
 	
-	//
+	LoadRawSoundFolder("Battle_Attack_Conscript", "Battle/UnitAttack/Conscript");
+	LoadRawSoundFolder("Battle_Attack_Frigate", "Battle/UnitAttack/Frigate");
+	LoadRawSoundFolder("Battle_Attack_Galley", "Battle/UnitAttack/Galley");
+	LoadRawSoundFolder("Battle_Attack_Infantry", "Battle/UnitAttack/Infantry");
+	LoadRawSoundFolder("Battle_Attack_KnightArab", "Battle/UnitAttack/KnightArab");
+	LoadRawSoundFolder("Battle_Attack_Knight", "Battle/UnitAttack/Knight");
+	LoadRawSoundFolder("Battle_Attack_MachineGun", "Battle/UnitAttack/MachineGun");
+	LoadRawSoundFolder("Battle_Attack_MilitiaArab", "Battle/UnitAttack/MilitiaArab");
+	LoadRawSoundFolder("Battle_Attack_Militia", "Battle/UnitAttack/Militia");
+	LoadRawSoundFolder("Battle_Attack_Musketeer", "Battle/UnitAttack/Musketeer");
+	LoadRawSoundFolder("Battle_Attack_NationalGuard", "Battle/UnitAttack/NationalGuard");
+	LoadRawSoundFolder("Battle_Attack_Swordman", "Battle/UnitAttack/Swordman");
+	LoadRawSoundFolder("Battle_Attack_Tank", "Battle/UnitAttack/Tank");
+	LoadRawSoundFolder("Battle_Attack_Warrior", "Battle/UnitAttack/Warrior");
+
+	LoadRawSoundFolder("Battle_Loss_Battleship", "Battle/UnitLoss/BattleshipLoss");
+	LoadRawSoundFolder("Battle_Loss_Battleship_P", "Battle/UnitLoss/BattleshipLoss_P");
+	LoadRawSoundFolder("Battle_Loss_Frigate", "Battle/UnitLoss/FrigateLoss");
+	LoadRawSoundFolder("Battle_Loss_Frigate_P", "Battle/UnitLoss/FrigateLoss_P");
+	LoadRawSoundFolder("Battle_Loss_Galley", "Battle/UnitLoss/GalleyLoss");
+	LoadRawSoundFolder("Battle_Loss_Galley_P", "Battle/UnitLoss/GalleyLoss_P");
+	LoadRawSoundFolder("Battle_Loss_Human", "Battle/UnitLoss/HumanLoss");
+	LoadRawSoundFolder("Battle_Loss_Human_P", "Battle/UnitLoss/HumanLoss_P");
+	LoadRawSoundFolder("Battle_Loss_Metal", "Battle/UnitLoss/MetalLoss");
+	LoadRawSoundFolder("Battle_Loss_Metal_P", "Battle/UnitLoss/MetalLoss_P");
+
+	LoadRawSoundFolder("Battle_Loss_StoneBuilding", "Battle/UnitLoss/StoneBuildingLoss");
+	LoadRawSoundFolder("Battle_Loss_StoneBuilding_P", "Battle/UnitLoss/StoneBuildingLoss_P");
+	LoadRawSoundFolder("Battle_Loss_Treasure", "Battle/UnitLoss/TreasureLoss");
+	LoadRawSoundFolder("Battle_Loss_Treasure_P", "Battle/UnitLoss/TreasureLoss_P");
+	LoadRawSoundFolder("Battle_Loss_WoodBuilding", "Battle/UnitLoss/WoodBuildingLoss");
+	LoadRawSoundFolder("Battle_Loss_WoodBuilding_P", "Battle/UnitLoss/WoodBuildingLoss_P");
+	LoadRawSoundFolder("Battle_Loss_Wood", "Battle/UnitLoss/WoodLoss");
+	LoadRawSoundFolder("Battle_Loss_Wood_P", "Battle/UnitLoss/WoodLoss_P");
+
+	LoadRawSoundFolder("BattleBegin", "Battle/Indication/BattleBegin");
 
 	/*
 	 * Dropoff Pickup

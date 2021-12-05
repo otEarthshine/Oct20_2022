@@ -2494,7 +2494,56 @@ private:
 		Add3DSoundProperties("CitizenAction", "BowImpactFlesh");
 		Add3DSoundProperties("CitizenAction", "BowShoot");
 
-		// Buildings
+		//! Military
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Archer");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Artillery");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Battleship");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Cannon");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Catapult");
+
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Conscript");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Frigate");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Galley");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Infantry");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_KnightArab");
+
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Knight");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_MachineGun");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_MilitiaArab");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Militia");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Musketeer");
+
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_NationalGuard");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Swordman");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Tank");
+		Add3DSoundProperties("CitizenAction", "Battle_Attack_Warrior");
+
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Battleship");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Battleship_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Frigate");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Frigate_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Galley");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Galley_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Human");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Human_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Metal");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Metal_P");
+
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_StoneBuilding");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_StoneBuilding_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Treasure");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Treasure_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_WoodBuilding");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_WoodBuilding_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Wood");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Wood_P");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Metal");
+		Add3DSoundProperties("CitizenAction", "Battle_Loss_Metal_P");
+
+		Add3DSoundProperties("CitizenAction", "BattleBegin");
+		
+
+		//! Buildings
 		Add3DAudioGroupProperties("Building");
 		AddBuildingSoundProperties("Building", "BuildingBrewery");
 		AddBuildingSoundProperties("Building", "BuildingCharcoalMaker");
@@ -2502,7 +2551,7 @@ private:
 		AddBuildingSoundProperties("Building", "BuildingSmelter");
 		AddBuildingSoundProperties("Building", "BuildingQuarry");
 		AddBuildingSoundProperties("Building", "BuildingCoalMine");
-		
+
 
 		auto getDebugDescriptionFunc = [&](std::string localGroupName) {
 			std::stringstream ss;

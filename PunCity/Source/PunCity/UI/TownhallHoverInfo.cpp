@@ -58,6 +58,8 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 	auto& sim = simulation();
 	TownManagerBase* uiTownManagerBase = sim.townManagerBase(townId());
 
+	bool hasNoBattle = !uiTownManagerBase->GetDefendingClaimProgressDisplay(townProvinceId()).isValid();
+
 	UpdateUIBase(isMini);
 
 	/*
@@ -66,6 +68,7 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 	SendImmigrantsButton->SetVisibility(ESlateVisibility::Collapsed);
 
 	GiftButton->SetVisibility(ESlateVisibility::Collapsed);
+	
 	DiplomacyButton->SetVisibility(ESlateVisibility::Collapsed);
 
 	TradeButton->SetVisibility(ESlateVisibility::Collapsed);
@@ -115,7 +118,7 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			// Vassalize
 			// (Declare Independence)
 			if (uiTownManagerBase->lordPlayerId() != -1 &&
-				!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
+				hasNoBattle)
 			{
 				SetText(AttackButton1RichText, LOCTEXT("Declare Independence", "Declare Independence"));
 				BUTTON_ON_CLICK(AttackButton1, this, &UTownhallHoverInfo::OnClickDeclareIndependenceButton);
@@ -144,17 +147,21 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 		 */
 		else
 		{
-			if (sim.IsResearched(playerId(), TechEnum::ForeignRelation))
+			if (hasNoBattle)
 			{
-				// Gift
 				GiftButton->SetVisibility(ESlateVisibility::Visible);
-				TradeButton->SetVisibility(ESlateVisibility::Visible);
 				BUTTON_ON_CLICK(GiftButton, this, &UMinorTownWorldUI::OnClickGiftButton);
-				BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeDealButton);
 
-				// Diplomacy
-				DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
-				BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
+				if (sim.IsResearched(playerId(), TechEnum::ForeignRelation))
+				{
+					// Trade
+					TradeButton->SetVisibility(ESlateVisibility::Visible);
+					BUTTON_ON_CLICK(TradeButton, this, &UTownhallHoverInfo::OnClickTradeDealButton);
+
+					// Diplomacy
+					DiplomacyButton->SetVisibility(ESlateVisibility::Visible);
+					BUTTON_ON_CLICK(DiplomacyButton, this, &UMinorTownWorldUI::OnClickDiplomacyButton);
+				}
 			}
 
 
@@ -169,7 +176,7 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 				{
 					// Vassalize
 					if (sim.CanVassalizeOtherPlayers(playerId()) &&
-						!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
+						hasNoBattle)
 					{
 						// Vassalize (AttackButton1)
 						SetText(AttackButton1RichText, LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)"));
@@ -190,7 +197,7 @@ void UTownhallHoverInfo::UpdateTownhallHoverInfo(bool isMini)
 			else
 			{
 				if (sim.CanVassalizeOtherPlayers(playerId()) &&
-					!uiTownManagerBase->GetDefendingClaimProgress(townProvinceId()).isValid())
+					hasNoBattle)
 				{
 					// Vassalize (AttackButton1)
 					SetText(AttackButton1RichText, LOCTEXT("ConquerColonyButtonRichText_Text", "Conquer (Annex)\n<img id=\"Influence\"/>{0}"));

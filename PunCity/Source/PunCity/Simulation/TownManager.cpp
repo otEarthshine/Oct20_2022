@@ -868,23 +868,23 @@ void TownManager::Tick()
 	if (_trainUnitsQueue.size() > 0)
 	{
 		_trainUnitsTicks++;
-
-		if (_trainUnitsTicks >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum))
+		
+		if (_trainUnitsTicks >= GetTrainingLengthTicks(_trainUnitsQueue[0].cardEnum) &&
+			population() > 0)
 		{
 			if (_simulation->TryAddCards_BoughtHandAndInventory(_playerId, CardStatus(_trainUnitsQueue[0].cardEnum, 1)))
 			{
 				_trainUnitsTicks = 0;
 				_trainUnitsQueue[0].stackSize--;
 
+
 				// Take away population equals to human cost
+				int32 humanCost = GetMilitaryHumanCost(_trainUnitsQueue[0].cardEnum);
+
 				std::vector<int32> humanIds = adultIds();
 				std::vector<int32> childIdsTemp = childIds();
 				humanIds.insert(humanIds.end(), childIdsTemp.begin(), childIdsTemp.end());
 
-				int32 humanCost = 0;
-				if (IsMilitaryCardEnum(_trainUnitsQueue[0].cardEnum)) {
-					humanCost = GetMilitaryInfo(_trainUnitsQueue[0].cardEnum).humanCost;
-				}
 				int32 killCount = std::min(humanCost, static_cast<int>(humanIds.size()));
 				for (int32 i = 0; i < killCount; i++) {
 					_simulation->unitAI(humanIds[i]).Die();
@@ -1628,7 +1628,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 	 */
 	if (lordPlayerId() != -1) {
 		incomes100[static_cast<int>(IncomeEnum::ToLordTax)] -= std::max(0LL, totalRevenue100() * vassalTaxPercent() / 100);
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::LoseToLord)] += std::max(0, totalInfluenceIncome100() * vassalInfluencePercent() / 100);
+		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::LoseToLord)] -= std::max(0, totalInfluenceIncome100() * vassalInfluencePercent() / 100);
 	}
 
 	/*

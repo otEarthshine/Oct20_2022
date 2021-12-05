@@ -49,15 +49,16 @@ public:
 		{
 			AddDrawCards(CardEnum::FruitGatherer, 2);
 			AddDrawCards(CardEnum::Fisher, 2);
-			AddDrawCards(CardEnum::RanchPig, 1);
+			AddDrawCards(CardEnum::HuntingLodge, 2);
 
 			if (_simulation->playerFactionEnum(_playerId) == FactionEnum::Arab) {
 				AddDrawCards(CardEnum::ClayPit, 1);
+				AddDrawCards(CardEnum::RanchSheep, 1);
 			}
 			else {
 				AddDrawCards(CardEnum::Forester, 1);
-				AddDrawCards(CardEnum::HuntingLodge, 2);
 				AddDrawCards(CardEnum::MushroomFarm, 2);
+				AddDrawCards(CardEnum::RanchPig, 1);
 			}
 			
 

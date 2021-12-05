@@ -14,6 +14,7 @@
 #include "LobbySettingsUI.h"
 #include "LoadSaveUI.h"
 #include "SpineWidget.h"
+#include "PunCity/PunPlayerController.h"
 
 #include "MainMenuUI.generated.h"
 /**
@@ -163,6 +164,12 @@ public:
 		} else {
 			PasswordPopupOverlay->SetVisibility(ESlateVisibility::Visible);
 			PasswordEditableText->SetText(FText());
+
+			// Focus input on password input box
+			FInputModeGameAndUI_Pun inputModeData;
+			inputModeData.SetWidgetToFocus(PasswordEditableText->TakeWidget());
+			inputModeData.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			GetWorld()->GetFirstPlayerController()->SetInputMode(inputModeData);
 		}
 	}
 	UFUNCTION() void OnClickJoinPasswordConfirm();

@@ -79,6 +79,7 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 		int32 damage = attack * 100 / std::max(1, defense100);
 		damageTaker.displayCardStateValue1 = damage;
 		damageTaker.displayCardStateValue2 = Time::Ticks();
+		damageTaker.displayCardStateValue4 = static_cast<int32>(attackerCard.cardEnum);
 
 		while (damage > 0 && damageTaker.stackSize > 0)
 		{
@@ -200,6 +201,10 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 
 	//! Battle Countdown once it is done
 	battleFinishCountdownTicks = std::max(0, battleFinishCountdownTicks - 1);
+
+
+	//! Remove any pendingRemovals that are expired
+	RemoveExpired_PendingRemovalUnits();
 }
 
 /*
@@ -384,20 +389,37 @@ void TownManagerBase::StartAttack_Defender(int32 attackerPlayerId, int32 provinc
 	_defendingClaimProgress.push_back(claimProgress);
 }
 
-void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards, bool forcedAll, bool isRetreating)
+void TownManagerBase::ReturnMilitaryUnitCards(std::vector<CardStatus>& cards)
 {
 	for (CardStatus card : cards) 
 	{
 		if (card.cardEnum == CardEnum::Militia) {
 			continue;
 		}
-		
+
+		if (_simulation->IsValidPlayer(card.cardStateValue1)) {
+			_simulation->cardSystem(card.cardStateValue1).TryAddCards_BoughtHandAndInventory(card);
+		}
+	}
+	
+}
+
+void TownManagerBase::RetreatMilitaryUnitCards(std::vector<CardStatus>& cards, int32 playerId)
+{
+	for (CardStatus card : cards)
+	{
+		if (card.cardEnum == CardEnum::Militia) {
+			continue;
+		}
+
 		// Retreating death
-		if (isRetreating && !IsNavyCardEnum(card.cardEnum)) {
+		if (!IsNavyCardEnum(card.cardEnum)) {
 			card.stackSize = GameRand::RandRound(card.stackSize * 2, 3);
 		}
 
-		if (_simulation->IsValidPlayer(card.cardStateValue1)) {
+		if (_simulation->IsValidPlayer(card.cardStateValue1) && 
+			playerId == card.cardStateValue1) 
+		{
 			_simulation->cardSystem(card.cardStateValue1).TryAddCards_BoughtHandAndInventory(card);
 		}
 	}

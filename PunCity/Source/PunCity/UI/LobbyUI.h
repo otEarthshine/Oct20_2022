@@ -48,6 +48,8 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) ULobbySettingsUI* LobbySettingsUI;
 
+	UPROPERTY(meta = (BindWidget)) UTextBlock* DebugText;
+
 	FMapSettings& serverMapSettings() { return LobbySettingsUI->serverMapSettings; }
 
 	class AMainMenuPlayerController* GetFirstController() { return LobbySettingsUI->GetFirstController(); }
@@ -58,7 +60,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* LobbyReadyButton;
 	UPROPERTY(meta = (BindWidget)) UImage* LobbyReadyFill;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* LastPlayerColumnText;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* LastPlayerColumnText;
 
 	// Generate World
 	UPROPERTY(meta = (BindWidget)) UOverlay* GenerateWorldOverlay;

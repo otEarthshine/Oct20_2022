@@ -39,7 +39,7 @@ public:
 		_meshIndexIterator = 0;
 	}
 
-	void Show(Direction faceDirection, const std::vector<ModuleTransform>& modules, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0, bool receiveDecal = true)
+	void ShowBuildingMesh(Direction faceDirection, const std::vector<ModuleTransform>& modules, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0, bool receiveDecal = true)
 	{
 		PUN_CHECK(assetLoader);
 
@@ -104,7 +104,7 @@ public:
 			modules.push_back(ModuleTransform(bridgeModules[i].moduleName, transform));
 		}
 
-		Show(Direction::S, modules, assetLoader, customDepthIndex);
+		ShowBuildingMesh(Direction::S, modules, assetLoader, customDepthIndex);
 	}
 
 	void ShowTunnel(Building& building, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0)
@@ -124,7 +124,7 @@ public:
 		spawnEntrance(area.max(), rotationShift + 180);
 		
 
-		Show(Direction::S, modules, assetLoader, customDepthIndex);
+		ShowBuildingMesh(Direction::S, modules, assetLoader, customDepthIndex);
 	}
 
 	/*
@@ -145,7 +145,7 @@ public:
 			}
 		}
 
-		Show(Direction::S, modules, assetLoader, customDepthIndex);
+		ShowBuildingMesh(Direction::S, modules, assetLoader, customDepthIndex);
 	}
 	void ShowStorageMesh(Building& building, UAssetLoaderComponent* assetLoader, int32 customDepthIndex = 0) {
 		ShowStorageMesh(building.area(), building.centerTile(), assetLoader, customDepthIndex);

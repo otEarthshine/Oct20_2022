@@ -309,11 +309,19 @@ private:
 		return FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir()) + "/GameSaves/";
 	}
 
-	static FString FormatStringForPath(FString& strToFormat) {
-		return strToFormat.Replace(TEXT(" "), TEXT(""))
-			.Replace(TEXT("/"), TEXT(""))
-			.Replace(TEXT(","), TEXT(""))
-			.Replace(TEXT(":"), TEXT(""));
+	static FString FormatStringForPath(const FString& strToFormat) {
+		FString result = strToFormat;
+		for (int32 i = 0; i < result.Len(); i++) {
+			if (!FChar::IsAlnum(result[i])) {
+				result.InsertAt(i + 1, FString::FromInt(result[i]));
+				result.RemoveAt(i);
+			}
+		}
+		return result;
+		//return strToFormat.Replace(TEXT(" "), TEXT("xym"))
+		//	.Replace(TEXT("/"), TEXT("xym"))
+		//	.Replace(TEXT(","), TEXT("xym"))
+		//	.Replace(TEXT(":"), TEXT("xym"));
 	}
 	
 

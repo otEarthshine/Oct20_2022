@@ -1992,7 +1992,7 @@ public:
 		}
 
 		// HouseTooFar Warning
-		if (_allowedOccupants > 0)
+		if (GetWorkerCount() > 0)
 		{
 			if (_simulation->buildingIds(_townId, CardEnum::House).size() > 0 &&
 				!_simulation->HasBuildingWithinRadius(_centerTile, 55, _townId, CardEnum::House))

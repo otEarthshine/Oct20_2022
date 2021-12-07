@@ -1606,7 +1606,8 @@ public:
 		return isConstructed();
 	}
 
-	int32 availableWater() { return efficiency() + 16; }
+	int32 trueTotalWater() { return efficiency() + 16; }
+	int32 displayWaterUsage() { return trueTotalWater() - trueWaterLeft; }
 
 	virtual void OnDeinit() override;
 
@@ -1622,11 +1623,11 @@ public:
 	
 	virtual void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
-		Ar << waterLeft;
+		Ar << trueWaterLeft;
 	}
 
 public:
-	int32 waterLeft = 0;
+	int32 trueWaterLeft = 0;
 	
 	static const int32 Radius = 8;
 };

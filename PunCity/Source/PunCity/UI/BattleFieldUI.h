@@ -41,8 +41,14 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* GroundAttacher;
 
 	UPROPERTY(meta = (BindWidget)) UPunSpineWidget* BattleOpeningSpine;
+
+	UPROPERTY(meta = (BindWidget)) UVerticalBox* FullBattleField;
+	UPROPERTY(meta = (BindWidget)) UBattleFieldMiniUI* MiniBattleField;
+	
 	
 	int32 provinceId = -1;
+
+	int32 lastGameSpeed = -1;
 
 	void UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher);
 	

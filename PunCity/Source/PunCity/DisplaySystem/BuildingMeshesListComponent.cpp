@@ -40,7 +40,7 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(Building
 		buildingMeshes->ShowStorageMesh(building, _dataSource->assetLoader(), customDepth);
 	}
 	else {
-		buildingMeshes->Show(building.displayFaceDirection(), modules, _dataSource->assetLoader(), customDepth, receiveDecal);
+		buildingMeshes->ShowBuildingMesh(building.displayFaceDirection(), modules, _dataSource->assetLoader(), customDepth, receiveDecal);
 	}
 
 	buildingMeshes->SetWorldLocation(_dataSource->DisplayLocation(building.displayCenterTile().worldAtom2()));
@@ -52,7 +52,7 @@ UBuildingMeshesComponent* BuildingMeshesListComponent::ShowBuildingMesh(WorldTil
 {
 	UBuildingMeshesComponent* buildingMeshes = GetBuildingMeshes();
 	
-	buildingMeshes->Show(faceDirection, modules, _dataSource->assetLoader(), customDepthIndex, receiveDecal);
+	buildingMeshes->ShowBuildingMesh(faceDirection, modules, _dataSource->assetLoader(), customDepthIndex, receiveDecal);
 	buildingMeshes->SetWorldLocation(_dataSource->DisplayLocation(tile.worldAtom2()));
 
 	return buildingMeshes;

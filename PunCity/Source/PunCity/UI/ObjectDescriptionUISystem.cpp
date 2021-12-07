@@ -1611,13 +1611,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								assetLoader->ScienceIcon
 							);
 						}
-						if (IsBarrack(building.buildingEnum())) {
-							focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
-								LOCTEXT("Influence(per season)", "Influence(per season)"), 
-								TEXT_NUM(building.seasonalProduction()),
-								assetLoader->InfluenceIcon
-							);
-						}
+						//if (IsBarrack(building.buildingEnum())) {
+						//	focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
+						//		LOCTEXT("Influence(per season)", "Influence(per season)"), 
+						//		TEXT_NUM(building.seasonalProduction()),
+						//		assetLoader->InfluenceIcon
+						//	);
+						//}
 					}
 					else if (IsStorage(building.buildingEnum()))
 					{
@@ -2145,7 +2145,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 							LOCTEXT("Water usage", "Water usage"),
-							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(waterTotal - pump.waterLeft), TEXT_NUM(waterTotal))
+							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(pump.displayWaterUsage()), TEXT_NUM(waterTotal))
 						);
 					}
 					else if (IsMountainMine(building.buildingEnum()))
@@ -4012,7 +4012,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				//));
 				focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("DroppedResourceObjUI", "Dropped Resource"));
 				
-				focusBox->AddLineSpacer();
+				//focusBox->AddLineSpacer();
 
 				TArray<FText> args;
 				for (int i = 0; i < drops.size(); i++) 
@@ -4578,47 +4578,40 @@ void UObjectDescriptionUISystem::AddClaimLandButtons(int32 provinceId, UPunBoxWi
 			return;
 		}
 
-		// if this province overlaps with Townhall, act as if this is the home province
-		bool isVassalizing = false;
-		if (sim.IsTownhallOverlapProvince(provinceId, provinceTownId)) {
-			isVassalizing = true;
-			provinceId = sim.building(townManagerBase->townhallId).provinceId();
-		}
 
-		if (townManagerBase->playerIdForLogo() != playerId())
+		/*
+		 * Conquer Province
+		 */
+		if (IsValidMajorTown(provinceTownId) &&
+			townManagerBase->playerId() != playerId() &&
+			townManagerBase->lordPlayerId() != playerId())
 		{
 			if (simulation().IsUnlocked(playerId(), UnlockStateEnum::ConquerProvince))
 			{
-				auto addAttackButtons = [&](ClaimConnectionEnum claimConnectionEnum)
+				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
+				if (claimConnectionEnum != ClaimConnectionEnum::None) 
 				{
 					ProvinceClaimProgress claimProgress = townManagerBase->GetDefendingClaimProgress(provinceId);
 
 					// Start a new claim (Claim or Conquer Province)
 					if (!claimProgress.isValid())
 					{
-						int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
-						bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
+						if (!sim.IsTownhallOverlapProvince(provinceId, provinceTownId))
+						{
+							int32 startAttackPrice = simulation().GetProvinceAttackStartPrice(provinceId, claimConnectionEnum);
+							bool canClaim = simulation().influence(playerId()) >= startAttackPrice;
 
-						TArray<FText> args;
-						
-						if (isVassalizing) 	{
-							ADDTEXT_LOCTEXT("Vassalize", "Vassalize");
-						}
-						else {
+							TArray<FText> args;
+
 							ADDTEXT_LOCTEXT("ConquerProvince", "Conquer Province (Annex)");
+
+							AppendClaimConnectionString(args, claimConnectionEnum);
+							ADDTEXT_(INVTEXT("\n{0}<img id=\"Influence\"/>"), TextRed(FText::AsNumber(startAttackPrice), !canClaim));
+
+							descriptionBox->AddSpacer();
+							descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
 						}
-						
-						AppendClaimConnectionString(args, claimConnectionEnum);
-						ADDTEXT_(INVTEXT("\n{0}<img id=\"Influence\"/>"), TextRed(FText::AsNumber(startAttackPrice), !canClaim));
-
-						descriptionBox->AddSpacer();
-						descriptionBox->AddButton2Lines(JOINTEXT(args), this, CallbackEnum::StartAttackProvince, canClaim, false, provinceId);
 					}
-				};
-
-				ClaimConnectionEnum claimConnectionEnum = sim.GetProvinceClaimConnectionEnumPlayer(provinceId, playerId());
-				if (claimConnectionEnum != ClaimConnectionEnum::None) {
-					addAttackButtons(claimConnectionEnum);
 				}
 				else if (sim.IsProvinceNextToPlayerIncludingNonFlatLand(provinceId, playerId()))
 				{

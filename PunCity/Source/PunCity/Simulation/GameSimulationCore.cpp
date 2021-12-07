@@ -2913,7 +2913,10 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					//AddDemolishDisplayInfo(tile, { roadTile.isDirt ? CardEnum::DirtRoad : CardEnum::StoneRoad, TileArea(tile, WorldTile2(1, 1)), Time::Ticks() });
 				}
 
-				if (_overlaySystem.RemoveIrrigationDitch(tile)) {
+				
+				if (tileOwner != -1 &&
+					_overlaySystem.RemoveIrrigationDitch(tile)) 
+				{
 					SetNeedDisplayUpdate(DisplayClusterEnum::Building, tile.regionId(), true);
 					AddFireOnceParticleInfo(ParticleEnum::OnPlacement, TileArea(tile, WorldTile2(1, 1)));
 				}
@@ -5540,7 +5543,7 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 					}
 					else 
 					{
-						int32 raidInfluence = raidMoney / 2;
+						int32 raidInfluence = GetProvinceRaidInfluence100(command.provinceId) / 100;
 
 						AddPopup(provincePlayerId, FText::Format(
 							LOCTEXT("RaidHandleDecision_Pop", "{0} is launching a raid against you.<space>You can ignore the raid and stay in a fortified position or fight in an open field (without defensive advantage).<space><bullet> If you stay fortified, you will lose <img id=\"Coin\"/>{1} and <img id=\"Influence\"/>{2}.</><bullet> If you fight, you may lose your army.</>"),

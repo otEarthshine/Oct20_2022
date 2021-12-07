@@ -1880,6 +1880,17 @@ public:
 		return totalRaidIncome100;
 	}
 
+	virtual int32 GetProvinceRaidInfluence100(int32 originProvinceId) override
+	{
+		int32 influence100Local = GetProvinceRaidMoney100(originProvinceId) / 2;
+
+		int32 originTownId = provinceOwnerTownSafe(originProvinceId);
+		influence100Local = Clamp(influence100Local, 0, static_cast<int64>(influence100(townPlayerId(originTownId))));
+		
+		return influence100Local;
+	}
+
+
 	void CompleteRaid(int32 provinceId, int32 raiderPlayerId, int32 defenderTownId, int32 raidMoney);
 
 

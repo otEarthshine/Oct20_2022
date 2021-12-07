@@ -1206,13 +1206,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	//BorealWinterResistant
 
 	// Army Icons
-	auto addArmyIcon = [&](std::string iconName) {
-		_armyIcons.Add(LoadF<UTexture2D>(FString("/Game/UI/MiscIcons/") + ToFString(iconName)));
-	};
-	addArmyIcon("TowerPNG");
-	addArmyIcon("ClubPNG");
-	addArmyIcon("SwordPNG");
-	addArmyIcon("BowPNG");
+	//auto addArmyIcon = [&](std::string iconName) {
+	//	_armyIcons.Add(LoadF<UTexture2D>(FString("/Game/UI/MiscIcons/") + ToFString(iconName)));
+	//};
+	//addArmyIcon("TowerPNG");
+	//addArmyIcon("ClubPNG");
+	//addArmyIcon("SwordPNG");
+	//addArmyIcon("BowPNG");
 	
 	/**
 	 * Unit

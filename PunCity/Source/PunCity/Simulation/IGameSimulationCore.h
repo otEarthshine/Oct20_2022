@@ -464,6 +464,7 @@ public:
 	//virtual int32 GetProvinceUpkeep100(int32 provinceId, int32 playerId) = 0;
 
 	virtual int32 GetProvinceRaidMoney100(int32 originProvinceId) = 0;
+	virtual int32 GetProvinceRaidInfluence100(int32 originProvinceId) = 0;
 
 	virtual int32 GetProvinceClaimPrice(int32 provinceId, int32 playerId) = 0;
 

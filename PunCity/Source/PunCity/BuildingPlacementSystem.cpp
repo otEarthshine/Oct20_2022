@@ -1419,7 +1419,7 @@ void ABuildingPlacementSystem::HighlightDemolishAreaBuildingRed()
 	for (int32 buildingId : buildingIds) {
 		Building& building = _gameInterface->simulation().building(buildingId);
 		if (building.isConstructed()) {
-			_gameInterface->ShowBuildingMesh(building, 4);
+			_gameInterface->ShowBuildingMesh(building, 3);
 		}
 	}
 }
@@ -2031,7 +2031,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 							{
 								//! Raid
 								int32 raidMoney100 = simulation.GetProvinceRaidMoney100(provinceId);
-								int32 raidInfluence100 = raidMoney100 / 2;
+								int32 raidInfluence100 = simulation.GetProvinceRaidInfluence100(provinceId);
 								
 								SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
 									LOCTEXT("Raid Provinces Instruction MinorTown", "Raid Enemy Provinces for <img id=\"Coin\"/>{0} and <img id=\"Influence\"/>{1}."),
@@ -2056,7 +2056,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 								//! Raid
 								int32 raidMoney100 = simulation.GetProvinceRaidMoney100(provinceId);
-								int32 raidInfluence100 = raidMoney100 / 2;
+								int32 raidInfluence100 = simulation.GetProvinceRaidInfluence100(provinceId);
 
 								SetInstruction(PlacementInstructionEnum::Generic, true, FText::Format(
 									LOCTEXT("Raid Provinces Instruction 2", "Raid Enemy Provinces for <img id=\"Coin\"/>{0} and <img id=\"Influence\"/>{1}."),
@@ -3280,7 +3280,8 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	}
 
 	if (!_gameInterface->isShiftDown() &&
-		!IsRoadPlacement(_placementType))
+		!IsRoadPlacement(_placementType) &&
+		placementType != PlacementType::IrrigationDitch)
 	{
 		CancelPlacement();
 		networkInterface->OnCancelPlacement();
@@ -3358,7 +3359,10 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 					int32 moneyCap32 = sim.moneyCap32(playerId);
 
 					// Shift-Click only if there is enough money for buying 2 (current placement, and next placement)
-					if (moneyCap32 >= 2 * sim.cardSystem(playerId).GetCardPrice(_buildingEnum)) {
+					int32 cardPrice = sim.cardSystem(playerId).GetCardPrice(_buildingEnum);
+					if (cardPrice <= 0 ||
+						moneyCap32 >= 2 * cardPrice)
+					{
 						_timesShifted++;
 						return;
 					}

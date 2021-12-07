@@ -179,7 +179,7 @@ public:
 				}
 				
 				
-				_buildingMeshes->Show(faceDirection, moduleTransforms, assetLoader, 0);
+				_buildingMeshes->ShowBuildingMesh(faceDirection, moduleTransforms, assetLoader, 0);
 				_buildingMeshes->SetWorldLocation(captureComponent->GetComponentLocation() + captureComponent->GetForwardVector() * captureDistance + FVector(0, 0, heightAdjustment));
 
 				// TODO: once UE4 fixed alpha exr/png export, use only one texture.

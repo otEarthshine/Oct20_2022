@@ -213,57 +213,56 @@ void UWorldSpaceUI::TickBuildings()
 				);
 			};
 
-
-			if (claimProgress.isValid())
+			if (zoomDistance < WorldZoomTransition_Region4x4ToMap)
 			{
-				URegionHoverUI* regionHoverUI = getRegionHoverUI();
-
-				regionHoverUI->UpdateBattlefieldUI(provinceId, claimProgress);
-
-				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
-				regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
-				
-				/*
-				 * Battle Flash
-				 */
-				UTerritoryMeshComponent* mesh = nullptr;
-				if (provinceMeshIndex < _provinceMeshes.Num())
+				if (claimProgress.isValid())
 				{
-					mesh = _provinceMeshes[provinceMeshIndex];
+					URegionHoverUI* regionHoverUI = getRegionHoverUI();
+
+					regionHoverUI->UpdateBattlefieldUI(provinceId, claimProgress);
+
+					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+					regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+
+
+					/*
+					 * Battle Flash
+					 */
+					UTerritoryMeshComponent* mesh = nullptr;
+					if (provinceMeshIndex < _provinceMeshes.Num())
+					{
+						mesh = _provinceMeshes[provinceMeshIndex];
+					}
+					else
+					{
+						auto assetLoader = dataSource()->assetLoader();
+						auto meshMaterial = assetLoader->M_TerritoryBattleHighlight;
+
+						auto comp = NewObject<UTerritoryMeshComponent>(dataSource()->componentToAttach());
+						comp->Rename(*(FString("TerritoryChunkBattleFlash") + FString::FromInt(_provinceMeshes.Num())));
+						comp->AttachToComponent(dataSource()->componentToAttach(), FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
+						comp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+						comp->SetGenerateOverlapEvents(false);
+						comp->bAffectDistanceFieldLighting = false;
+						comp->SetReceivesDecals(false);
+						comp->SetCastShadow(false);
+						comp->RegisterComponent();
+						comp->SetTerritoryMaterial(meshMaterial, meshMaterial);
+						_provinceMeshes.Add(comp);
+						mesh = comp;
+					}
+					provinceMeshIndex++;
+
+					if (mesh->provinceId != provinceId) {
+						mesh->UpdateMesh(true, provinceId, -1, -1, false, &simulation(), 50);
+					}
+
+					FVector territoryDisplayLocation = dataSource()->DisplayLocation(provinceCenter.worldAtom2());
+
+					mesh->SetWorldLocation(territoryDisplayLocation + FVector(0, 0, 1));
+					mesh->SetVisibility(true);
 				}
 				else
-				{
-					auto assetLoader = dataSource()->assetLoader();
-					auto meshMaterial = assetLoader->M_TerritoryBattleHighlight;
-
-					auto comp = NewObject<UTerritoryMeshComponent>(dataSource()->componentToAttach());
-					comp->Rename(*(FString("TerritoryChunkBattleFlash") + FString::FromInt(_provinceMeshes.Num())));
-					comp->AttachToComponent(dataSource()->componentToAttach(), FAttachmentTransformRules::KeepRelativeTransform, NAME_None);
-					comp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-					comp->SetGenerateOverlapEvents(false);
-					comp->bAffectDistanceFieldLighting = false;
-					comp->SetReceivesDecals(false);
-					comp->SetCastShadow(false);
-					comp->RegisterComponent();
-					comp->SetTerritoryMaterial(meshMaterial, meshMaterial);
-					_provinceMeshes.Add(comp);
-					mesh = comp;
-				}
-				provinceMeshIndex++;
-
-				if (mesh->provinceId != provinceId) {
-					mesh->UpdateMesh(true, provinceId, -1, -1, false, &simulation(), 50);
-				}
-
-				FVector territoryDisplayLocation = dataSource()->DisplayLocation(provinceCenter.worldAtom2());
-
-				mesh->SetWorldLocation(territoryDisplayLocation + FVector(0, 0, 1));
-				mesh->SetVisibility(true);
-			}
-			else
-			{
-				if (zoomDistance < WorldZoomTransition_Region4x4ToMap)
 				{
 					if (dataSource()->GetOverlayType() == OverlayType::Raid)
 					{
@@ -282,15 +281,15 @@ void UWorldSpaceUI::TickBuildings()
 							//hoverIcon->SetPair(hoverIcon->IconPair3);
 						}
 						else if (sim.IsValidMinorTown(originTownId) ||
-								sim.IsBorderProvince(provinceId)) // Border Province Only
+							sim.IsBorderProvince(provinceId)) // Border Province Only
 						{
 							UIconTextPair2Lines* hoverIcon = _raidHoverIcons.GetHoverUI<UIconTextPair2Lines>(provinceId, UIEnum::HoverTextIconPair3Lines, this,
 								_worldWidgetParent, displayLocation, dataSource()->zoomDistance(), [&](UIconTextPair2Lines* ui) {},
 								WorldZoomTransition_Region4x4ToMap
-							);
-							
+								);
+
 							int32 raidMoney100 = sim.GetProvinceRaidMoney100(provinceId);
-							int32 raidInfluence100 = raidMoney100 / 2;
+							int32 raidInfluence100 = sim.GetProvinceRaidInfluence100(provinceId);
 
 							hoverIcon->SetPair(hoverIcon->IconPair1, FText(), assetLoader()->CoinIcon, TEXT_100(raidMoney100));
 							hoverIcon->SetPair(hoverIcon->IconPair2, FText(), assetLoader()->InfluenceIcon, TEXT_100(raidInfluence100));
@@ -307,8 +306,8 @@ void UWorldSpaceUI::TickBuildings()
 						//regionHoverUI->BattlefieldUI->provinceId = -1;
 					}
 				}
-			}
 
+			}
 		}
 
 		//! Despawn the unused province Meshes
@@ -954,7 +953,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 				TEXT_100(protectionIncome100)
 			));
 		}
-		else
+		else if (!simulation().townManager(building.townId()).GetDefendingClaimProgress(building.provinceId()).isValid()) // no battle here
 		{
 			buildingJobUI->SetHoverButton(LOCTEXT("Destroy Fort", "Destroy Fort"), UBuildingJobUI::GenericButtonEnum::RazeFort);
 		}
@@ -980,7 +979,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						building.isEnum(CardEnum::CardCombiner) ||
 						building.isEnum(CardEnum::Caravansary) ||
 						building.isEnum(CardEnum::Hotel) ||
-						IsBarrack(building.buildingEnum()) ||
+						//IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::Farm) ||
 						building.isEnum(CardEnum::HuntingLodge) ||
@@ -1373,6 +1372,33 @@ void UWorldSpaceUI::TickMap()
 		simulation.ExecuteOnMinorTowns([&](int32 townId) {
 			TickMinorTownInfo(townId, true);
 		});
+
+
+
+		/*
+		 * Battle field
+		 */
+		if (dataSource()->ZoomDistanceAbove(WorldZoomTransition_Region4x4ToMap))
+		{
+			std::vector<ProvinceClaimProgress> battles = simulation.GetAllBattles();
+
+			for (const ProvinceClaimProgress& battle : battles)
+			{
+				FVector displayLocation = data->DisplayLocation(provinceSys.GetProvinceCenterTile(battle.provinceId).worldAtom2());
+
+				URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(battle.provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+					[&](URegionHoverUI* ui)
+					{
+						ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
+					},
+					WorldZoomTransition_Region4x4ToMap
+				);
+
+				regionHoverUI->UpdateBattlefieldUI(battle.provinceId, battle);
+				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+				regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			}
+		}
 	}
 	
 	_mapHoverIcons.AfterAdd();

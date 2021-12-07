@@ -43,15 +43,15 @@ struct FHoverUIs
 
 	template<typename T>
 	T* GetHoverUI(int objectId, UIEnum uiEnum, UPunWidget* punWidget, USceneComponent* parent, FVector worldLocation, float zoomAmount, 
-					std::function<void(T*)> onInit, float zoomThreshold = WorldZoomTransition_WorldSpaceUIShrink, float scale = 1.0f)
+					std::function<void(T*)> onInit, float zoomScaleDownThreshold = WorldZoomTransition_WorldSpaceUIShrink, float scale = 1.0f)
 	{
 		LEAN_PROFILING_UI(TickWorldSpaceUI_GetHoverUI);
 		
 		PUN_CHECK(objectId != -1);
 		_displayIds.push_back(objectId);
 
-		if (zoomAmount > zoomThreshold) {
-			scale = zoomThreshold / zoomAmount;
+		if (zoomAmount > zoomScaleDownThreshold) {
+			scale = zoomScaleDownThreshold / zoomAmount;
 		}
 
 		int32 uiEnumInt = static_cast<int32>(uiEnum);

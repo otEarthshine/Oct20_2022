@@ -1255,51 +1255,61 @@ void TownManager::TickRound()
 
 		int32 netTotal100 = exportMoneyTotal - importMoneyTotal - feeTotal;
 
-		
-		//! AutoTrade Exchange goods
-		auto& resourceSys = _simulation->resourceSystem(_townId);
-		auto& worldTradeSys = _simulation->worldTradeSystem();
-		
-		for (const AutoTradeElement& element : _autoExportElements) {
-			resourceSys.RemoveResourceGlobal(element.resourceEnum, element.calculatedTradeAmountNextRound);
+		if (netTotal100 >= 0 ||
+			_simulation->money64(_playerId) >= 0)
+		{
+			//! AutoTrade Exchange goods
+			auto& resourceSys = _simulation->resourceSystem(_townId);
+			auto& worldTradeSys = _simulation->worldTradeSystem();
 
-			worldTradeSys.ChangeSupply(_playerId, element.resourceEnum, element.calculatedTradeAmountNextRound); // Buying is decreasing world supply
-		}
+			for (const AutoTradeElement& element : _autoExportElements) {
+				resourceSys.RemoveResourceGlobal(element.resourceEnum, element.calculatedTradeAmountNextRound);
 
-		int32 totalRefundAmount100 = 0;
-		
-		for (const AutoTradeElement& element : _autoImportElements) {
-			// For resources that failed to be added, remove the price from the netTotal100
-			int32 leftOverAmount = resourceSys.AddResourceGlobal_ReturnLeftover(element.resourceEnum, element.calculatedTradeAmountNextRound);
-
-			if (leftOverAmount > 0) {
-				int32 refundAmount100 = element.GetImportLeftoverRefund100(leftOverAmount);
-				totalRefundAmount100 += refundAmount100;
-				netTotal100 -= refundAmount100;
+				worldTradeSys.ChangeSupply(_playerId, element.resourceEnum, element.calculatedTradeAmountNextRound); // Buying is decreasing world supply
 			}
 
-			worldTradeSys.ChangeSupply(_playerId, element.resourceEnum, -(element.calculatedTradeAmountNextRound - leftOverAmount)); // Buying is decreasing world supply
+			int32 totalRefundAmount100 = 0;
+
+			for (const AutoTradeElement& element : _autoImportElements) {
+				// For resources that failed to be added, remove the price from the netTotal100
+				int32 leftOverAmount = resourceSys.AddResourceGlobal_ReturnLeftover(element.resourceEnum, element.calculatedTradeAmountNextRound);
+
+				if (leftOverAmount > 0) {
+					int32 refundAmount100 = element.GetImportLeftoverRefund100(leftOverAmount);
+					totalRefundAmount100 += refundAmount100;
+					netTotal100 += refundAmount100;
+				}
+
+				worldTradeSys.ChangeSupply(_playerId, element.resourceEnum, -(element.calculatedTradeAmountNextRound - leftOverAmount)); // Buying is decreasing world supply
+			}
+
+			//! AutoTrade Receive net
+			_simulation->ChangeMoney100(_playerId, netTotal100);
+
+			SetLastRoundAutoTradeProfit(netTotal100);
+
+			_simulation->QuestUpdateStatus(_playerId, QuestEnum::TradeQuest, abs((exportMoneyTotal + importMoneyTotal + feeTotal - totalRefundAmount100) / 100));
+
+			//! UI Display
+			WorldTile2 floatupCenter = _simulation->building(townhallId).centerTile();
+			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, floatupCenter, TEXT_100SIGNED(netTotal100));
+
+			if (totalRefundAmount100 > 0)
+			{
+				_simulation->AddPopup(_playerId, FText::Format(
+					LOCTEXT("AutoTrade_NotEnoughStorage_Pop", "Auto-trade import did not complete fully because storages are full.<space>You were refunded {0}<img id=\"Coin\"/> for the incomplete import."),
+					TEXT_100(totalRefundAmount100)
+				));
+			}
+
 		}
-
-		
-		//! AutoTrade Receive net
-		_simulation->ChangeMoney100(_playerId, netTotal100);
-
-		SetLastRoundAutoTradeProfit(netTotal100);
-
-		_simulation->QuestUpdateStatus(_playerId, QuestEnum::TradeQuest, abs((exportMoneyTotal + importMoneyTotal + feeTotal) / 100));
-		
-		//! UI Display
-		WorldTile2 floatupCenter = _simulation->building(townhallId).centerTile();
-		_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, floatupCenter, TEXT_100SIGNED(netTotal100));
-
-		if (totalRefundAmount100 > 0)
+		else
 		{
-			_simulation->AddPopup(_playerId, FText::Format(
-				LOCTEXT("AutoTrade_NotEnoughStorage_Pop", "Auto-trade import did not complete fully because storages are full.<space>You were refunded {0}<img id=\"Coin\"/> for the incomplete import."),
-				TEXT_100(totalRefundAmount100)
-			));
+			_simulation->AddPopup(_playerId, 
+				LOCTEXT("AutoTrade_NotEnoughMoney_Pop", "Auto-trade failed because your money is negative.")
+			);
 		}
+		
 	}
 
 	/*

@@ -164,7 +164,9 @@ public:
 		} else {
 			PasswordPopupOverlay->SetVisibility(ESlateVisibility::Visible);
 			PasswordEditableText->SetText(FText());
-
+			PasswordEditableText->OnTextCommitted.Clear();
+			PasswordEditableText->OnTextCommitted.AddUniqueDynamic(this, &UMainMenuUI::OnPasswordCommited);
+			
 			// Focus input on password input box
 			FInputModeGameAndUI_Pun inputModeData;
 			inputModeData.SetWidgetToFocus(PasswordEditableText->TakeWidget());
@@ -176,6 +178,15 @@ public:
 	UFUNCTION() void OnClickJoinPasswordCancel() {
 		PasswordPopupOverlay->SetVisibility(ESlateVisibility::Collapsed);
 	}
+	UFUNCTION() void OnPasswordCommited(const FText& Text, ETextCommit::Type CommitMethod)
+	{
+		if (CommitMethod == ETextCommit::OnEnter) {
+			OnClickJoinPasswordConfirm();
+		}
+	}
+
+
+	
 	
 	UFUNCTION() void JoinMultiplayerGame();
 

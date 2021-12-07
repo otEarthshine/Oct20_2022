@@ -1084,7 +1084,7 @@ public:
 					{ CardEnum::Potter }
 				);
 				AddTech_Building(TechEnum::FurnitureWorkshop, { TechEnum::TradingPost },
-					{ CardEnum::FurnitureWorkshop, CardEnum::Forester }
+					{ CardEnum::FurnitureWorkshop }
 				);
 			}
 			else {

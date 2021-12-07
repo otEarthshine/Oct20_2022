@@ -191,6 +191,10 @@ public:
 	}
 	bool RemoveIrrigationDitch(WorldTile2 tile)
 	{
+		if (!IsValidMajorTown(_simulation->tileOwnerTown(tile))) {
+			return false;
+		}
+		
 		AddTileForHumanFertilityRefresh(tile);
 		RefreshIrrigationFillDelayed(_simulation->tileOwnerTown(tile));
 		

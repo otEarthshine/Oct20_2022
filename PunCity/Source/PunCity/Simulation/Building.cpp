@@ -971,21 +971,21 @@ void Building::TestWorkDone()
 			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
 			return;
 		}
-		if (IsBarrack(buildingEnum()))
-		{
-			_workDone100 = 0;
-			_filledInputs = false;
+		//if (IsBarrack(buildingEnum()))
+		//{
+		//	_workDone100 = 0;
+		//	_filledInputs = false;
 
-			int32 influenceReceived = outputPerBatch();
-			globalResourceSystem().ChangeInfluence(influenceReceived);
+		//	int32 influenceReceived = outputPerBatch();
+		//	globalResourceSystem().ChangeInfluence(influenceReceived);
 
-			_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
-			AddProductionStat(influenceReceived);
-			AddConsumptionStats();
+		//	_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(influenceReceived));
+		//	AddProductionStat(influenceReceived);
+		//	AddConsumptionStats();
 
-			_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
-			return;
-		}
+		//	_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::BuildingAnimation, _centerTile.regionId());
+		//	return;
+		//}
 		if (isEnum(CardEnum::CardMaker))
 		{
 			_workDone100 = 0;
@@ -1282,11 +1282,11 @@ void Building::AddProductionStat(ResourcePair resource)
 		statSystem().AddStat(SeasonStatEnum::Science, resource.count);
 		return;
 	}
-	if (IsBarrack(buildingEnum())) 
-	{
-		statSystem().AddStat(SeasonStatEnum::Influence, resource.count);
-		return;
-	}
+	//if (IsBarrack(buildingEnum())) 
+	//{
+	//	statSystem().AddStat(SeasonStatEnum::Influence, resource.count);
+	//	return;
+	//}
 
 	if (resource.resourceEnum != ResourceEnum::None) {
 		statSystem().AddResourceStat(ResourceSeasonStatEnum::Production, resource.resourceEnum, resource.count);

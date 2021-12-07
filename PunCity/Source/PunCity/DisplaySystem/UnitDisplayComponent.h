@@ -371,11 +371,11 @@ private:
 		{
 			SCOPE_CYCLE_COUNTER(STAT_PunDisplayUnitSkel1);
 
-			PUN_LOG("UnitAnimationChanged %s -> %s, %f->%f, %d->%d", 
-				ToTChar(GetUnitAnimationName(_unitSkelState[index].animationEnum)), ToTChar(GetUnitAnimationName(animationEnum)),
-				_unitSkelState[index].animationPlayRate, playRate,
-				_unitSkelState[index].customDepth, targetCustomDepth
-			);
+			//PUN_LOG("UnitAnimationChanged %s -> %s, %f->%f, %d->%d", 
+			//	ToTChar(GetUnitAnimationName(_unitSkelState[index].animationEnum)), ToTChar(GetUnitAnimationName(animationEnum)),
+			//	_unitSkelState[index].animationPlayRate, playRate,
+			//	_unitSkelState[index].customDepth, targetCustomDepth
+			//);
 			
 			FUnitAsset skelAsset = _assetLoader->unitAsset(unitEnum, variationIndex);
 

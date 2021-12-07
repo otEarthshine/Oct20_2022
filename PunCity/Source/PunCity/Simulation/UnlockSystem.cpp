@@ -174,8 +174,7 @@ void UnlockSystem::Research(int64 science100PerRound, int32 updatesPerSec)
 
 				TArray<FText> args;
 				ADDTEXT_LOCTEXT("Unlocked Wild Card", "Unlocked Wild Card!<space>Wild Card can be used to build any building that you have unlocked.");
-
-				_simulation->AddPopup(_playerId, JOINTEXT(args));
+								_simulation->AddPopup(_playerId, JOINTEXT(args));
 			}
 			else if (GetEra() == 3) {
 				cardSys.AddDrawCards(CardEnum::CardRemoval, 1);

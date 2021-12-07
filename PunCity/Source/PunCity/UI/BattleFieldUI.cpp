@@ -88,6 +88,20 @@ std::string GetUnitLossSoundName(CardEnum cardEnum)
 
 void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher)
 {
+	// Beyond a zoom range, use mini UI
+	if (dataSource()->ZoomDistanceAbove(WorldZoomTransition_Region4x4ToMap))
+	{
+		MiniBattleField->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		FullBattleField->SetVisibility(ESlateVisibility::Collapsed);
+
+		SetChildHUD(MiniBattleField);
+		MiniBattleField->UpdateUIBase(provinceIdIn, claimProgress);
+		return;
+	}
+	FullBattleField->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	MiniBattleField->SetVisibility(ESlateVisibility::Collapsed);
+
+	
 	// Initialize
 	if (provinceId == -1 || provinceId != provinceIdIn) 
 	{
@@ -106,12 +120,11 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		simulation().soundInterface()->Spawn3DSound("CitizenAction", "BattleBegin", simulation().GetProvinceCenterTile(provinceId).worldAtom2());
 	}
 
+	// Battle Opening Animation
 	if (GetWorld()->GetTimeSeconds() > BattleOpeningSpine->animationDoneSec) {
 		BattleOpeningSpine->SetVisibility(ESlateVisibility::Collapsed);
 	}
-
 	BattleOpeningSpine->PunTick();
-
 
 	GroundAttacher->SetVisibility(showAttacher ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
@@ -128,6 +141,10 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 
 	UpdateUIBase(provinceIdIn, claimProgress);
 
+	// Update Animation Speed if game speed changed
+	int32 currentGameSpeed = sim.gameSpeed();
+	bool shouldUpdateGameSpeed = (lastGameSpeed != currentGameSpeed);
+	lastGameSpeed = currentGameSpeed;
 
 
 	// UI-Player is Attacker
@@ -223,14 +240,7 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 				unitIcon->UnitImage->Atlas = spineAsset.atlas;
 				unitIcon->UnitImage->SkeletonData = spineAsset.skeletonData;
 
-				if (GetWorld()->GetTimeSeconds() < unitIcon->FXCompleteTime)
-				{
-					unitIcon->FXImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-					unitIcon->FXImage->PunTick();
-				}
-				else {
-					unitIcon->FXImage->SetVisibility(ESlateVisibility::Collapsed);
-				}
+				unitIcon->TickFXSpine();
 
 				MilitaryCardInfo militaryInfo = GetMilitaryInfo(simUnit.cardEnum);
 
@@ -348,14 +358,28 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 						CardEnum attackerEnum = static_cast<CardEnum>(simUnit.displayCardStateValue4);
 						FSpineAsset attackerSpineAsset = assetLoader()->GetSpine(attackerEnum);
 
-						unitIcon->FXImage->Atlas = attackerSpineAsset.atlas_fx;
-						unitIcon->FXImage->SkeletonData = attackerSpineAsset.skeletonData_fx;
-						unitIcon->FXImage->SetAnimation(0, "Attack", false);
-						unitIcon->FXImage->SetTimeScale(sim.gameSpeedFloat());
-						unitIcon->FXCompleteTime = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / sim.gameSpeedFloat();
+						unitIcon->AddFXSpine(attackerSpineAsset.atlas_fx, attackerSpineAsset.skeletonData_fx);
+						//unitIcon->FXImage->Atlas = attackerSpineAsset.atlas_fx;
+						//unitIcon->FXImage->SkeletonData = attackerSpineAsset.skeletonData_fx;
+						//unitIcon->FXImage->SetAnimation(0, "Attack", false);
+						//unitIcon->FXImage->SetTimeScale(sim.gameSpeedFloat());
+						//
+						//unitIcon->FXCompleteTime = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / sim.gameSpeedFloat();
 					}
 					
 					//PUN_LOG("DamageOverlay: %d", unitUI->DamageOverlay->GetChildrenCount());
+				}
+
+				
+				if (shouldUpdateGameSpeed)
+				{
+					unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+					TArray<UPunSpineWidget*> fxSpines = unitIcon->FXSpines;
+					for (int32 j = fxSpines.Num(); j-- > 0;) {
+						if (fxSpines[j]->IsVisible()) {
+							fxSpines[j]->SetTimeScale(sim.gameSpeedFloat());
+						}
+					}
 				}
 				
 
@@ -447,7 +471,7 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		
 		// Army Strength
 		int32 attackerArmyStrength = GetArmyStrength(claimProgress.attackerFrontLine) + GetArmyStrength(claimProgress.attackerBackLine);
-		int32 defenderArmyStrength = GetArmyStrength(claimProgress.defenderFrontLine) + GetArmyStrength(claimProgress.defenderBackLine);
+		int32 defenderArmyStrength = GetArmyStrength(claimProgress.defenderFrontLine) +  GetArmyStrength(claimProgress.defenderBackLine) + GetArmyStrength(claimProgress.defenderWall);
 		
 		LeftArmyStrength->SetText(TEXT_NUM(attackerArmyStrength));
 		RightArmyStrength->SetText(TEXT_NUM(defenderArmyStrength));

@@ -72,34 +72,38 @@ void OverlaySystem::RefreshIrrigationFill(int32 townId)
 		std::vector<DitchTile>& ditchTiles = _regionToIrrigationDitch[region.regionId()];
 		for (DitchTile& ditchTile : ditchTiles) {
 			ditchTile.isFilled = false;
+			AddTileForHumanFertilityRefresh(ditchTile.tile);
 		}
 
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Building, region.regionId());
 	}
 
 	// Might not need to flood
-	std::vector<int32> bldIds = _simulation->buildingIds(townId, CardEnum::IrrigationPump);
+	std::vector<int32> bldIds = _simulation->buildingIdsFiltered(townId, CardEnum::IrrigationPump, [&](Building& bld) {
+		return !bld.isConstructed();
+	});
+
 	if (bldIds.size() == 0) {
 		return;
 	}
 	
 	// Flood
 	std::vector<std::vector<WorldTile2>> floodQueues;
-	std::vector<std::vector<int32>> connectedIndices; // when hitting other visited tile indices, we can flood using queues from other indices
+	std::vector<int32> bldIndexToQueueIndex;
 	std::vector<int32> waterLeft;
 
 	floodQueues.resize(bldIds.size());
-	connectedIndices.resize(bldIds.size());
+	bldIndexToQueueIndex.resize(bldIds.size());
 	
 	for (int32 i = 0; i < bldIds.size(); i++) {
 		IrrigationPump& pump = _simulation->building<IrrigationPump>(bldIds[i]);
 		floodQueues[i].push_back(pump.GetFirstIrrigationDitchTile());
-		connectedIndices[i].push_back(i); // connected to its own floodQueue
-		waterLeft.push_back(pump.efficiency());
+		bldIndexToQueueIndex[i] = i;
+		waterLeft.push_back(pump.trueTotalWater());
 	}
 	
 
-	TMap<int32, int32> visitedTilesToIndex;
+	TMap<int32, int32> visitedTilesToBldIndex;
 
 	int32 floodCompleted;
 	do
@@ -114,51 +118,65 @@ void OverlaySystem::RefreshIrrigationFill(int32 townId)
 			{
 				PUN_LOG("Flood INDEX:%d waterLeft:%d", i, waterLeft[i]);
 
-				// go through all flood queues that are connected
-				for (int32 j = connectedIndices[i].size(); j-- > 0;)
+				int32 queueIndex = bldIndexToQueueIndex[i];
+				std::vector<WorldTile2>& floodQueue = floodQueues[queueIndex];
+
+				if (floodQueue.size() > 0)
 				{
-					std::vector<WorldTile2>& floodQueue = floodQueues[connectedIndices[i][j]];
+					totalQueuedTiles += floodQueue.size();
 
-					if (floodQueue.size() > 0)
+					WorldTile2 curTile = floodQueue[0];
+					floodQueue.erase(floodQueue.begin());
+
+					PUN_LOG("Flood %s queueLeft:%d queueIndex:%d", *curTile.To_FString(), floodQueue.size(), queueIndex);
+
+					int32 tileId = curTile.tileId();
+					if (visitedTilesToBldIndex.Contains(tileId))
 					{
-						totalQueuedTiles += floodQueue.size();
-
-						WorldTile2 curTile = floodQueue[0];
-						floodQueue.erase(floodQueue.begin());
-
-						PUN_LOG("Flood %s queueLeft:%d connectedIndex:%d", *curTile.To_FString(), floodQueue.size(), connectedIndices[i][j]);
-
-						int32 tileId = curTile.tileId();
-						if (visitedTilesToIndex.Contains(tileId))
+						int32 tileQueueIndex = bldIndexToQueueIndex[visitedTilesToBldIndex[tileId]];
+						if (tileQueueIndex != queueIndex) 
 						{
-							CppUtils::TryAdd(connectedIndices[i], visitedTilesToIndex[tileId]);
-						}
-						else
-						{
-							visitedTilesToIndex.Add(tileId, i);
-							waterLeft[i]--;
+							PUN_LOG("Flood Merge %d %d", queueIndex, tileQueueIndex);
+							
+							// merge the queues
+							std::vector<WorldTile2>& tileFloodQueue = floodQueues[tileQueueIndex];
+							tileFloodQueue.insert(tileFloodQueue.end(), floodQueue.begin(), floodQueue.end());
+							floodQueue.clear();
 
-							GetIrrigationDitch(curTile)->isFilled = true;
-
-							PUN_LOG(" - Flood Good");
-
-							// Flood nearby
-							auto checkNearby = [&](WorldTile2 tile) {
-								if (!visitedTilesToIndex.Contains(tile.tileId())) {
-									DitchTile* ditchTile = GetIrrigationDitch(tile);
-									if (ditchTile) {
-										floodQueue.push_back(tile);
-									}
+							// anything pointing to queueIndex should be redirected to tileFloodQueue
+							for (int32 j = 0; j < bldIndexToQueueIndex.size(); j++) {
+								if (bldIndexToQueueIndex[j] == queueIndex) {
+									bldIndexToQueueIndex[j] = tileQueueIndex;
 								}
-							};
-
-							checkNearby(curTile + WorldTile2(1, 0));
-							checkNearby(curTile + WorldTile2(-1, 0));
-							checkNearby(curTile + WorldTile2(0, 1));
-							checkNearby(curTile + WorldTile2(0, -1));
+							}
 						}
 					}
+					else
+					{
+						visitedTilesToBldIndex.Add(tileId, i);
+						waterLeft[i]--;
+
+						GetIrrigationDitch(curTile)->isFilled = true;
+
+						PUN_LOG(" - Flood Good");
+
+						// Flood nearby
+						auto checkNearby = [&](WorldTile2 tile) {
+							if (!visitedTilesToBldIndex.Contains(tile.tileId())) {
+								DitchTile* ditchTile = GetIrrigationDitch(tile);
+								if (ditchTile) {
+									floodQueue.push_back(tile);
+								}
+							}
+						};
+
+						checkNearby(curTile + WorldTile2(1, 0));
+						checkNearby(curTile + WorldTile2(-1, 0));
+						checkNearby(curTile + WorldTile2(0, 1));
+						checkNearby(curTile + WorldTile2(0, -1));
+					}
 				}
+				
 			}
 
 			if (waterLeft[i] <= 0 || totalQueuedTiles <= 0) {
@@ -171,7 +189,7 @@ void OverlaySystem::RefreshIrrigationFill(int32 townId)
 	for (int32 i = 0; i < bldIds.size(); i++)
 	{
 		IrrigationPump& pump = _simulation->building<IrrigationPump>(bldIds[i]);
-		pump.waterLeft = waterLeft[i];
+		pump.trueWaterLeft = waterLeft[i];
 	}
 	
 }

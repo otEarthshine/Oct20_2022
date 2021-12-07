@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 66 // 3 digit
+#define MINOR_VERSION 67 // 3 digit
 
-#define VERSION_DAY 3
+#define VERSION_DAY 7
 #define VERSION_MONTH 12
 #define VERSION_YEAR 21
 
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 42 // 3 digit
+#define MINOR_SAVE_VERSION 43 // 3 digit
 
-#define VERSION_SAVE_DAY 3
+#define VERSION_SAVE_DAY 7
 #define VERSION_SAVE_MONTH 12
 #define VERSION_SAVE_YEAR 21
 
@@ -4529,7 +4529,7 @@ inline CardEnum FindCardEnumByName(FString nameIn)
 	
 	auto tryAddCard = [&](CardEnum cardEnum)
 	{
-		FString name = GetBuildingInfo(cardEnum).nameF();
+		FString name = GetBuildingInfo(cardEnum).name.ToString();
 		name = name.ToLower();
 
 		if (name == nameIn) {
@@ -4559,17 +4559,18 @@ inline CardEnum FindCardEnumByName(FString nameIn)
 
 static std::vector<CardEnum> GetSortedBuildingEnum()
 {
-	std::vector<std::wstring> cardNames;
+	TArray<FString> cardNames;
 	for (int32 i = 0; i < BuildingEnumCount; i++) {
 		FText nameText = GetBuildingInfo(static_cast<CardEnum>(i)).name;
-		std::wstring wString(*(nameText.ToString()));
-		cardNames.push_back(wString);
+		cardNames.Add(nameText.ToString());
 	}
-	std::sort(cardNames.begin(), cardNames.end());
+	cardNames.Sort([&](const FString& a, const FString& b) {
+		return a < b;
+	});
 
 	std::vector<CardEnum> results;
-	for (const std::wstring& name : cardNames) {
-		CardEnum cardEnum = FindCardEnumByName(FString(name.c_str()));
+	for (const FString& name : cardNames) {
+		CardEnum cardEnum = FindCardEnumByName(name);
 		PUN_CHECK(IsBuildingCard(cardEnum));
 		results.push_back(cardEnum);
 	}
@@ -5328,160 +5329,160 @@ enum class ProvinceAttackEnum : uint8
 /*
  * Old Army
  */
-enum class ArmyEnum : uint8
-{
-	Tower,
-	Clubman,
-	Swordman,
-	
-	Archer,
-	
-	Count,
-};
+//enum class ArmyEnum : uint8
+//{
+//	Tower,
+//	Clubman,
+//	Swordman,
+//	
+//	Archer,
+//	
+//	Count,
+//};
+//
+//static const int32 TowerArmyEnumCount = 1;
+//static const int32 FrontLineArmyEnumCount = 3;
+//
+//// Army Balance Calculations
+//// conquering low lvl city is pointless... only small portion of economy in tax
+//// Estimates:
+////  - With at city size 50 with house lvl 2 -> 200 revenue or 40 vassal tax (20% tax) ... And then 5% fee from trade, but also buff vassal with 3% fee deduction
+////  - 5 clubman 2 coin maintenance each round... income of 30 per round ... 240 coins per year
+////  - Get money back in 1 year, so each clubman cost around 24... But let's just increase it to 60 ... club cost 20 food, 
+//// Balance:
+////  - Set wall HP
+////  - 5 clubman can overpower a wall by 2 times...
+////  - Power = attack / attackDelay * def * hp
+////  - Clubman has attack:10, attackDelay:200, defense:10, hp:500 = power:250
+//static const int32 BaseUnitPower = 500;
+//static const int32 BaseUnitCost = 60;
+//static const int32 ArmyUpkeepToCostPercent = 3;
+//
+//static const int32 BaseDamagePerAttack = 3;
+//
+//// LandClaimValue100 produced per unit, per 0.25s
+//static const int32 UnitCostForLandClaimCalc = 60;
+//static const int32 AssumeArmyLandClaimBreakevenRounds = 8;
+//static const int32 LandClaimValue10000PerRound = 10000 * UnitCostForLandClaimCalc / AssumeArmyLandClaimBreakevenRounds;
+//static const int32 LandClaimValue10000PerQuarterSec = LandClaimValue10000PerRound / Time::SecondsPerRound / 4; // div 4 for quarter sec
+//
+//struct ArmyInfo
+//{
+//	ArmyEnum armyEnum;
+//	std::string name;
+//	
+//	int32 attack;
+//	int32 attackDelaySec100;
+//	int32 defense;
+//	int32 maxHp = 0;
+//
+//	int32 moneyCost;
+//	std::vector<ResourcePair> resourceCost;
+//	int32 moneyAndResourceCost = 0;
+//
+//	
+//	ArmyInfo(ArmyEnum armyEnum, std::string name, int32 attack, int32 attackDelaySec100, int32 defense, int32 powerMultiplier, int32 moneyCost, ResourcePair resourceCostIn)
+//		: armyEnum(armyEnum),
+//			name(name),
+//			attack(attack),
+//			attackDelaySec100(attackDelaySec100),
+//			defense(defense),
+//			moneyCost(moneyCost)
+//	{
+//		if (resourceCostIn.resourceEnum != ResourceEnum::None) {
+//			resourceCost.push_back(resourceCostIn);
+//		}
+//
+//		moneyAndResourceCost = moneyCost + SumResourceCost(resourceCost);
+//
+//		int32 preferredPower = BaseUnitPower * moneyAndResourceCost / BaseUnitCost * powerMultiplier / 100;
+//
+//		// Power = attack / attackDelay * def * hp
+//		// hp = Power * attackDelay / attack / def
+//		if (armyEnum == ArmyEnum::Tower) {
+//			maxHp = (BaseUnitPower * 5 / 2) * attackDelaySec100 / attack / defense; // Tower has 1/3 power of 5 club or (BaseUnitPower * 5 / 2)
+//		} else {
+//			maxHp = preferredPower * attackDelaySec100 / attack / defense;
+//		}
+//		// round
+//		maxHp = (maxHp / 10) * 10;
+//
+//	}
+//
+//	int32 upkeep100() const { return 100 * moneyAndResourceCost * ArmyUpkeepToCostPercent / 100; }
+//
+//	int32 maxWallHP(int32 wallLvl) const {
+//		int32 wallHpMax = maxHp;
+//		for (int32 i = 1; i < wallLvl; i++) {
+//			wallHpMax *= 2;
+//		}
+//		return wallHpMax;
+//	}
+//	int32 wallLvl(int32 initialHP) const {
+//		int32 wallHpMax = maxHp;
+//		for (int32 i = 1; i < 10; i++) {
+//			if (wallHpMax >= initialHP) {
+//				return i;
+//			}
+//			wallHpMax *= 2;
+//		}
+//		return 1;
+//	}
+//
+//	int32 attackDelayTicks() const {
+//		return attackDelaySec100 * Time::TicksPerSecond / 100;
+//	}
+//
+//	// 100 cost = 60 sec
+//	int32 timeCostTicks() const { return moneyAndResourceCost * Time::TicksPerSecond * 2; } //
+//};
 
-static const int32 TowerArmyEnumCount = 1;
-static const int32 FrontLineArmyEnumCount = 3;
-
-// Army Balance Calculations
-// conquering low lvl city is pointless... only small portion of economy in tax
-// Estimates:
-//  - With at city size 50 with house lvl 2 -> 200 revenue or 40 vassal tax (20% tax) ... And then 5% fee from trade, but also buff vassal with 3% fee deduction
-//  - 5 clubman 2 coin maintenance each round... income of 30 per round ... 240 coins per year
-//  - Get money back in 1 year, so each clubman cost around 24... But let's just increase it to 60 ... club cost 20 food, 
-// Balance:
-//  - Set wall HP
-//  - 5 clubman can overpower a wall by 2 times...
-//  - Power = attack / attackDelay * def * hp
-//  - Clubman has attack:10, attackDelay:200, defense:10, hp:500 = power:250
-static const int32 BaseUnitPower = 500;
-static const int32 BaseUnitCost = 60;
-static const int32 ArmyUpkeepToCostPercent = 3;
-
-static const int32 BaseDamagePerAttack = 3;
-
-// LandClaimValue100 produced per unit, per 0.25s
-static const int32 UnitCostForLandClaimCalc = 60;
-static const int32 AssumeArmyLandClaimBreakevenRounds = 8;
-static const int32 LandClaimValue10000PerRound = 10000 * UnitCostForLandClaimCalc / AssumeArmyLandClaimBreakevenRounds;
-static const int32 LandClaimValue10000PerQuarterSec = LandClaimValue10000PerRound / Time::SecondsPerRound / 4; // div 4 for quarter sec
-
-struct ArmyInfo
-{
-	ArmyEnum armyEnum;
-	std::string name;
-	
-	int32 attack;
-	int32 attackDelaySec100;
-	int32 defense;
-	int32 maxHp = 0;
-
-	int32 moneyCost;
-	std::vector<ResourcePair> resourceCost;
-	int32 moneyAndResourceCost = 0;
-
-	
-	ArmyInfo(ArmyEnum armyEnum, std::string name, int32 attack, int32 attackDelaySec100, int32 defense, int32 powerMultiplier, int32 moneyCost, ResourcePair resourceCostIn)
-		: armyEnum(armyEnum),
-			name(name),
-			attack(attack),
-			attackDelaySec100(attackDelaySec100),
-			defense(defense),
-			moneyCost(moneyCost)
-	{
-		if (resourceCostIn.resourceEnum != ResourceEnum::None) {
-			resourceCost.push_back(resourceCostIn);
-		}
-
-		moneyAndResourceCost = moneyCost + SumResourceCost(resourceCost);
-
-		int32 preferredPower = BaseUnitPower * moneyAndResourceCost / BaseUnitCost * powerMultiplier / 100;
-
-		// Power = attack / attackDelay * def * hp
-		// hp = Power * attackDelay / attack / def
-		if (armyEnum == ArmyEnum::Tower) {
-			maxHp = (BaseUnitPower * 5 / 2) * attackDelaySec100 / attack / defense; // Tower has 1/3 power of 5 club or (BaseUnitPower * 5 / 2)
-		} else {
-			maxHp = preferredPower * attackDelaySec100 / attack / defense;
-		}
-		// round
-		maxHp = (maxHp / 10) * 10;
-
-	}
-
-	int32 upkeep100() const { return 100 * moneyAndResourceCost * ArmyUpkeepToCostPercent / 100; }
-
-	int32 maxWallHP(int32 wallLvl) const {
-		int32 wallHpMax = maxHp;
-		for (int32 i = 1; i < wallLvl; i++) {
-			wallHpMax *= 2;
-		}
-		return wallHpMax;
-	}
-	int32 wallLvl(int32 initialHP) const {
-		int32 wallHpMax = maxHp;
-		for (int32 i = 1; i < 10; i++) {
-			if (wallHpMax >= initialHP) {
-				return i;
-			}
-			wallHpMax *= 2;
-		}
-		return 1;
-	}
-
-	int32 attackDelayTicks() const {
-		return attackDelaySec100 * Time::TicksPerSecond / 100;
-	}
-
-	// 100 cost = 60 sec
-	int32 timeCostTicks() const { return moneyAndResourceCost * Time::TicksPerSecond * 2; } //
-};
-
-static const std::vector<CardEnum> BarrackEnums
-{
-	CardEnum::BarrackClubman,
-	CardEnum::BarrackSwordman,
-	CardEnum::BarrackArcher,
-};
-static CardEnum GetBarrackEnumInt(int armyEnumInt) { return BarrackEnums[armyEnumInt]; }
-
-static bool IsBarrack(CardEnum cardEnum)
-{
-	for (CardEnum barrackEnum : BarrackEnums) {
-		if (cardEnum == barrackEnum) {
-			return true;
-		}
-	}
-	return false;
-}
-
-static const std::vector<ArmyInfo> ArmyInfos
-{
-	ArmyInfo(ArmyEnum::Tower,	"Tower",		10, 190, 20, 100, 0, {}),
-	ArmyInfo(ArmyEnum::Clubman,	"Clubman",		10, 180, 10, 100,	10, { ResourceEnum::Food, 20}),
-	ArmyInfo(ArmyEnum::Swordman,	"Swordman",	20, 240, 20, 170,10, { ResourceEnum::Iron, 15 }),
-	ArmyInfo(ArmyEnum::Archer,		"Archer",	30, 200, 5, 120,	30, { ResourceEnum::Wood, 20 }),
-};
-static const int32 ArmyEnumCount = ArmyInfos.size();
-
-static bool IsFrontline(int32 armyEnumInt) {
-	return armyEnumInt < FrontLineArmyEnumCount;
-}
-
-static const ArmyInfo& GetArmyInfo(ArmyEnum armyEnum)
-{
-	PUN_CHECK(static_cast<int>(armyEnum) < ArmyInfos.size());
-	return ArmyInfos[static_cast<int>(armyEnum)];
-}
-static const ArmyInfo& GetArmyInfoInt(int armyEnumInt)
-{
-	PUN_CHECK(armyEnumInt < ArmyInfos.size());
-	return ArmyInfos[armyEnumInt];
-}
-
-// Army distance penalty
-static const int32 ArmyPenalty_MinDistance = CoordinateConstants::TilesPerRegion * 8;
-static const int32 ArmyPenalty_MaxDistance = CoordinateConstants::TilesPerRegion * 24;
-static const int32 ArmyAttackDelayPenaltyPercent_AtMaxDistance = 100;
+//static const std::vector<CardEnum> BarrackEnums
+//{
+//	CardEnum::BarrackClubman,
+//	CardEnum::BarrackSwordman,
+//	CardEnum::BarrackArcher,
+//};
+//static CardEnum GetBarrackEnumInt(int armyEnumInt) { return BarrackEnums[armyEnumInt]; }
+//
+//static bool IsBarrack(CardEnum cardEnum)
+//{
+//	for (CardEnum barrackEnum : BarrackEnums) {
+//		if (cardEnum == barrackEnum) {
+//			return true;
+//		}
+//	}
+//	return false;
+//}
+//
+//static const std::vector<ArmyInfo> ArmyInfos
+//{
+//	ArmyInfo(ArmyEnum::Tower,	"Tower",		10, 190, 20, 100, 0, {}),
+//	ArmyInfo(ArmyEnum::Clubman,	"Clubman",		10, 180, 10, 100,	10, { ResourceEnum::Food, 20}),
+//	ArmyInfo(ArmyEnum::Swordman,	"Swordman",	20, 240, 20, 170,10, { ResourceEnum::Iron, 15 }),
+//	ArmyInfo(ArmyEnum::Archer,		"Archer",	30, 200, 5, 120,	30, { ResourceEnum::Wood, 20 }),
+//};
+//static const int32 ArmyEnumCount = ArmyInfos.size();
+//
+//static bool IsFrontline(int32 armyEnumInt) {
+//	return armyEnumInt < FrontLineArmyEnumCount;
+//}
+//
+//static const ArmyInfo& GetArmyInfo(ArmyEnum armyEnum)
+//{
+//	PUN_CHECK(static_cast<int>(armyEnum) < ArmyInfos.size());
+//	return ArmyInfos[static_cast<int>(armyEnum)];
+//}
+//static const ArmyInfo& GetArmyInfoInt(int armyEnumInt)
+//{
+//	PUN_CHECK(armyEnumInt < ArmyInfos.size());
+//	return ArmyInfos[armyEnumInt];
+//}
+//
+//// Army distance penalty
+//static const int32 ArmyPenalty_MinDistance = CoordinateConstants::TilesPerRegion * 8;
+//static const int32 ArmyPenalty_MaxDistance = CoordinateConstants::TilesPerRegion * 24;
+//static const int32 ArmyAttackDelayPenaltyPercent_AtMaxDistance = 100;
 
 /***************
  * Resource tiles
@@ -7375,7 +7376,14 @@ struct MilitaryCardInfo
 		return attack100 / 100;
 	}
 
-	int64 strength() { return static_cast<int64>(hp100) * defense100 * attack100 / MilitaryConstants::BaseDefense100 / MilitaryConstants::BaseAttack100; }
+	int64 strength()
+	{
+		const int32 strengthDivider = 100;
+		if (cardEnum == CardEnum::Wall) {
+			return static_cast<int64>(hp100) * defense100 / MilitaryConstants::BaseDefense100 / 2 / strengthDivider; // Assume /2 base attack
+		}
+		return static_cast<int64>(hp100) * defense100 * attack100 / MilitaryConstants::BaseDefense100 / MilitaryConstants::BaseAttack100 / strengthDivider;
+	}
 };
 
 static MilitaryCardInfo CreateMilitaryInfo(CardEnum cardEnum, int32 era)
@@ -7577,6 +7585,14 @@ static int32 GetArmyStrength(const std::vector<CardStatus>& cards)
 		}
 	}
 	return strength;
+}
+
+static bool GetIsHitProjectile(CardEnum cardEnum)
+{
+	return cardEnum == CardEnum::Archer ||
+			cardEnum == CardEnum::Tank ||
+			IsArtilleryMilitaryCardEnum(cardEnum) ||
+			IsNavyCardEnum(cardEnum);
 }
 
 

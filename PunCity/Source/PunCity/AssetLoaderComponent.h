@@ -513,7 +513,7 @@ public:
 	}
 	
 
-	UTexture2D* GetArmyIcon(ArmyEnum armyEnum) { return _armyIcons[static_cast<int>(armyEnum)]; }
+	//UTexture2D* GetArmyIcon(ArmyEnum armyEnum) { return _armyIcons[static_cast<int>(armyEnum)]; }
 
 	bool HasGeoIcon(GeoresourceEnum geoEnum) { return _geo_Icon.Contains(static_cast<int32>(geoEnum)); }
 	UTexture* GetGeoIcon(GeoresourceEnum geoEnum) { return _geo_Icon[static_cast<int32>(geoEnum)]; }
@@ -1175,7 +1175,7 @@ private:
 	UPROPERTY() UMainMenuAssetLoaderComponent* _mainMenuAssetLoader;
 
 	//! ArmyIcon
-	UPROPERTY() TArray<UTexture2D*> _armyIcons;
+	//UPROPERTY() TArray<UTexture2D*> _armyIcons;
 
 	//! Military
 	UPROPERTY() TMap<int32, FSpineAsset> _spineAssets;

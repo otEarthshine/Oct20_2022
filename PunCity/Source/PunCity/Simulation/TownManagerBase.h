@@ -46,7 +46,11 @@ struct ProvinceClaimProgress
 	
 
 	bool attackerWon() const {
-		return battleFinishCountdownTicks == 0 && defenderFrontLine.size() == 0 && defenderBackLine.size() == 0 && defenderTreasure.size() == 0;
+		return battleFinishCountdownTicks == 0 && 
+			defenderFrontLine.size() == 0 && 
+			defenderBackLine.size() == 0 && 
+			defenderWall.size() == 0 &&
+			defenderTreasure.size() == 0;
 	}
 	bool attackerLost() const {
 		return attackerFrontLine.size() == 0 && attackerBackLine.size() == 0;
@@ -215,7 +219,7 @@ struct AutoTradeElement
 		return calculatedTradeAmountNextRound - calculatedFulfilledTradeAmountNextRound;
 	}
 
-	// Import may not complete successfully due to not having enough storage space
+	// Import may not complete successfully due to not having enough storage a
 	int64 GetImportLeftoverRefund100(int32 leftoverAmount) const
 	{
 		check(leftoverAmount >= 0);
@@ -226,7 +230,7 @@ struct AutoTradeElement
 		int64 newFeeDiscount = std::min(static_cast<int64>(directTradeAmount), newTradeAmount) * price100 * feePercent / 100;
 		int64 newFee = (newImportMoney * feePercent / 100) - newFeeDiscount;
 
-		int64 newNetMoney = newImportMoney * newFee;
+		int64 newNetMoney = newImportMoney + newFee;
 
 		return previousNetMoney - newNetMoney;
 	}

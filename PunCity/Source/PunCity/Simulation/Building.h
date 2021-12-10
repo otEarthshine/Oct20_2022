@@ -1185,7 +1185,10 @@ public:
 		for (BonusPair bonus : bonuses) {
 			total += bonus.value;
 		}
-		return total + adjacentEfficiency() + levelEfficiency();
+		if (!isEnum(CardEnum::IrrigationPump)) { // Bonus Only
+			total += adjacentEfficiency() + levelEfficiency();
+		}
+		return total;
 	}
 
 	// TODO: use outputPerBatch instead
@@ -1313,7 +1316,13 @@ public:
 		_upgrades[index].isUpgraded = true;
 
 		ResetDisplay();
+		OnUpgradeBuildingBase(index);
+	}
+	void UpgradeLevelInstantly(int32 index)
+	{
+		_upgrades[index].upgradeLevel++;
 
+		ResetDisplay();
 		OnUpgradeBuildingBase(index);
 	}
 

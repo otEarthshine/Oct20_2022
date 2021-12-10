@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 67 // 3 digit
+#define MINOR_VERSION 68 // 3 digit
 
-#define VERSION_DAY 7
+#define VERSION_DAY 9
 #define VERSION_MONTH 12
 #define VERSION_YEAR 21
 
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 43 // 3 digit
+#define MINOR_SAVE_VERSION 44 // 3 digit
 
-#define VERSION_SAVE_DAY 7
+#define VERSION_SAVE_DAY 9
 #define VERSION_SAVE_MONTH 12
 #define VERSION_SAVE_YEAR 21
 
@@ -1205,6 +1205,13 @@ static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMa
 static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8 * 150 / 100; // Nov 15: +50% (150 / 100)
 static const int32 HumanLuxuryCost100PerRound_ForEachType = HumanLuxuryCost100PerYear_ForEachType / Time::RoundsPerYear;
 
+static const std::vector<int32> HumanLuxuryConsumptionScalingByTier {
+	100,
+	100, // 1
+	130,
+	170,
+};
+
 
 static const int32 BuildManSecCostFactor100 = 10; // Building work time is x% of the time it takes to acquire the resources
 
@@ -1345,7 +1352,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::PocketWatch,		LOCTEXT("Pocket Watch", "Pocket Watch"),	108, LOCTEXT("Pocket Watch Desc", "Elegant timepiece crafted by Clockmakers. (Luxury tier 3)")),
 
 	ResourceInfo(ResourceEnum::PitaBread, LOCTEXT("Pita Bread", "Pita Bread"), FoodCost, LOCTEXT("Pita Bread Desc", "Delicious food baked from Wheat Flour")),
-	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 75, LOCTEXT("Carpet Desc", "Luxury tier 3 used for housing upgrade.")),
+	ResourceInfo(ResourceEnum::Carpet, LOCTEXT("Carpet", "Carpet"), 75, LOCTEXT("Carpet Desc", "Luxury tier 2 used for housing upgrade.")),
 	ResourceInfo(ResourceEnum::DateFruit, LOCTEXT("Date Fruit", "Date Fruit"), FoodCost, LOCTEXT("Date Fruit Desc", "Fruit with delicate, mildly-flavored flesh.")),
 	ResourceInfo(ResourceEnum::ToiletPaper, LOCTEXT("Toilet Paper", "Toilet Paper"), 50, LOCTEXT("Toilet Paper Desc", "Luxury tier 3 used for housing upgrade.")),
 
@@ -1744,6 +1751,19 @@ static void ExecuteOnLuxuryResources(Func func) {
 	for (ResourceEnum resourceEnum : luxuryResources) {
 		func(resourceEnum);
 	}
+}
+
+template <typename Func>
+static void ExecuteOnLuxuryResourcesByTier(Func func) {
+	auto executeTier = [&](int32 tier) {
+		const std::vector<ResourceEnum>& luxuryResources = GetLuxuryResourcesByTier(tier);
+		for (ResourceEnum resourceEnum : luxuryResources) {
+			func(resourceEnum, tier);
+		}
+	};
+	executeTier(1);
+	executeTier(2);
+	executeTier(3);
 }
 
 static bool IsLuxuryEnum(ResourceEnum resourceEnum, int32 tier) {
@@ -3070,8 +3090,8 @@ struct BldInfo
 
 	const FString* GetDisplayName() { return FTextInspector::GetSourceString(name); }
 
-	bool hasInput1() { return input1 != ResourceEnum::None; }
-	bool hasInput2() { return input2 != ResourceEnum::None; }
+	bool hasInput1() const { return input1 != ResourceEnum::None; }
+	bool hasInput2() const { return input2 != ResourceEnum::None; }
 
 	int32 constructionCostAsMoney() const {
 		return ConstructionCostAsMoney(constructionResources);
@@ -6115,6 +6135,16 @@ struct PlacementGridInfo
 	WorldTile2 location;
 	Direction direction = Direction::S;
 };
+
+static bool AreGridsBuildable(std::vector<PlacementGridInfo>& grids)
+{
+	for (PlacementGridInfo& gridInfo : grids) {
+		if (gridInfo.gridEnum == PlacementGridEnum::Red) {
+			return false;
+		}
+	}
+	return true;
+}
 
 // Drag can start by leftClick down/up on the same tile. This drag will end with another leftClickDown
 // Or leftClick down, mouse move to new tile. This drag ends on mouse release.

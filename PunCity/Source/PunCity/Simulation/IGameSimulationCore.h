@@ -717,8 +717,11 @@ public:
 
 	virtual WorldAtom2 homeAtom(int32 townId) = 0;
 
+	virtual bool CanBuildMountainMineArea(BuildPlacement placement, CardEnum buildingEnum, int32 playerId) = 0;
+	
 	virtual void CheckPortArea(BuildPlacement placement, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,
 								bool& setDockInstruction, int32 playerId = -1, int32 extraMinWaterCount = 0) = 0;
+
 	
 	virtual void CheckClaypitArea(CardEnum buildingEnum, TileArea area, int32 playerId, std::vector<PlacementGridInfo>& grids, bool& setMustBeNearRiverOasisInstruction) = 0;
 

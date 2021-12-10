@@ -263,15 +263,30 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 	int32 oilCount = pairOil.second * totalUsableProvinces / totalRatio;
 	ExecuteRegionsWithJumpAndExit([&](int32 provinceId) {
 		BiomeEnum biomeEnum = _simulation->GetBiomeProvince(provinceId);
-		if ((biomeEnum == BiomeEnum::Tundra || biomeEnum == BiomeEnum::BorealForest || biomeEnum == BiomeEnum::Desert) &&
-			hasNearbyExistingResource(provinceId))
+		if (biomeEnum == BiomeEnum::Tundra || 
+			biomeEnum == BiomeEnum::BorealForest || 
+			biomeEnum == BiomeEnum::Desert)
 		{
-			if (usableFlatProvinceIds.Contains(provinceId)) usableFlatProvinceIds[provinceId] = false;
-			if (usableLightMountainProvinceIds.Contains(provinceId)) usableLightMountainProvinceIds[provinceId] = false;
-			if (usableHeavyMountainProvinceIds.Contains(provinceId)) usableHeavyMountainProvinceIds[provinceId] = false;
+			int32 oilDepositAmount = (biomeEnum == BiomeEnum::BorealForest) ? 20000 : 50000;
 			
-			PlantResource(provinceId, GeoresourceEnum::Oil, 50000);
-			fillIndex++;
+			if (usableFlatProvinceIds.Contains(provinceId) &&
+				usableFlatProvinceIds[provinceId]) {
+				usableFlatProvinceIds[provinceId] = false;
+				PlantResource(provinceId, GeoresourceEnum::Oil, oilDepositAmount);
+				fillIndex++;
+			}
+			if (usableLightMountainProvinceIds.Contains(provinceId) &&
+				usableLightMountainProvinceIds[provinceId]) {
+				usableLightMountainProvinceIds[provinceId] = false;
+				PlantResource(provinceId, GeoresourceEnum::Oil, oilDepositAmount);
+				fillIndex++;
+			}
+			if (usableHeavyMountainProvinceIds.Contains(provinceId) &&
+				usableHeavyMountainProvinceIds[provinceId]) {
+				usableHeavyMountainProvinceIds[provinceId] = false;
+				PlantResource(provinceId, GeoresourceEnum::Oil, oilDepositAmount);
+				fillIndex++;
+			}
 		}
 		return fillIndex >= oilCount;
 	});

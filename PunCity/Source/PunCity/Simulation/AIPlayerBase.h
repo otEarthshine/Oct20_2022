@@ -227,6 +227,10 @@ public:
 		return minTile().isValid();
 	}
 
+	bool PlacementSucceed() {
+		return HasArea();
+	}
+
 	void operator>>(FArchive& Ar)
 	{
 		SerializeVecValue(Ar, topBuildingEnums);

@@ -99,8 +99,21 @@ public:
 		return &(*it);
 	}
 
+
+	/*
+	 * 
+	 */
 	void Tick1Sec();
 
+	void TryChooseLocation();
+	void TryBuildTownhall();
+	void Tick1Sec_DoAction();
+
+	void TryUpgradeBuildings();
+
+	void TryTrade();
+
+	void TryProvinceClaim();
 
 	//
 	
@@ -115,6 +128,8 @@ public:
 		SerializeVecObj(Ar, _regionStatuses);
 		Ar << _active;
 
+		Ar << _needMoreTradeBuilding;
+		Ar << _totalCheatedMoney;
 	}
 
 	void AIDebugString(std::stringstream& ss) {
@@ -123,6 +138,8 @@ public:
 			ss << " Region " << status.provinceId << " purpose:" << AIRegionPurposeName[static_cast<int>(status.currentPurpose)] << " proposed:" << static_cast<int>(status.proposedPurpose);
 		}
 	}
+
+	int32 totalCheatedMoney() { return _totalCheatedMoney; }
 
 private:
 	template<class T>
@@ -166,6 +183,25 @@ private:
 		return AIRegionProposedPurposeEnum::None;
 	}
 
+	//! Helpers
+	void TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBlock& block);
+	void PlaceBuilding(CardEnum cardEnum, WorldTile2 centerTile, Direction faceDirection);
+	bool TryPlaceSingleCoastalBuilding(CardEnum cardEnum);
+	void TryPlaceMines();
+
+	void TryPlaceCityBlock(std::vector<CardEnum> buildingEnumToBeNear, AICityBlock& block)
+	{
+		for (CardEnum buildingEnum : buildingEnumToBeNear)
+		{
+			if (!block.PlacementSucceed()) {
+				TryPlaceCityBlock(buildingEnum, block);
+			}
+		}
+	}
+
+	void TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population);
+	void TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era);
+
 	TCHAR* AIPrintPrefix() {
 		return _simulation->AIPrintPrefix(_aiPlayerId);
 	}
@@ -182,4 +218,7 @@ private:
 	
 	std::vector<AIRegionStatus> _regionStatuses;
 	bool _active = false;
+
+	bool _needMoreTradeBuilding = false;
+	int32 _totalCheatedMoney = 0;
 };

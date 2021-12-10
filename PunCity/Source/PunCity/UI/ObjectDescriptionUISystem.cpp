@@ -1333,11 +1333,18 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							FText::FromString(playerNameTrimmed)
 						);
 
-#if !UE_BUILD_SHIPPING
+
+						// DEBUG
 						if (PunSettings::IsOn("DebugFocusUI")) {
 							focusBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("PlayerId")), FText::AsNumber(townPlayerId));
+
+							if (sim.IsAIPlayer(townPlayerId))
+							{
+								focusBox->AddRichText(TEXT_TAG("<Yellow>", INVTEXT("Cheated Money")), FText::AsNumber(sim.aiPlayerSystem(townPlayerId).totalCheatedMoney()));
+							}
 						}
-#endif
+
+						
 						
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, 
 							LOCTEXT("Size", "Size"), 

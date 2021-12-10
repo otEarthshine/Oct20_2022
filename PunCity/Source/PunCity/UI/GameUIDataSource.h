@@ -151,7 +151,7 @@ enum class UIEnum
 	//ArmyMoveUI,
 	//ArmyChooseNodeButton,
 	DamageFloatup,
-	PunSpine,
+	WG_PunSpine,
 
 	PunMidRowText,
 	TradeDealResourceRow,

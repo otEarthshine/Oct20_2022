@@ -2302,14 +2302,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		BuildPlacement placement(parameters.center, GetBuildingInfo(cardEnum).GetSize(FactionEnum::Europe), faceDirection);
 		CheckPortArea(placement, cardEnum, grids, setDockInstruct, portPlayerId);
 
-		canPlace = true;
-		for (PlacementGridInfo& gridInfo : grids) {
-			if (gridInfo.gridEnum == PlacementGridEnum::Red) {
-				canPlace = false;
-				break;
-			}
-		}
-
+		canPlace = AreGridsBuildable(grids);
 	}
 	// Clay pit
 	// Irrigation Reservoir
@@ -2694,17 +2687,6 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 				// Refresh trade network
 				_worldTradeSystem.RefreshTradeRoutes();
-			}
-		}
-
-		// AIPlayer auto upgrade
-		if (IsAIPlayer(parameters.playerId))
-		{
-			int32 upgradeCount = bld.upgrades().size();
-			for (int32 i = 0; i < upgradeCount; i++) {
-				if (!bld.IsUpgraded(i)) {
-					bld.UpgradeInstantly(i);
-				}
 			}
 		}
 
@@ -4382,10 +4364,10 @@ void GameSimulationCore::ProcessTradeDeal(const PopupInfo& popupInfo)
 	{
 		for (const CardStatus& cardStatus : dealSideInfo.cardStatuses) 
 		{
-			if (cardSystem(sourcePlayerId).BoughtCardCount(cardStatus.cardEnum) < cardStatus.stackSize)
+			if (cardSystem(checkPlayerId).BoughtCardCount(cardStatus.cardEnum) < cardStatus.stackSize)
 			{
 				if (dealStageEnum == TradeDealStageEnum::Gifting) {
-					AddPopupToFront(sourcePlayerId,
+					AddPopupToFront(checkPlayerId,
 						LOCTEXT("Gifting_NotEnoughCards", "Not enough cards to give out."),
 						ExclusiveUIEnum::GiftResourceUI, "PopupCannot"
 					);

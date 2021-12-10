@@ -38,8 +38,6 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* LeftRetreatButton;
 	UPROPERTY(meta = (BindWidget)) UButton* RightRetreatButton;
 
-	UPROPERTY(meta = (BindWidget)) UOverlay* GroundAttacher;
-
 	UPROPERTY(meta = (BindWidget)) UPunSpineWidget* BattleOpeningSpine;
 
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* FullBattleField;

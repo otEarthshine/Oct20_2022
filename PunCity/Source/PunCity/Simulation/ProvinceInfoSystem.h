@@ -30,6 +30,7 @@ struct ProvinceBuildingSlot
 	int32 provinceId = -1;
 
 	std::vector<WorldTile2> coastalTiles;
+	std::vector<WorldTile2> riverTiles;
 	std::vector<WorldTile2> mountainTiles;
 	
 	BuildPlacement portSlot; // Slots are center tiles
@@ -48,6 +49,7 @@ struct ProvinceBuildingSlot
 		Ar << provinceId;
 
 		SerializeVecObj(Ar, coastalTiles);
+		SerializeVecObj(Ar, riverTiles);
 		SerializeVecObj(Ar, mountainTiles);
 		
 		portSlot >> Ar;
@@ -136,8 +138,7 @@ public:
 						_simulation->GetProvinceIdClean(tile) == provinceId;
 				};
 
-				// Fill Coastal Tiles
-				if (provinceSys.provinceOceanTileCount(provinceId) > 1)
+				auto tryAddSpecialTiles = [&](std::vector<WorldTile2>& tiles, TerrainTileType tileType)
 				{
 					provinceSys.GetProvinceRectArea(provinceId).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
 					{
@@ -145,8 +146,8 @@ public:
 						{
 							// Check found nearby tiles if any water
 							auto checkAdjacentTile = [&](WorldTile2 shift) {
-								if (terrainGen.terrainTileType(tile + shift) == TerrainTileType::Ocean) {
-									provinceBuildingSlot.coastalTiles.push_back(tile + shift);
+								if (terrainGen.terrainTileType(tile + shift) == tileType) {
+									tiles.push_back(tile + shift);
 								}
 							};
 							checkAdjacentTile(WorldTile2(1, 0));
@@ -155,27 +156,58 @@ public:
 							checkAdjacentTile(WorldTile2(0, -1));
 						}
 					});
+				};
+
+				// Fill Coastal Tiles
+				if (provinceSys.provinceOceanTileCount(provinceId) > 1)
+				{
+					tryAddSpecialTiles(provinceBuildingSlot.coastalTiles, TerrainTileType::Ocean);
+					
+					//provinceSys.GetProvinceRectArea(provinceId).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+					//{
+					//	if (isBuildable(tile))
+					//	{
+					//		// Check found nearby tiles if any water
+					//		auto checkAdjacentTile = [&](WorldTile2 shift) {
+					//			if (terrainGen.terrainTileType(tile + shift) == TerrainTileType::Ocean) {
+					//				provinceBuildingSlot.coastalTiles.push_back(tile + shift);
+					//			}
+					//		};
+					//		checkAdjacentTile(WorldTile2(1, 0));
+					//		checkAdjacentTile(WorldTile2(-1, 0));
+					//		checkAdjacentTile(WorldTile2(0, 1));
+					//		checkAdjacentTile(WorldTile2(0, -1));
+					//	}
+					//});
+				}
+
+				// Fill River Tiles
+				if (provinceSys.provinceRiverTileCount(provinceId) > 1)
+				{
+					tryAddSpecialTiles(provinceBuildingSlot.riverTiles, TerrainTileType::River);
 				}
 
 				// Fill Mountain Tiles
 				if (provinceSys.provinceMountainTileCount(provinceId) > 50)
 				{
-					provinceSys.GetProvinceRectArea(provinceId).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
-					{
-						if (isBuildable(tile))
-						{
-							// Check found nearby tiles if any water
-							auto checkAdjacentTile = [&](WorldTile2 shift) {
-								if (terrainGen.terrainTileType(tile + shift) == TerrainTileType::Mountain) {
-									provinceBuildingSlot.mountainTiles.push_back(tile + shift);
-								}
-							};
-							checkAdjacentTile(WorldTile2(1, 0));
-							checkAdjacentTile(WorldTile2(-1, 0));
-							checkAdjacentTile(WorldTile2(0, 1));
-							checkAdjacentTile(WorldTile2(0, -1));
-						}
-					});
+					tryAddSpecialTiles(provinceBuildingSlot.mountainTiles, TerrainTileType::Mountain);
+					
+					//provinceSys.GetProvinceRectArea(provinceId).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+					//{
+					//	if (isBuildable(tile))
+					//	{
+					//		// Check found nearby tiles if any water
+					//		auto checkAdjacentTile = [&](WorldTile2 shift) {
+					//			if (terrainGen.terrainTileType(tile + shift) == TerrainTileType::Mountain) {
+					//				provinceBuildingSlot.mountainTiles.push_back(tile + shift);
+					//			}
+					//		};
+					//		checkAdjacentTile(WorldTile2(1, 0));
+					//		checkAdjacentTile(WorldTile2(-1, 0));
+					//		checkAdjacentTile(WorldTile2(0, 1));
+					//		checkAdjacentTile(WorldTile2(0, -1));
+					//	}
+					//});
 				}
 			}
 		}

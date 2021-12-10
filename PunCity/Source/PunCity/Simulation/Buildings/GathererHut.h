@@ -1607,7 +1607,8 @@ public:
 	}
 
 	int32 trueTotalWater() { return efficiency() + 16; }
-	int32 displayWaterUsage() { return trueTotalWater() - trueWaterLeft; }
+	int32 displayTotalWater() { return efficiency(); }
+	int32 displayWaterUsage() { return trueTotalWater() - trueWaterLeft - 16; }
 
 	virtual void OnDeinit() override;
 

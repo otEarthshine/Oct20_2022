@@ -4348,6 +4348,41 @@ public:
 
 		return adjacentAttackerTownIds;
 	}
+
+
+	virtual bool CanBuildMountainMineArea(BuildPlacement placement, CardEnum buildingEnum, int32 playerId) override
+	{
+		TileArea area = placement.area();
+		
+		int32_t mountainCount = 0;
+		bool canPlace = true;
+		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			if (GameMap::IsInGrid(tile.x, tile.y) && IsTileBuildableForPlayer(tile, playerId))
+			{
+				int steps = GameMap::GetFacingStep(placement.faceDirection, area, tile);
+				if (steps <= 1) { // 0,1
+					if (!IsBuildableForPlayer(tile, playerId)) {
+						canPlace = false; // Entrance not buildable
+					}
+				}
+				else { // 2,3,4
+					if (IsMountain(tile)) {
+						mountainCount++;
+					}
+				}
+			}
+		});
+
+		if (!canPlace) {
+			return false;
+		}
+		
+		if (mountainCount < 5) {
+			return false;
+		}
+		
+		return true;
+	}
 	
 	virtual void CheckPortArea(BuildPlacement placement, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,
 						bool& setDockInstruction, int32 playerId = -1, int32 extraMinWaterCount = 0) override // player == -1 means no player check

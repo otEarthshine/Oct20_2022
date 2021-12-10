@@ -1384,19 +1384,27 @@ void UWorldSpaceUI::TickMap()
 
 			for (const ProvinceClaimProgress& battle : battles)
 			{
-				FVector displayLocation = data->DisplayLocation(provinceSys.GetProvinceCenterTile(battle.provinceId).worldAtom2());
-
-				URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(battle.provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
-					[&](URegionHoverUI* ui)
+				int32 provinceTownId = simulation.provinceOwnerTown_Major(battle.provinceId);
+				if (provinceTownId != -1)
+				{
+					TownHall* townhall = simulation.GetTownhallPtr(provinceTownId);
+					if (townhall && townhall->provinceId() != battle.provinceId) // Only show non-capital provinces
 					{
-						ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
-					},
-					WorldZoomTransition_Region4x4ToMap
-				);
+						FVector displayLocation = data->DisplayLocation(provinceSys.GetProvinceCenterTile(battle.provinceId).worldAtom2());
+						
+						URegionHoverUI* regionHoverUI = _regionHoverUIs.GetHoverUI<URegionHoverUI>(battle.provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
+							[&](URegionHoverUI* ui)
+							{
+								ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
+							},
+							WorldZoomTransition_Region4x4ToMap
+						);
 
-				regionHoverUI->UpdateBattlefieldUI(battle.provinceId, battle);
-				regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
-				regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						regionHoverUI->UpdateBattlefieldUI(battle.provinceId, battle);
+						regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
+						regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+					}
+				}
 			}
 		}
 	}

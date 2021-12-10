@@ -95,7 +95,7 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		FullBattleField->SetVisibility(ESlateVisibility::Collapsed);
 
 		SetChildHUD(MiniBattleField);
-		MiniBattleField->UpdateUIBase(provinceIdIn, claimProgress);
+		MiniBattleField->UpdateUIBase(provinceIdIn, claimProgress, showAttacher);
 		return;
 	}
 	FullBattleField->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -139,7 +139,7 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
 	int32 provinceTownId = sim.provinceOwnerTownSafe(provinceId);
 
-	UpdateUIBase(provinceIdIn, claimProgress);
+	UpdateUIBase(provinceIdIn, claimProgress, showAttacher);
 
 	// Update Animation Speed if game speed changed
 	int32 currentGameSpeed = sim.gameSpeed();
@@ -179,8 +179,9 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		int32 bestSplitIndex = 1;
 		minRowCount = INT32_MAX;
 
-		for (int32 i = 1; i <= 4; i++) {
-			int32 rows = std::max(frontLine.size() / i, backLine.size() / (5 - i));
+		for (int32 i = 1; i <= 4; i++) 
+		{
+			int32 rows = std::max((frontLine.size() + i - 1) / i, (backLine.size() + (5 - i) - 1) / (5 - i));
 			if (rows < minRowCount) {
 				minRowCount = rows;
 				bestSplitIndex = i;
@@ -358,7 +359,8 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 						CardEnum attackerEnum = static_cast<CardEnum>(simUnit.displayCardStateValue4);
 						FSpineAsset attackerSpineAsset = assetLoader()->GetSpine(attackerEnum);
 
-						unitIcon->AddFXSpine(attackerSpineAsset.atlas_fx, attackerSpineAsset.skeletonData_fx);
+						SetChildHUD(unitIcon);
+						unitIcon->AddFXSpine(attackerSpineAsset.atlas_fx, attackerSpineAsset.skeletonData_fx, sim.gameSpeedFloat());
 						//unitIcon->FXImage->Atlas = attackerSpineAsset.atlas_fx;
 						//unitIcon->FXImage->SkeletonData = attackerSpineAsset.skeletonData_fx;
 						//unitIcon->FXImage->SetAnimation(0, "Attack", false);
@@ -374,10 +376,10 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 				if (shouldUpdateGameSpeed)
 				{
 					unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
-					TArray<UPunSpineWidget*> fxSpines = unitIcon->FXSpines;
+					TArray<UWG_PunSpine*> fxSpines = unitIcon->FXSpines;
 					for (int32 j = fxSpines.Num(); j-- > 0;) {
 						if (fxSpines[j]->IsVisible()) {
-							fxSpines[j]->SetTimeScale(sim.gameSpeedFloat());
+							fxSpines[j]->Spine->SetTimeScale(sim.gameSpeedFloat());
 						}
 					}
 				}
@@ -469,21 +471,21 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		fillBonusText(RightDefenseBonus, claimProgress.defender_defenseBonus, false, claimProgress.defenderTownId);
 		
 		
-		// Army Strength
-		int32 attackerArmyStrength = GetArmyStrength(claimProgress.attackerFrontLine) + GetArmyStrength(claimProgress.attackerBackLine);
-		int32 defenderArmyStrength = GetArmyStrength(claimProgress.defenderFrontLine) +  GetArmyStrength(claimProgress.defenderBackLine) + GetArmyStrength(claimProgress.defenderWall);
-		
-		LeftArmyStrength->SetText(TEXT_NUM(attackerArmyStrength));
-		RightArmyStrength->SetText(TEXT_NUM(defenderArmyStrength));
-		
-		bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
+		//// Army Strength
+		//int32 attackerArmyStrength = GetArmyStrength(claimProgress.attackerFrontLine) + GetArmyStrength(claimProgress.attackerBackLine);
+		//int32 defenderArmyStrength = GetArmyStrength(claimProgress.defenderFrontLine) +  GetArmyStrength(claimProgress.defenderBackLine) + GetArmyStrength(claimProgress.defenderWall);
+		//
+		//LeftArmyStrength->SetText(TEXT_NUM(attackerArmyStrength));
+		//RightArmyStrength->SetText(TEXT_NUM(defenderArmyStrength));
+		//
+		//bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
 
-		// Battle Bar
-		float fraction = static_cast<float>(attackerArmyStrength) / (attackerArmyStrength + defenderArmyStrength);
+		//// Battle Bar
+		//float fraction = static_cast<float>(attackerArmyStrength) / (attackerArmyStrength + defenderArmyStrength);
 
-		BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", 1.0f - fraction);
-		BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("IsGreenLeft", isUIPlayerAttacker);
-		BattleBarImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		//BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", 1.0f - fraction);
+		//BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("IsGreenLeft", isUIPlayerAttacker);
+		//BattleBarImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	}
 }
 

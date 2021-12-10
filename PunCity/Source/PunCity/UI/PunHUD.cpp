@@ -143,7 +143,7 @@ APunHUD::APunHUD()
 	//LoadClass(UIEnum::ArmyMoveUI, "ArmyMoveUI");
 	//LoadClass(UIEnum::ArmyChooseNodeButton, "ArmyChooseNodeButton");
 	LoadClass(UIEnum::DamageFloatup, "WorldSpaceUI/DamageFloatup");
-	//LoadClass(UIEnum::PunSpine, )
+	LoadClass(UIEnum::WG_PunSpine, "WorldSpaceUI/WG_BattlefieldUnitFX");
 
 	LoadClass(UIEnum::PunMidRowText, "PunMidRowText");
 

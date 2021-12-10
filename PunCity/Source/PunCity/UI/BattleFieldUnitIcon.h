@@ -4,6 +4,7 @@
 
 #include "PunSpineWidget.h"
 #include "PunWidget.h"
+#include "WG_PunSpine.h"
 
 #include "BattleFieldUnitIcon.generated.h"
 
@@ -24,7 +25,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* UnitCountText;
 
 	UPROPERTY(meta = (BindWidget)) UOverlay* FXOverlay;
-	UPROPERTY() TArray<UPunSpineWidget*> FXSpines;
+	UPROPERTY() TArray<UWG_PunSpine*> FXSpines;
 
 	int32 lastDamageTick = -1;
 	int32 lastAttackTick = -1;
@@ -49,16 +50,29 @@ public:
 		}
 	}
 
-	void AddFXSpine(USpineAtlasAsset* atlas_fx, USpineSkeletonDataAsset* skeletonData_fx)
+	void AddFXSpine(USpineAtlasAsset* atlas_fx, USpineSkeletonDataAsset* skeletonData_fx, float gameSpeed)
 	{
-		//UDamageFloatupUI* damageFloatup = AddWidget<UPunSpineWidget>(UIEnum::Pun);
-		//
-		//unitIcon->FXImage->Atlas = attackerSpineAsset.atlas_fx;
-		//unitIcon->FXImage->SkeletonData = attackerSpineAsset.skeletonData_fx;
-		//unitIcon->FXImage->SetAnimation(0, "Attack", false);
-		//unitIcon->FXImage->SetTimeScale(sim.gameSpeedFloat());
+		UWG_PunSpine* fxSpine = nullptr;
+		for (int32 i = 0; i < FXSpines.Num(); i++) {
+			if (!FXSpines[i]->IsVisible()) {
+				fxSpine = FXSpines[i];
+				break;
+			}
+		}
 
-		//unitIcon->FXCompleteTime = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / sim.gameSpeedFloat();
+		if (!fxSpine)
+		{
+			fxSpine = AddWidget<UWG_PunSpine>(UIEnum::WG_PunSpine);
+			FXSpines.Add(fxSpine);
+			FXOverlay->AddChildToOverlay(fxSpine);
+		}
+
+		fxSpine->Spine->Atlas = atlas_fx;
+		fxSpine->Spine->SkeletonData = skeletonData_fx;
+		fxSpine->Spine->SetAnimation(0, "Attack", false);
+		fxSpine->Spine->SetTimeScale(gameSpeed);
+		fxSpine->animationDoneSec = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / gameSpeed;
+		fxSpine->SetVisibility(ESlateVisibility::HitTestInvisible);
 	}
 
 };

@@ -1682,7 +1682,8 @@ public:
 			//
 			_columnIndex = 12;
 			AddTech_Building(TechEnum::GrandPalace, {},
-				CardEnum::GrandPalace
+				CardEnum::GrandPalace,
+				TechRequirements::HouseLvlCount(8, 100)
 			);
 			AddTech_Building(TechEnum::GreatMosque, {},
 				{ CardEnum::GreatMosque },

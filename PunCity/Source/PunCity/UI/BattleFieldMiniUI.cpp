@@ -6,7 +6,7 @@
 
 #define LOCTEXT_NAMESPACE "BattleFieldUI"
 
-void UBattleFieldMiniUI::UpdateUIBase(int32 provinceId, const ProvinceClaimProgress& claimProgress)
+void UBattleFieldMiniUI::UpdateUIBase(int32 provinceId, const ProvinceClaimProgress& claimProgress, bool showAttacher)
 {
 	auto& sim = simulation();
 	int32 provincePlayerId = sim.provinceOwnerPlayer(provinceId);
@@ -24,6 +24,13 @@ void UBattleFieldMiniUI::UpdateUIBase(int32 provinceId, const ProvinceClaimProgr
 		sim.playerNameT(claimProgress.attackerPlayerId)
 	));
 
+	
+	GroundAttacher->SetVisibility(showAttacher ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+	// Manual shift down
+	if (IsMiniUI()) {
+		BattleOverlay->SetRenderTranslation(FVector2D(0, showAttacher ? 100 : 0));
+	}
 
 
 	int32 defenderPlayerId = provincePlayerId;
@@ -95,6 +102,23 @@ void UBattleFieldMiniUI::UpdateUIBase(int32 provinceId, const ProvinceClaimProgr
 		
 		SetText(BattleText, TEXT_TAG("<Shadowed>", JOINTEXT(args)));
 	}
+
+	
+	// Army Strength
+	int32 attackerArmyStrength = GetArmyStrength(claimProgress.attackerFrontLine) + GetArmyStrength(claimProgress.attackerBackLine);
+	int32 defenderArmyStrength = GetArmyStrength(claimProgress.defenderFrontLine) + GetArmyStrength(claimProgress.defenderBackLine) + GetArmyStrength(claimProgress.defenderWall);
+
+	LeftArmyStrength->SetText(TEXT_NUM(attackerArmyStrength));
+	RightArmyStrength->SetText(TEXT_NUM(defenderArmyStrength));
+
+	bool isUIPlayerAttacker = claimProgress.attackerPlayerId == playerId();
+
+	// Battle Bar
+	float fraction = static_cast<float>(attackerArmyStrength) / (attackerArmyStrength + defenderArmyStrength);
+
+	BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", 1.0f - fraction);
+	BattleBarImage->GetDynamicMaterial()->SetScalarParameterValue("IsGreenLeft", isUIPlayerAttacker);
+	BattleBarImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 }
 
 

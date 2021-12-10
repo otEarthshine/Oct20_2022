@@ -202,7 +202,7 @@ void House::CalculateConsumptions(bool consumeLuxury)
 	 */
 	
 	_roundLuxuryConsumption100 = 0;
-	ExecuteOnLuxuryResources([&](ResourceEnum resourceEnum) 
+	ExecuteOnLuxuryResourcesByTier([&](ResourceEnum resourceEnum, int32 tier)
 	{
 		if (resourceCount(resourceEnum) > 0 &&
 			occupantCount() > 0)
@@ -223,6 +223,8 @@ void House::CalculateConsumptions(bool consumeLuxury)
 			if (_simulation->HasGlobalBonus(_playerId, CardEnum::Capitalism)) {
 				luxuryConsumption100_perRound = luxuryConsumption100_perRound * 3 / 2;
 			}
+
+			luxuryConsumption100_perRound = luxuryConsumption100_perRound * HumanLuxuryConsumptionScalingByTier[tier] / 100;
 
 			if (consumeLuxury) 
 			{
@@ -554,6 +556,8 @@ void Ranch::FinishConstruction()
 
 void Ranch::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 {
+	PUN_CHECK(IsDomesticatedAnimal(animalEnum));
+	
 	int32 newAnimalId = _simulation->AddUnit(animalEnum, _townId, centerTile().worldAtom2(), age);
 	PUN_CHECK(_animalOccupants.size() < maxAnimals);
 	_animalOccupants.push_back(newAnimalId);
@@ -570,7 +574,9 @@ void Ranch::AddAnimalOccupant(UnitEnum animalEnum, int32_t age)
 void Ranch::RemoveAnimalOccupant(int32_t animalId)
 {
 	//PUN_LOG("RemoveAnimalOccupant %d", animalId);
-	PUN_CHECK(IsDomesticatedAnimal(_simulation->unitAI(animalId).unitEnum()));
+	UnitEnum unitEnum = _simulation->unitAI(animalId).unitEnum();
+	// TODO: somehow this can get triggered...
+	//PUN_CHECK(IsDomesticatedAnimal(unitEnum));
 
 	CppUtils::Remove(_animalOccupants, animalId);
 }

@@ -25,9 +25,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* LeftArmyStrength;
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* RightArmyStrength;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* GroundAttacher;
+
 	virtual bool IsMiniUI() { return true; }
 
-	void UpdateUIBase(int32 provinceIdIn, const ProvinceClaimProgress& claimProgress);
+	void UpdateUIBase(int32 provinceIdIn, const ProvinceClaimProgress& claimProgress, bool showAttacher);
 
 	
 };

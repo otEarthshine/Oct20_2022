@@ -3,6 +3,8 @@
 
 #include "AIPlayerSystem.h"
 
+#include "BuildingCardSystem.h"
+
 void AIPlayerSystem::Tick1Sec()
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunAITick1Sec);
@@ -58,61 +60,7 @@ void AIPlayerSystem::Tick1Sec()
 	 */
 	if (!playerOwned.hasChosenLocation())
 	{
-		for (int count = 10000; count-- > 0;)
-		{
-			//int32 regionX = GameRand::Rand() % GameMapConstants::RegionsPerWorldX_Inner + GameMapConstants::MinInnerRegionX;
-			//int32 regionY = GameRand::Rand() % GameMapConstants::RegionsPerWorldY_Inner + GameMapConstants::MinInnerRegionY;
-			//WorldRegion2 region(regionX, regionY);
-
-			int32 provinceId = GameRand::Rand() % GameMapConstants::TotalRegions;
-
-			if (provinceSys.IsProvinceValid(provinceId))
-			{
-				//BiomeEnum biomeEnum = terrainGenerator.GetBiome(region);
-				AIRegionProposedPurposeEnum purposeEnum = DetermineProvincePurpose(provinceId);
-
-				if (purposeEnum != AIRegionProposedPurposeEnum::None &&
-					SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, _simulation, 4))
-				{
-					BiomeEnum biomeEnum = _simulation->GetBiomeProvince(provinceId);
-					if (biomeEnum == BiomeEnum::Desert ||
-						biomeEnum == BiomeEnum::Tundra) {
-						continue;
-					}
-
-					// Check if we can expand at least 5 provinces around (3 layers)
-					std::vector<int32> targetProvinces = { provinceId };
-					for (int32 i = 0; i < 3; i++)
-					{
-						for (int32 j = 0; j < targetProvinces.size(); j++) {
-							const auto& connections = provinceSys.GetProvinceConnections(targetProvinces[j]);
-							for (const ProvinceConnection& connection : connections) {
-								if (connection.tileType == TerrainTileType::None) {
-									CppUtils::TryAdd(targetProvinces, connection.provinceId);
-								}
-							}
-						}
-					}
-
-					if (targetProvinces.size() < 5) {
-						continue;
-					}
-
-					// Note, FindStartSpot isn't always valid
-					TileArea finalArea = SimUtils::FindStartSpot(provinceId, _simulation);
-
-					if (finalArea.isValid())
-					{
-						auto command = MakeCommand<FChooseLocation>();
-						command->provinceId = provinceId;
-						command->isChoosingOrReserving = true;
-						_playerInterface->ChooseLocation(*command);
-						break;
-					}
-				}
-			}
-		}
-
+		TryChooseLocation();
 		return;
 	}
 
@@ -131,222 +79,14 @@ void AIPlayerSystem::Tick1Sec()
 	 */
 	if (!playerOwned.hasCapitalTownhall())
 	{
-		_LOG(PunAI, "%s Try Build Townhall", AIPrintPrefix());
-
-		PUN_CHECK(provincesClaimed.size() == 1);
-		int32 provinceId = provincesClaimed[0];
-		TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
-
-		WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).size;
-		TileArea area = BuildingArea(provinceRectArea.centerTile(), townhallSize, Direction::S);
-
-		// Add Road...
-		area.minX = area.minX - 1;
-		area.minY = area.minY - 1;
-		area.maxX = area.maxX + 1;
-		area.maxY = area.maxY + 1;
-
-		// Add Storages
-		area.minY = area.minY - 5;
-		area.maxY = area.maxY + 5; // Ensure area center is also townhall center
-
-		PUN_CHECK(area.isValid());
-
-		TileArea buildableArea = SimUtils::SpiralFindAvailableBuildArea(area, [&](WorldTile2 tile)
-		{
-			// Out of province, can't build...
-			if (provinceSys.GetProvinceIdClean(tile) != provinceId) {
-				return false;
-			}
-
-			// Not buildable and not critter building
-			if (!_simulation->IsBuildable(tile) &&
-				!_simulation->IsCritterBuildingIncludeFronts(tile))
-			{
-				std::vector<int32> frontIds = _simulation->frontBuildingIds(tile);
-				if (frontIds.size() > 0)
-				{
-					// If any front isn't regional building, we can't plant
-					for (int32 frontId : frontIds) {
-						if (!IsRegionalBuilding(_simulation->buildingEnum(frontId))) {
-							return false;
-						}
-					}
-					return true;
-				}
-
-				CardEnum buildingEnum = _simulation->buildingEnumAtTile(tile);
-				return IsRegionalBuilding(buildingEnum);
-			}
-			return true;
-		},
-			[&](WorldTile2 tile) {
-			return !provinceRectArea.HasTile(tile);
-		});
-
-		if (buildableArea.isValid())
-		{
-			_LOG(PunAI, "%s Build Townhall: buildableArea isValid", AIPrintPrefix());
-
-			auto command = MakeCommand<FPlaceBuilding>();
-			command->buildingEnum = static_cast<uint8>(CardEnum::Townhall);
-			command->playerId = _aiPlayerId;
-			command->center = buildableArea.centerTile(); // area center is also townhall center
-			command->faceDirection = static_cast<uint8>(Direction::S);
-
-			BldInfo buildingInfo = GetBuildingInfoInt(command->buildingEnum);
-			command->area = BuildingArea(command->center, buildingInfo.size, Direction::S);
-
-			_playerInterface->PlaceBuilding(*command);
-		}
-
+		TryBuildTownhall();
 		return;
 	}
 
-
-//	/*
-//	 * Update Relationship
-//	 */
-//	{
-//		SCOPE_CYCLE_COUNTER(STAT_PunAIUpdateRelationship);
-//
-//		std::vector<int32> allPlayersAndAI = _simulation->GetAllPlayersAndAI();
-//		for (int32 playerId = 0; playerId < allPlayersAndAI.size(); playerId++)
-//		{
-//			if (_simulation->HasTownhall(playerId))
-//			{
-//#define MODIFIER(EnumName) _relationshipModifiers.GetModifierMutable(playerId, RelationshipModifierEnum::EnumName)
-//
-//				// Decaying modifiers (decay every season)
-//				if (Time::Ticks() % Time::TicksPerSeason == 0)
-//				{
-//					DecreaseToZero(MODIFIER(YouGaveUsGifts));
-//					IncreaseToZero(MODIFIER(YouStealFromUs));
-//					IncreaseToZero(MODIFIER(YouKidnapFromUs));
-//				}
-//
-//				//if (Time::Ticks() % Time::TicksPerMinute == 0)
-//				{
-//					// Calculated modifiers
-//					auto calculateStrength = [&](int32 playerIdScope) {
-//						return _simulation->influence(playerIdScope) + _simulation->playerOwned(playerIdScope).totalInfluenceIncome100() * Time::RoundsPerYear;
-//					};
-//					int32 aiStrength = calculateStrength(_aiPlayerId);
-//					int32 counterPartyStrength = calculateStrength(playerId);
-//
-//					MODIFIER(YouAreStrong) = Clamp((counterPartyStrength - aiStrength) / 50, 0, 20);
-//					MODIFIER(YouAreWeak) = Clamp((aiStrength - counterPartyStrength) / 50, 0, 20);
-//
-//					const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
-//					int32 borderCount = 0;
-//					for (int32 provinceId : provinceIds) {
-//						const std::vector<ProvinceConnection>& connections = _simulation->GetProvinceConnections(provinceId);
-//						for (const ProvinceConnection& connection : connections) {
-//							if (_simulation->provinceOwnerPlayer(connection.provinceId) == playerId) {
-//								borderCount++;
-//							}
-//						}
-//					}
-//					MODIFIER(AdjacentBordersSparkTensions) = std::max(-borderCount * 5, -20);
-//
-//					// townhall nearer 500 tiles will cause tensions
-//					int32 townhallDistance = WorldTile2::Distance(_simulation->GetTownhallGateCapital(_aiPlayerId), _simulation->GetTownhallGateCapital(playerId));
-//					if (townhallDistance <= 500) {
-//						MODIFIER(TownhallProximitySparkTensions) = -20 * (500 - townhallDistance) / 500;
-//					}
-//					else {
-//						MODIFIER(TownhallProximitySparkTensions) = 0;
-//					}
-//				}
-//#undef MODIFIER
-//			}
-//		}
-//	}
-
 	/*
-	 * Do good/bad act once every year
+	 * Do good/bad act once every X year
 	 */
-	const int32 yearsPerAction = 5;
-
-	int32 secondToAct = (GameRand::Rand(Time::Years()) + GameRand::Rand(_aiPlayerId)) % Time::SecondsPerYear;
-	if (Time::Seconds() % Time::SecondsPerYear == secondToAct &&
-		(GameRand::Rand(Time::Seconds()) % yearsPerAction) == 0)
-	{
-		PUN_LOG("[AIPlayer] Act pid:%d second:%d", _aiPlayerId, secondToAct);
-
-		int32 maxRelationshipPlayerId = -1;
-		int32 maxRelationship = 0;
-
-		int32 minRelationshipPlayerId = -1;
-		int32 minRelationship = 0;
-		_simulation->ExecuteOnPlayersAndAI([&](int32 playerId)
-		{
-			int32 relationship = _simulation->townManagerBase(_aiPlayerId)->relationship().GetTotalRelationship(playerId);
-			if (relationship > maxRelationship) {
-				maxRelationship = relationship;
-				maxRelationshipPlayerId = playerId;
-			}
-			if (relationship <= minRelationship)
-			{
-				minRelationship = relationship;
-				minRelationshipPlayerId = playerId;
-			}
-		});
-
-		// Gifting
-		if (maxRelationshipPlayerId != -1 &&
-			_simulation->HasTownhall(maxRelationshipPlayerId) &&
-			_simulation->moneyCap32(_aiPlayerId) > 500)
-		{
-			PUN_LOG("[AIPlayer] gift pid:%d target:%d second:%d", _aiPlayerId, maxRelationshipPlayerId, secondToAct);
-
-			auto command = make_shared<FGenericCommand>();
-			command->genericCommandType = FGenericCommand::Type::SendGift;
-			command->playerId = _aiPlayerId;
-			command->intVar1 = _aiPlayerId;
-			command->intVar2 = maxRelationshipPlayerId;
-			command->intVar3 = std::min(100, _simulation->moneyCap32(_aiPlayerId) - 500);
-
-			command->intVar5 = static_cast<int32>(TradeDealStageEnum::Gifting);
-			
-
-			check(_simulation->IsValidPlayer(maxRelationshipPlayerId));
-
-			_playerInterface->GenericCommand(*command);
-		}
-
-		// TODO: ...
-		//// Steal/Kidnap
-		//if (minRelationshipPlayerId != -1 &&
-		//	_simulation->HasTownhall(minRelationshipPlayerId))
-		//{
-		//	// Ideally 20 money per pop
-		//	//  Target also need to have more than 1k
-		//	if (_simulation->money(minRelationshipPlayerId) > 1000 &&
-		//		_simulation->money(_aiPlayerId) < _simulation->population(_aiPlayerId) * 20)
-		//	{
-		//		PUN_LOG("[AIPlayer] Steal pid:%d target:%d second:%d", _aiPlayerId, minRelationshipPlayerId, secondToAct);
-
-		//		auto command = make_shared<FPlaceBuilding>();
-		//		command->playerId = _aiPlayerId;
-		//		command->center = _simulation->townhall(minRelationshipPlayerId).centerTile();
-		//		command->buildingEnum = static_cast<uint8>(CardEnum::Steal);
-
-		//		_playerInterface->PlaceBuilding(*command);
-		//	}
-		//	else
-		//	{
-		//		PUN_LOG("AI Kidnap pid:%d second:%d", _aiPlayerId, secondToAct);
-		//		
-		//		auto command = make_shared<FPlaceBuilding>();
-		//		command->playerId = _aiPlayerId;
-		//		command->center = _simulation->townhall(minRelationshipPlayerId).centerTile();
-		//		command->buildingEnum = static_cast<uint8>(CardEnum::Kidnap);
-
-		//		_playerInterface->PlaceBuilding(*command);
-		//	}
-		//}
-	}
+	Tick1Sec_DoAction();
 
 
 
@@ -401,35 +141,89 @@ void AIPlayerSystem::Tick1Sec()
 	int32 heatResources = resourceSystem.resourceCount(ResourceEnum::Coal) + resourceSystem.resourceCount(ResourceEnum::Wood);
 	bool hasEnoughHeat = heatResources >= population * HumanHeatResourcePerYear * 2;
 
+
+	
+
+	/*
+	 * Upgrade Era
+	 */
+	int32 era = _simulation->GetEra(_aiPlayerId);
+
+	const std::vector<int32> popToIncreaseEra {
+		0,
+		50,
+		100,
+		200,
+	};
+
+	auto unlockTech = [&](TechEnum techEnum)
+	{
+		auto unlockSys = _simulation->unlockSystem(_aiPlayerId);
+		std::shared_ptr<ResearchInfo> tech = unlockSys->GetTechInfo(techEnum);
+		tech->state = TechStateEnum::Researched;
+		tech->upgradeCount++;
+		unlockSys->techsFinished++;
+	};
+
+	if (era == 1)
+	{
+		if (population >= popToIncreaseEra[era]) {
+			unlockTech(TechEnum::MiddleAge);
+		}
+	}
+	else if (era == 2)
+	{
+		if (population >= popToIncreaseEra[era]) {
+			unlockTech(TechEnum::EnlightenmentAge);
+			unlockTech(TechEnum::Logistics5);
+		}
+	}
+	else if (era == 3)
+	{
+		if (population >= popToIncreaseEra[era]) {
+			unlockTech(TechEnum::IndustrialAge);
+		}
+	}
+
+	CardEnum storageEnum = (era == 3 || population > 70) ? CardEnum::Warehouse : CardEnum::StorageYard;
+	
+
 	/*
 	 * Place City Blocks
 	 */
-	auto tryPlaceCityBlock = [&](CardEnum cardEnum, AICityBlock& block)
+	
+	auto hasNoRecentUnderConstruction = [&](CardEnum cardEnum, int32 gapTicks = Time::TicksPerSeason)
 	{
-		const std::vector<int32>& buildingIds = _simulation->buildingIds(_aiPlayerId, cardEnum);
-		if (buildingIds.size() == 0) {
-			return;
+		const std::vector<int32>& bldIds = _simulation->buildingIds(_aiPlayerId, cardEnum);
+		for (int32 bldId : bldIds) 
+		{
+			Building& bld = _simulation->building(bldId);
+			if (!bld.isConstructed())
+			{
+				if (bld.buildingAge() > Time::TicksPerYear &&
+					!_simulation->buildingSystem().IsQuickBuild(bldId))
+				{
+					// Quick Build
+					_simulation->buildingSystem().AddQuickBuild(bldId);
+					bld.InstantClearArea();
+					bld.FinishConstructionResourceAndWorkerReset();
+					bld.SetAreaWalkable();
+				}
+
+				return false;
+			}
+			// too recent, return false
+			if (bld.buildingAge() <= gapTicks) {
+				return false;
+			}
 		}
-
-		int32 buildingId = buildingIds[GameRand::Rand() % buildingIds.size()];
-
-		TileArea buildingArea = _simulation->building(buildingId).area();
-
-		// include road
-		buildingArea.minX--;
-		buildingArea.minY--;
-		buildingArea.maxX++;
-		buildingArea.maxY++;
-
-		block.TryPlaceCityBlockAroundArea(buildingArea, _aiPlayerId, _simulation);
-
-		if (block.HasArea()) {
-			std::vector<std::shared_ptr<FNetworkCommand>> commands;
-			SimUtils::PlaceCityBlock(block, _aiPlayerId, commands, _simulation);
-			_simulation->ExecuteNetworkCommands(commands);
-		}
+		
+		return true;
 	};
-
+	
+	/*
+	 * Blocks that are placed next to some other block (city center)
+	 */
 	if (notTooManyHouseUnderConstruction)
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunAIPlaceCityBlock);
@@ -440,8 +234,8 @@ void AIPlayerSystem::Tick1Sec()
 		// TODO: add last building centerTile which can be used as a new spiral center
 
 		AICityBlock block;
-
-		// Trading Post
+		
+		// First Trading Post
 		if (Time::Ticks() > Time::TicksPerYear &&
 			_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPost) == 0)
 		{
@@ -469,8 +263,11 @@ void AIPlayerSystem::Tick1Sec()
 		else
 		{
 			// Industry
-			if (Time::Ticks() > Time::TicksPerSeason * 3 / 2)
+			if (Time::Ticks() > Time::TicksPerSeason * 3 / 2) // build only after food producers
 			{
+				/*
+				 * Old Way
+				 */
 				// Furniture Workshop
 				if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wood) > 200 &&
 					_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) == 0)
@@ -489,16 +286,22 @@ void AIPlayerSystem::Tick1Sec()
 						{ }
 					);
 				}
-				// Tailor
-				else if (_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) > 0 &&
-					_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) > 0 &&
-					_simulation->buildingCount(_aiPlayerId, CardEnum::Tailor) == 0)
-				{
-					block = AICityBlock::MakeBlock(factionEnum(),
-						{ CardEnum::Tailor, },
-						{ }
-					);
-				}
+				//// Tailor
+				//else if (_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) > 0 &&
+				//	_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) > 0 &&
+				//	_simulation->buildingCount(_aiPlayerId, CardEnum::Tailor) == 0)
+				//{
+				//	block = AICityBlock::MakeBlock(factionEnum(),
+				//		{ CardEnum::Tailor, },
+				//		{ }
+				//	);
+				//}
+
+				//! Build buildings that should scale with population
+				TryPlaceNormalBuildings_ScaleToPopCount(block, era, population);
+
+				//! build single building of each type
+				TryPlaceNormalBuildings_Single(block, era);
 			}
 
 			// Storage
@@ -511,8 +314,8 @@ void AIPlayerSystem::Tick1Sec()
 				if (usedSlots >= totalSlots * 9 / 10) // 90% full
 				{
 					block = AICityBlock::MakeBlock(factionEnum(),
-						{ CardEnum::StorageYard, CardEnum::StorageYard, },
-						{ CardEnum::StorageYard,  CardEnum::StorageYard }
+						{ storageEnum, storageEnum, },
+						{ storageEnum,  storageEnum }
 					);
 				}
 			}
@@ -522,17 +325,40 @@ void AIPlayerSystem::Tick1Sec()
 		if (block.IsValid())
 		{
 			// Try house, then townhall, then storage
-			tryPlaceCityBlock(CardEnum::House, block);
+			TryPlaceCityBlock({ CardEnum::House, CardEnum::Townhall, storageEnum }, block);
+			//TryPlaceCityBlock(CardEnum::House, block);
 
-			if (!block.HasArea()) {
-				tryPlaceCityBlock(CardEnum::Townhall, block);
-			}
+			//if (!block.PlacementSucceed()) {
+			//	TryPlaceCityBlock(CardEnum::Townhall, block);
+			//}
 
-			if (!block.HasArea()) {
-				tryPlaceCityBlock(CardEnum::StorageYard, block);
-			}
+			//if (!block.HasArea()) {
+			//	TryPlaceCityBlock(storageEnum, block);
+			//}
 		}
 	}
+
+
+	/*
+	 * Coastal/Mountain/River buildings
+	 */
+	if (_needMoreTradeBuilding &&
+		(hasNoRecentUnderConstruction(CardEnum::TradingPost) && hasNoRecentUnderConstruction(CardEnum::TradingPort)))
+	{
+		bool isPlaced = TryPlaceSingleCoastalBuilding(CardEnum::TradingPort);
+		if (!isPlaced) {
+			auto block = AICityBlock::MakeBlock(factionEnum(),
+				{ CardEnum::TradingPost }
+			);
+			TryPlaceCityBlock({ storageEnum, CardEnum::House }, block);
+		}
+	}
+
+	/*
+	 * Mines
+	 */
+	TryPlaceMines();
+	
 
 	/*
 	 * Farm or Ranch placement helpers
@@ -680,21 +506,12 @@ void AIPlayerSystem::Tick1Sec()
 							{
 								Direction faceDirection = static_cast<Direction>(i);
 								BuildPlacement placement(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
-								//TileArea area = BuildingArea(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
 
 								std::vector<PlacementGridInfo> grids;
 								bool setDockInstruction;
 								_simulation->CheckPortArea(placement, CardEnum::Fisher, grids, setDockInstruction, _aiPlayerId);
 
-								bool isBuildable = true;
-								for (const PlacementGridInfo& grid : grids) {
-									if (grid.gridEnum == PlacementGridEnum::Red) {
-										isBuildable = false;
-										break;
-									}
-								}
-
-								if (isBuildable)
+								if (AreGridsBuildable(grids))
 								{
 									int32 efficiency = Fisher::FisherAreaEfficiency(coastalTile, false, WorldTile2::Invalid, _simulation);
 									if (efficiency > bestEfficiency) {
@@ -709,14 +526,7 @@ void AIPlayerSystem::Tick1Sec()
 
 					if (bestCenterTile.isValid())
 					{
-						auto command = MakeCommand<FPlaceBuilding>();
-						command->playerId = _aiPlayerId;
-						command->buildingEnum = static_cast<uint8>(CardEnum::Fisher);
-						command->area = BuildingArea(bestCenterTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), bestFaceDirection);
-						command->center = bestCenterTile;
-						command->faceDirection = uint8(bestFaceDirection);
-
-						_simulation->ExecuteNetworkCommand(command);
+						PlaceBuilding(CardEnum::Fisher, bestCenterTile, bestFaceDirection);
 					}
 
 					return false;
@@ -727,7 +537,7 @@ void AIPlayerSystem::Tick1Sec()
 				if (!placedFisher)
 				{
 					AICityBlock block = AICityBlock::MakeBlock({}, { CardEnum::RanchPig });
-					tryPlaceCityBlock(CardEnum::RanchPig, block);
+					TryPlaceCityBlock(CardEnum::RanchPig, block);
 				}
 			}
 		}
@@ -897,42 +707,445 @@ void AIPlayerSystem::Tick1Sec()
 		};
 
 		tryUpgrade(30, 1);
-		tryUpgrade(58, 2);
-		tryUpgrade(88, 3);
+		tryUpgrade(60, 2);
+		tryUpgrade(110, 3);
+		tryUpgrade(210, 4);
 	}
+
+	/*
+	 * Cheat Money
+	 */
+	if (Time::Seconds() % 5 == 0 &&
+		_simulation->moneyCap32(_aiPlayerId) < 700)
+	{
+		// Cheat if no money
+		int32 cheatAmount = std::max(333, population * 10);
+		_simulation->ChangeMoney(_aiPlayerId, cheatAmount);
+		_totalCheatedMoney += cheatAmount;
+	}
+
+	/*
+	 * Upgrade Buildings
+	 */
+	TryUpgradeBuildings();
 
 	/*
 	 * Trade
 	 */
+	TryTrade();
+
+	/*
+	 * Accept immigrants
+	 */
+	PopupInfo* popup = _simulation->PopupToDisplay(_aiPlayerId);
+	if (popup && popup->replyReceiver == PopupReceiverEnum::ImmigrationEvent) {
+		if (hasEnoughFood && hasEnoughHeat && population < 50) {
+			townhall.AddRequestedImmigrants();
+		}
+		_simulation->CloseCurrentPopup(_aiPlayerId);
+	}
+
+	/*
+	 * Defend land
+	 */
+	std::vector<std::vector<CardStatus>> eraToUnitCountPer100pop
+	{
+		{},
+		{ // Era 1
+			CardStatus(CardEnum::Warrior, 1)
+		},
+		{ // Era 2
+			CardStatus(CardEnum::Swordsman, 1),
+			CardStatus(CardEnum::Archer, 1)
+		},
+		{ // Era 3
+			CardStatus(CardEnum::Musketeer, 1),
+			CardStatus(CardEnum::Cannon, 1)
+		},
+		{ // Era 4
+			CardStatus(CardEnum::Infantry, 1),
+			CardStatus(CardEnum::MachineGun, 1)
+		},
+	};
+
+
+	// Always Remove any slot cards
+	// - These slot cards might be unwanted cards from demolition (AI slot cards cheat added)
+	auto& cardSys = _simulation->cardSystem(_aiPlayerId);
+	std::vector<CardStatus> cards = cardSys.GetCardsBoughtAndInventory();
+	for (const CardStatus& card : cards) {
+		if (IsBuildingSlotCard(card.cardEnum)) {
+			cardSys.RemoveCards_BoughtHandAndInventory(CardStatus(card.cardEnum, 1));
+		}
+	}
+	
+
+	/*
+	 * Military
+	 */
+	if (Time::Seconds() % 250 == 0 &&
+		Time::Ticks() > Time::TicksPerYear)
+	{
+		const std::vector<CardStatus>& targetCards = eraToUnitCountPer100pop[era];
+
+		// Remove a military card if it isn't wanted for this era
+		for (const CardStatus& card : cards) 
+		{
+			if (IsMilitaryCardEnum(card.cardEnum))
+			{
+				bool isTargetCard = false;
+				for (const CardStatus& targetCard : targetCards) {
+					if (card.cardEnum == targetCard.cardEnum) {
+						isTargetCard = true;
+					}
+				}
+
+				if (!isTargetCard) {
+					cardSys.RemoveCards_BoughtHandAndInventory(CardStatus(card.cardEnum, 1));
+				}
+			}
+		}
+
+		// Add card that needs to increase
+		for (const CardStatus& targetCard : targetCards)
+		{
+			bool needCardAdding = true;
+			for (const CardStatus& card : cards) {
+				if (card.cardEnum == targetCard.cardEnum) {
+					if (card.stackSize >= targetCard.stackSize) {
+						needCardAdding = false;
+					}
+					break;
+				}
+			}
+			if (needCardAdding) {
+				cardSys.TryAddCards_BoughtHandAndInventory(targetCard.cardEnum);
+			}
+		}
+	}
+	
+	 //_LOG(PunAI, "%s CheckDefendLand(outer): sec:%d money:%d", AIPrintPrefix(), Time::Seconds(), resourceSystem.money());
+	if (Time::Seconds() % 10 == 0)
+	{
+		//_LOG(PunAI, "%s CheckDefendLand", AIPrintPrefix());
+
+		const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
+		for (int32 provinceId : provinceIds)
+		{
+			//_LOG(PunAI, "%s CheckDefendLand provinceId:%d", AIPrintPrefix(), provinceId);
+
+			ProvinceClaimProgress claimProgress = townManage.GetDefendingClaimProgress(provinceId);
+			if (claimProgress.isValid())
+			{
+				// TODO: AI Defense
+				//_LOG(PunAI, "%s CheckDefendLand Send Command provinceId:%d", AIPrintPrefix(), provinceId);
+
+				//auto command = make_shared<FClaimLand>();
+				//command->playerId = _aiPlayerId;
+				//command->claimEnum = CallbackEnum::DefendProvinceMoney;
+				//command->provinceId = provinceId;
+				//PUN_CHECK(command->provinceId != -1);
+
+				//_simulation->ExecuteNetworkCommand(command);
+			}
+		}
+	}
+
+
+	/*
+	 * Find nearby province to claim
+	 */
+	TryProvinceClaim();
+}
+
+
+void AIPlayerSystem::TryChooseLocation()
+{
+	auto& provinceSys = _simulation->provinceSystem();
+	
+	for (int count = 10000; count-- > 0;)
+	{
+		int32 provinceId = GameRand::Rand() % GameMapConstants::TotalRegions;
+
+		if (provinceSys.IsProvinceValid(provinceId))
+		{
+			//BiomeEnum biomeEnum = terrainGenerator.GetBiome(region);
+			AIRegionProposedPurposeEnum purposeEnum = DetermineProvincePurpose(provinceId);
+
+			if (purposeEnum != AIRegionProposedPurposeEnum::None &&
+				SimUtils::CanReserveSpot_NotTooCloseToAnother(provinceId, _simulation, 4))
+			{
+				BiomeEnum biomeEnum = _simulation->GetBiomeProvince(provinceId);
+				if (biomeEnum == BiomeEnum::Desert ||
+					biomeEnum == BiomeEnum::Tundra) {
+					continue;
+				}
+
+				// Check if we can expand at least 5 provinces around (3 layers)
+				std::vector<int32> targetProvinces = { provinceId };
+				for (int32 i = 0; i < 3; i++)
+				{
+					for (int32 j = 0; j < targetProvinces.size(); j++) {
+						const auto& connections = provinceSys.GetProvinceConnections(targetProvinces[j]);
+						for (const ProvinceConnection& connection : connections) {
+							if (connection.tileType == TerrainTileType::None) {
+								CppUtils::TryAdd(targetProvinces, connection.provinceId);
+							}
+						}
+					}
+				}
+
+				if (targetProvinces.size() < 5) {
+					continue;
+				}
+
+				// Note, FindStartSpot isn't always valid
+				TileArea finalArea = SimUtils::FindStartSpot(provinceId, _simulation);
+
+				if (finalArea.isValid())
+				{
+					auto command = MakeCommand<FChooseLocation>();
+					command->provinceId = provinceId;
+					command->isChoosingOrReserving = true;
+					_playerInterface->ChooseLocation(*command);
+					break;
+				}
+			}
+		}
+	}
+	
+}
+
+void AIPlayerSystem::TryBuildTownhall()
+{
+	_LOG(PunAI, "%s Try Build Townhall", AIPrintPrefix());
+
+	auto& provinceSys = _simulation->provinceSystem();
+	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
+
+	PUN_CHECK(provincesClaimed.size() == 1);
+	int32 provinceId = provincesClaimed[0];
+	TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
+
+	WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).size;
+	TileArea area = BuildingArea(provinceRectArea.centerTile(), townhallSize, Direction::S);
+
+	// Add Road...
+	area.minX = area.minX - 1;
+	area.minY = area.minY - 1;
+	area.maxX = area.maxX + 1;
+	area.maxY = area.maxY + 1;
+
+	// Add Storages
+	area.minY = area.minY - 5;
+	area.maxY = area.maxY + 5; // Ensure area center is also townhall center
+
+	PUN_CHECK(area.isValid());
+
+	TileArea buildableArea = SimUtils::SpiralFindAvailableBuildArea(area, [&](WorldTile2 tile)
+	{
+		// Out of province, can't build...
+		if (provinceSys.GetProvinceIdClean(tile) != provinceId) {
+			return false;
+		}
+
+		// Not buildable and not critter building
+		if (!_simulation->IsBuildable(tile) &&
+			!_simulation->IsCritterBuildingIncludeFronts(tile))
+		{
+			std::vector<int32> frontIds = _simulation->frontBuildingIds(tile);
+			if (frontIds.size() > 0)
+			{
+				// If any front isn't regional building, we can't plant
+				for (int32 frontId : frontIds) {
+					if (!IsRegionalBuilding(_simulation->buildingEnum(frontId))) {
+						return false;
+					}
+				}
+				return true;
+			}
+
+			CardEnum buildingEnum = _simulation->buildingEnumAtTile(tile);
+			return IsRegionalBuilding(buildingEnum);
+		}
+		return true;
+	},
+		[&](WorldTile2 tile) {
+		return !provinceRectArea.HasTile(tile);
+	});
+
+	if (buildableArea.isValid())
+	{
+		_LOG(PunAI, "%s Build Townhall: buildableArea isValid", AIPrintPrefix());
+
+		auto command = MakeCommand<FPlaceBuilding>();
+		command->buildingEnum = static_cast<uint8>(CardEnum::Townhall);
+		command->playerId = _aiPlayerId;
+		command->center = buildableArea.centerTile(); // area center is also townhall center
+		command->faceDirection = static_cast<uint8>(Direction::S);
+
+		BldInfo buildingInfo = GetBuildingInfoInt(command->buildingEnum);
+		command->area = BuildingArea(command->center, buildingInfo.size, Direction::S);
+
+		_playerInterface->PlaceBuilding(*command);
+	}
+}
+
+void AIPlayerSystem::Tick1Sec_DoAction()
+{
+	const int32 yearsPerAction = 5;
+
+	int32 secondToAct = (GameRand::Rand(Time::Years()) + GameRand::Rand(_aiPlayerId)) % Time::SecondsPerYear;
+	if (Time::Seconds() % Time::SecondsPerYear == secondToAct &&
+		(GameRand::Rand(Time::Seconds()) % yearsPerAction) == 0)
+	{
+		PUN_LOG("[AIPlayer] Act pid:%d second:%d", _aiPlayerId, secondToAct);
+
+		int32 maxRelationshipPlayerId = -1;
+		int32 maxRelationship = 0;
+
+		int32 minRelationshipPlayerId = -1;
+		int32 minRelationship = 0;
+		_simulation->ExecuteOnPlayersAndAI([&](int32 playerId)
+		{
+			int32 relationship = _simulation->townManagerBase(_aiPlayerId)->relationship().GetTotalRelationship(playerId);
+			if (relationship > maxRelationship) {
+				maxRelationship = relationship;
+				maxRelationshipPlayerId = playerId;
+			}
+			if (relationship <= minRelationship)
+			{
+				minRelationship = relationship;
+				minRelationshipPlayerId = playerId;
+			}
+		});
+
+		// Gifting
+		if (maxRelationshipPlayerId != -1 &&
+			_simulation->HasTownhall(maxRelationshipPlayerId) &&
+			_simulation->moneyCap32(_aiPlayerId) > 500)
+		{
+			PUN_LOG("[AIPlayer] gift pid:%d target:%d second:%d", _aiPlayerId, maxRelationshipPlayerId, secondToAct);
+
+			auto command = make_shared<FGenericCommand>();
+			command->genericCommandType = FGenericCommand::Type::SendGift;
+			command->playerId = _aiPlayerId;
+			command->intVar1 = _aiPlayerId;
+			command->intVar2 = maxRelationshipPlayerId;
+			command->intVar3 = std::min(100, _simulation->moneyCap32(_aiPlayerId) - 500);
+
+			command->intVar5 = static_cast<int32>(TradeDealStageEnum::Gifting);
+
+
+			check(_simulation->IsValidPlayer(maxRelationshipPlayerId));
+
+			_playerInterface->GenericCommand(*command);
+		}
+
+		// TODO: ...
+		//// Steal/Kidnap
+		//if (minRelationshipPlayerId != -1 &&
+		//	_simulation->HasTownhall(minRelationshipPlayerId))
+		//{
+		//	// Ideally 20 money per pop
+		//	//  Target also need to have more than 1k
+		//	if (_simulation->money(minRelationshipPlayerId) > 1000 &&
+		//		_simulation->money(_aiPlayerId) < _simulation->population(_aiPlayerId) * 20)
+		//	{
+		//		PUN_LOG("[AIPlayer] Steal pid:%d target:%d second:%d", _aiPlayerId, minRelationshipPlayerId, secondToAct);
+
+		//		auto command = make_shared<FPlaceBuilding>();
+		//		command->playerId = _aiPlayerId;
+		//		command->center = _simulation->townhall(minRelationshipPlayerId).centerTile();
+		//		command->buildingEnum = static_cast<uint8>(CardEnum::Steal);
+
+		//		_playerInterface->PlaceBuilding(*command);
+		//	}
+		//	else
+		//	{
+		//		PUN_LOG("AI Kidnap pid:%d second:%d", _aiPlayerId, secondToAct);
+		//		
+		//		auto command = make_shared<FPlaceBuilding>();
+		//		command->playerId = _aiPlayerId;
+		//		command->center = _simulation->townhall(minRelationshipPlayerId).centerTile();
+		//		command->buildingEnum = static_cast<uint8>(CardEnum::Kidnap);
+
+		//		_playerInterface->PlaceBuilding(*command);
+		//	}
+		//}
+	}
+}
+
+void AIPlayerSystem::TryUpgradeBuildings()
+{
+	if (Time::Seconds() % 20 == 0)
+	{
+		std::vector<CardEnum> buildingEnums = GetSortedBuildingEnum();
+		for (CardEnum buildingEnum : buildingEnums)
+		{
+			const std::vector<int32>& bldIds = _simulation->buildingIds(_aiPlayerId, buildingEnum);
+			for (int32 bldId : bldIds)
+			{
+				Building& bld = _simulation->building(bldId);
+
+				//! Upgrade
+				int32 upgradeCount = bld.upgrades().size();
+				for (int32 i = 0; i < upgradeCount; i++)
+				{
+					const BuildingUpgrade& upgrade = bld.GetUpgrade(i);
+					if (upgrade.isEraUpgrade())
+					{
+						int32 era = _simulation->GetEra(_aiPlayerId);
+						
+						// Upgrade according to 
+						if (upgrade.upgradeLevel < era - upgrade.startEra) 
+						{
+							bld.UpgradeLevelInstantly(i);
+							return; // Only one era upgrade per try
+						}
+					}
+					else {
+						// Upgrade instantly if this isn't era upgrade
+						if (!bld.IsUpgraded(i)) {
+							bld.UpgradeInstantly(i);
+						}
+					}
+				}
+
+
+				//! Add Slot cards to buildings without one that needs one
+				if (GetBuildingInfo(buildingEnum).hasInput1() &&
+					bld.slotCardCount(CardEnum::SustainabilityBook) == 0)
+				{
+					bld.AddSlotCard(CardStatus(CardEnum::SustainabilityBook, 1));
+				}
+			}
+		}
+	}
+}
+
+void AIPlayerSystem::TryTrade()
+{
 	if (Time::Ticks() % Time::TicksPerRound == 0)
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunAITrade);
 
-		const std::vector<int32>& tradingPostIds = _simulation->buildingIds(_aiPlayerId, CardEnum::TradingPost);
-		if (tradingPostIds.size() > 0)
+		TownManager& townManage = _simulation->townManager(_aiPlayerId);
+		int32 population = townManage.population();
+
+		std::vector<int32> tradeBldIds = _simulation->buildingIds(_aiPlayerId, CardEnum::TradingPost);
+		const std::vector<int32>& tradingPortIds = _simulation->buildingIds(_aiPlayerId, CardEnum::TradingPort);
+		tradeBldIds.insert(tradeBldIds.end(), tradingPortIds.begin(), tradingPortIds.end());
+		
+		if (tradeBldIds.size() > 0)
 		{
-			TradingPost& tradingPost = _simulation->building<TradingPost>(tradingPostIds[0]);
-
-			auto tradeCommand = make_shared<FTradeResource>();
-			tradeCommand->playerId = _aiPlayerId;
-
-			int32 currentAmount = 0;
-			const int32 maxAmount = tradingPost.maxTradeQuatity();
+			std::vector<int32> sellTargetAmounts(ResourceEnumCount, 0);
+			std::vector<int32> buyTargetAmounts(ResourceEnumCount, 0);
 
 			// Sell extra luxury
 			auto sellExcess = [&](ResourceEnum resourceEnum, int32 supplyPerPop)
 			{
-				if (currentAmount < maxAmount)
-				{
-					int32 resourceCount = _simulation->resourceCountTown(_aiPlayerId, resourceEnum);
-					const int32 amountPreferred = population * supplyPerPop;
-					int32 resourceWanted = std::max(0, resourceCount - amountPreferred);
-					if (resourceWanted > 0) {
-						tradeCommand->buyEnums.Add(static_cast<uint8>(resourceEnum));
-						tradeCommand->buyAmounts.Add(-resourceWanted);
-						currentAmount += resourceWanted;
-					}
-				}
+				sellTargetAmounts[static_cast<int>(resourceEnum)] = population * supplyPerPop;
 			};
 
 			sellExcess(ResourceEnum::Beer, 5);
@@ -948,15 +1161,7 @@ void AIPlayerSystem::Tick1Sec()
 			// Buy to maintain some level of goods
 			auto buyUntil = [&](ResourceEnum resourceEnum, int32 target)
 			{
-				if (currentAmount < maxAmount)
-				{
-					int32 amountWanted = std::max(0, target - _simulation->resourceCountTown(_aiPlayerId, resourceEnum));
-					if (amountWanted > 0) {
-						tradeCommand->buyEnums.Add(static_cast<uint8>(resourceEnum));
-						tradeCommand->buyAmounts.Add(amountWanted);
-						currentAmount += amountWanted;
-					}
-				}
+				buyTargetAmounts[static_cast<int>(resourceEnum)] = std::max(buyTargetAmounts[static_cast<int>(resourceEnum)], target);
 			};
 
 
@@ -996,92 +1201,171 @@ void AIPlayerSystem::Tick1Sec()
 			buyUntil(ResourceEnum::Wood, 100);
 			buyUntil(ResourceEnum::Stone, 100);
 
-			// Buy Raw materials
-			if (_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) > 0) {
-				buyUntil(ResourceEnum::Wheat, 100);
-			}
-			if (_simulation->buildingCount(_aiPlayerId, CardEnum::Tailor) > 0) {
-				buyUntil(ResourceEnum::Iron, 30); // Construction
-				buyUntil(ResourceEnum::Leather, 100);
-			}
 
-
-			if (tradeCommand->buyEnums.Num() > 0)
+			//! Buy Raw materials
+			std::vector<CardEnum> buildingEnums = GetSortedBuildingEnum();
+			for (CardEnum buildingEnum : buildingEnums)
 			{
-				if (_simulation->moneyCap32(_aiPlayerId) < 300)
+				//! Buy Construction Materials
+				const std::vector<int32>& bldIds = _simulation->buildingIds(_aiPlayerId, buildingEnum);
+				for (int32 buildingId : bldIds) 
 				{
-					// Cheat if no money
-					_simulation->ChangeMoney(_aiPlayerId, population * 10);
-
-					// Sell only
-					for (int32 i = tradeCommand->buyAmounts.Num(); i-- > 0;) {
-						if (tradeCommand->buyAmounts[i] > 0) {
-							tradeCommand->buyEnums.RemoveAt(i);
-							tradeCommand->buyAmounts.RemoveAt(i);
+					Building& bld = _simulation->building(buildingId);
+					if (!bld.isConstructed()) 
+					{
+						std::vector<int32> constructionCosts = bld.GetConstructionResourceCost();
+						for (size_t i = 0; i < _countof(ConstructionResources); i++) {
+							if (constructionCosts[i] > 0) {
+								int32 neededResourceCount = constructionCosts[i] - bld.GetResourceCount(ConstructionResources[i]);
+								if (neededResourceCount > 0) {
+									buyUntil(ConstructionResources[i], neededResourceCount);
+								}
+							}
 						}
 					}
 				}
 
 
-				tradeCommand->objectId = tradingPostIds[0];
+				//! Buy Inputs
+				if (bldIds.size() > 0)
+				{
+					const BldInfo& info = GetBuildingInfo(buildingEnum);
+					if (info.hasInput1()) {
+						buyUntil(info.input1, 50 + (50 * bldIds.size()));
+					}
+					if (info.hasInput2()) {
+						buyUntil(info.input2, 50 + (50 * bldIds.size()));
+					}
+				}
+			}
 
-
-				_LOG(PunAI, "%s Trade:", AIPrintPrefix());
-				for (int32 i = 0; i < tradeCommand->buyEnums.Num(); i++) {
-					_LOG(PunAI, "%s : %s %d", AIPrintPrefix(), ToTChar(ResourceName(static_cast<ResourceEnum>(tradeCommand->buyEnums[i]))), tradeCommand->buyAmounts[i]);
+			//! Sell Excess
+			for (int32 i = 0; i < ResourceEnumCount; i++)
+			{
+				// Sell Excess of food at higher supply per pop
+				ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+				if (IsFoodEnum(resourceEnum)) {
+					sellExcess(resourceEnum, 50);
 				}
 
-				_simulation->ExecuteNetworkCommand(tradeCommand);
+				// Sell Excess of everything else
+				if (sellTargetAmounts[i] == 0) {
+					sellExcess(static_cast<ResourceEnum>(i), 5);
+				}
 			}
-		}
-	}
 
-	/*
-	 * Accept immigrants
-	 */
-	PopupInfo* popup = _simulation->PopupToDisplay(_aiPlayerId);
-	if (popup && popup->replyReceiver == PopupReceiverEnum::ImmigrationEvent) {
-		if (hasEnoughFood && hasEnoughHeat && population < 50) {
-			townhall.AddRequestedImmigrants();
-		}
-		_simulation->CloseCurrentPopup(_aiPlayerId);
-	}
 
-	/*
-	 * Defend land
-	 */
-	 //_LOG(PunAI, "%s CheckDefendLand(outer): sec:%d money:%d", AIPrintPrefix(), Time::Seconds(), resourceSystem.money());
-	if (Time::Seconds() % 10 == 0 && // Check every 10 sec
-		globalResourceSys.moneyCap32() > BattleInfluencePrice)
-	{
-		//_LOG(PunAI, "%s CheckDefendLand", AIPrintPrefix());
+			/*
+			 * Distribute to different trading posts
+			 */
+			// If sell target is below buy target, move it up to buy target
+			for (int32 i = 0; i < sellTargetAmounts.size(); i++) {
+				if (sellTargetAmounts[i] < buyTargetAmounts[i]) {
+					sellTargetAmounts[i] = buyTargetAmounts[i];
+				}
+			}
+			
+			std::vector<int32> buyAmountPreferred(ResourceEnumCount, 0);
+			for (int32 i = 0; i < buyAmountPreferred.size(); i++) {
+				ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
+				int32 resourceCount = _simulation->resourceCountTown(_aiPlayerId, resourceEnum);
+				if (resourceCount < buyTargetAmounts[i]) {
+					buyAmountPreferred[i] = buyTargetAmounts[i] - resourceCount;
+				}
+				else if (resourceCount > sellTargetAmounts[i]) {
+					buyAmountPreferred[i] = sellTargetAmounts[i] - resourceCount;
+				}
+			}
+			
+			auto tradeCommand = make_shared<FTradeResource>();
+			tradeCommand->playerId = _aiPlayerId;
 
-		const std::vector<int32>& provinceIds = _simulation->GetProvincesPlayer(_aiPlayerId);
-		for (int32 provinceId : provinceIds)
-		{
-			//_LOG(PunAI, "%s CheckDefendLand provinceId:%d", AIPrintPrefix(), provinceId);
-
-			ProvinceClaimProgress claimProgress = townManage.GetDefendingClaimProgress(provinceId);
-			if (claimProgress.isValid())
+			for (int32 tradeBldId : tradeBldIds)
 			{
-				// TODO: AI Defense
-				//_LOG(PunAI, "%s CheckDefendLand Send Command provinceId:%d", AIPrintPrefix(), provinceId);
+				TradeBuilding& tradeBld = _simulation->building<TradeBuilding>(tradeBldId);
+				int32 amountLeft = tradeBld.maxTradeQuatity();
 
-				//auto command = make_shared<FClaimLand>();
-				//command->playerId = _aiPlayerId;
-				//command->claimEnum = CallbackEnum::DefendProvinceMoney;
-				//command->provinceId = provinceId;
-				//PUN_CHECK(command->provinceId != -1);
+				tradeCommand->buyEnums.Empty();
+				tradeCommand->buyAmounts.Empty();
 
-				//_simulation->ExecuteNetworkCommand(command);
+				// Prioritize Buy
+				for (int32 i = 0; i < buyAmountPreferred.size(); i++) 
+				{
+					if (amountLeft <= 0) {
+						break;
+					}
+					
+					if (buyAmountPreferred[i] > 0) {
+						int32 amountToBuy = std::min(buyAmountPreferred[i], amountLeft);
+						buyAmountPreferred[i] -= amountToBuy;
+						amountLeft -= amountToBuy;
+						tradeCommand->buyEnums.Add(i);
+						tradeCommand->buyAmounts.Add(amountToBuy);
+					}
+				}
+				// Then sell
+				for (int32 i = 0; i < buyAmountPreferred.size(); i++)
+				{
+					if (amountLeft <= 0) {
+						break;
+					}
+
+					if (buyAmountPreferred[i] < 0) {
+						int32 amountToSell = std::min(-buyAmountPreferred[i], amountLeft);
+						buyAmountPreferred[i] += amountToSell;
+						amountLeft -= amountToSell;
+						tradeCommand->buyEnums.Add(i);
+						tradeCommand->buyAmounts.Add(amountToSell);
+					}
+				}
+
+
+				if (tradeCommand->buyEnums.Num() > 0)
+				{
+					if (_simulation->moneyCap32(_aiPlayerId) < 300)
+					{
+						// Sell only
+						for (int32 i = tradeCommand->buyAmounts.Num(); i-- > 0;) {
+							if (tradeCommand->buyAmounts[i] > 0) {
+								tradeCommand->buyEnums.RemoveAt(i);
+								tradeCommand->buyAmounts.RemoveAt(i);
+							}
+						}
+					}
+
+					tradeCommand->objectId = tradeBldId;
+
+
+					_LOG(PunAI, "%s Trade:", AIPrintPrefix());
+					for (int32 i = 0; i < tradeCommand->buyEnums.Num(); i++) {
+						_LOG(PunAI, "%s : %s %d", AIPrintPrefix(), ToTChar(ResourceName(static_cast<ResourceEnum>(tradeCommand->buyEnums[i]))), tradeCommand->buyAmounts[i]);
+					}
+
+					_simulation->ExecuteNetworkCommand(tradeCommand);
+				}
 			}
+
+			_needMoreTradeBuilding = false;
+			for (int32 i = 0; i < buyAmountPreferred.size(); i++) {
+				if (buyAmountPreferred[i] > 0) {
+					_needMoreTradeBuilding = true;
+				}
+			}
+			
 		}
 	}
+}
 
+void AIPlayerSystem::TryProvinceClaim()
+{
+	auto& provinceSys = _simulation->provinceSystem();
+	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
+	auto& globalResourceSys = _simulation->globalResourceSystem(_aiPlayerId);
 
-	/*
-	 * Find nearby province to claim
-	 */
+	TownHall& townhall = _simulation->GetTownhallCapital(_aiPlayerId);
+	int32 population = _simulation->townManager(_aiPlayerId).population();
+	
+	
 	int32 preferredProvinceCount = std::max(5, population / 5);
 	int32 shouldProvinceClaim = (provincesClaimed.size() < 5) || Time::Ticks() % Time::TicksPerRound;
 
@@ -1145,6 +1429,255 @@ void AIPlayerSystem::Tick1Sec()
 				auto command = MakeCommand<FClaimLand>();
 				command->provinceId = bestClaimProvinceId;
 				_playerInterface->ClaimLand(*command);
+			}
+		}
+	}
+}
+
+
+void AIPlayerSystem::TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBlock& block)
+{
+	const std::vector<int32>& buildingIds = _simulation->buildingIds(_aiPlayerId, buildingEnumToBeNear);
+	if (buildingIds.size() == 0) {
+		return;
+	}
+
+	int32 buildingId = buildingIds[GameRand::Rand() % buildingIds.size()];
+
+	TileArea buildingArea = _simulation->building(buildingId).area();
+
+	// include road
+	buildingArea.minX--;
+	buildingArea.minY--;
+	buildingArea.maxX++;
+	buildingArea.maxY++;
+
+	block.TryPlaceCityBlockAroundArea(buildingArea, _aiPlayerId, _simulation);
+
+	if (block.HasArea()) {
+		std::vector<std::shared_ptr<FNetworkCommand>> commands;
+		SimUtils::PlaceCityBlock(block, _aiPlayerId, commands, _simulation);
+		_simulation->ExecuteNetworkCommands(commands);
+	}
+};
+
+void AIPlayerSystem::PlaceBuilding(CardEnum cardEnum, WorldTile2 centerTile, Direction faceDirection)
+{
+	auto command = MakeCommand<FPlaceBuilding>();
+	command->playerId = _aiPlayerId;
+	command->buildingEnum = static_cast<uint8>(cardEnum);
+	command->area = BuildingArea(centerTile, GetBuildingInfo(cardEnum).GetSize(factionEnum()), faceDirection);
+	command->center = centerTile;
+	command->faceDirection = static_cast<uint8>(faceDirection);
+
+	_simulation->ExecuteNetworkCommand(command);
+}
+
+bool AIPlayerSystem::TryPlaceSingleCoastalBuilding(CardEnum cardEnum)
+{
+	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
+	
+	for (int32 provinceClaimed : provincesClaimed)
+	{
+		const std::vector<WorldTile2>& coastalTiles = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceClaimed).coastalTiles;
+
+		for (const WorldTile2& coastalTile : coastalTiles)
+		{
+			for (int32 i = 0; i < DirectionCount; i++)
+			{
+				Direction faceDirection = static_cast<Direction>(i);
+				BuildPlacement placement(coastalTile, GetBuildingInfo(cardEnum).GetSize(factionEnum()), faceDirection);
+
+				std::vector<PlacementGridInfo> grids;
+				bool setDockInstruction;
+				_simulation->CheckPortArea(placement, cardEnum, grids, setDockInstruction, _aiPlayerId);
+
+				if (AreGridsBuildable(grids))
+				{
+					PlaceBuilding(cardEnum, placement.centerTile, placement.faceDirection);
+					return true;
+				}
+			}
+		}
+	}
+	
+	return false;
+}
+
+void AIPlayerSystem::TryPlaceMines()
+{
+	if (Time::Ticks() % Time::TicksPerRound != 0) {
+		return; 
+	}
+	
+	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
+
+	for (int32 provinceClaimed : provincesClaimed)
+	{
+		CardEnum cardEnum = CardEnum::None;
+
+		auto tryBuildOne = [&](CardEnum cardEnumIn)
+		{
+			if (_simulation->buildingCount(_aiPlayerId, cardEnumIn) == 0) {
+				cardEnum = cardEnumIn;
+			}
+		};
+
+		GeoresourceNode node = _simulation->georesourceSystem().georesourceNode(provinceClaimed);
+		if (node.info().isMountainOre()) {
+			if (node.georesourceEnum == GeoresourceEnum::CoalOre) {
+				tryBuildOne(CardEnum::CoalMine);
+			}
+			else if (node.georesourceEnum == GeoresourceEnum::IronOre) {
+				tryBuildOne(CardEnum::IronMine);
+			}
+			else if (node.georesourceEnum == GeoresourceEnum::GoldOre) {
+				tryBuildOne(CardEnum::GoldMine);
+			}
+			else if (node.georesourceEnum == GeoresourceEnum::Gemstone) {
+				tryBuildOne(CardEnum::GemstoneMine);
+			}
+		}
+
+		if (_simulation->buildingCount(_aiPlayerId, CardEnum::Quarry) == 0) {
+			tryBuildOne(CardEnum::Quarry);
+		}
+
+		if (cardEnum != CardEnum::None)
+		{
+			const std::vector<WorldTile2>& mountainTiles = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceClaimed).mountainTiles;
+
+			for (const WorldTile2& mountainTile : mountainTiles)
+			{
+				for (int32 i = 0; i < DirectionCount; i++)
+				{
+					Direction faceDirection = static_cast<Direction>(i);
+					BuildPlacement placement(mountainTile, GetBuildingInfo(cardEnum).GetSize(factionEnum()), faceDirection);
+
+					if (_simulation->CanBuildMountainMineArea(placement, cardEnum, _aiPlayerId)) {
+						PlaceBuilding(cardEnum, placement.centerTile, placement.faceDirection);
+						return; // Build only one per check
+					}
+				}
+			}
+		}
+	}
+}
+
+void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population)
+{
+	int32 basePopCountPerBuilding = 40;
+	int32 baseBuildingPrice = GetBuildingInfo(CardEnum::FurnitureWorkshop).constructionCostAsMoney();
+
+	auto luxBuilding = [&](CardEnum buildingEnum)
+	{
+		int32 buildingPrice = GetBuildingInfo(buildingEnum).constructionCostAsMoney();
+
+		return std::pair<CardEnum, int32>(buildingEnum, basePopCountPerBuilding * buildingPrice / baseBuildingPrice);
+	};
+
+	const std::vector<std::vector<std::pair<CardEnum, int32>>> eraToBuildingEnumToPopCountPerTarget
+	{
+		{},
+		// Era 1
+		{
+			luxBuilding(CardEnum::FurnitureWorkshop),
+			luxBuilding(CardEnum::BeerBrewery),
+			//luxBuilding(CardEnum::Potter),
+
+			{ CardEnum::Tavern, 60 },
+		},
+		// Era 2
+		{
+			{ CardEnum::Bakery, 40 },
+			luxBuilding(CardEnum::Tailor),
+			luxBuilding(CardEnum::Winery),
+		},
+		// Era 3
+		{
+			luxBuilding(CardEnum::CoffeeRoaster),
+			luxBuilding(CardEnum::Chocolatier),
+		},
+		// Era 4
+		{
+			luxBuilding(CardEnum::Jeweler),
+			luxBuilding(CardEnum::ClockMakers),
+		},
+	};
+
+
+	if (!block.IsValid())
+	{
+		if (_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPort) ||
+			_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPost))
+		{
+			for (int32 tier = 1; tier <= era; tier++)
+			{
+				const std::vector<std::pair<CardEnum, int32>>& buildingEnumToPopCountPerTarget = eraToBuildingEnumToPopCountPerTarget[tier];
+				for (const std::pair<CardEnum, int32>& pair : buildingEnumToPopCountPerTarget) 
+				{
+					int32 targetCount = 1 + population / pair.second;
+					if (_simulation->buildingCount(_aiPlayerId, pair.first) < targetCount)
+					{
+						block = AICityBlock::MakeBlock(factionEnum(),
+							{ pair.first, },
+							{ }
+						);
+						return;
+					}
+				}
+			}
+		}
+	}
+}
+
+void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era)
+{
+	const std::vector<std::vector<CardEnum>> eraToSingleBuildingEnum
+	{
+		{},
+		// Era 1
+		{},
+		// Era 2
+		{
+			CardEnum::Library,
+			CardEnum::SpyCenter,
+			CardEnum::Brickworks,
+			CardEnum::Market,
+		},
+		// Era 3
+		{
+			CardEnum::School,
+			CardEnum::PolicyOffice,
+			CardEnum::Glassworks,
+			CardEnum::Theatre,
+			CardEnum::Bank,
+			CardEnum::Museum,
+			CardEnum::Zoo,
+		},
+		// Era 4
+		{
+			CardEnum::ConcreteFactory,
+			CardEnum::CardCombiner,
+		},
+
+	};
+	
+	if (!block.IsValid())
+	{
+		for (int32 tier = 1; tier <= era; tier++)
+		{
+			const std::vector<CardEnum>& buildingEnums = eraToSingleBuildingEnum[tier];
+			for (CardEnum buildingEnum : buildingEnums)
+			{
+				if (_simulation->buildingCount(_aiPlayerId, buildingEnum) == 0)
+				{
+					block = AICityBlock::MakeBlock(factionEnum(),
+						{ buildingEnum, },
+						{ }
+					);
+					return;
+				}
 			}
 		}
 	}

@@ -817,6 +817,8 @@ void ULobbyUI::UpdateLobbyUI()
 	 * Sync Debug
 	 */
 	DebugText->SetVisibility(ESlateVisibility::Collapsed);
+	
+#if UE_BUILD_DEBUG
 	APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this));
 	if (gameMode && gameInst->saveSystem().IsLobbyLoadingSavedGame())
 	{
@@ -839,6 +841,7 @@ void ULobbyUI::UpdateLobbyUI()
 		
 		DebugText->SetText(JOINTEXT(args));
 	}
+#endif
 }
 
 static bool SteamID64Equals(uint64 steamId64A, uint64 steamId64B) {

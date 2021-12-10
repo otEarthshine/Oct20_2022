@@ -270,6 +270,22 @@ void UnitStateAI::Update()
 				_hp100 = maxHP100() / 2;
 			}
 
+			// AI Cheat
+			if (_simulation->IsAIPlayer(_playerId) &&
+				_simulation->populationPlayer(_playerId) <= 12 + (GameRand::Rand(_playerId) % 5))
+			{
+				if (_food < minWarnFood() + 1) {
+					_food = minWarnFood() + 1;
+				}
+				if (_heat < minWarnHeat()) {
+					_heat = minWarnHeat();
+				}
+				if (_isSick && _hp100 < maxHP100() / 2) {
+					_hp100 = maxHP100() / 2;
+				}
+			}
+			
+
 			// Immortal Builder
 			// Help with construction issues (if time exceed X, make worker's food/heat/hp never go down...)
 			if (Building* workplc = workplace()) 

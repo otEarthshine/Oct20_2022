@@ -95,7 +95,8 @@ public:
 		}
 	}
 
-	int32 GetCardPrice(CardEnum buildingEnum) {
+	int32 GetCardPrice(CardEnum buildingEnum)
+	{
 		int32 cardPrice = GetBuildingInfo(buildingEnum).baseCardPrice;
 		if (_simulation->TownhallCardCountAll(_playerId, CardEnum::IndustrialRevolution) && 
 			IsIndustrialBuilding(buildingEnum)) 
@@ -117,6 +118,24 @@ public:
 
 		return cardPrice;
 	}
+	int32 GetCardPrice(CardEnum buildingEnum, ResourceEnum resourceEnum)
+	{
+		if (GetCardPriceTokenEnum(buildingEnum) == resourceEnum) {
+			return GetCardPrice(buildingEnum);
+		}
+		return 0;
+	}
+	
+	static ResourceEnum GetCardPriceTokenEnum(CardEnum buildingEnum)
+	{
+		if (buildingEnum == CardEnum::ResourceOutpost ||
+			buildingEnum == CardEnum::WorldTradeOffice) 
+		{
+			return ResourceEnum::Influence;
+		}
+		return ResourceEnum::Money;
+	}
+	
 
 	int32 GetRerollPrice()
 	{
@@ -371,12 +390,12 @@ public:
 		PUN_CHECK(cardIndex < _cardsHand1Reserved.size());
 		_cardsHand1Reserved[cardIndex] = isReserved;
 	}
-	void UnreserveIfRanOutOfCash(int32 negativeTentativeMoney)
+	void UnreserveIfRanOutOfCash(int32 negativeTentativeMoney, ResourceEnum resourceEnum)
 	{
 		for (size_t i = 0; i < _cardsHand1Reserved.size(); i++) {
 			if (_cardsHand1Reserved[i]) {
 				_cardsHand1Reserved[i] = false;
-				negativeTentativeMoney += GetCardPrice(_cardsHand[i]);
+				negativeTentativeMoney += GetCardPrice(_cardsHand[i], resourceEnum);
 				if (negativeTentativeMoney >= 0) {
 					break;
 				}

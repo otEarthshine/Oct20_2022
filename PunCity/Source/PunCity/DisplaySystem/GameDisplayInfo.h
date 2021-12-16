@@ -163,7 +163,7 @@ private:
 
 
 		//setName(CardEnum::Fort, WithFactionName("Outpost"));
-		setName(CardEnum::ResourceOutpost, WithFactionName("Colony"));
+		//setName(CardEnum::ResourceOutpost, WithFactionName("Colony"));
 		setName(CardEnum::ResearchLab, WithFactionName("InventorsWorkshop"));
 
 		set(CardEnum::IntercityRoad, {

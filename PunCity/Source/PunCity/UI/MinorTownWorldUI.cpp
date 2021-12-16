@@ -62,6 +62,8 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	//! BottomCaptionText
 	auto& sim = simulation();
 	TownManagerBase* uiTownManagerBase = sim.townManagerBase(uiTownId);
+
+	Building* townhall = sim.GetTownhallBldPtr(townId());
 	
 	TArray<FText> args;
 	auto tryAddNewLine = [&]() {
@@ -94,12 +96,23 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	}
 	else
 	{
-		if (uiTownManagerBase->lordPlayerId() == playerId()) {
-			ADDTEXT_(
-				LOCTEXT("MinorTownBottomCaption_VassalTax", "Vassal Tax: +{0}<img id=\"Coin\"/>, +{1}<img id=\"Influence\"/>"),
-				TEXT_100(uiTownManagerBase->totalRevenue100() * uiTownManagerBase->vassalTaxPercent() / 100),
-				TEXT_100(uiTownManagerBase->totalInfluenceIncome100() * uiTownManagerBase->vassalInfluencePercent() / 100)
-			);
+		if (uiTownManagerBase->lordPlayerId() == playerId()) 
+		{
+			if (townhall->isEnum(CardEnum::ResourceOutpost))
+			{
+				ADDTEXT_(
+					LOCTEXT("ResourceOutpostBottomCaption_InfluenceUpkeep", "-{0}<img id=\"Influence\"/>"),
+					TEXT_NUM(townhall->subclass<ResourceOutpost>().GetColonyUpkeep())
+				);
+			}
+			else
+			{
+				ADDTEXT_(
+					LOCTEXT("MinorTownBottomCaption_VassalTax", "Vassal Tax: +{0}<img id=\"Coin\"/>, +{1}<img id=\"Influence\"/>"),
+					TEXT_100(uiTownManagerBase->totalRevenue100() * uiTownManagerBase->vassalTaxPercent() / 100),
+					TEXT_100(uiTownManagerBase->totalInfluenceIncome100() * uiTownManagerBase->vassalInfluencePercent() / 100)
+				);
+			}
 		}
 
 		//! Trade Route Income
@@ -138,6 +151,21 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 	}
 	else {
 		BottomCaptionText->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+
+
+	if (townhall->isEnum(CardEnum::ResourceOutpost))
+	{
+		ResourceOutpost& resourceOutpost = townhall->subclass<ResourceOutpost>();
+		BottomCaptionResource->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		ResourceEnum resourceEnum = resourceOutpost.GetColonyResourceEnum();
+		BottomCaptionPrefixText->SetText(TEXT_NUMSIGNED(resourceOutpost.GetColonyResourceIncome(resourceEnum)));
+		SetResourceImage(BottomCaptionImage, resourceEnum, assetLoader());
+		BottomCaptionSuffixText->SetText(LOCTEXT("per round", "per round"));
+	}
+	else {
+		BottomCaptionResource->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 
@@ -225,6 +253,10 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 	bool canRaze = sim.IsUnlocked(playerId(), UnlockStateEnum::Raze);
 	bool canVassalize = sim.CanVassalizeOtherPlayers(playerId());
 	bool canDiplo = sim.IsResearched(playerId(), TechEnum::ForeignRelation);
+
+	if (sim.GetTownhallBldPtr(uiTownId)->isEnum(CardEnum::ResourceOutpost)) {
+		canDiplo = false;
+	}
 
 	if (!canRaze && !canVassalize && !canDiplo &&
 		uiTownManagerBase->GetMinorCityLevel() == 1) 

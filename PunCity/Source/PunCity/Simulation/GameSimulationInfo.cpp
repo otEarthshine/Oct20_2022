@@ -228,6 +228,8 @@ FArchive& CardStatus::operator>>(FArchive &Ar)
 	Ar << cardStateValue1;
 	Ar << cardStateValue2;
 	Ar << cardStateValue3;
+	Ar << cardStateValue4;
+	Ar << cardStateValue5;
 
 	Ar << lastPositionX100;
 	Ar << lastPositionY100;
@@ -246,6 +248,8 @@ void CardStatus::Serialize(class PunSerializedData& blob)
 	blob << cardStateValue1;
 	blob << cardStateValue2;
 	blob << cardStateValue3;
+	blob << cardStateValue4;
+	blob << cardStateValue5;
 
 	blob << lastPositionX100;
 	blob << lastPositionY100;
@@ -294,5 +298,7 @@ const std::vector<PermanentBonus::RareCardHand> PermanentBonus::PermanentBonusRa
 	{ RareHandEnum::Era4_2_Cards, { CardEnum::WondersScoreMultiplier, CardEnum::PopulationScoreMultiplier }},
 };
 
+TArray<FLinearColor> AIArchetypeInfo::PlayerBackgroundColors;
+TArray<FLinearColor> AIArchetypeInfo::PlayerForegroundColors;
 
 #undef LOCTEXT_NAMESPACE

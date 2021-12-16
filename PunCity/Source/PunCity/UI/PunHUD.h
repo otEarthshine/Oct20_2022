@@ -34,6 +34,7 @@
 #include "ProsperityUI.h"
 #include "GiftResourceUI.h"
 #include "DiplomacyUI.h"
+#include "ImportPlayerColorList.h"
 #include "MainTechTreeUI.h"
 #include "SendImmigrantsUI.h"
 #include "TechTreeUI.h"
@@ -590,6 +591,7 @@ protected:
 	UPROPERTY() UMainTechTreeUI* _techUI;
 	UPROPERTY() UAuxTechTreeUI* _prosperityUI;
 
+	UPROPERTY() UImportPlayerColorList* _importPlayerColorList;
 
 	TSharedPtr<FSlateGameResources> _style;
 

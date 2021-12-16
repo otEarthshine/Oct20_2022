@@ -72,7 +72,7 @@ public:
 		}
 
 		for (int i = 0; i < immigrantCount; i++) {
-			int32 ageTicks = GameRand::Rand() % _simulation->parameters(_playerId)->DeathAgeTicks();
+			int32 ageTicks = GameRand::Rand() % PlayerParameters::DeathAgeTicks();
 			_simulation->AddUnit(UnitEnum::Human, _townId, tile.worldAtom2(), ageTicks);
 		}
 	}

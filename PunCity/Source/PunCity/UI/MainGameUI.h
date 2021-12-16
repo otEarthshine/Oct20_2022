@@ -432,7 +432,7 @@ private:
 	
 	//std::vector<BuildingEnum> _lastDisplayHand;
 	std::vector<bool> _lastHand1ReserveStatus;
-	std::vector<bool> _lastHand1NeedMoneyStatus;
+	std::vector<bool> _lastHand1NeedMoneyOrInfluenceStatus;
 	
 	std::vector<bool> _lastRareHandReserveStatus;
 	std::vector<std::shared_ptr<Quest>> _lastQuests;
@@ -821,7 +821,7 @@ private:
 	}
 
 	
-	int32 MoneyNeededForTentativeBuy();
+	int32 TokensNeededForTentativeBuy(ResourceEnum resourceEnum);
 	
 	static void SetButtonImage(UImage* buttonImage, bool active, bool hovered = false) {
 		buttonImage->SetVisibility(active ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);

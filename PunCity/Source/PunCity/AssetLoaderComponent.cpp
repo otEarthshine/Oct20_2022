@@ -318,7 +318,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	LoadBuilding(CardEnum::ForeignQuarter, "ForeignQuarter", 3);
 	LoadBuilding(CardEnum::ForeignPort, "ForeignPort", 3);
-	LoadBuilding(CardEnum::SpyCenter, "SpyCenter", 4);
+	LoadBuilding(CardEnum::SpyCenter, "SpyCenter", 2);
 
 	LoadBuilding(CardEnum::Zoo, "Zoo", 3);
 
@@ -328,13 +328,14 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	// TODO: EU era 2,3,4
 	LoadBuilding(CardEnum::Market, "Market", 2, 2);
 
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::Caravansary, "Caravansary", "Caravansary", 2);
+	LoadBuilding(CardEnum::Caravansary, "Caravansary", 2);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Hotel, "Hotel", "Hotel", 3);
 
 	LoadBuilding(CardEnum::Embassy, "Embassy", 2);
 
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::Museum, "Museum", "Museum", 3);
+	LoadBuilding(CardEnum::Museum, "Museum", 3);
+	
 	LoadBuilding(CardEnum::CardCombiner, "ScholarsOffice", 3);
 
 	LoadBuilding(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity/Era0", ModuleTransformGroup::CreateAuxSet(
@@ -354,6 +355,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		{ {0.12f, 35.0f, FLinearColor(1, 0.527f, 0.076f), FVector(-5.4, -0.82, 8.5), FVector::OneVector} }
 	));
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::MinorCity, "MinorCity", "MinorCity", 1, 4);
+
+	
+	//LinkBuilding(FactionEnum::Europe, CardEnum::,)
+	//CardEnum::ResourceOutpost
 
 
 	LoadBuilding(CardEnum::MinorCityPort, "MinorCityPort", 0,4);
@@ -2490,7 +2495,7 @@ void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 gr
 
 void UAssetLoaderComponent::DetectOrLoadMeshVertexInfo(FString meshName, UStaticMesh* mesh)
 {
-
+	//! Turn this on to cache the result
 #if (WITH_EDITOR && 0)
 	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
 	TArray<FVector> vertexPositions;

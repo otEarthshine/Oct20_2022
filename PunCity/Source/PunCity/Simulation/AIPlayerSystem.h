@@ -153,10 +153,16 @@ private:
 	{
 		auto& terrainGenerator = _simulation->terrainGenerator();
 		auto& provinceSys = _simulation->provinceSystem();
+
+		GeoresourceNode georesourceNode = _simulation->georesource(provinceId);
 		
 		int32 treeCount = _simulation->GetTreeCount(provinceId);
 		int32 fertility = terrainGenerator.GetRegionFertility(provinceSys.GetProvinceCenterTile(provinceId).region()); // Rough fertility calculation
 		int32 flatLandCount = provinceSys.provinceFlatTileCount(provinceId);
+
+		if (IsFarmGeoresource(georesourceNode.georesourceEnum)) {
+			return AIRegionProposedPurposeEnum::CashCrop;
+		}
 		
 		if (fertility > 70) {
 			return AIRegionProposedPurposeEnum::Fertility;
@@ -187,6 +193,7 @@ private:
 	void TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBlock& block);
 	void PlaceBuilding(CardEnum cardEnum, WorldTile2 centerTile, Direction faceDirection);
 	bool TryPlaceSingleCoastalBuilding(CardEnum cardEnum);
+	bool TryPlaceRiverFarm();
 	void TryPlaceMines();
 
 	void TryPlaceCityBlock(std::vector<CardEnum> buildingEnumToBeNear, AICityBlock& block)
@@ -199,8 +206,51 @@ private:
 		}
 	}
 
-	void TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population);
-	void TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era);
+	void TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population, bool shouldBuildJob);
+	void TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era, bool shouldBuildJob);
+
+	WorldTile2 GetMaxFertilityTile(int32 provinceId, int32& maxFertility)
+	{
+		TileArea provinceArea = _simulation->GetProvinceRectArea(provinceId);
+
+		// Use skip 4x4 to find max fertility tile
+		WorldTile2 maxFertilityTile = WorldTile2::Invalid;
+		provinceArea.ExecuteOnAreaSkip4_WorldTile2([&](WorldTile2 tile)
+		{
+			if (_simulation->IsFarmBuildable(tile, _aiPlayerId))
+			{
+				int32 fertility = _simulation->terrainGenerator().GetRainfall100(tile);
+				if (fertility > maxFertility) {
+					maxFertilityTile = tile;
+					maxFertility = fertility;
+				}
+			}
+		});
+
+		return maxFertilityTile;
+	}
+
+	bool TryPlaceFarm(WorldTile2 centerTile, int32 distanceAway = 7)
+	{
+		TileArea area(centerTile, distanceAway);
+		std::vector<FarmTile> farmTiles = _simulation->GetFarmTiles(area, centerTile, _aiPlayerId);
+		if (farmTiles.size() > 15)
+		{
+			auto command = make_shared<FPlaceBuilding>();
+			command->playerId = _aiPlayerId;
+			command->buildingEnum = static_cast<uint16>(CardEnum::Farm);
+			command->intVar1 = centerTile.tileId();
+			command->area = _simulation->GetActualFarmArea(farmTiles, centerTile); // Area2 is the trimmed area
+			command->center = centerTile;// dragStart  _area.centerTile();
+			command->faceDirection = static_cast<uint8>(Direction::S);
+
+			_simulation->ExecuteNetworkCommand(command);
+			return true;
+		}
+		return false;
+	}
+
+	
 
 	TCHAR* AIPrintPrefix() {
 		return _simulation->AIPrintPrefix(_aiPlayerId);

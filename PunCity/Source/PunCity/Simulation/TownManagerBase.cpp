@@ -59,6 +59,8 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 		int32 attackBonusPercent, int32 defenseBonusPercent)
 	{
 		int32 randomIndex = GameRand::Rand() % damageTakerLine.size();
+
+		
 		CardStatus& damageTaker = damageTakerLine[randomIndex];
 
 		int32 attack = GetMilitaryInfo(attackerCard.cardEnum).attack100 * attackerCard.stackSize;
@@ -75,35 +77,64 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 		if (IsArtilleryMilitaryCardEnum(attackerCard.cardEnum)) {
 			defense100 = MilitaryConstants::BaseDefense100;
 		}
-		
-		int32 damage = attack * 100 / std::max(1, defense100);
-		damageTaker.displayCardStateValue1 = damage;
-		damageTaker.displayCardStateValue2 = Time::Ticks();
+
+
+		//! Hit animation
 		damageTaker.displayCardStateValue4 = static_cast<int32>(attackerCard.cardEnum);
+		damageTaker.displayCardStateValue5 = Time::Ticks();
+		
+		
+		//! Delayed Damage
+		int32 damage = attack * 100 / std::max(1, defense100);
 
-		while (damage > 0 && damageTaker.stackSize > 0)
-		{
-			int32 unitDamage = std::min(damage, damageTaker.cardStateValue2);
-			damageTaker.cardStateValue2 -= unitDamage;
-			damage -= unitDamage;
+		CardStatus damageHitForQueue = damageTaker;
+		damageHitForQueue.cardStateValue2 = damage;
+		damageHitForQueue.cardStateValue3 = static_cast<int32>(attackerCard.cardEnum);
+		const int32 meleeHitFrame = 24 * 2;
+		const int32 projectileHitFrame = 51 * 2; // attack tuned to x2 game speed.. so need to x2 frames
+		damageHitForQueue.cardStateValue4 = Time::Ticks() + (IsMilitaryProjectileUnit(attackerCard.cardEnum) ? projectileHitFrame : meleeHitFrame);
+		damageHitQueue.push_back(damageHitForQueue);
 
-			if (damageTaker.cardStateValue2 == 0) {
-				damageTaker.cardStateValue2 = damageTakerInfo.hp100;
-				damageTaker.stackSize--;
-			}
-		}
+		/*
+			- melee hit = frame 24 (0.8s) 
+			- melee hit: collapse = frame 39 (1.3s) 
+			- projectile fire = frame 24 (0.8s) 
+			- projectile hit = frame 51 (1.7s) 
+			- projectile hit: collapse = frame 66 (2.2s) 
+			- all sound ends / file length = frame 90 (3s)
 
-		if (damageTaker.stackSize <= 0) 
-		{
-			// pending removal
-			// - displayCardStateValue3 to mark deathAnim start tick (also used to calculate end point); replaces attackDisplay
-			// pending removal card is easily detected by checking stackSize == 0
-			damageTaker.displayCardStateValue3 = Time::Ticks();
-			damageTakerLine_PendingRemoval.push_back(damageTaker);
+			if melee = instant krub (0s)
+			if projectile = 0.9s
+		 */
 
-			// Erase
-			damageTakerLine.erase(damageTakerLine.begin() + randomIndex);
-		}
+		
+		//damageTaker.displayCardStateValue1 = damage;
+		//damageTaker.displayCardStateValue2 = Time::Ticks();
+		//damageTaker.displayCardStateValue4 = static_cast<int32>(attackerCard.cardEnum);
+
+		//while (damage > 0 && damageTaker.stackSize > 0)
+		//{
+		//	int32 unitDamage = std::min(damage, damageTaker.cardStateValue2);
+		//	damageTaker.cardStateValue2 -= unitDamage;
+		//	damage -= unitDamage;
+
+		//	if (damageTaker.cardStateValue2 == 0) {
+		//		damageTaker.cardStateValue2 = damageTakerInfo.hp100;
+		//		damageTaker.stackSize--;
+		//	}
+		//}
+
+		//if (damageTaker.stackSize <= 0) 
+		//{
+		//	// pending removal
+		//	// - displayCardStateValue3 to mark deathAnim start tick (also used to calculate end point); replaces attackDisplay
+		//	// pending removal card is easily detected by checking stackSize == 0
+		//	damageTaker.displayCardStateValue3 = Time::Ticks();
+		//	damageTakerLine_PendingRemoval.push_back(damageTaker);
+
+		//	// Erase
+		//	damageTakerLine.erase(damageTakerLine.begin() + randomIndex);
+		//}
 	};
 
 	auto doDamageToArmy = [&](CardStatus& attackerCard, 
@@ -199,6 +230,75 @@ void ProvinceClaimProgress::Tick(IGameSimulationCore* simulation)
 		);
 	}
 
+
+	/*
+	 * Check Damage Queue
+	 */
+	for (int32 j = damageHitQueue.size(); j-- > 0;)
+	{
+		int32 activationTick = damageHitQueue[j].cardStateValue4;
+		if (activationTick > Time::Ticks()) {
+			continue;
+		}
+		
+		auto tryApplyDamage = [&](std::vector<CardStatus>& line, std::vector<CardStatus>& line_PendingRemoval)
+		{
+			for (int32 i = 0; i < line.size(); i++)
+			{
+				CardStatus& damageTaker = line[i];
+				
+				if (damageTaker.cardEnum == damageHitQueue[j].cardEnum &&
+					damageTaker.cardStateValue1 == damageHitQueue[j].cardStateValue1)
+				{
+					int32 damage = damageHitQueue[j].cardStateValue2;
+
+					// Damage
+					damageTaker.displayCardStateValue1 = damage;
+					damageTaker.displayCardStateValue2 = Time::Ticks();
+
+					while (damage > 0 && damageTaker.stackSize > 0)
+					{
+						int32 unitDamage = std::min(damage, damageTaker.cardStateValue2);
+						damageTaker.cardStateValue2 -= unitDamage;
+						damage -= unitDamage;
+
+						if (damageTaker.cardStateValue2 == 0) {
+							damageTaker.cardStateValue2 = GetMilitaryInfo(damageTaker.cardEnum).hp100;
+							damageTaker.stackSize--;
+						}
+					}
+
+					if (damageTaker.stackSize <= 0)
+					{
+						// pending removal
+						// - displayCardStateValue3 to mark deathAnim start tick (also used to calculate end point); replaces attackDisplay
+						// pending removal card is easily detected by checking stackSize == 0
+						damageTaker.displayCardStateValue3 = Time::Ticks();
+						line_PendingRemoval.push_back(damageTaker);
+
+						// Erase
+						line.erase(line.begin() + i);
+					}
+
+					return true;
+				}
+			}
+			return false;
+		};
+		
+		bool appliedDamage = tryApplyDamage(attackerBackLine, attackerBackLine_pendingRemoval) ||
+							tryApplyDamage(attackerFrontLine, attackerFrontLine_pendingRemoval) ||
+							tryApplyDamage(defenderFrontLine, defenderFrontLine_pendingRemoval) ||
+							tryApplyDamage(defenderBackLine, defenderBackLine_pendingRemoval) ||
+							tryApplyDamage(defenderWall, defenderWall_pendingRemoval) ||
+							tryApplyDamage(defenderTreasure, defenderTreasure_pendingRemoval);
+		
+		damageHitQueue.erase(damageHitQueue.begin() + j);
+	}
+
+
+	
+
 	//! Battle Countdown once it is done
 	battleFinishCountdownTicks = std::max(0, battleFinishCountdownTicks - 1);
 
@@ -219,58 +319,62 @@ void TownManagerBase::Tick1Sec_TownBase()
 	 */
 	if (IsMinorTown(_townId))
 	{
-		//! Income every X secs
-		if (Time::Seconds() % GameConstants::BaseFloatupIntervalSec == 0)
+		Building& townhall = _simulation->building(townhallId);
+
+		if (townhall.isEnum(CardEnum::MinorCity))
 		{
-			int32 incomePerRound = GetMinorCityMoneyIncome();
-			int32 incomePer2Sec = GameRand::RandRound(incomePerRound * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound);
-
-			if (incomePer2Sec > 0) {
-				_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, _simulation->building(townhallId).centerTile(), TEXT_NUMSIGNED(incomePer2Sec));
-				_minorCityWealth += incomePer2Sec;
-			}
-		}
-
-		/*
-		 * Tourism
-		 */
-		if (Time::Seconds() % GameConstants::TourismCheckIntervalSec == 0)
-		{
-			std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
-
-			// Get Hotels on Trade Route
-			std::vector<Hotel*> hotels = GetConnectedHotels();
-
-			if (hotels.size() > 0)
+			//! Income every X secs
+			if (Time::Seconds() % GameConstants::BaseFloatupIntervalSec == 0)
 			{
-				// Sort Hotels by Service Quality
-				std::sort(hotels.begin(), hotels.end(), [&](Hotel* a, Hotel* b) {
-					return a->serviceQuality() > b->serviceQuality();
-				});
+				int32 incomePerRound = GetMinorCityMoneyIncome();
+				int32 incomePer2Sec = GameRand::RandRound(incomePerRound * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound);
 
-				// 1 pop tour 1 time per rounds 
-				// TickXSec so:
-				// clusterSize = population * GameConstants::TourismCheckIntervalSec / (seconds per round)
-
-				int32 fakePopulation = GetTourismPopulation();
-				const int32 clusterSize = GameRand::RandRound(fakePopulation * GameConstants::TourismCheckIntervalSec, Time::SecondsPerRound);
-				int32 hotelIndex = 0;
-
-				for (int32 i = 0; i < clusterSize; i++)
-				{
-					if (hotelIndex >= hotels.size()) {
-						break;
-					}
-					Hotel* hotel = hotels[hotelIndex++];
-					hotel->Visit(_townId);
-
-					_simulation->ChangeMoney(hotel->playerId(), hotel->feePerVisitor());
-					_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
+				if (incomePer2Sec > 0) {
+					_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainMoney, townhall.centerTile(), TEXT_NUMSIGNED(incomePer2Sec));
+					_minorCityWealth += incomePer2Sec;
 				}
+			}
 
+			/*
+			 * Tourism
+			 */
+			if (Time::Seconds() % GameConstants::TourismCheckIntervalSec == 0)
+			{
+				std::vector<TradeRoutePair> tradeRoutes = _simulation->worldTradeSystem().GetTradeRoutesTo(_townId);
+
+				// Get Hotels on Trade Route
+				std::vector<Hotel*> hotels = GetConnectedHotels();
+
+				if (hotels.size() > 0)
+				{
+					// Sort Hotels by Service Quality
+					std::sort(hotels.begin(), hotels.end(), [&](Hotel* a, Hotel* b) {
+						return a->serviceQuality() > b->serviceQuality();
+					});
+
+					// 1 pop tour 1 time per rounds 
+					// TickXSec so:
+					// clusterSize = population * GameConstants::TourismCheckIntervalSec / (seconds per round)
+
+					int32 fakePopulation = GetTourismPopulation();
+					const int32 clusterSize = GameRand::RandRound(fakePopulation * GameConstants::TourismCheckIntervalSec, Time::SecondsPerRound);
+					int32 hotelIndex = 0;
+
+					for (int32 i = 0; i < clusterSize; i++)
+					{
+						if (hotelIndex >= hotels.size()) {
+							break;
+						}
+						Hotel* hotel = hotels[hotelIndex++];
+						hotel->Visit(_townId);
+
+						_simulation->ChangeMoney(hotel->playerId(), hotel->feePerVisitor());
+						_simulation->uiInterface()->ShowFloatupInfo(hotel->playerId(), FloatupEnum::GainMoney, hotel->centerTile(), TEXT_NUMSIGNED(hotel->feePerVisitor()));
+					}
+
+				}
 			}
 		}
-
 		
 	}
 

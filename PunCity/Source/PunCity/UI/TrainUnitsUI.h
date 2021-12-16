@@ -61,7 +61,7 @@ public:
 				cardButton->SetPrice(info.resourceCost.count, info.resourceCost.resourceEnum, info.humanCost);
 			}
 			else {
-				cardButton->SetPrice(GetBuildingInfo(cardEnum).baseCardPrice);
+				cardButton->SetPrice(GetBuildingInfo(cardEnum).baseCardPrice, BuildingCardSystem::GetCardPriceTokenEnum(cardEnum));
 			}
 			cardButton->SetVisibility(ESlateVisibility::Visible);
 		}

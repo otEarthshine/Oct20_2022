@@ -2111,6 +2111,32 @@ bool HumanStateAI::TryHaulingServices()
 		tryMoveResource(buildingEnum);
 	}
 
+	// Output hauling for Trading Post/Port
+	auto tryMoveResourceTradingPostPort = [&](CardEnum buildingEnum)
+	{
+		std::vector<int32> buildingIds = _simulation->GetConstructedBuildingsWithinRadius(workPlc.gateTile(), HaulingServices::Radius, _townId, buildingEnum);
+		for (int32 buildingId : buildingIds)
+		{
+			Building& building = _simulation->building(buildingId);
+
+			const std::vector<ResourceHolderInfo>& holderInfos = building.holderInfosConst();
+			for (const ResourceHolderInfo& holderInfo : holderInfos)
+			{
+				if (building.holder(holderInfo.resourceEnum).current() > 0 &&
+					70 > highestOutputHaulNeededPercent) // Prioritize Trading post/port if everything else is 70% or less
+				{
+					highestOutputHaulNeededPercent = 70;
+					highestOutputHaulNeededBuildingId = buildingId;
+					highestOutputHaulNeededResourceEnum = holderInfo.resourceEnum;
+				}
+			}
+		}
+	};
+
+	tryMoveResourceTradingPostPort(CardEnum::TradingPort);
+	tryMoveResourceTradingPostPort(CardEnum::TradingPost);
+	
+
 	// Try Input Hauling
 	if (highestInputHaulNeededPercent > highestOutputHaulNeededPercent)
 	{
@@ -3331,7 +3357,7 @@ void HumanStateAI::DoFarmWork()
 	WorldTile2 tile(action().int32val2);
 	FarmStage farmStage = static_cast<FarmStage>(action().int32val3);
 
-	PUN_LOG("DoFarmWork farmTileId:%d tileId:%d unitId:%d", farmTileId, tile.tileId(), _id);
+	//PUN_LOG("DoFarmWork farmTileId:%d tileId:%d unitId:%d", farmTileId, tile.tileId(), _id);
 	
 	UnitReservation reservation = PopReservation(ReservationType::TreeTile);
 	PUN_CHECK2(reservation.reserveTileId == tile.tileId(), debugStr());

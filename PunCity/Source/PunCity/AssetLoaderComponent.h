@@ -456,13 +456,25 @@ public:
 	UTexture2D* GetResourceIconAlpha(ResourceEnum resourceEnum) { return _resourceIconsAlpha[static_cast<int>(resourceEnum)]; }
 	UMaterialInstanceDynamic* GetResourceIconMaterial(ResourceEnum resourceEnum);
 
-	UMaterialInstanceDynamic* GetResourceIconMaterial_WithMoney(ResourceEnum resourceEnum) {
+	UMaterialInstanceDynamic* GetResourceIconMaterial_WithMoneyOrInfluence(ResourceEnum resourceEnum)
+	{
 		if (_coinIconMaterial == nullptr) {
 			UMaterialInstanceDynamic* materialInstance = UMaterialInstanceDynamic::Create(M_Icon, this);
 			materialInstance->SetTextureParameterValue("ColorTexture", CoinIcon);
 			_coinIconMaterial = materialInstance;
 		}
-		return resourceEnum == ResourceEnum::Money ? _coinIconMaterial : GetResourceIconMaterial(resourceEnum);
+		if (_influenceIconMaterial == nullptr) {
+			UMaterialInstanceDynamic* materialInstance = UMaterialInstanceDynamic::Create(M_Icon, this);
+			materialInstance->SetTextureParameterValue("ColorTexture", InfluenceIcon);
+			_influenceIconMaterial = materialInstance;
+		}
+		if (resourceEnum == ResourceEnum::Money) {
+			return _coinIconMaterial;
+		}
+		if (resourceEnum == ResourceEnum::Influence) {
+			return _influenceIconMaterial;
+		}
+		return GetResourceIconMaterial(resourceEnum);
 	}
 
 	UTexture2D* GetGeoresourceIcon(ResourceEnum resourceEnum) {
@@ -1162,6 +1174,7 @@ private:
 	
 	UPROPERTY() TArray<UMaterialInstanceDynamic*> _resourceIconMaterials;
 	UPROPERTY() UMaterialInstanceDynamic* _coinIconMaterial;
+	UPROPERTY() UMaterialInstanceDynamic* _influenceIconMaterial;
 
 	std::unordered_map<ResourceEnum, UTexture2D*> _georesourceIcons;
 	std::unordered_map<BiomeEnum, UTexture2D*> _biomeIcons;
@@ -1178,7 +1191,7 @@ private:
 	//UPROPERTY() TArray<UTexture2D*> _armyIcons;
 
 	//! Military
-	UPROPERTY() TMap<int32, FSpineAsset> _spineAssets;
+	//UPROPERTY() TMap<int32, FSpineAsset> _spineAssets;
 
 private:
 	UPROPERTY() TArray<FName> _modulesNeedingPaintConstruction;

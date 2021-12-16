@@ -198,7 +198,7 @@ public:
 		PriceText->SetText(TEXT_NUM(price));
 		PriceTextBox->SetVisibility(price > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 
-		PriceResourceIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial_WithMoney(resourceEnum));
+		PriceResourceIcon->SetBrushFromMaterial(assetLoader()->GetResourceIconMaterial_WithMoneyOrInfluence(resourceEnum));
 
 		HumanPriceText->SetText(TEXT_NUM(humanPrice));
 		HumanPriceTextBox->SetVisibility(humanPrice > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);

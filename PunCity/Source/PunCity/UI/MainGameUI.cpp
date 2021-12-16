@@ -467,30 +467,35 @@ void UMainGameUI::Tick()
 
 
 		// Money
-		//bool moneyChanged = false;
-		int32 currentMoneyLeft = sim.moneyCap32(playerId()) -  MoneyNeededForTentativeBuy();
-		//if (_lastMoney != currentMoneyLeft) {
-		//	_lastMoney = currentMoneyLeft;
-		//	//moneyChanged = true;
-		//}
-
+		int32 currentMoneyLeft = sim.moneyCap32(playerId()) - TokensNeededForTentativeBuy(ResourceEnum::Money);
 		if (currentMoneyLeft < 0) {
 			// Unreserve if there isn't enough money
-			cardSystem.UnreserveIfRanOutOfCash(currentMoneyLeft);
+			cardSystem.UnreserveIfRanOutOfCash(currentMoneyLeft, ResourceEnum::Money);
+		}
+
+		int32 currentInfluenceLeft = sim.influence(playerId()) - TokensNeededForTentativeBuy(ResourceEnum::Influence);
+		if (currentInfluenceLeft < 0) {
+			cardSystem.UnreserveIfRanOutOfCash(currentMoneyLeft, ResourceEnum::Money);
 		}
 
 		// Recalculate need resource
-		std::vector<bool> hand1NeedMoney;
+		std::vector<bool> hand1NeedMoneyOrInfluence;
 		{
 			std::vector<CardEnum> hand = cardSystem.GetHand();
 			std::vector<bool> handReservation = cardSystem.GetHand1ReserveStatus();
 			
-			for (size_t i = 0; i < hand.size(); i++) {
-				bool needResource = currentMoneyLeft < cardSystem.GetCardPrice(hand[i]);
+			for (size_t i = 0; i < hand.size(); i++)
+			{
+				bool needResource;
+				if (cardSystem.GetCardPriceTokenEnum(hand[i]) == ResourceEnum::Money) {
+					needResource = currentMoneyLeft < cardSystem.GetCardPrice(hand[i], ResourceEnum::Money);
+				} else {
+					needResource = currentInfluenceLeft < cardSystem.GetCardPrice(hand[i], ResourceEnum::Influence);
+				}
 				if (handReservation[i]) {
 					needResource = false; // reserved card doesn't need resource 
 				}
-				hand1NeedMoney.push_back(needResource);
+				hand1NeedMoneyOrInfluence.push_back(needResource);
 			}
 		}
 
@@ -510,7 +515,7 @@ void UMainGameUI::Tick()
 
 
 				// Price
-				cardButton->SetPrice(cardSystem.GetCardPrice(buildingEnum));
+				cardButton->SetPrice(cardSystem.GetCardPrice(buildingEnum), cardSystem.GetCardPriceTokenEnum(buildingEnum));
 			}
 
 			// Highlight the selected card
@@ -518,7 +523,7 @@ void UMainGameUI::Tick()
 			TArray<UWidget*> cardButtons = CardHand1Box->GetAllChildren();
 			for (int i = 0; i < cardButtons.Num(); i++) {
 				auto cardButton = CastChecked<UBuildingPlacementButton>(cardButtons[i]);
-				cardButton->SetCardStatus(CardHandEnum::DrawHand, _lastHand1ReserveStatus[i], _lastHand1NeedMoneyStatus[i]);
+				cardButton->SetCardStatus(CardHandEnum::DrawHand, _lastHand1ReserveStatus[i], _lastHand1NeedMoneyOrInfluenceStatus[i]);
 			}
 		};
 
@@ -533,7 +538,7 @@ void UMainGameUI::Tick()
 		{
 			//_lastDisplayHand = cardSystem.GetHand();
 			_lastHand1ReserveStatus = cardSystem.GetHand1ReserveStatus();
-			_lastHand1NeedMoneyStatus = hand1NeedMoney;
+			_lastHand1NeedMoneyOrInfluenceStatus = hand1NeedMoneyOrInfluence;
 			refreshHand1();
 
 			TryPlayAnimation("CardStackFlash");
@@ -568,10 +573,10 @@ void UMainGameUI::Tick()
 		//}
 		// Note that we need to update both _lastHand1ReserveStatus and _lastHand1ReserveStatus to handle the situation where a save was just loaded.
 		else if (_lastHand1ReserveStatus != cardSystem.GetHand1ReserveStatus() ||
-				_lastHand1NeedMoneyStatus != hand1NeedMoney) 
+				_lastHand1NeedMoneyOrInfluenceStatus != hand1NeedMoneyOrInfluence) 
 		{
 			_lastHand1ReserveStatus = cardSystem.GetHand1ReserveStatus();
-			_lastHand1NeedMoneyStatus = hand1NeedMoney;
+			_lastHand1NeedMoneyOrInfluenceStatus = hand1NeedMoneyOrInfluence;
 			refreshHand1();
 		}
 
@@ -683,8 +688,10 @@ void UMainGameUI::Tick()
 									auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
 
 									SetText(ConverterCardHandTitle, LOCTEXT("CHOOSE A CARD TO REMOVE", "CHOOSE A CARD TO REMOVE"));
-									SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
-									cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+									cardButton->SetPrice(cardSystem.GetCardPrice(buildingEnum), cardSystem.GetCardPriceTokenEnum(buildingEnum));
+									//SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
+									//cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 								}
 							}
 						}
@@ -724,8 +731,10 @@ void UMainGameUI::Tick()
 									auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::SelectConverterCard, i);
 
 									SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
-									SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
-									cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+
+									cardButton->SetPrice(cardSystem.GetCardPrice(buildingEnum), cardSystem.GetCardPriceTokenEnum(buildingEnum));
+									//SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
+									//cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 								}
 							}
 						}
@@ -746,8 +755,9 @@ void UMainGameUI::Tick()
 								auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::None, i);
 
 								SetText(ConverterCardHandTitle, LOCTEXT("ConverterCardHandTitle", "CHOOSE A CARD\npay the price to build"));
-								SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
-								cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
+								cardButton->SetPrice(cardSystem.GetCardPrice(buildingEnum), cardSystem.GetCardPriceTokenEnum(buildingEnum));
+								//SetText(cardButton->PriceText, TEXT_NUM(cardSystem.GetCardPrice(buildingEnum)));
+								//cardButton->PriceTextBox->SetVisibility(ESlateVisibility::HitTestInvisible);
 							}
 							i++;
 						}
@@ -1760,12 +1770,19 @@ void UMainGameUI::ToggleBuildingMenu()
 
 		auto cardSys = simulation().cardSystem(playerId());
 		int32 moneyCap32 = simulation().moneyCap32(playerId());
+		int32 influence = simulation().influence(playerId());
 
 		auto refreshPermanentCard = [&](UBuildingPlacementButton* cardButton)
 		{
 			int32 cardPrice = cardSys.GetCardPrice(cardButton->cardStatus.cardEnum);
-			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, cardPrice > 0 && moneyCap32 < cardPrice);
-			cardButton->SetPrice(cardPrice);
+			bool hasEnoughResource;
+			if (cardSys.GetCardPriceTokenEnum(cardButton->cardStatus.cardEnum) == ResourceEnum::Money) {
+				hasEnoughResource = moneyCap32 < cardPrice;
+			} else {
+				hasEnoughResource = influence < cardPrice;
+			}
+			cardButton->SetCardStatus(CardHandEnum::PermanentHand, false, cardPrice > 0 && hasEnoughResource);
+			cardButton->SetPrice(cardPrice, cardSys.GetCardPriceTokenEnum(cardButton->cardStatus.cardEnum));
 		};
 
 		// erase buildingEnums that already have buttons
@@ -1880,12 +1897,17 @@ void UMainGameUI::ToggleCardInventoryButton()
 
 void UMainGameUI::SelectPermanentCard(CardEnum buildingEnum)
 {
-	int32 moneyCap32 = simulation().moneyCap32(playerId());
-	int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(buildingEnum);
-	if (cardPrice > 0 && moneyCap32 < cardPrice) {
+	BuildingCardSystem& cardSys = simulation().cardSystem(playerId());
+	
+	ResourceEnum tokenEnum = cardSys.GetCardPriceTokenEnum(buildingEnum);
+	int32 tokenCount = simulation().GetTokens(playerId(), tokenEnum);
+	int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(buildingEnum, tokenEnum);
+	
+	if (cardPrice > 0 && tokenCount < cardPrice) {
 		simulation().AddPopupToFront(playerId(),
 			FText::Format(
-				LOCTEXT("NoMoneyToBuildCommonCard_Pop", "Not enough money to place {0}."),
+				LOCTEXT("NoMoneyToBuildCommonCard_Pop", "Not enough {0} to place {1}."),
+				simulation().GetTokenIconRichText(tokenEnum),
 				GetBuildingInfo(buildingEnum).name
 			),
 			ExclusiveUIEnum::BuildMenu, "PopupCannot"
@@ -2012,15 +2034,30 @@ void UMainGameUI::ClickCardHand1SubmitButton()
 	// Check if not enough money, and put on a warning...
 	if (CardHand1SubmitButtonText->GetText().ToString() == FString("Submit"))
 	{
-		int32 moneyNeeded = MoneyNeededForTentativeBuy();
-		int32 currentMoney = simulation().moneyCap32(playerId());
-		if (moneyNeeded > 0 && moneyNeeded > currentMoney)
 		{
-			simulation().AddPopupToFront(playerId(), 
-				LOCTEXT("NotEnoughMoneyToBuyCard_Pop", "Not enough money to purchase the card."), 
-				ExclusiveUIEnum::CardHand1, "PopupCannot"
-			);
-			return;
+			int32 moneyNeeded = TokensNeededForTentativeBuy(ResourceEnum::Money);
+			int32 currentMoney = simulation().GetTokens(playerId(), ResourceEnum::Money); // simulation().moneyCap32(playerId());
+			if (moneyNeeded > 0 && moneyNeeded > currentMoney)
+			{
+				simulation().AddPopupToFront(playerId(),
+					LOCTEXT("NotEnoughMoneyToBuyCard_Pop", "Not enough money to purchase the cards."),
+					ExclusiveUIEnum::CardHand1, "PopupCannot"
+				);
+				return;
+			}
+		}
+
+		{
+			int32 influenceNeeded = TokensNeededForTentativeBuy(ResourceEnum::Influence);
+			int32 currentInfluence = simulation().GetTokens(playerId(), ResourceEnum::Influence);
+			if (influenceNeeded > 0 && influenceNeeded > currentInfluence)
+			{
+				simulation().AddPopupToFront(playerId(),
+					LOCTEXT("NotEnoughInfluenceToBuyCard_Pop", "Not enough influence to purchase the cards."),
+					ExclusiveUIEnum::CardHand1, "PopupCannot"
+				);
+				return;
+			}
 		}
 	}
 
@@ -2176,58 +2213,6 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 	if (callbackEnum == CallbackEnum::SelectPermanentCard)
 	{
 		SelectPermanentCard(buildingEnum);
-		
-		//int32 moneyCap32 = simulation().moneyCap32(playerId());
-		//int32 cardPrice = cardSystem.GetCardPrice(buildingEnum);
-		//if (cardPrice > 0 && moneyCap32 < cardPrice) {
-		//	simulation().AddPopupToFront(playerId(), 
-		//		FText::Format(
-		//			LOCTEXT("NoMoneyToBuildCommonCard_Pop", "Not enough money to place {0}."),
-		//			GetBuildingInfo(buildingEnum).GetDescription()
-		//		), 
-		//		ExclusiveUIEnum::BuildMenu, "PopupCannot"
-		//	);
-		//	return;
-		//}
-
-		//if (buildingEnum == CardEnum::IntercityRoad) {
-		//	inputSystemInterface()->StartRoadPlacement(false, true);
-		//}
-		//else if (buildingEnum == CardEnum::Demolish) {
-		//	inputSystemInterface()->StartDemolish();
-		//}
-		//else if (IsRoad(buildingEnum)) {
-		//	inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
-		//	//inputSystemInterface()->StartRoadPlacement(buildingEnum == CardEnum::StoneRoad);
-		//}
-		//else if (buildingEnum == CardEnum::Fence) {
-		//	inputSystemInterface()->StartFencePlacement();
-		//}
-		//else if (buildingEnum == CardEnum::Bridge) {
-		//	inputSystemInterface()->StartBridgePlacement(false);
-		//	simulation().parameters(playerId())->BridgeNoticed = true;
-		//}
-		//else if (buildingEnum == CardEnum::IntercityBridge) {
-		//	inputSystemInterface()->StartBridgePlacement(true);
-		//}
-		//else if (buildingEnum == CardEnum::Tunnel) {
-		//	inputSystemInterface()->StartTunnelPlacement();
-		//}
-		//else {
-		//	inputSystemInterface()->StartBuildingPlacement(buildingEnum, 0, false);
-
-		//	// Noticed farm, no longer need exclamation on farm after this...
-		//	if (buildingEnum == CardEnum::Farm) {
-		//		simulation().parameters(playerId())->FarmNoticed = true;
-		//	}
-		//}
-
-		//GetPunHUD()->CloseDescriptionUI();
-
-		//BuildMenuOverlay->SetVisibility(ESlateVisibility::Collapsed);
-		//SetButtonImage(BuildMenuTogglerImage, false);
-
-		
 		return;
 	}
 	
@@ -2239,12 +2224,22 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		}
 		else {
 			// Check if there is enough money
-			int32 money = simulation().moneyCap32(playerId()) - MoneyNeededForTentativeBuy();
-			if (cardHandIndex != -1 && money < cardSystem.GetCardPrice(buildingEnum)) {
-				simulation().AddPopupToFront(playerId(), 
-					LOCTEXT("NoMoneyToBuyCard_Pop", "Not enough money to purchase the card."), 
-					ExclusiveUIEnum::CardHand1, "PopupCannot"
-				);
+			ResourceEnum cardPriceTokenEnum = cardSystem.GetCardPriceTokenEnum(buildingEnum);
+			int32 resourceAvailable = simulation().GetTokens(playerId(), cardPriceTokenEnum) - TokensNeededForTentativeBuy(cardPriceTokenEnum);
+			if (cardHandIndex != -1 && resourceAvailable < cardSystem.GetCardPrice(buildingEnum, cardPriceTokenEnum)) 
+			{
+				if (cardPriceTokenEnum == ResourceEnum::Money) {
+					simulation().AddPopupToFront(playerId(),
+						LOCTEXT("NotEnoughMoneyToSelectCard_Pop", "Not enough money to purchase the card."),
+						ExclusiveUIEnum::CardHand1, "PopupCannot"
+					);
+				}
+				else {
+					simulation().AddPopupToFront(playerId(),
+						LOCTEXT("NotEnoughInfluenceToSelectCard_Pop", "Not enough influence to purchase the card."),
+						ExclusiveUIEnum::CardHand1, "PopupCannot"
+					);
+				}
 				return;
 			}
 
@@ -2306,10 +2301,17 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 
 	if (callbackEnum == CallbackEnum::SelectConverterCard)
 	{
-		// Check if there is enough money...
-		if (simulation().moneyCap32(playerId()) < cardSystem.GetCardPrice(buildingEnum) / 2) {
+		// Check if there is enough tokens...
+		ResourceEnum tokenEnum = cardSystem.GetCardPriceTokenEnum(buildingEnum);
+		int32 tokenCount = simulation().GetTokens(playerId(), tokenEnum);
+		
+		if (tokenCount < cardSystem.GetCardPrice(buildingEnum, tokenEnum)) 
+		{
 			simulation().AddPopupToFront(playerId(), 
-				LOCTEXT("NotEnoughMoneyWildCard_Pop", "Not enough money. Need to pay the building price to use wild card."), 
+				FText::Format(
+					LOCTEXT("NotEnoughMoneyWildCard_Pop", "Not enough {0}. Need to pay the building price to use wild card."),
+					simulation().GetTokenIconRichText(tokenEnum)
+				), 
 				ExclusiveUIEnum::ConverterCardHand, "PopupCannot"
 			);
 			return;
@@ -2932,17 +2934,20 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		command->cardStatus = cardButton->cardStatus;
 		command->isShiftDown = dataSource()->isShiftDown();
 
-		int32 cardPrice = simulation().cardSystem(playerId()).GetCardPrice(command->cardStatus.cardEnum);
+		auto& cardSys = simulation().cardSystem(playerId());
+		ResourceEnum tokenEnum = cardSys.GetCardPriceTokenEnum(command->cardStatus.cardEnum);
+		int32 cardPrice = cardSys.GetCardPrice(command->cardStatus.cardEnum, tokenEnum);
 
 		if (command->isShiftDown)
 		{
 			int32 sellCount = command->cardStatus.stackSize;
 			networkInterface()->ShowConfirmationUI(
 				FText::Format(
-					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} {1} {0}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>?"),
+					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} {1} {0}|plural(one=Card,other=Cards) for {2}{3}?"),
 					sellCount,
 					GetBuildingInfo(command->cardStatus.cardEnum).name,
-					TEXT_NUM(cardPrice * sellCount)
+					TEXT_NUM(cardPrice * sellCount),
+					simulation().GetTokenIconRichText(tokenEnum)
 				),
 				command
 			);
@@ -2950,9 +2955,10 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 		else {
 			networkInterface()->ShowConfirmationUI(
 				FText::Format(
-					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} for {1}<img id=\"Coin\"/>?"),
+					LOCTEXT("SellCardSure_Pop", "Are you sure you want to sell {0} for {1}{2}?"),
 					GetBuildingInfo(command->cardStatus.cardEnum).name,
-					TEXT_NUM(cardPrice)
+					TEXT_NUM(cardPrice),
+					simulation().GetTokenIconRichText(tokenEnum)
 				),
 				command
 			);
@@ -3043,9 +3049,9 @@ void UMainGameUI::CallBack2(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 }
 
 
-int32 UMainGameUI::MoneyNeededForTentativeBuy()
+int32 UMainGameUI::TokensNeededForTentativeBuy(ResourceEnum resourceEnum)
 {
-	int32 moneyNeeded = 0;
+	int32 tokensNeeded = 0;
 	auto& cardSystem = simulation().cardSystem(playerId());
 	std::vector<bool> reserveStatus = cardSystem.GetHand1ReserveStatus();
 	
@@ -3056,10 +3062,10 @@ int32 UMainGameUI::MoneyNeededForTentativeBuy()
 	int32 loopSize = min(cardHand.size(), reserveStatus.size()); // TODO: not needed?
 	for (int i = 0; i < loopSize; i++) {
 		if (reserveStatus[i]) {
-			moneyNeeded += cardSystem.GetCardPrice(cardHand[i]);
+			tokensNeeded += cardSystem.GetCardPrice(cardHand[i], resourceEnum);
 		}
 	}
-	return moneyNeeded;
+	return tokensNeeded;
 }
 
 

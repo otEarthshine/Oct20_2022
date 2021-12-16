@@ -523,10 +523,14 @@ public:
 			FPlayerInfo info;
 			info.name = archetypeInfo.name(playerId);
 			info.logoIndex = archetypeInfo.logoIndex(playerId);
-			info.logoColorBackground = archetypeInfo.logoColor1;
-			info.logoColorForeground = archetypeInfo.logoColor2;
+
+			info.logoColorBackground = AIArchetypeInfo::PlayerBackgroundColors.Num() > 0 ? AIArchetypeInfo::PlayerBackgroundColors[playerId % AIArchetypeInfo::PlayerBackgroundColors.Num()] : FLinearColor::White;
+			info.logoColorForeground = AIArchetypeInfo::PlayerForegroundColors.Num() > 0 ? AIArchetypeInfo::PlayerForegroundColors[playerId % AIArchetypeInfo::PlayerForegroundColors.Num()] : FLinearColor::White;
+			
 			info.portraitName = archetypeInfo.portraitName;
 			info.factionIndex = archetypeInfo.factionIndex;
+
+			// For now random with playerId
 
 			return info;
 		}
@@ -678,11 +682,11 @@ public:
 		}
 #endif
 	}
-	void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height) override {
+	void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, float speed) override {
 #if AUDIO_ALL
 		SCOPE_CYCLE_COUNTER(STAT_PunSound3D);
 		if (IsInSampleRange(worldAtom.worldTile2())) {
-			_soundSystem->Spawn3DSound(groupName, soundName, worldAtom, height);
+			_soundSystem->Spawn3DSound(groupName, soundName, worldAtom, height, true, false, speed);
 		}
 #endif
 	}

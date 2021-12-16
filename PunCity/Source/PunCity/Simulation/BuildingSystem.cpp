@@ -479,7 +479,7 @@ int BuildingSystem::AddBuilding(FPlaceBuilding parameters)
 
 
 
-	PUN_LOG("AddBuilding enum:%d buildingId:%d", parameters.buildingEnum, buildingId);
+	//PUN_LOG("AddBuilding enum:%d buildingId:%d", parameters.buildingEnum, buildingId);
 
 	return buildingId;
 }

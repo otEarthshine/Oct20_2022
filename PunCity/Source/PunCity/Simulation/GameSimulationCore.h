@@ -631,6 +631,30 @@ public:
 		globalResourceSystem(playerId).ChangeInfluence(influenceChange);
 	}
 
+	virtual int32 GetTokens(int32 playerIdIn, ResourceEnum resourceEnum) override
+	{
+		if (resourceEnum == ResourceEnum::Money) {
+			return moneyCap32(playerIdIn);
+		}
+		return influence(playerIdIn);
+	}
+	virtual void ChangeTokens(int32 playerIdIn, ResourceEnum resourceEnum, int32 changeValue) override
+	{
+		if (resourceEnum == ResourceEnum::Money) {
+			ChangeMoney(playerIdIn, changeValue);
+		} else {
+			ChangeInfluence(playerIdIn, changeValue);
+		}
+	}
+	virtual FText GetTokenIconRichText(ResourceEnum resourceEnum) override
+	{
+		if (resourceEnum == ResourceEnum::Money) {
+			return INVTEXT("<img id=\"Coin\"/>");
+		}
+		return INVTEXT("<img id=\"Influence\"/>");
+	}
+	
+
 	int32 price100(ResourceEnum resourceEnum) final {
 		return _worldTradeSystem.price100(resourceEnum);
 	}
@@ -653,6 +677,11 @@ public:
 		int32 townHallId = GetTownhallId(townId);
 		if (townHallId == -1) return nullptr;
 		return &(building(townHallId).subclass<TownHall>(CardEnum::Townhall));
+	}
+	Building* GetTownhallBldPtr(int32 townId) final {
+		int32 townHallId = GetTownhallId(townId);
+		if (townHallId == -1) return nullptr;
+		return &(building(townHallId));
 	}
 	int32 GetTownhallId(int32 townId) override {
 		if (townId == -1) return -1;
@@ -735,6 +764,9 @@ public:
 		if (townhallId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
 		}
+		if (building(townhallId).isEnum(CardEnum::ResourceOutpost)) {
+			return playerNameT(townManagerBase(townId)->lordPlayerId());
+		}
 		if (IsMinorTown(townId)) {
 			return GenerateTribeName(townhallId);
 		}
@@ -751,6 +783,9 @@ public:
 		int32 townhallId = townManagerBase(townId)->townhallId;
 		if (townhallId == -1) {
 			return NSLOCTEXT("GameSimulationCore", "None", "None");
+		}
+		if (building(townhallId).isEnum(CardEnum::ResourceOutpost)) {
+			return playerNameT(townManagerBase(townId)->lordPlayerId());
 		}
 		if (IsMinorTown(townId)) {
 			return GenerateTribeName(townhallId);
@@ -3239,10 +3274,16 @@ public:
 	bool CanBuyCard(int32 playerId, CardEnum buildingEnum)
 	{
 		// Not enough money
-		int32 moneyCap32 = globalResourceSystem(playerId).moneyCap32();
-		if (moneyCap32 < cardSystem(playerId).GetCardPrice(buildingEnum)) {
+		ResourceEnum tokenEnum = cardSystem(playerId).GetCardPriceTokenEnum(buildingEnum);
+		int32 tokenCount = GetTokens(playerId, tokenEnum);
+		int32 tokenPrice = cardSystem(playerId).GetCardPrice(buildingEnum, tokenEnum);
+
+		if (tokenCount < tokenPrice) {
 			AddPopupToFront(playerId, 
-				NSLOCTEXT("SimCore", "NotEnoughMoneyPurchaseCard", "Not enough money to purchase the card."), 
+				FText::Format(
+					NSLOCTEXT("SimCore", "NotEnoughMoneyPurchaseCard", "Not enough {0} to purchase the card."),
+					GetTokenIconRichText(tokenEnum)
+				), 
 				ExclusiveUIEnum::CardHand1, "PopupCannot"
 			);
 			return false;
@@ -3446,6 +3487,27 @@ public:
 		return farmTiles;
 	}
 
+	virtual TileArea GetActualFarmArea(const std::vector<FarmTile>& farmTiles, WorldTile2 startTile) override
+	{
+		TileArea area;
+		area.minX = startTile.x;
+		area.minY = startTile.y;
+		area.maxX = area.minX;
+		area.maxY = area.minY;
+
+		for (const FarmTile& farmTile : farmTiles) {
+			area.minX = std::min(area.minX, farmTile.worldTile.x);
+			area.minY = std::min(area.minY, farmTile.worldTile.y);
+			area.maxX = std::max(area.maxX, farmTile.worldTile.x);
+			area.maxY = std::max(area.maxY, farmTile.worldTile.y);
+		}
+
+		check(area.min().isValid());
+		
+		return area;
+	}
+	
+
 	virtual bool IsFarmBuildable(WorldTile2 tile, int32 playerId) override
 	{
 		if (!IsPlayerBuildable(tile, playerId)) {
@@ -3456,7 +3518,9 @@ public:
 			return false;
 		}
 
-		if (!HasValidSeed(tile, playerId)) {
+		if (!HasValidSeed(tile, playerId) &&
+			!IsAIPlayer(playerId)) 
+		{
 			return false;
 		}
 		

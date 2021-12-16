@@ -617,7 +617,7 @@ public:
 	int32 maxAge()
 	{
 		if (unitEnum() == UnitEnum::Human) {
-			int32 averageDeathAgeTicks = _simulation->parameters(_playerId)->DeathAgeTicks();
+			int32 averageDeathAgeTicks = PlayerParameters::DeathAgeTicks();
 
 			// maxAge randomized depending the birthTick
 			int32 deathAgeVariation = averageDeathAgeTicks / 5;

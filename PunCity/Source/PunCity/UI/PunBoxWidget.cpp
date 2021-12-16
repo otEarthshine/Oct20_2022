@@ -68,10 +68,19 @@ void UPunBoxWidget::AddBuildingTooltip(UWidget* widget, CardEnum buildingEnum, U
 	//}
 
 	auto& sim = punWidgetSupport->dataSource()->simulation();
-	int32 cardPrice = sim.cardSystem(punWidgetSupport->playerId()).GetCardPrice(buildingEnum);
+	auto& cardSys = sim.cardSystem(punWidgetSupport->playerId());
+	
+	ResourceEnum tokenEnum = cardSys.GetCardPriceTokenEnum(buildingEnum);
+	int32 cardPrice = cardSys.GetCardPrice(buildingEnum, tokenEnum);
+
 	if (cardPrice > 0) {
 		const FText cardPriceText = LOCTEXT("Card price:", "Card price:");
-		tooltipBox->AddRichText(FText::Format(INVTEXT("{0} <img id=\"Coin\"/>{1}"), cardPriceText, TEXT_NUM(cardPrice)));
+		tooltipBox->AddRichText(FText::Format(
+			INVTEXT("{0} {1}{2}"), 
+			cardPriceText,
+			sim.GetTokenIconRichText(tokenEnum),
+			TEXT_NUM(cardPrice))
+		);
 	}
 
 

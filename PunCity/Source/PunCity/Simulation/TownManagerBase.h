@@ -22,6 +22,8 @@ struct ProvinceClaimProgress
 	std::vector<CardStatus> defenderWall;
 	std::vector<CardStatus> defenderTreasure;
 
+	std::vector<CardStatus> damageHitQueue; // cardStateValue2 as activation tick
+
 	bool isCrossingRiver = false;
 	int32 raidMoney = 0;
 
@@ -182,6 +184,8 @@ struct ProvinceClaimProgress
 
 		SerializeVecObj(Ar, defenderWall);
 		SerializeVecObj(Ar, defenderTreasure);
+
+		SerializeVecObj(Ar, damageHitQueue);
 
 		Ar << isCrossingRiver;
 		Ar << raidMoney;

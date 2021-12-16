@@ -185,7 +185,21 @@ void AIPlayerSystem::Tick1Sec()
 		}
 	}
 
-	CardEnum storageEnum = (era == 3 || population > 70) ? CardEnum::Warehouse : CardEnum::StorageYard;
+	CardEnum storageEnum = (era == 2) ? CardEnum::Warehouse : CardEnum::StorageYard;
+
+
+	/*
+	 * 
+	 */
+	int32 targetLaborerFromPop = population / 5;
+	if (std::abs(townManage.targetLaborerCount - targetLaborerFromPop) > 5) // around 1/5 ppl as laborer
+	{
+		std::shared_ptr<FSetTownPriority> command = townManage.CreateTownPriorityCommand();
+		command->playerId = _aiPlayerId;
+		command->townId = _aiPlayerId;
+		command->targetLaborerCount = targetLaborerFromPop;
+		_simulation->ExecuteNetworkCommand(command);
+	}
 	
 
 	/*
@@ -198,18 +212,7 @@ void AIPlayerSystem::Tick1Sec()
 		for (int32 bldId : bldIds) 
 		{
 			Building& bld = _simulation->building(bldId);
-			if (!bld.isConstructed())
-			{
-				if (bld.buildingAge() > Time::TicksPerYear &&
-					!_simulation->buildingSystem().IsQuickBuild(bldId))
-				{
-					// Quick Build
-					_simulation->buildingSystem().AddQuickBuild(bldId);
-					bld.InstantClearArea();
-					bld.FinishConstructionResourceAndWorkerReset();
-					bld.SetAreaWalkable();
-				}
-
+			if (!bld.isConstructed()) {
 				return false;
 			}
 			// too recent, return false
@@ -220,6 +223,43 @@ void AIPlayerSystem::Tick1Sec()
 		
 		return true;
 	};
+
+	// Should QuickBuild
+	auto tryQuickBuild = [&](CardEnum cardEnum)
+	{
+		const std::vector<int32>& bldIds = _simulation->buildingIds(_aiPlayerId, cardEnum);
+		for (int32 bldId : bldIds)
+		{
+			Building& bld = _simulation->building(bldId);
+			if (!bld.isConstructed())
+			{
+				bool shouldQuickBuild = (bld.buildingAge() > Time::TicksPerYear);
+				if (IsStorage(cardEnum) ||
+					IsTradingPostLike(cardEnum))
+				{
+					if (bld.buildingAge() > Time::TicksPerRound) {
+						shouldQuickBuild = true;
+					}
+				}
+
+				if (shouldQuickBuild &&
+					!_simulation->buildingSystem().IsQuickBuild(bldId))
+				{
+					// Quick Build
+					_simulation->buildingSystem().AddQuickBuild(bldId);
+					bld.InstantClearArea();
+					bld.FinishConstructionResourceAndWorkerReset();
+					bld.SetAreaWalkable();
+				}
+			}
+		}
+	};
+
+	std::vector<CardEnum> buildingEnums = GetSortedBuildingEnum();
+	tryQuickBuild(buildingEnums[Time::Seconds() % buildingEnums.size()]);
+
+
+	bool shouldPlaceJobBuilding = (population * 8 / 10 > jobSlots);
 	
 	/*
 	 * Blocks that are placed next to some other block (city center)
@@ -231,12 +271,17 @@ void AIPlayerSystem::Tick1Sec()
 		int32 housingCapacity = _simulation->HousingCapacity(_aiPlayerId);
 		const int32 maxHouseCapacity = 99999;// 4 * 50; // 120 max pop
 
+		std::pair<int32, int32> slotsPair = _simulation->GetStorageCapacity(_aiPlayerId, true);
+		int32 usedSlots = slotsPair.first;
+		int32 totalSlots = slotsPair.second;
+		bool needMoreStorage = (usedSlots >= totalSlots * 8 / 10); // 80% full
+
 		// TODO: add last building centerTile which can be used as a new spiral center
 
 		AICityBlock block;
 		
 		// First Trading Post
-		if (Time::Ticks() > Time::TicksPerYear &&
+		if (Time::Ticks() > Time::TicksPerYear / 2 &&
 			_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPost) == 0)
 		{
 			block = AICityBlock::MakeBlock(factionEnum(),
@@ -253,65 +298,19 @@ void AIPlayerSystem::Tick1Sec()
 			);
 		}
 		// Tavern (One for every 50 citizens)
-		else if (population / 50 + 1 > _simulation->buildingCount(_aiPlayerId, CardEnum::Tavern))
-		{
-			block = AICityBlock::MakeBlock(factionEnum(),
-				{ CardEnum::Tavern },
-				{ }
-			);
-		}
+		//else if (population / 50 + 1 > _simulation->buildingCount(_aiPlayerId, CardEnum::Tavern))
+		//{
+		//	block = AICityBlock::MakeBlock(factionEnum(),
+		//		{ CardEnum::Tavern },
+		//		{ }
+		//	);
+		//}
 		else
 		{
-			// Industry
-			if (Time::Ticks() > Time::TicksPerSeason * 3 / 2) // build only after food producers
-			{
-				/*
-				 * Old Way
-				 */
-				// Furniture Workshop
-				if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wood) > 200 &&
-					_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) == 0)
-				{
-					block = AICityBlock::MakeBlock(factionEnum(),
-						{ CardEnum::FurnitureWorkshop },
-						{ }
-					);
-				}
-				// Beer Brewery
-				else if (_simulation->resourceCountTown(_aiPlayerId, ResourceEnum::Wheat) > 100 &&
-					_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) == 0)
-				{
-					block = AICityBlock::MakeBlock(factionEnum(),
-						{ CardEnum::BeerBrewery, },
-						{ }
-					);
-				}
-				//// Tailor
-				//else if (_simulation->buildingCount(_aiPlayerId, CardEnum::FurnitureWorkshop) > 0 &&
-				//	_simulation->buildingCount(_aiPlayerId, CardEnum::BeerBrewery) > 0 &&
-				//	_simulation->buildingCount(_aiPlayerId, CardEnum::Tailor) == 0)
-				//{
-				//	block = AICityBlock::MakeBlock(factionEnum(),
-				//		{ CardEnum::Tailor, },
-				//		{ }
-				//	);
-				//}
-
-				//! Build buildings that should scale with population
-				TryPlaceNormalBuildings_ScaleToPopCount(block, era, population);
-
-				//! build single building of each type
-				TryPlaceNormalBuildings_Single(block, era);
-			}
-
-			// Storage
+			// Try Build Storage
 			if (!block.IsValid())
 			{
-				std::pair<int32, int32> slotsPair = _simulation->GetStorageCapacity(_aiPlayerId, true);
-				int32 usedSlots = slotsPair.first;
-				int32 totalSlots = slotsPair.second;
-
-				if (usedSlots >= totalSlots * 9 / 10) // 90% full
+				if (needMoreStorage)
 				{
 					block = AICityBlock::MakeBlock(factionEnum(),
 						{ storageEnum, storageEnum, },
@@ -319,22 +318,102 @@ void AIPlayerSystem::Tick1Sec()
 					);
 				}
 			}
+
+			
+			/*
+			 * Industries
+			 */
+			if (Time::Ticks() > Time::TicksPerSeason * 3 / 2) // build only after food producers
+			{
+				//! Build buildings that should scale with population
+				TryPlaceNormalBuildings_ScaleToPopCount(block, era, population, shouldPlaceJobBuilding);
+
+				//! build single building of each type
+				TryPlaceNormalBuildings_Single(block, era, shouldPlaceJobBuilding);
+			}
 		}
 
 
 		if (block.IsValid())
 		{
 			// Try house, then townhall, then storage
-			TryPlaceCityBlock({ CardEnum::House, CardEnum::Townhall, storageEnum }, block);
-			//TryPlaceCityBlock(CardEnum::House, block);
+			std::vector<CardEnum> buildingEnumToBeNear = { CardEnum::House, CardEnum::Townhall, CardEnum::StorageYard, CardEnum::Warehouse };
 
-			//if (!block.PlacementSucceed()) {
-			//	TryPlaceCityBlock(CardEnum::Townhall, block);
-			//}
+			if (block.HasBuildingEnum(CardEnum::HaulingServices)) {
+				buildingEnumToBeNear = { CardEnum::TradingPort, CardEnum::TradingPost, CardEnum::House, CardEnum::Townhall, storageEnum };
+			}
+			
+			TryPlaceCityBlock(buildingEnumToBeNear, block);
 
-			//if (!block.HasArea()) {
-			//	TryPlaceCityBlock(storageEnum, block);
-			//}
+			// Placement failed, try to put a new storage cluster in empty province
+			if (!block.PlacementSucceed())
+			{
+				for (const AIRegionStatus& regionStatus : _regionStatuses)
+				{
+					if (regionStatus.currentPurpose == AIRegionPurposeEnum::None ||
+						regionStatus.currentPurpose == AIRegionPurposeEnum::City)
+					{
+						if (needMoreStorage)
+						{
+							block = AICityBlock::MakeBlock(factionEnum(),
+								{ CardEnum::StorageYard, CardEnum::StorageYard },
+								{ CardEnum::StorageYard, CardEnum::StorageYard }
+							);
+						}
+						else
+						{
+							block = AICityBlock::MakeBlock(factionEnum(),
+								{ CardEnum::House, CardEnum::House },
+								{ CardEnum::House, CardEnum::House }
+							);
+						}
+						
+						WorldTile2 center = provinceSys.GetProvinceCenterTile(regionStatus.provinceId);
+						block.TryPlaceCityBlockSpiral(center, _aiPlayerId, _simulation);
+
+						if (block.HasArea()) {
+							std::vector<std::shared_ptr<FNetworkCommand>> commands;
+							SimUtils::PlaceCityBlock(block, _aiPlayerId, commands, _simulation);
+							_simulation->ExecuteNetworkCommands(commands);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
+
+
+	/*
+	 * Granary
+	 */
+	if (era >= 2 &&
+		Time::Seconds() % (Time::SecondsPerRound * 2) == 0) // Quickbuild should be done before we check this next time
+	{
+		const std::vector<int32>& farmIds = _simulation->buildingIds(_aiPlayerId, CardEnum::Farm);
+		for (int32 farmId : farmIds)
+		{
+			Building& farm = _simulation->building(farmId);
+
+			int32 radiusBonus = farm.GetRadiusBonus(CardEnum::Granary, Windmill::Radius, [&](int32 bonus, Building& building) {
+				return max(bonus, 10);
+			});
+
+			if (radiusBonus == 0)
+			{
+				AICityBlock block = AICityBlock::MakeBlock(factionEnum(),
+					{ CardEnum::Granary },
+					{}
+				);
+				block.TryPlaceCityBlockSpiral(farm.centerTile(), _aiPlayerId, _simulation);
+
+				if (block.HasArea()) {
+					std::vector<std::shared_ptr<FNetworkCommand>> commands;
+					SimUtils::PlaceCityBlock(block, _aiPlayerId, commands, _simulation);
+					_simulation->ExecuteNetworkCommands(commands);
+					break;
+				}
+			}
 		}
 	}
 
@@ -346,11 +425,19 @@ void AIPlayerSystem::Tick1Sec()
 		(hasNoRecentUnderConstruction(CardEnum::TradingPost) && hasNoRecentUnderConstruction(CardEnum::TradingPort)))
 	{
 		bool isPlaced = TryPlaceSingleCoastalBuilding(CardEnum::TradingPort);
-		if (!isPlaced) {
+		if (isPlaced)
+		{
+			_needMoreTradeBuilding = false;
+		}
+		else {
 			auto block = AICityBlock::MakeBlock(factionEnum(),
 				{ CardEnum::TradingPost }
 			);
 			TryPlaceCityBlock({ storageEnum, CardEnum::House }, block);
+
+			if (block.PlacementSucceed()) {
+				_needMoreTradeBuilding = false;
+			}
 		}
 	}
 
@@ -366,9 +453,16 @@ void AIPlayerSystem::Tick1Sec()
 	const std::vector<int32>& ranchIds = _simulation->buildingIds(_aiPlayerId, CardEnum::RanchPig);
 	const std::vector<int32>& fisherIds = _simulation->buildingIds(_aiPlayerId, CardEnum::Fisher);
 	const std::vector<int32>& farmIds = _simulation->buildingIds(_aiPlayerId, CardEnum::Farm);
+	
+	int32 foodFarmCount = 0;
+	for (int32 farmId : farmIds) {
+		if (IsFoodEnum(GetTileObjInfo(_simulation->building<Farm>(farmId).currentPlantEnum).harvestResourceEnum())) {
+			foodFarmCount++;
+		}
+	}
 
 	auto needFarmRanch = [&]() {
-		int32 farmRanchCount = ranchIds.size() + fisherIds.size() + farmIds.size();
+		int32 farmRanchCount = ranchIds.size() + fisherIds.size() + foodFarmCount;
 
 		const int32 farmPerPopulation = 5;
 		const int32 populationFedByFruit = 10;
@@ -377,26 +471,26 @@ void AIPlayerSystem::Tick1Sec()
 		return farmRanchCount < preferredFarmRanchCount;
 	};
 
-	auto averageFertility = [&](TileArea curArea)
-	{
-		int32 fertility = _simulation->GetFertilityPercent(curArea.corner00()) +
-			_simulation->GetFertilityPercent(curArea.corner01()) +
-			_simulation->GetFertilityPercent(curArea.corner10()) +
-			_simulation->GetFertilityPercent(curArea.corner11());
-		return fertility / 4;
-	};
+	//auto averageFertility = [&](TileArea curArea)
+	//{
+	//	int32 fertility = _simulation->GetFertilityPercent(curArea.corner00()) +
+	//		_simulation->GetFertilityPercent(curArea.corner01()) +
+	//		_simulation->GetFertilityPercent(curArea.corner10()) +
+	//		_simulation->GetFertilityPercent(curArea.corner11());
+	//	return fertility / 4;
+	//};
 
-	auto placeFarm = [&](TileArea area)
-	{
-		auto command = MakeCommand<FPlaceBuilding>();
-		command->playerId = _aiPlayerId;
-		command->buildingEnum = static_cast<uint8>(CardEnum::Farm);
-		command->area = area;
-		command->center = area.centerTile();
-		command->faceDirection = uint8(Direction::S);
+	//auto placeFarm = [&](TileArea area)
+	//{
+	//	auto command = MakeCommand<FPlaceBuilding>();
+	//	command->playerId = _aiPlayerId;
+	//	command->buildingEnum = static_cast<uint8>(CardEnum::Farm);
+	//	command->area = area;
+	//	command->center = area.centerTile();
+	//	command->faceDirection = uint8(Direction::S);
 
-		_simulation->ExecuteNetworkCommand(command);
-	};
+	//	_simulation->ExecuteNetworkCommand(command);
+	//};
 
 	/*
 	 * Place Farm
@@ -408,86 +502,89 @@ void AIPlayerSystem::Tick1Sec()
 		// Addon farms
 		bool placed = false;
 
-		if (farmIds.size() > 0)
+		//if (farmIds.size() > 0)
+		//{
+		//	int32 farmId = farmIds[GameRand::Rand() % farmIds.size()];
+		//	Building& farm = _simulation->building(farmId);
+
+		//	WorldTile2 size = GetBuildingInfo(CardEnum::Farm).size;
+		//	TileArea largerArea(farm.area().min() - size, size + size + WorldTile2(1, 1));
+
+		//	TileArea maxFertilityArea = TileArea::Invalid;
+		//	int32 maxFertility = 0;
+
+		//	largerArea.ExecuteOnBorder_WorldTile2([&](const WorldTile2& tile) {
+		//		TileArea curArea(tile, size);
+		//		bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
+		//			return !_simulation->IsBuildableForPlayer(curTile, _aiPlayerId);
+		//		});
+		//		if (!hasInvalidTile) {
+		//			int32 fertility = averageFertility(curArea);
+		//			if (fertility > maxFertility) {
+		//				maxFertilityArea = curArea;
+		//				maxFertility = fertility;
+		//			}
+		//		}
+		//	});
+
+		//	if (maxFertilityArea.isValid()) {
+		//		placeFarm(maxFertilityArea);
+		//		placed = true;
+		//	}
+		//}
+
+		/*
+		 * Farms
+		 */
+		if (TryPlaceRiverFarm())
 		{
-			int32 farmId = farmIds[GameRand::Rand() % farmIds.size()];
-			Building& farm = _simulation->building(farmId);
-
-			WorldTile2 size = GetBuildingInfo(CardEnum::Farm).size;
-			TileArea largerArea(farm.area().min() - size, size + size + WorldTile2(1, 1));
-
-			TileArea maxFertilityArea = TileArea::Invalid;
-			int32 maxFertility = 0;
-
-			largerArea.ExecuteOnBorder_WorldTile2([&](const WorldTile2& tile) {
-				TileArea curArea(tile, size);
-				bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
-					return !_simulation->IsBuildableForPlayer(curTile, _aiPlayerId);
-				});
-				if (!hasInvalidTile) {
-					int32 fertility = averageFertility(curArea);
-					if (fertility > maxFertility) {
-						maxFertilityArea = curArea;
-						maxFertility = fertility;
-					}
-				}
-			});
-
-			if (maxFertilityArea.isValid()) {
-				placeFarm(maxFertilityArea);
-				placed = true;
-			}
+			placed = true;
 		}
-
+		
 		// initial farms (unable to do addon)
-		bool isLastProvinceToFarmCheck = false;
+		//bool isLastProvinceToFarmCheck = false;
 		if (!placed)
 		{
 			int32 regionIndexToExplore = Time::Seconds() % _regionStatuses.size();
 			AIRegionStatus& status = _regionStatuses[regionIndexToExplore];
 
-			isLastProvinceToFarmCheck = (regionIndexToExplore == _regionStatuses.size() - 1);
+			//isLastProvinceToFarmCheck = (regionIndexToExplore == _regionStatuses.size() - 1);
 
-			TileArea provinceArea = _simulation->GetProvinceRectArea(status.provinceId);
-
-			// Use skip 4x4 to find max fertility tile
-			WorldTile2 maxFertilityTile = WorldTile2::Invalid;
 			int32 maxFertility = 0;
-			provinceArea.ExecuteOnAreaSkip4_WorldTile2([&](WorldTile2 tile)
+			WorldTile2 maxFertilityTile = GetMaxFertilityTile(status.provinceId, maxFertility);
+
+			//TileArea provinceArea = _simulation->GetProvinceRectArea(status.provinceId);
+
+			//// Use skip 4x4 to find max fertility tile
+			//WorldTile2 maxFertilityTile = WorldTile2::Invalid;
+			//int32 maxFertility = 0;
+			//provinceArea.ExecuteOnAreaSkip4_WorldTile2([&](WorldTile2 tile)
+			//{
+			//	if (_simulation->IsFarmBuildable(tile, _aiPlayerId))
+			//	{
+			//		int32 fertility = terrainGenerator.GetRainfall100(tile);
+			//		if (fertility > maxFertility) {
+			//			maxFertilityTile = tile;
+			//			maxFertility = fertility;
+			//		}
+			//	}
+			//});
+
+
+			if (maxFertilityTile.isValid() && maxFertility > 95)
 			{
-				int32 fertility = terrainGenerator.GetRainfall100(tile);
-				if (fertility > maxFertility) {
-					maxFertilityTile = tile;
-					maxFertility = fertility;
-				}
-			});
-
-			// Spiral out to find buildable spot
-			if (maxFertilityTile.isValid() && maxFertility > 70)
-			{
-				WorldTile2 size = GetBuildingInfo(CardEnum::Farm).size;
-
-				WorldTile2 availableMinTile = AlgorithmUtils::FindNearbyAvailableTile(maxFertilityTile - size / 2, [&](const WorldTile2& tile)
-				{
-					TileArea curArea(tile, size);
-					bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
-						return !_simulation->IsFarmBuildable(curTile, _aiPlayerId);
-					});
-
-					return !hasInvalidTile;
-				}, 500);
-
-				if (availableMinTile.isValid()) {
-					placeFarm(TileArea(availableMinTile, size));
-					placed = true;
-				}
+				TryPlaceFarm(maxFertilityTile, 7);
 			}
 		}
 
+
+		/*
+		 * Ranch/Fisher
+		 */
 		if (!placed)
 		{
 			// Try placing ranch/fisher when farm cannot be placed
-			if (isLastProvinceToFarmCheck)
+			//if (isLastProvinceToFarmCheck)
 			{
 				// Try to place fish first..
 				auto tryPlaceFisher = [&]()
@@ -552,7 +649,7 @@ void AIPlayerSystem::Tick1Sec()
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunAIPlaceForestBlock);
 
-		if (population * 8 / 10 > jobSlots)
+		if (shouldPlaceJobBuilding)
 		{
 			// Ensure there is only one forester/fruit cluster
 			bool alreadyHaveForester = false;
@@ -617,17 +714,41 @@ void AIPlayerSystem::Tick1Sec()
 					}
 				};
 
-				//// Farm
-				//trySetPurpose(AIRegionProposedPurposeEnum::Fertility, 
-				//	AIRegionPurposeEnum::Farm,
-				//	{ CardEnum::Farm, CardEnum::Farm , CardEnum::StorageYard },
-				//	{ CardEnum::Farm, CardEnum::Farm, CardEnum::StorageYard });
+				// CashCrop Farm
+				if (status.proposedPurpose == AIRegionProposedPurposeEnum::CashCrop)
+				{
+					if (status.currentPurpose == AIRegionPurposeEnum::None || 
+						status.currentPurpose == AIRegionPurposeEnum::City)
+					{
+						if (TryPlaceFarm(provinceCenter, 7)) {
+							status.currentPurpose = AIRegionPurposeEnum::CashCrop;
+						}
+						
+						//TileArea area(provinceCenter, 7);
+						//std::vector<FarmTile> farmTiles = _simulation->GetFarmTiles(area, provinceCenter, _aiPlayerId);
+						//if (farmTiles.size() > 30)
+						//{
+						//	auto command = make_shared<FPlaceBuilding>();
+						//	command->playerId = _aiPlayerId;
+						//	command->buildingEnum = static_cast<uint16>(CardEnum::Farm);
+						//	command->intVar1 = provinceCenter.tileId();
+						//	command->area = _simulation->GetActualFarmArea(farmTiles, provinceCenter); // Area2 is the trimmed area
+						//	command->center = provinceCenter;// dragStart  _area.centerTile();
+						//	command->faceDirection = static_cast<uint8>(Direction::S);
+
+						//	_simulation->ExecuteNetworkCommand(command);
+
+						//	status.currentPurpose = AIRegionPurposeEnum::CashCrop;
+						//}
+					}
+				}
 
 				// Ranch
 				trySetPurpose(AIRegionProposedPurposeEnum::Ranch,
 					AIRegionPurposeEnum::Ranch,
 					{ CardEnum::StorageYard, CardEnum::StorageYard, CardEnum::StorageYard, CardEnum::StorageYard },
-					{ CardEnum::RanchPig });
+					{ CardEnum::RanchPig }
+				);
 
 
 				// Forester
@@ -636,7 +757,8 @@ void AIPlayerSystem::Tick1Sec()
 					trySetPurpose(AIRegionProposedPurposeEnum::Tree,
 						AIRegionPurposeEnum::Forester,
 						{ CardEnum::Forester, CardEnum::CharcoalMaker, CardEnum::StorageYard },
-						{ CardEnum::HuntingLodge, CardEnum::StorageYard, CardEnum::StorageYard });
+						{ CardEnum::HuntingLodge, CardEnum::StorageYard, CardEnum::StorageYard }
+					);
 				}
 
 				// Fruit
@@ -645,7 +767,8 @@ void AIPlayerSystem::Tick1Sec()
 					trySetPurpose(AIRegionProposedPurposeEnum::Tree,
 						AIRegionPurposeEnum::FruitGather,
 						{ CardEnum::FruitGatherer, CardEnum::StorageYard, CardEnum::House },
-						{ CardEnum::HuntingLodge, CardEnum::StorageYard, CardEnum::StorageYard });
+						{ CardEnum::HuntingLodge, CardEnum::StorageYard, CardEnum::StorageYard }
+					);
 				}
 
 				//// Farm
@@ -716,7 +839,7 @@ void AIPlayerSystem::Tick1Sec()
 	 * Cheat Money
 	 */
 	if (Time::Seconds() % 5 == 0 &&
-		_simulation->moneyCap32(_aiPlayerId) < 700)
+		_simulation->moneyCap32(_aiPlayerId) < std::max(700, population * 20))
 	{
 		// Cheat if no money
 		int32 cheatAmount = std::max(333, population * 10);
@@ -784,7 +907,8 @@ void AIPlayerSystem::Tick1Sec()
 	 * Military
 	 */
 	if (Time::Seconds() % 250 == 0 &&
-		Time::Ticks() > Time::TicksPerYear)
+		Time::Ticks() > Time::TicksPerYear &&
+		townManage.defendingClaimProgress().size() == 0)
 	{
 		const std::vector<CardStatus>& targetCards = eraToUnitCountPer100pop[era];
 
@@ -825,7 +949,7 @@ void AIPlayerSystem::Tick1Sec()
 	}
 	
 	 //_LOG(PunAI, "%s CheckDefendLand(outer): sec:%d money:%d", AIPrintPrefix(), Time::Seconds(), resourceSystem.money());
-	if (Time::Seconds() % 10 == 0)
+	if (Time::Seconds() % 15 == 0)
 	{
 		//_LOG(PunAI, "%s CheckDefendLand", AIPrintPrefix());
 
@@ -834,19 +958,29 @@ void AIPlayerSystem::Tick1Sec()
 		{
 			//_LOG(PunAI, "%s CheckDefendLand provinceId:%d", AIPrintPrefix(), provinceId);
 
-			ProvinceClaimProgress claimProgress = townManage.GetDefendingClaimProgress(provinceId);
-			if (claimProgress.isValid())
+			ProvinceClaimProgress* claimProgress = townManage.GetDefendingClaimProgressPtr(provinceId);
+			if (claimProgress && claimProgress->isValid())
 			{
-				// TODO: AI Defense
-				//_LOG(PunAI, "%s CheckDefendLand Send Command provinceId:%d", AIPrintPrefix(), provinceId);
+				std::vector<CardStatus> cardsBoughtAndInventory = cardSys.GetCardsBoughtAndInventory();
+				
+				std::vector<CardStatus> militaryCards;
+				for (const CardStatus& card : cardsBoughtAndInventory) {
+					if (IsLandMilitaryCardEnum(card.cardEnum)) {
+						militaryCards.push_back(card);
+						cardSys.RemoveCardsFromBoughtHand(card, card.stackSize);
+					}
+				}
+				//cardSystem(command.playerId).RemoveCardsFromBoughtHand(cardStatus, cardStatus.stackSize);
 
-				//auto command = make_shared<FClaimLand>();
-				//command->playerId = _aiPlayerId;
-				//command->claimEnum = CallbackEnum::DefendProvinceMoney;
-				//command->provinceId = provinceId;
-				//PUN_CHECK(command->provinceId != -1);
+				if (militaryCards.size() > 0)
+				{
+					// Reinforcement Notification
+					_simulation->AddPopup(claimProgress->attackerPlayerId,
+						NSLOCTEXT("AIPlayerSystem", "ReinforcementDefend_NotificationToAttack", "Your enemy have reinforced their defense.")
+					);
 
-				//_simulation->ExecuteNetworkCommand(command);
+					claimProgress->Reinforce(militaryCards, false, _aiPlayerId);
+				}
 			}
 		}
 	}
@@ -1083,6 +1217,11 @@ void AIPlayerSystem::TryUpgradeBuildings()
 		std::vector<CardEnum> buildingEnums = GetSortedBuildingEnum();
 		for (CardEnum buildingEnum : buildingEnums)
 		{
+			// Buildings to skip
+			if (buildingEnum == CardEnum::HaulingServices) {
+				continue;
+			}
+			
 			const std::vector<int32>& bldIds = _simulation->buildingIds(_aiPlayerId, buildingEnum);
 			for (int32 bldId : bldIds)
 			{
@@ -1145,7 +1284,7 @@ void AIPlayerSystem::TryTrade()
 			// Sell extra luxury
 			auto sellExcess = [&](ResourceEnum resourceEnum, int32 supplyPerPop)
 			{
-				sellTargetAmounts[static_cast<int>(resourceEnum)] = population * supplyPerPop;
+				sellTargetAmounts[static_cast<int>(resourceEnum)] = std::max(population, 20) * supplyPerPop;
 			};
 
 			sellExcess(ResourceEnum::Beer, 5);
@@ -1194,8 +1333,13 @@ void AIPlayerSystem::TryTrade()
 			// Maintain 2 years tools/medicine supply
 			buyUntil(ResourceEnum::SteelTools, population * 2 / 3); // 3 years = 1 tools
 
-			if (medicineCount < population * 2) { // Take into account Medicinal Herb
-				buyUntil(ResourceEnum::Medicine, population * 2);
+			int32 targetMedicine = population * 2;
+			if (_simulation->GetBiomeEnum(_simulation->GetTownhallGateCapital(_aiPlayerId)) == BiomeEnum::Jungle) {
+				targetMedicine *= 3;
+			}
+			
+			if (medicineCount < targetMedicine) { // Take into account Medicinal Herb
+				buyUntil(ResourceEnum::Medicine, targetMedicine);
 			}
 
 			buyUntil(ResourceEnum::Wood, 100);
@@ -1231,10 +1375,10 @@ void AIPlayerSystem::TryTrade()
 				{
 					const BldInfo& info = GetBuildingInfo(buildingEnum);
 					if (info.hasInput1()) {
-						buyUntil(info.input1, 50 + (50 * bldIds.size()));
+						buyUntil(info.input1, 80 + (80 * bldIds.size()));
 					}
 					if (info.hasInput2()) {
-						buyUntil(info.input2, 50 + (50 * bldIds.size()));
+						buyUntil(info.input2, 80 + (80 * bldIds.size()));
 					}
 				}
 			}
@@ -1245,7 +1389,7 @@ void AIPlayerSystem::TryTrade()
 				// Sell Excess of food at higher supply per pop
 				ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
 				if (IsFoodEnum(resourceEnum)) {
-					sellExcess(resourceEnum, 50);
+					sellExcess(resourceEnum, 10);
 				}
 
 				// Sell Excess of everything else
@@ -1280,60 +1424,88 @@ void AIPlayerSystem::TryTrade()
 			auto tradeCommand = make_shared<FTradeResource>();
 			tradeCommand->playerId = _aiPlayerId;
 
-			for (int32 tradeBldId : tradeBldIds)
+			for (int32 j = 0; j < tradeBldIds.size(); j++)
 			{
-				TradeBuilding& tradeBld = _simulation->building<TradeBuilding>(tradeBldId);
+				TradeBuilding& tradeBld = _simulation->building<TradeBuilding>(tradeBldIds[j]);
 				int32 amountLeft = tradeBld.maxTradeQuatity();
 
 				tradeCommand->buyEnums.Empty();
 				tradeCommand->buyAmounts.Empty();
 
-				// Prioritize Buy
-				for (int32 i = 0; i < buyAmountPreferred.size(); i++) 
-				{
-					if (amountLeft <= 0) {
-						break;
-					}
-					
-					if (buyAmountPreferred[i] > 0) {
-						int32 amountToBuy = std::min(buyAmountPreferred[i], amountLeft);
-						buyAmountPreferred[i] -= amountToBuy;
-						amountLeft -= amountToBuy;
-						tradeCommand->buyEnums.Add(i);
-						tradeCommand->buyAmounts.Add(amountToBuy);
-					}
-				}
-				// Then sell
-				for (int32 i = 0; i < buyAmountPreferred.size(); i++)
-				{
-					if (amountLeft <= 0) {
-						break;
-					}
 
-					if (buyAmountPreferred[i] < 0) {
-						int32 amountToSell = std::min(-buyAmountPreferred[i], amountLeft);
-						buyAmountPreferred[i] += amountToSell;
-						amountLeft -= amountToSell;
-						tradeCommand->buyEnums.Add(i);
-						tradeCommand->buyAmounts.Add(amountToSell);
-					}
-				}
+				auto buyAdd = [&]()
+				{
+					for (int32 i = 0; i < buyAmountPreferred.size(); i++)
+					{
+						if (amountLeft <= 0) {
+							break;
+						}
 
+						if (buyAmountPreferred[i] > 0) {
+							int32 amountToBuy = std::min(buyAmountPreferred[i], amountLeft);
+							buyAmountPreferred[i] -= amountToBuy;
+							amountLeft -= amountToBuy;
+							tradeCommand->buyEnums.Add(i);
+							tradeCommand->buyAmounts.Add(amountToBuy);
+						}
+					}
+				};
+				auto sellAdd = [&]()
+				{
+					for (int32 i = 0; i < buyAmountPreferred.size(); i++)
+					{
+						if (amountLeft <= 0) {
+							break;
+						}
+
+						if (buyAmountPreferred[i] < 0) {
+							int32 amountToSell = std::min(-buyAmountPreferred[i], amountLeft);
+							buyAmountPreferred[i] += amountToSell;
+							amountLeft -= amountToSell;
+							tradeCommand->buyEnums.Add(i);
+							tradeCommand->buyAmounts.Add(-amountToSell);
+						}
+					}
+				};
+
+				// Prioritize buy mostly, except second post
+				if (j == 1) {
+					sellAdd();
+				}
+				else {
+					buyAdd();
+					sellAdd();
+				}
+				
 
 				if (tradeCommand->buyEnums.Num() > 0)
 				{
-					if (_simulation->moneyCap32(_aiPlayerId) < 300)
-					{
-						// Sell only
-						for (int32 i = tradeCommand->buyAmounts.Num(); i-- > 0;) {
-							if (tradeCommand->buyAmounts[i] > 0) {
-								tradeCommand->buyEnums.RemoveAt(i);
-								tradeCommand->buyAmounts.RemoveAt(i);
-							}
+					//! Cheat add money
+					int32 moneyNeeded100 = 0;
+					WorldTradeSystem& worldTradeSys = _simulation->worldTradeSystem();
+					for (int32 i = tradeCommand->buyAmounts.Num(); i-- > 0;) {
+						if (tradeCommand->buyAmounts[i] > 0) {
+							moneyNeeded100 += tradeCommand->buyAmounts[i] * worldTradeSys.price100(static_cast<ResourceEnum>(tradeCommand->buyEnums[i]));
 						}
 					}
+					
+					if (_simulation->moneyCap32(_aiPlayerId) < moneyNeeded100 / 100 + 10)
+					{
+						// Cheat if no money
+						int32 cheatAmount = moneyNeeded100 / 100 + 10;
+						_simulation->ChangeMoney(_aiPlayerId, cheatAmount);
+						_totalCheatedMoney += cheatAmount;
+						
+						//// Sell only
+						//for (int32 i = tradeCommand->buyAmounts.Num(); i-- > 0;) {
+						//	if (tradeCommand->buyAmounts[i] > 0) {
+						//		tradeCommand->buyEnums.RemoveAt(i);
+						//		tradeCommand->buyAmounts.RemoveAt(i);
+						//	}
+						//}
+					}
 
-					tradeCommand->objectId = tradeBldId;
+					tradeCommand->objectId = tradeBldIds[j];
 
 
 					_LOG(PunAI, "%s Trade:", AIPrintPrefix());
@@ -1360,77 +1532,81 @@ void AIPlayerSystem::TryProvinceClaim()
 {
 	auto& provinceSys = _simulation->provinceSystem();
 	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
-	auto& globalResourceSys = _simulation->globalResourceSystem(_aiPlayerId);
-
-	TownHall& townhall = _simulation->GetTownhallCapital(_aiPlayerId);
-	int32 population = _simulation->townManager(_aiPlayerId).population();
 	
-	
-	int32 preferredProvinceCount = std::max(5, population / 5);
-	int32 shouldProvinceClaim = (provincesClaimed.size() < 5) || Time::Ticks() % Time::TicksPerRound;
+	if (provincesClaimed.size() < 3 ||
+		Time::Seconds() % Time::SecondsPerRound == 0)
+	{	
+		auto& globalResourceSys = _simulation->globalResourceSystem(_aiPlayerId);
 
-	if (shouldProvinceClaim &&
-		provincesClaimed.size() < preferredProvinceCount)
-	{
-		SCOPE_CYCLE_COUNTER(STAT_PunAIClaimProvince);
+		TownHall& townhall = _simulation->GetTownhallCapital(_aiPlayerId);
+		int32 population = _simulation->townManager(_aiPlayerId).population();
 
-		// Look adjacent to provincesClaimed for something to claim.
-		int32 bestClaimProvinceId = -1;
-		int32 bestClaimPoints = -99999;
 
-		auto checkAdjacent = [&](ProvinceConnection connection)
+		int32 preferredProvinceCount = std::max(5, population / 8);
+
+		if (provincesClaimed.size() < preferredProvinceCount)
 		{
-			if (connection.tileType == TerrainTileType::None &&
-				_simulation->IsProvinceValid(connection.provinceId) &&
-				_simulation->provinceOwnerTown_Major(connection.provinceId) == -1 &&
-				_simulation->provinceInfoSystem().provinceDistanceToPlayer(connection.provinceId, _aiPlayerId) < 7
-				)
+			SCOPE_CYCLE_COUNTER(STAT_PunAIClaimProvince);
+
+			// Look adjacent to provincesClaimed for something to claim.
+			int32 bestClaimProvinceId = -1;
+			int32 bestClaimPoints = -99999;
+
+			auto checkAdjacent = [&](ProvinceConnection connection)
 			{
-
-
-				// best place to claim is the one with resource or flat land
-				int32 flatLandPoints = provinceSys.provinceFlatTileCount(connection.provinceId) / 2;
-				int32 treePoints = _simulation->GetTreeCount(connection.provinceId) * 2;
-				//int32 randomPoints = GameRand::Rand() % std::max(treePoints, 1);
-
-				WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(connection.provinceId);
-
-				const int32 distanceFactor = 70;
-				int32 distance = WorldTile2::ManDistance(provinceCenter, townhall.centerTile());
-				int32 distancePoints = distance * (flatLandPoints + treePoints) / CoordinateConstants::TilesPerRegion * distanceFactor / 100;
-				//int32_t resourcePoints =
-
-				AIRegionProposedPurposeEnum purpose = DetermineProvincePurpose(connection.provinceId);
-
-				if (purpose != AIRegionProposedPurposeEnum::None)
+				if (connection.tileType == TerrainTileType::None &&
+					_simulation->IsProvinceValid(connection.provinceId) &&
+					_simulation->provinceOwnerTown_Major(connection.provinceId) == -1 &&
+					_simulation->provinceInfoSystem().provinceDistanceToPlayer(connection.provinceId, _aiPlayerId) < 7
+					)
 				{
+
+
+					// best place to claim is the one with resource or flat land
+					int32 flatLandPoints = provinceSys.provinceFlatTileCount(connection.provinceId) / 2;
+					int32 treePoints = _simulation->GetTreeCount(connection.provinceId) * 2;
+					//int32 randomPoints = GameRand::Rand() % std::max(treePoints, 1);
+
+					WorldTile2 provinceCenter = provinceSys.GetProvinceCenterTile(connection.provinceId);
+
+					const int32 distanceFactor = 70;
+					int32 distance = WorldTile2::ManDistance(provinceCenter, townhall.centerTile());
+					int32 distancePoints = distance * (flatLandPoints + treePoints) / CoordinateConstants::TilesPerRegion * distanceFactor / 100;
+					//int32_t resourcePoints =
+
+					//AIRegionProposedPurposeEnum purpose = DetermineProvincePurpose(connection.provinceId);
+
+					//if (purpose != AIRegionProposedPurposeEnum::None)
+					//{
 					int32 points = flatLandPoints + treePoints - distancePoints;
 
 					if (points > bestClaimPoints) {
 						bestClaimProvinceId = connection.provinceId;
 						bestClaimPoints = points;
 					}
+					//}
 				}
+			};
+
+			for (int32 provinceId : provincesClaimed) {
+				provinceSys.ExecuteAdjacentProvinces(provinceId, checkAdjacent);
 			}
-		};
 
-		for (int32 provinceId : provincesClaimed) {
-			provinceSys.ExecuteAdjacentProvinces(provinceId, checkAdjacent);
-		}
-
-		if (bestClaimProvinceId != -1)
-		{
-			int32 regionPrice = _simulation->GetProvinceClaimPrice(bestClaimProvinceId, _aiPlayerId);
-			if (globalResourceSys.moneyCap32() >= regionPrice)
+			if (bestClaimProvinceId != -1)
 			{
-				// AI claim at half price...
-				globalResourceSys.ChangeMoney(regionPrice / 2);
+				int32 regionPrice = _simulation->GetProvinceClaimPrice(bestClaimProvinceId, _aiPlayerId);
 
+				if (globalResourceSys.moneyCap32() < 0) {
+					globalResourceSys.SetMoney(0);
+				}
+				globalResourceSys.ChangeMoney(regionPrice);
+				
 				auto command = MakeCommand<FClaimLand>();
 				command->provinceId = bestClaimProvinceId;
 				_playerInterface->ClaimLand(*command);
 			}
 		}
+		
 	}
 }
 
@@ -1445,6 +1621,19 @@ void AIPlayerSystem::TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBloc
 	int32 buildingId = buildingIds[GameRand::Rand() % buildingIds.size()];
 
 	TileArea buildingArea = _simulation->building(buildingId).area();
+
+	// Ensure center is not within province reserved for foresting province
+	int32 provinceId = _simulation->GetProvinceIdClean(buildingArea.centerTile());
+	for (const AIRegionStatus& regionStatus : _regionStatuses) {
+		if (regionStatus.provinceId == provinceId) {
+			if (regionStatus.currentPurpose == AIRegionPurposeEnum::Forester ||
+				regionStatus.currentPurpose == AIRegionPurposeEnum::FruitGather) 
+			{
+				return;
+			}
+		}
+	}
+	
 
 	// include road
 	buildingArea.minX--;
@@ -1504,6 +1693,23 @@ bool AIPlayerSystem::TryPlaceSingleCoastalBuilding(CardEnum cardEnum)
 	return false;
 }
 
+bool AIPlayerSystem::TryPlaceRiverFarm()
+{
+	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
+
+	for (int32 provinceClaimed : provincesClaimed)
+	{
+		const std::vector<WorldTile2>& riverTiles = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceClaimed).riverTiles;
+
+		for (const WorldTile2& riverTile : riverTiles) {
+			if (TryPlaceFarm(riverTile)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 void AIPlayerSystem::TryPlaceMines()
 {
 	if (Time::Ticks() % Time::TicksPerRound != 0) {
@@ -1539,9 +1745,9 @@ void AIPlayerSystem::TryPlaceMines()
 			}
 		}
 
-		if (_simulation->buildingCount(_aiPlayerId, CardEnum::Quarry) == 0) {
-			tryBuildOne(CardEnum::Quarry);
-		}
+		//if (_simulation->buildingCount(_aiPlayerId, CardEnum::Quarry) == 0) {
+		//	tryBuildOne(CardEnum::Quarry);
+		//}
 
 		if (cardEnum != CardEnum::None)
 		{
@@ -1564,7 +1770,7 @@ void AIPlayerSystem::TryPlaceMines()
 	}
 }
 
-void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population)
+void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population, bool shouldBuildJob)
 {
 	int32 basePopCountPerBuilding = 40;
 	int32 baseBuildingPrice = GetBuildingInfo(CardEnum::FurnitureWorkshop).constructionCostAsMoney();
@@ -1583,9 +1789,10 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 		{
 			luxBuilding(CardEnum::FurnitureWorkshop),
 			luxBuilding(CardEnum::BeerBrewery),
-			//luxBuilding(CardEnum::Potter),
+			luxBuilding(CardEnum::Potter),
 
 			{ CardEnum::Tavern, 60 },
+			{ CardEnum::HaulingServices, 60 },
 		},
 		// Era 2
 		{
@@ -1616,6 +1823,12 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 				const std::vector<std::pair<CardEnum, int32>>& buildingEnumToPopCountPerTarget = eraToBuildingEnumToPopCountPerTarget[tier];
 				for (const std::pair<CardEnum, int32>& pair : buildingEnumToPopCountPerTarget) 
 				{
+					if (GetBuildingInfo(pair.first).workerCount > 0 &&
+						!shouldBuildJob) 
+					{
+						continue;
+					}
+					
 					int32 targetCount = 1 + population / pair.second;
 					if (_simulation->buildingCount(_aiPlayerId, pair.first) < targetCount)
 					{
@@ -1631,7 +1844,7 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 	}
 }
 
-void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era)
+void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era, bool shouldBuildJob)
 {
 	const std::vector<std::vector<CardEnum>> eraToSingleBuildingEnum
 	{
@@ -1670,6 +1883,12 @@ void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 er
 			const std::vector<CardEnum>& buildingEnums = eraToSingleBuildingEnum[tier];
 			for (CardEnum buildingEnum : buildingEnums)
 			{
+				if (GetBuildingInfo(buildingEnum).workerCount > 0 &&
+					!shouldBuildJob)
+				{
+					continue;
+				}
+				
 				if (_simulation->buildingCount(_aiPlayerId, buildingEnum) == 0)
 				{
 					block = AICityBlock::MakeBlock(factionEnum(),

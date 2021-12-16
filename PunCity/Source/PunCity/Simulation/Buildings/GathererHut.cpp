@@ -268,11 +268,45 @@ void Farm::OnInit()
 
 		currentPlantEnum = targetPlantEnum;
 	}
+
+	
 	// AI case, they don't buy seeds
-	else
+	if (_simulation->IsAIPlayer(_playerId))
 	{
-		currentPlantEnum = GameRand::Rand() % 2 == 0 ? TileObjEnum::WheatBush : TileObjEnum::Cabbage;
+		//! Georesource Case
+		GeoresourceNode georesourceNode = _simulation->georesource(provinceId());
+		if (georesourceNode.georesourceEnum != GeoresourceEnum::None)
+		{
+			TileObjEnum targetTileObjEnum = GetGeoresourceInfo(georesourceNode.georesourceEnum).geoBushEnum;
+			
+			// Center of georesource node made into farm
+			bool shouldDoCashCrop = true;
+			const std::vector<int32>& farmIds = _simulation->buildingIds(_townId, CardEnum::Farm);
+			for (int32 farmId : farmIds)
+			{
+				if (farmId != buildingId())
+				{
+					Farm& farm = _simulation->building<Farm>(farmId);
+					if (farm.provinceId() == provinceId() &&
+						farm.currentPlantEnum == targetTileObjEnum) 
+					{
+						shouldDoCashCrop = false;
+						break;
+					}
+				}
+			}
+
+			if (shouldDoCashCrop)
+			{
+				currentPlantEnum = targetTileObjEnum;
+				return;
+			}
+		}
 		
+
+		//! Default Case
+		currentPlantEnum = GameRand::Rand() % 2 == 0 ? TileObjEnum::WheatBush : TileObjEnum::Cabbage;
+
 		// Medicine farm count
 		// 1 medicine farm per 50 ppl (2 herbs per year)
 		const int32 citizensPerMedicineFarm = 50;
@@ -1980,6 +2014,19 @@ void Fort::FinishConstruction()
 	_simulation->AddFortToProvince(provinceId(), buildingId());
 }
 
+void ResourceOutpost::FinishConstruction()
+{
+	Building::FinishConstruction();
+	
+	AddUpgrades({
+		MakeLevelUpgrade(
+			LOCTEXT("ResourceOutpost_Upgrade", "Outpost Level"),
+			LOCTEXT("ResourceOutpost_Upgrade Desc", "+20% resource yield per round, and influence upkeep"),
+			ResourceEnum::Influence, 0, 100, GetBuildingInfo(CardEnum::ResourceOutpost).baseCardPrice
+		),
+	});
+}
+
 void ResourceOutpost::TickRound()
 {
 	if (isConstructed())
@@ -1990,22 +2037,28 @@ void ResourceOutpost::TickRound()
 			int32 lordPlayerId = _simulation->townManagerBase(_townId)->lordPlayerId();
 			if (lordPlayerId != -1)
 			{
-				int32 resourceCount = GetColonyResourceIncome(resourceEnum);
+				int32 influenceNeeded = GetColonyUpkeep();
+				if (_simulation->influence(lordPlayerId) <= influenceNeeded)
+				{
+					_simulation->ChangeInfluence(lordPlayerId, -influenceNeeded);
+					
+					int32 resourceCount = GetColonyResourceIncome(resourceEnum);
 
-				// Deplete province resource
-				if (IsOreEnum(resourceEnum)) {
-					resourceCount = min(oreLeft(), resourceCount);
-					if (resourceCount > 0) {
-						_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+					// Deplete province resource
+					if (IsOreEnum(resourceEnum)) {
+						resourceCount = min(oreLeft(), resourceCount);
+						if (resourceCount > 0) {
+							_simulation->georesourceSystem().MineOre(_simulation->GetProvinceIdRaw(centerTile()), resourceCount);
+						}
 					}
-				}
 
-				if (resourceCount > 0) {
-					// Send resource to the capital
-					_simulation->resourceSystem(lordPlayerId).AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
-					_simulation->statSystem(lordPlayerId).AddResourceStat(ResourceSeasonStatEnum::Production, resourceEnum, resourceCount);
+					if (resourceCount > 0) {
+						// Send resource to the capital
+						_simulation->resourceSystem(lordPlayerId).AddResourceGlobal(resourceEnum, resourceCount, *_simulation);
+						_simulation->statSystem(lordPlayerId).AddResourceStat(ResourceSeasonStatEnum::Production, resourceEnum, resourceCount);
 
-					_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(resourceCount), resourceEnum);
+						_simulation->uiInterface()->ShowFloatupInfo(FloatupEnum::GainResource, centerTile(), TEXT_NUMSIGNED(resourceCount), resourceEnum);
+					}
 				}
 			}
 		}

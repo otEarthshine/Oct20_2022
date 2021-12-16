@@ -1723,7 +1723,9 @@ static const std::vector<std::vector<ResourceEnum>> TierToLuxuryEnums =
 {
 	{},
 	{ResourceEnum::Beer, ResourceEnum::Cannabis, ResourceEnum::Furniture, ResourceEnum::Pottery, ResourceEnum::Tulip },
-	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::Tequila, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware, ResourceEnum::Carpet },
+	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::Spices,
+		ResourceEnum::Tequila, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware, ResourceEnum::Carpet
+	},
 	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate, ResourceEnum::PocketWatch},
 };
 
@@ -4279,6 +4281,8 @@ struct CardStatus
 	int32 cardStateValue1 = 0; // 1) For Unbought Card: cardStateValue1 == -1    2) also used as playerId for military
 	int32 cardStateValue2 = 0;
 	int32 cardStateValue3 = 0;
+	int32 cardStateValue4 = 0;
+	int32 cardStateValue5 = 0;
 
 	//! Animation
 	int32 lastPositionX100 = -1;
@@ -4320,6 +4324,8 @@ struct CardStatus
 			cardStateValue1 == a.cardStateValue1 &&
 			cardStateValue2 == a.cardStateValue2 &&
 			cardStateValue3 == a.cardStateValue3 &&
+			cardStateValue4 == a.cardStateValue4 &&
+			cardStateValue5 == a.cardStateValue5 &&
 			animationStartTime100 == a.animationStartTime100;
 	}
 
@@ -7617,7 +7623,7 @@ static int32 GetArmyStrength(const std::vector<CardStatus>& cards)
 	return strength;
 }
 
-static bool GetIsHitProjectile(CardEnum cardEnum)
+static bool IsMilitaryProjectileUnit(CardEnum cardEnum)
 {
 	return cardEnum == CardEnum::Archer ||
 			cardEnum == CardEnum::Tank ||
@@ -10915,6 +10921,12 @@ public:
 	//	archetypeEnum(archetypeEnum),
 	//	name(name)
 	//{}
+
+	/*
+	 * Colors
+	 */
+	static TArray<FLinearColor> PlayerBackgroundColors;
+	static TArray<FLinearColor> PlayerForegroundColors;
 };
 
 
@@ -11053,6 +11065,9 @@ enum class CombinerCardSetEnum
 {
 
 };
+
+
+
 
 
 /*

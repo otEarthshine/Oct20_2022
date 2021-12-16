@@ -152,7 +152,7 @@ APunHUD::APunHUD()
 	LoadClass(UIEnum::ChooseCharacterElement, "MainMenu/W_ChooseCharacterElement");
 	LoadClass(UIEnum::ChooseLogoElement, "MainMenu/W_ChooseLogoElement");
 	LoadClass(UIEnum::ChooseColorElement, "MainMenu/W_ChooseColorElement");
-
+	LoadClass(UIEnum::W_ImportPlayerColorList, "MainMenu/W_ImportPlayerColorList");
 	
 	LoadClass(UIEnum::WG_MinorTownWorldUI, "WorldSpaceUI/WG_MinorTownWorldUI");
 	LoadClass(UIEnum::WG_BattlefieldUI, "WorldSpaceUI/WG_BattlefieldUI");
@@ -410,7 +410,10 @@ void APunHUD::Setup(IPunPlayerController* controller, USceneComponent* worldWidg
 	_popupUI = AddWidgetToHUDCast<UPopupUI>(UIEnum::Popup);
 	_popupUI->PunInit();
 
-	
+
+	_importPlayerColorList = AddWidgetToHUDCast<UImportPlayerColorList>(UIEnum::W_ImportPlayerColorList);
+	_importPlayerColorList->ImportPlayerColors();
+	_importPlayerColorList->SetVisibility(ESlateVisibility::Collapsed);
 	
 	//_policyMenu = AddWidgetToHUDCast<UPolicyMenu>(UIEnum::Policy);
 	//_policyMenu->PunInit(_tradeUIWidget);

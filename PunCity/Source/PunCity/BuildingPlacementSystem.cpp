@@ -931,21 +931,23 @@ void ABuildingPlacementSystem::TickAreaDrag(WorldAtom2 cameraAtom, function<Plac
 				_placementGrid.SpawnGrid(getPlacementGridEnum(farmTile.worldTile), cameraAtom, farmTile.worldTile);
 			}
 
-			TileArea area;
-			area.minX = _dragStartTile.x;
-			area.minY = _dragStartTile.y;
-			area.maxX = area.minX;
-			area.maxY = area.minY;
-			
-			for (const FarmTile& farmTile : _farmWorldTiles) {
-				area.minX = std::min(area.minX, farmTile.worldTile.x);
-				area.minY = std::min(area.minY, farmTile.worldTile.y);
-				area.maxX = std::max(area.maxX, farmTile.worldTile.x);
-				area.maxY = std::max(area.maxY, farmTile.worldTile.y);
-			}
-			_area2 = area; // Area2 as the actual area
+			//TileArea area;
+			//area.minX = _dragStartTile.x;
+			//area.minY = _dragStartTile.y;
+			//area.maxX = area.minX;
+			//area.maxY = area.minY;
+			//
+			//for (const FarmTile& farmTile : _farmWorldTiles) {
+			//	area.minX = std::min(area.minX, farmTile.worldTile.x);
+			//	area.minY = std::min(area.minY, farmTile.worldTile.y);
+			//	area.maxX = std::max(area.maxX, farmTile.worldTile.x);
+			//	area.maxY = std::max(area.maxY, farmTile.worldTile.y);
+			//}
+			//_area2 = area; // Area2 as the actual area
 
-			if (_simulation->IsFarmSizeInvalid(_farmWorldTiles, area)) {
+			_area2 = _simulation->GetActualFarmArea(_farmWorldTiles, _dragStartTile);
+
+			if (_simulation->IsFarmSizeInvalid(_farmWorldTiles, _area2)) {
 				_canPlace = false;
 			}
 		}
@@ -2385,19 +2387,33 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		{
 			auto& sim = _gameInterface->simulation();
 			GeoresourceEnum georesourceEnum = sim.georesource(sim.GetProvinceIdClean(center)).georesourceEnum;
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				if (_gameInterface->IsPlayerColonyBuildable(tile)) 
-				{
-					if (sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum == georesourceEnum) {
-						_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
-					} else {
-						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-						SetInstruction(PlacementInstructionEnum::ResourceOutpostNoGeoresource, true);
-					}
-				} else {
+			if (georesourceEnum == GeoresourceEnum::None)
+			{
+				_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 					_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-				}
-			});
+				});
+				SetInstruction(PlacementInstructionEnum::ResourceOutpostNoGeoresource, true);
+			}
+			else
+			{
+				_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
+				{
+					if (_gameInterface->IsPlayerColonyBuildable(tile))
+					{
+						if (sim.georesource(sim.GetProvinceIdClean(tile)).georesourceEnum == georesourceEnum) {
+							_placementGrid.SpawnGrid(PlacementGridEnum::Green, cameraAtom, tile);
+						}
+						else {
+							_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+							SetInstruction(PlacementInstructionEnum::ResourceOutpostNoGeoresource, true);
+						}
+					}
+					else {
+						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
+						SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Must be built on a province without any owner", "<Red>Must be built on\na province without any owner</>"));
+					}
+				});
+			}
 		}
 		// Townhall Initial
 		else if (IsTownPlacement(_buildingEnum))
@@ -3356,12 +3372,13 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 			{
 				if (sim.IsPermanentBuilding(playerId, _buildingEnum))
 				{
-					int32 moneyCap32 = sim.moneyCap32(playerId);
-
 					// Shift-Click only if there is enough money for buying 2 (current placement, and next placement)
-					int32 cardPrice = sim.cardSystem(playerId).GetCardPrice(_buildingEnum);
+					ResourceEnum tokenEnum = sim.cardSystem(playerId).GetCardPriceTokenEnum(_buildingEnum);
+					int32 cardPrice = sim.cardSystem(playerId).GetCardPrice(_buildingEnum, tokenEnum);
+					int32 tokenCount = sim.GetTokens(playerId, tokenEnum);
+					
 					if (cardPrice <= 0 ||
-						moneyCap32 >= 2 * cardPrice)
+						tokenCount >= 2 * cardPrice)
 					{
 						_timesShifted++;
 						return;

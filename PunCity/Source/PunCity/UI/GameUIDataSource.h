@@ -159,6 +159,7 @@ enum class UIEnum
 	ChooseCharacterElement,
 	ChooseLogoElement,
 	ChooseColorElement,
+	W_ImportPlayerColorList,
 
 	WG_MinorTownWorldUI,
 	WG_BattlefieldUI,
@@ -380,7 +381,7 @@ public:
 
 	// Audio
 	virtual void SpawnAnimalSound(UnitEnum unitEnum, bool isAngry, WorldAtom2 worldAtom, bool usePlayProbability = false) = 0;
-	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height) = 0;
+	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, float speed) = 0;
 	//virtual void Spawn2DSound(std::string groupName, std::string soundName, int32 playerId, WorldTile2 tile = WorldTile2::Invalid) = 0; // UI's triggered sound don't need filter
 	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
 };

@@ -275,7 +275,7 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
 
 						std::string unitLossName = GetUnitLossSoundName(simUnit.cardEnum);
-						sim.soundInterface()->Spawn3DSound("CitizenAction", unitLossName, sim.GetProvinceCenterTile(provinceId).worldAtom2());
+						sim.soundInterface()->Spawn3DSound("CitizenAction", unitLossName, sim.GetProvinceCenterTile(provinceId).worldAtom2(), 3, sim.gameSpeedFloat());
 					}
 
 					AddToolTip(unitIcon,
@@ -315,9 +315,38 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 						unitIcon->UnitImage->SetAnimation(0, "Attack", false);
 						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
 
-						sim.soundInterface()->Spawn3DSound("CitizenAction", GetAttackSoundName(simUnit.cardEnum), sim.GetProvinceCenterTile(provinceId).worldAtom2());
+						sim.soundInterface()->Spawn3DSound("CitizenAction", GetAttackSoundName(simUnit.cardEnum), sim.GetProvinceCenterTile(provinceId).worldAtom2(), 3, sim.gameSpeedFloat());
 					}
 				}
+
+				/*
+				 * Hit animation
+				 */
+				int32 lastAttackerEnumInt = simUnit.displayCardStateValue4;
+				int32 lastAttackHitTick = simUnit.displayCardStateValue5;
+
+				if (lastAttackHitTick != -1 &&
+					lastAttackerEnumInt != -1 &&
+					Time::Ticks() - lastAttackHitTick < Time::TicksPerSecond * 5 / 3 &&
+					lastAttackHitTick > unitIcon->lastHitAnimationTick)
+				{
+					// Don't hit if stack size is 0 (die instead)
+					if (simUnit.stackSize > 0) 
+					{
+						CardEnum attackerEnum = static_cast<CardEnum>(lastAttackerEnumInt);
+						
+						unitIcon->UnitImage->SetAnimation(0, IsMilitaryProjectileUnit(attackerEnum) ? "HitProjectile" : "Hit", false);
+						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
+
+						SetChildHUD(unitIcon);
+						FSpineAsset attackerSpineAsset = assetLoader()->GetSpine(attackerEnum);
+						unitIcon->AddFXSpine(attackerSpineAsset.atlas_fx, attackerSpineAsset.skeletonData_fx, sim.gameSpeedFloat());
+					}
+
+					unitIcon->lastHitAnimationTick = lastAttackHitTick;
+				}
+
+				
 				
 				/*
 				 * Damage Floatup
@@ -350,24 +379,6 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 
 					auto animation = GetAnimation(damageFloatup, FString("Floatup"));
 					damageFloatup->PlayAnimation(animation);
-
-					// Don't hit if stack size is 0 (die instead)
-					if (simUnit.stackSize > 0) {
-						unitIcon->UnitImage->SetAnimation(0, "Hit", false);
-						unitIcon->UnitImage->SetTimeScale(sim.gameSpeedFloat());
-
-						CardEnum attackerEnum = static_cast<CardEnum>(simUnit.displayCardStateValue4);
-						FSpineAsset attackerSpineAsset = assetLoader()->GetSpine(attackerEnum);
-
-						SetChildHUD(unitIcon);
-						unitIcon->AddFXSpine(attackerSpineAsset.atlas_fx, attackerSpineAsset.skeletonData_fx, sim.gameSpeedFloat());
-						//unitIcon->FXImage->Atlas = attackerSpineAsset.atlas_fx;
-						//unitIcon->FXImage->SkeletonData = attackerSpineAsset.skeletonData_fx;
-						//unitIcon->FXImage->SetAnimation(0, "Attack", false);
-						//unitIcon->FXImage->SetTimeScale(sim.gameSpeedFloat());
-						//
-						//unitIcon->FXCompleteTime = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / sim.gameSpeedFloat();
-					}
 					
 					//PUN_LOG("DamageOverlay: %d", unitUI->DamageOverlay->GetChildrenCount());
 				}

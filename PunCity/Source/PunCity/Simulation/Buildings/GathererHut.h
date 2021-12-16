@@ -1457,8 +1457,10 @@ public:
 class ResourceOutpost final : public ProvinceBuilding
 {
 public:
+	virtual void FinishConstruction() override;
+	
 	static int32 GetColonyIncomeValue() { return GetBuildingInfo(CardEnum::ResourceOutpost).baseCardPrice / 16; } // 16 rounds or 2 year to recoup the 
-	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 3) / 10 * 10; }
+	static int32 GetColonyUpkeep() { return (GetColonyIncomeValue() / 4) / 10 * 10; }
 
 	static int32 GetColonyResourceIncome(ResourceEnum resourceEnum) {
 		if (resourceEnum == ResourceEnum::None) {

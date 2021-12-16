@@ -2189,7 +2189,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						focusBox->AddSpacer();
 						
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
-							LOCTEXT("Upkeep: ", "Upkeep: "), 
+							LOCTEXT("Influence Upkeep (per round): ", "Influence Upkeep (per round): "), 
 							TEXT_NUM(colony.GetColonyUpkeep()),
 							assetLoader->InfluenceIcon
 						);
@@ -3251,6 +3251,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					isUpgraderPlayer = true;
 				}
+
+
+				
 				
 				if (isUpgraderPlayer)
 				{

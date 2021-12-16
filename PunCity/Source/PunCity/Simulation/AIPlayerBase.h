@@ -11,6 +11,7 @@ enum class AIRegionProposedPurposeEnum : uint8
 	Tree,
 	Fertility,
 	Ranch,
+	CashCrop,
 };
 
 static const std::vector<std::string> AIRegionProposedPurposeName
@@ -19,6 +20,7 @@ static const std::vector<std::string> AIRegionProposedPurposeName
 	"Tree",
 	"Fertility",
 	"Ranch",
+	"CashCrop",
 };
 
 enum class AIRegionPurposeEnum : uint8
@@ -29,6 +31,7 @@ enum class AIRegionPurposeEnum : uint8
 	Forester,
 	Farm,
 	Ranch,
+	CashCrop,
 };
 
 static const std::vector<std::string> AIRegionPurposeName
@@ -39,6 +42,7 @@ static const std::vector<std::string> AIRegionPurposeName
 	"Forester",
 	"Farm",
 	"Ranch",
+	"CashCrop",
 };
 
 /*
@@ -229,6 +233,21 @@ public:
 
 	bool PlacementSucceed() {
 		return HasArea();
+	}
+
+	bool HasBuildingEnum(CardEnum buildingEnum)
+	{
+		for (CardEnum topBuildingEnum : topBuildingEnums) {
+			if (buildingEnum == topBuildingEnum) {
+				return true;
+			}
+		}
+		for (CardEnum bottomBuildingEnum : bottomBuildingEnums) {
+			if (buildingEnum == bottomBuildingEnum) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	void operator>>(FArchive& Ar)

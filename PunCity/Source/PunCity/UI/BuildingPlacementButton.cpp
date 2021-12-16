@@ -261,7 +261,12 @@ void UBuildingPlacementButton::SetCardStatus(CardHandEnum cardHandEnum, bool isR
 		else {
 			NeedResourcesText->SetColorAndOpacity(FLinearColor(.2, 0, 0));
 			NeedResourcesText->SetVisibility(showNeedResourceUI ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-			NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
+			if (BuildingCardSystem::GetCardPriceTokenEnum(buildingEnum) == ResourceEnum::Money) {
+				NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Money", "Need Money"));
+			}
+			else {
+				NeedResourcesText->SetText(NSLOCTEXT("BuildingPlacementButton", "Need Influence", "Need Influence"));
+			}
 		}
 	}
 

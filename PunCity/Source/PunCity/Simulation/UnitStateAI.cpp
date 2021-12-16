@@ -129,6 +129,7 @@ int32 UnitStateAI::birthChance()
 		// If it is human, we need to cap it by house
 		// the more empty space (houseCap - pop) the faster growth
 		// At pop of 0, slow factor is 1
+		// TODO: Human no longer use this...
 		case UnitEnum::Human: {
 			cap = _simulation->HousingCapacity(_townId);
 			population = _simulation->populationTown(_townId);
@@ -232,6 +233,8 @@ void UnitStateAI::Update()
 				if (_simulation->IsAIPlayer(_playerId)) {
 					_LOG(PunAI, "%s Death Sickness", _simulation->AIPrintPrefix(_playerId));
 				}
+
+				PUN_LOG("BirthDeath:%d Death Sick", _playerId);
 				
 				Die();
 				return;
@@ -336,6 +339,7 @@ void UnitStateAI::Update()
 						_LOG(PunAI, "%s Left Homeless", _simulation->AIPrintPrefix(_playerId));
 					}
 
+					PUN_LOG("BirthDeath:%d Death Homeless", _playerId);
 					Die();
 					return;
 				}
@@ -352,6 +356,7 @@ void UnitStateAI::Update()
 
 					_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
 
+					PUN_LOG("BirthDeath:%d Death Low Happiness", _playerId);
 					Die();
 					return;
 				}
@@ -436,6 +441,8 @@ void UnitStateAI::Update()
 						if (_simulation->IsAIPlayer(_playerId)) {
 							_LOG(PunAI, "%s Died Starving", _simulation->AIPrintPrefix(_playerId));
 						}
+
+						PUN_LOG("BirthDeath:%d Death Food", _playerId);
 					}
 					else 
 					{
@@ -448,6 +455,8 @@ void UnitStateAI::Update()
 						if (_simulation->IsAIPlayer(_playerId)) {
 							_LOG(PunAI, "%s Died Cold", _simulation->AIPrintPrefix(_playerId));
 						}
+
+						PUN_LOG("BirthDeath:%d Death Cold", _playerId);
 					}
 					
 					_simulation->soundInterface()->Spawn2DSound("UI", "DeathBell", _playerId);
@@ -501,6 +510,7 @@ void UnitStateAI::Update()
 				
 
 				if (shouldGiveBirth) {
+					PUN_LOG("BirthDeath:%d Birth", _playerId)
 					_simulation->AddUnit(unitEnum(), _townId, _unitData->atomLocation(_id), 0);
 				}
 
@@ -662,6 +672,7 @@ void UnitStateAI::Update()
 				!IsWildAnimalWithColony(unitEnum()))
 			{
 				if (_townId != -1) {
+					PUN_LOG("BirthDeath:%d Death Aging age:%d max:%d", _playerId, age(), maxAge());
 					PUN_LOG("DeathAge: %d reservations:%d", _id, reservations.size());
 					PUN_LOG("DeathAge AddEventLogF:  %s", ToTChar(compactStr()));
 
@@ -3197,7 +3208,7 @@ void UnitStateAI::DoWork(int32 workAmount, int32 workplaceId)
 
 void UnitStateAI::ReserveTreeTile(int32_t tileId)
 {
-	PUN_LOG("ReserveTreeTile tileId:%d unitId:%d", tileId, _id);
+	//PUN_LOG("ReserveTreeTile tileId:%d unitId:%d", tileId, _id);
 	
 	UnitReservation reservation;
 	reservation.unitId = _id;
@@ -3212,7 +3223,7 @@ void UnitStateAI::ReserveTreeTile(int32_t tileId)
 
 void UnitStateAI::ReserveFarmTile(const FarmTile& farmTile, int32 workplaceId)
 {
-	PUN_LOG("ReserveFarmTile workplaceId:%d farmTileId:%d unitId:%d", workplaceId, farmTile.farmTileId, _id);
+	//PUN_LOG("ReserveFarmTile workplaceId:%d farmTileId:%d unitId:%d", workplaceId, farmTile.farmTileId, _id);
 	
 	UnitReservation reservation;
 	reservation.unitId = _id;
@@ -3277,7 +3288,7 @@ UnitReservation UnitStateAI::PopReservation(int index)
 			break;
 		}
 		case ReservationType::TreeTile: {
-			PUN_LOG("PopReservation TreeTile reserveTileId:%d", reservation.reserveTileId);
+			//PUN_LOG("PopReservation TreeTile reserveTileId:%d", reservation.reserveTileId);
 				
 			auto& treeSystem = _simulation->treeSystem();
 			PUN_UNIT_CHECK(treeSystem.Reservation(reservation.reserveTileId).unitId == _id);
@@ -3292,9 +3303,9 @@ UnitReservation UnitStateAI::PopReservation(int index)
 			int32 farmTileId = reservation.var1;
 			int32 reservedUnitId = farm.GetFarmerReserverOnTileRow(farmTileId);
 
-			PUN_LOG("PopReservation FarmTile workplaceId:%d farmTileId:%d tileId:%d reservedUnitId:%d unitId:%d type:%d", 
-				reservation.reserveWorkplaceId, farmTileId, worldTileId, reservedUnitId, _id, reservation.reservationType
-			);
+			//PUN_LOG("PopReservation FarmTile workplaceId:%d farmTileId:%d tileId:%d reservedUnitId:%d unitId:%d type:%d", 
+			//	reservation.reserveWorkplaceId, farmTileId, worldTileId, reservedUnitId, _id, reservation.reservationType
+			//);
 			check(reservedUnitId == _id);
 				
 			farm.UnreserveFarmTile(farmTileId);

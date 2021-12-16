@@ -133,6 +133,8 @@ public:
 		_deltaTime = deltaTime;
 		float time = UGameplayStatics::GetAudioTimeSeconds(this);
 
+		float gameSpeed = simulation.gameSpeedFloat();
+
 		const int32 updatesPerPositionMove = 10;
 		static int32 updateCount = 0;
 		updateCount++;
@@ -178,7 +180,7 @@ public:
 
 					SetVolumeMultiplier(audioComp, volumeMultiplier);
 
-					audioComp->SetPitchMultiplier(GetSoundPropertyRef(groupName, soundName, "Pitch"));
+					audioComp->SetPitchMultiplier(GetSoundPropertyRef(groupName, soundName, "Pitch") * punAudios[i]->manualPitchMultiplier);
 
 					Adjust3DAttenuation(audioComp, groupName, soundName);
 
@@ -1422,7 +1424,7 @@ public:
 		}
 	}
 
-	UFireForgetAudioComponent* Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, bool usePlayProbability = true, bool isLooping = false)
+	UFireForgetAudioComponent* Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, bool usePlayProbability = true, bool isLooping = false, float speed = 1.0f)
 	{
 		if (PunSettings::TrailerSession) {
 			return nullptr;
@@ -1442,7 +1444,6 @@ public:
 				return nullptr;
 			}
 		}
-
 
 		if (IsolateVolume(groupName, soundName) == 0.0f) {
 			return nullptr;
@@ -1494,7 +1495,11 @@ public:
 		audio->VolumeModulationMin = GetSoundPropertyRef(groupName, soundName, "VolumeModulationMin");
 		audio->VolumeModulationMax = GetSoundPropertyRef(groupName, soundName, "VolumeModulationMax");
 
-		audio->PitchMultiplier = GetSoundPropertyRef(groupName, soundName, "Pitch");
+		//float pitchFromSpeed = 1.0f / speed;
+		fireAndForget->manualPitchMultiplier = speed;
+		
+		//! Pitch is adjusted in Pitch 
+		audio->PitchMultiplier = GetSoundPropertyRef(groupName, soundName, "Pitch") * fireAndForget->manualPitchMultiplier;
 		audio->PitchModulationMin = GetSoundPropertyRef(groupName, soundName, "PitchModulationMin");
 		audio->PitchModulationMax = GetSoundPropertyRef(groupName, soundName, "PitchModulationMax");
 

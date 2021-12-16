@@ -27,7 +27,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UOverlay* FXOverlay;
 	UPROPERTY() TArray<UWG_PunSpine*> FXSpines;
 
+	int32 lastHitAnimationTick = -1;
 	int32 lastDamageTick = -1;
+	
 	int32 lastAttackTick = -1;
 	int32 lastDeathTick = -1;
 
@@ -36,14 +38,14 @@ public:
 	{
 		for (int32 j = FXSpines.Num(); j-- > 0;)
 		{
-			if (FXSpines[j]->IsVisible())
+			if (FXSpines[j]->animationDoneSec != -1)
 			{
 				if (GetWorld()->GetTimeSeconds() < FXSpines[j]->animationDoneSec)
 				{
 					FXSpines[j]->PunTick();
 				}
 				else {
-					FXSpines[j]->SetVisibility(ESlateVisibility::Collapsed);
+					//FXSpines[j]->SetVisibility(ESlateVisibility::Collapsed);
 					FXSpines[j]->animationDoneSec = -1;
 				}
 			}
@@ -73,6 +75,7 @@ public:
 		fxSpine->Spine->SetTimeScale(gameSpeed);
 		fxSpine->animationDoneSec = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / gameSpeed;
 		fxSpine->SetVisibility(ESlateVisibility::HitTestInvisible);
+		fxSpine->PunTick();
 	}
 
 };

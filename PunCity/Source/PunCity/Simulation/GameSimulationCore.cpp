@@ -1907,18 +1907,28 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			return -1;
 		}
 
-		int32 converterPrice = cardSystem(playerId).GetCardPrice(cardEnum);
-		if (moneyCap32(playerId) < converterPrice) {
+		ResourceEnum cardPriceResourceEnum = cardSystem(playerId).GetCardPriceTokenEnum(cardEnum);
+		
+		int32 converterPrice = cardSystem(playerId).GetCardPrice(cardEnum, cardPriceResourceEnum);
+		int32 tokenCount = GetTokens(playerId, cardPriceResourceEnum);
+		
+		if (tokenCount < converterPrice)
+		{
 			AddPopupToFront(playerId, 
-				FText::Format(LOCTEXT("NeedCoinToConvertWildCard", "Need {0}<img id=\"Coin\"/> to convert wild card to this building."), TEXT_NUM(converterPrice)), 
-				ExclusiveUIEnum::ConverterCardHand, "PopupCannot");
-			//TRAILER_LOG("money(playerId) < converterPrice");
+				FText::Format(LOCTEXT("NeedCoinToConvertWildCard", "Need {0}{1} to convert wild card to this building."), 
+					TEXT_NUM(converterPrice),
+					GetTokenIconRichText(ResourceEnum::Money)
+				), 
+				ExclusiveUIEnum::ConverterCardHand, "PopupCannot"
+			);
 			return -1;
 		}
 
 		_cardSystem[playerId].RemoveCardsOld(parameters.useWildCard, 1);
 		_cardSystem[playerId].converterCardState = ConverterCardUseState::None;
-		ChangeMoney(playerId, -converterPrice);
+
+		
+		ChangeTokens(playerId, cardPriceResourceEnum, -converterPrice);
 	}
 
 	// Hand over Foreign building to another player
@@ -2221,8 +2231,10 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 		if (canPlace) 
 		{
 			// Permanent card, pay its cost
-			if (playerId != -1 && IsPermanentBuilding(playerId, cardEnum)) {
-				ChangeMoney(playerId, -_cardSystem[playerId].GetCardPrice(cardEnum));
+			if (playerId != -1 && IsPermanentBuilding(playerId, cardEnum)) 
+			{
+				ResourceEnum tokenEnum = _cardSystem[playerId].GetCardPriceTokenEnum(cardEnum);
+				ChangeTokens(playerId, tokenEnum, -_cardSystem[playerId].GetCardPrice(cardEnum, tokenEnum));
 			}
 			
 			int32 buildingId = _buildingSystem->AddBuilding(parameters);
@@ -2646,7 +2658,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 		// Permanent card, pay its cost
 		if (playerId != -1 && IsPermanentBuilding(playerId, cardEnum)) {
-			ChangeMoney(playerId, -_cardSystem[playerId].GetCardPrice(cardEnum));
+			ResourceEnum tokenEnum = _cardSystem[playerId].GetCardPriceTokenEnum(cardEnum);
+			ChangeTokens(playerId, tokenEnum, -_cardSystem[playerId].GetCardPrice(cardEnum, tokenEnum));
 		}
 
 		// Auto road placement
@@ -2732,8 +2745,15 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 			{
 				Building& bld = building(buildingId);
 
+				// Resource Outpost
+				if (bld.isEnum(CardEnum::ResourceOutpost))
+				{
+					RemoveMinorTown(bld.townId());
+
+					AddDemolishDisplayInfo(bld.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+				}
 				// Player's building or ForeignOwner
-				if (bld.playerId() == parameters.playerId ||
+				else if (bld.playerId() == parameters.playerId ||
 					bld.foreignBuilderId() == parameters.playerId)
 				{
 					// Don't demolish a burning building..
@@ -2850,7 +2870,9 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					/*
 					 * Keep storage demolition stat for quest
 					 */
-					statSystem(bld.townId()).AddStat(AccumulatedStatEnum::StoragesDestroyed);
+					if (IsMajorTown(bld.townId())) {
+						statSystem(bld.townId()).AddStat(AccumulatedStatEnum::StoragesDestroyed);
+					}
 
 					// Stop any sound
 					soundInterface()->TryStopBuildingWorkSound(bld);
@@ -4610,7 +4632,9 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			{
 				auto& cardSys = cardSystem(command.playerId);
 				cardSys.AddCards_BoughtHandAndInventory(unlockedEnum);
-				ChangeMoney(command.playerId, -cardSys.GetCardPrice(unlockedEnum));
+
+				ResourceEnum tokenEnum = cardSys.GetCardPriceTokenEnum(unlockedEnum);
+				ChangeTokens(command.playerId, tokenEnum, -cardSys.GetCardPrice(unlockedEnum, tokenEnum));
 			}
 		}
 	}
@@ -4852,8 +4876,11 @@ void GameSimulationCore::BuyCards(FBuyCard command)
 	{
 		CardEnum buildingEnum = cardSys.GetCardEnumFromHand(buyIndices[i]);
 
-		if (CanBuyCard(command.playerId, buildingEnum)) {
-			ChangeMoney(command.playerId, -cardSys.GetCardPrice(buildingEnum)); // Must ChangeMoney before adding cards for cards with lvl...
+		if (CanBuyCard(command.playerId, buildingEnum)) 
+		{
+			ResourceEnum tokenEnum = cardSys.GetCardPriceTokenEnum(buildingEnum);
+			
+			ChangeTokens(command.playerId, tokenEnum, -cardSys.GetCardPrice(buildingEnum, tokenEnum)); // Must ChangeMoney before adding cards for cards with lvl...
 			cardSys.AddCards_BoughtHandAndInventory(buildingEnum);
 			cardSys.SetAlreadyBoughtCardThisRound();
 
@@ -4888,15 +4915,18 @@ void GameSimulationCore::SellCards(FSellCards command)
 		int32 soldCount = cardSys.RemoveCardsFromBoughtHand(cardStatus, sellCount);
 		if (soldCount != -1)
 		{
-			int32 soldMoneyAmount = soldCount * cardSys.GetCardPrice(cardStatus.cardEnum);
-			ChangeMoney(command.playerId, soldMoneyAmount);
+			ResourceEnum tokenEnum = cardSys.GetCardPriceTokenEnum(cardStatus.cardEnum);
+
+			int32 soldTokenAmount = soldCount * cardSys.GetCardPrice(cardStatus.cardEnum, tokenEnum);
+			ChangeTokens(command.playerId, tokenEnum, soldTokenAmount);
 
 			AddEventLog(command.playerId,
 				FText::Format(
-					LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=Card,other=Cards) for {2}<img id=\"Coin\"/>"),
+					LOCTEXT("SoldCard_Event", "Sold {1} {0} {1}|plural(one=Card,other=Cards) for {2}{3}"),
 					GetBuildingInfo(cardStatus.cardEnum).name,
 					TEXT_NUM(soldCount),
-					TEXT_NUM(soldMoneyAmount)
+					TEXT_NUM(soldTokenAmount),
+					GetTokenIconRichText(tokenEnum)
 				),
 				false
 			);

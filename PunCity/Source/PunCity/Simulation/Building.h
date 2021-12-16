@@ -649,6 +649,8 @@ public:
 		}
 		return ResourceHolderInfo(resourceEnum, InvalidResourceHolderId);
 	}
+
+	const std::vector<ResourceHolderInfo>& holderInfosConst() { return _holderInfos; }
 	
 	int32 resourceCount(ResourceEnum resourceEnum) const;
 	int32 resourceCountSafe(ResourceEnum resourceEnum);

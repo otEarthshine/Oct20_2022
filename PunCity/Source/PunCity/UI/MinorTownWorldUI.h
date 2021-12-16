@@ -36,6 +36,11 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) URichTextBlock* BottomCaptionText;
 
+	UPROPERTY(meta = (BindWidget)) UHorizontalBox* BottomCaptionResource;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* BottomCaptionPrefixText;
+	UPROPERTY(meta = (BindWidget)) UImage* BottomCaptionImage;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* BottomCaptionSuffixText;
+
 	int32 uiTownId = -1;
 
 	int32 townId() { return uiTownId; }

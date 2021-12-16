@@ -57,13 +57,16 @@ void Building_Research::OnUnlock(int32 playerId, IGameSimulationCore* simulation
 			cardSystem.AddCards_BoughtHandAndInventory(buildingEnum);
 		}
 		else if (IsBuildingCard(buildingEnum))
-		{	
+		{
+			ResourceEnum tokenEnum = cardSystem.GetCardPriceTokenEnum(buildingEnum);
+			
 			_simulation->AddPopup(
 				PopupInfo(playerId, 
 					FText::Format(
-						LOCTEXT("UnlockedBuilding_Pop", "Unlocked {0}\nWould you like to buy a {0} card for {1}<img id=\"Coin\"/>."),
+						LOCTEXT("UnlockedBuilding_Pop", "Unlocked {0}\nWould you like to buy a {0} card for {1}{2}."),
 						GetBuildingInfo(buildingEnum).name,
-						TEXT_NUM(cardSystem.GetCardPrice(buildingEnum))
+						TEXT_NUM(cardSystem.GetCardPrice(buildingEnum, tokenEnum)),
+						_simulation->GetTokenIconRichText(tokenEnum)
 					),
 					{ LOCTEXT("Buy", "Buy"), LOCTEXT("No, Thanks", "No, Thanks") },
 					PopupReceiverEnum::DoneResearchBuyCardEvent, false, "ResearchComplete", buildingEnumInt

@@ -15,7 +15,7 @@ public:
 	// Audio
 	virtual void SpawnResourceDropoffAudio(ResourceEnum resourceEnum, WorldAtom2 worldAtom) = 0;
 	virtual void SpawnAnimalSound(UnitEnum unitEnum, bool isAngry, WorldAtom2 worldAtom, bool usePlayProbability = true) = 0;
-	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height = 3.0f) = 0;
+	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height = 3.0f, float speed = 1.0f) = 0;
 	virtual void Spawn2DSound(std::string groupName, std::string soundName, int32 playerId, WorldTile2 tile = WorldTile2::Invalid) = 0;
 	virtual void Spawn2DSoundAllPlayers(std::string groupName, std::string soundName, WorldTile2 tile) = 0;
 	//virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
@@ -170,6 +170,7 @@ public:
 	virtual class TownHall& GetTownhallCapital(int32 playerId) = 0;
 	virtual class TownHall& GetTownhallMajor(int32 townId) = 0;
 	virtual class TownHall* GetTownhallPtr(int32 townId) = 0;
+	virtual Building* GetTownhallBldPtr(int32 townId) = 0;
 	virtual int32 GetTownhallId(int32 townId) = 0;
 	virtual bool IsValidTown(int32 townId) = 0;
 	
@@ -540,6 +541,7 @@ public:
 	virtual bool TryDoCallOnceAction(int32 playerId, PlayerCallOnceActionEnum actionEnum) = 0;
 
 	virtual int32 gameSpeedMultiplier() = 0;
+	virtual float gameSpeedFloat() = 0;
 
 	// Science
 	virtual int32 GetScience100PerRound(int32 playerId) = 0;
@@ -603,6 +605,10 @@ public:
 	virtual void ChangeMoney(int32 playerId, int32 moneyChange) = 0;
 	virtual void ChangeMoney100(int32 playerId, int32 moneyChange100) = 0;
 	virtual void ChangeInfluence(int32 playerId, int32 influenceChange) = 0;
+
+	virtual int32 GetTokens(int32 playerIdIn, ResourceEnum resourceEnum) = 0;
+	virtual void ChangeTokens(int32 playerIdIn, ResourceEnum resourceEnum, int32 changeValue) = 0;
+	virtual FText GetTokenIconRichText(ResourceEnum resourceEnum) = 0;
 
 	virtual int32 price100(ResourceEnum resourceEnum) = 0;
 	virtual int32 price(ResourceEnum resourceEnum) = 0;
@@ -677,6 +683,7 @@ public:
 
 	// Farm
 	virtual std::vector<FarmTile> GetFarmTiles(TileArea area, WorldTile2 startTile, int32 playerId) = 0;
+	virtual TileArea GetActualFarmArea(const std::vector<FarmTile>& farmTiles, WorldTile2 startTile = WorldTile2::Invalid) = 0;
 
 	virtual bool IsFarmBuildable(WorldTile2 tile, int32 playerId) = 0;
 	

@@ -46,16 +46,16 @@ public:
 	 */
 	static const int32 PeopleAgeToGameYear = 10;
 
-	static const int32 BaseAdultTicks = Time::TicksPerYear * 3 / 2;
+	static const int32 BaseAdultTicks = Time::TicksPerYear;
 	
 	/*
 	 * Ages
-	 *  - BeginBreedingAgeTicks 1.5 years (15 years)
-	 *  - EndBreedingAgeTicks 5.5 years (55 years)
+	 *  - BeginBreedingAgeTicks 1 years (10 years)
+	 *  - EndBreedingAgeTicks 6.5 years (65 years)
 	 *  - DeathAgeTicks 8 years (80 years)
 	 */
 	int32 BeginBreedingAgeTicks() {
-		int32 result = BaseAdultTicks; // 1.5 year
+		int32 result = BaseAdultTicks; // 1 year
 		if (_simulation->TownhallCardCountAll(_playerId, CardEnum::ChildMarriage) > 0) {
 			result -= Time::TicksPerYear / 2;
 		}
@@ -68,16 +68,11 @@ public:
 
 	int32 EndBreedingAgeTicks()
 	{
-		return Time::TicksPerYear * 55 / 10;
+		return Time::TicksPerYear * 65 / 10;
 	}
 
-	int32 DeathAgeTicks()
-	{
-		int32 result = Time::TicksPerYear * 8;
-		//if (_simulation->TownhallCardCount(_playerId, CardEnum::ProlongLife) > 0) {
-		//	result += Time::TicksPerYear;
-		//}
-		return result;
+	static int32 DeathAgeTicks() {
+		return Time::TicksPerYear * 8;
 	}
 
 	/*
@@ -85,7 +80,7 @@ public:
 	 */
 	int32 TicksBetweenPregnancy()
 	{
-		int32 result = Time::TicksPerYear * 5 / 4;
+		int32 result = Time::TicksPerYear * 6 / 4; // Dec 16: 5/4 -> 6/4
 
 		int32 population = _simulation->populationTown(_playerId);
 		int32 housingCapacity = _simulation->HousingCapacity(_playerId);

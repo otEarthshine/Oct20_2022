@@ -304,7 +304,7 @@ private:
 					_unitWeaponMeshes[index]->SetVisibility(false);
 					_unitSkelState[index] = UnitSkelMeshState();
 
-					PUN_LOG("_unitSkelMeshes from Pool index:%d", index);
+					//PUN_LOG("_unitSkelMeshes from Pool index:%d", index);
 					break;
 				}
 			}
@@ -331,7 +331,7 @@ private:
 
 				_unitSkelState.push_back(UnitSkelMeshState());
 
-				PUN_LOG("_unitSkelMeshes not from Pool index:%d", index);
+				//PUN_LOG("_unitSkelMeshes not from Pool index:%d", index);
 			}
 
 			_unitSkelMeshes[index]->SetSkeletalMesh(asset.skeletalMesh, false);

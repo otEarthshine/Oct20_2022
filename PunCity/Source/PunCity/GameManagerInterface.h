@@ -88,7 +88,7 @@ public:
 	// Audio
 	virtual void SpawnResourceDropoffAudio(ResourceEnum resourceEnum, WorldAtom2 worldAtom) = 0;
 	virtual void SpawnAnimalSound(UnitEnum unitEnum, bool isAngry, WorldAtom2 worldAtom, bool usePlayProbability = false) = 0;
-	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height) = 0;
+	virtual void Spawn3DSound(std::string groupName, std::string soundName, WorldAtom2 worldAtom, float height, float speed) = 0;
 	virtual void Spawn2DSound(std::string groupName, std::string soundName) = 0;
 
 	// Display

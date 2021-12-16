@@ -1626,10 +1626,14 @@ void TownManager::RecalculateTax(bool showFloatup)
 		{
 			TownManagerBase* vassalTownManager = _simulation->townManagerBase(vassalTownId);
 
-			// Tax
- 			vassalTownManager->RecalculateTax(false);
-			incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += std::max(0LL, vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100);
-			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += std::max(0, vassalTownManager->totalInfluenceIncome100() * vassalTownManager->vassalInfluencePercent() / 100);
+			Building* townBld = _simulation->GetTownhallBldPtr(vassalTownId);
+			if (!townBld->isEnum(CardEnum::ResourceOutpost))
+			{
+				// Tax
+				vassalTownManager->RecalculateTax(false);
+				incomes100[static_cast<int>(IncomeEnum::FromVassalTax)] += std::max(0LL, vassalTownManager->totalRevenue100() * vassalTownManager->vassalTaxPercent() / 100);
+				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GainFromVassal)] += std::max(0, vassalTownManager->totalInfluenceIncome100() * vassalTownManager->vassalInfluencePercent() / 100);
+			}
 		}
 	}
 
@@ -1727,7 +1731,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 		// Fort/Colony
 		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Fort)] -= _simulation->buildingCount(_townId, CardEnum::Fort) * 10 * 100;
-		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_townId, CardEnum::ResourceOutpost) * ResourceOutpost::GetColonyUpkeep() * 100;
+		//influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Colony)] -= _simulation->buildingCount(_townId, CardEnum::ResourceOutpost) * ResourceOutpost::GetColonyUpkeep() * 100;
 	}
 	else
 	{

@@ -130,6 +130,8 @@ public:
 	float fadeStartTime = -1.0f;
 	float fadeEndTime = -1.0f;
 
+	float manualPitchMultiplier = 1.0f;
+
 public:
 	float playTime(const UObject* WorldContextObject) { return UGameplayStatics::GetAudioTimeSeconds(WorldContextObject) - startTime; }
 

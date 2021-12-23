@@ -716,6 +716,8 @@ public:
 	virtual bool IsAIPlayer(int32 playerId) = 0;
 	virtual bool IsAIActive(int32 playerId) = 0;
 
+	virtual int64 GetAITargetPopulation(int32 playerId) = 0;
+
 	virtual TCHAR* AIPrintPrefix(int32 aiPlayerId) = 0;
 
 	virtual bool IsAITown(int32 townId) = 0;

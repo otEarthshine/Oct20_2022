@@ -209,7 +209,9 @@ void TownHall::UpgradeTownhall()
 		cardSys.AddDrawCards(CardEnum::Immigration, 1);
 		cardSys.AddDrawCards(CardEnum::Kidnap, 1);
 
-		cardSys.AddCards_BoughtHandAndInventory(CardEnum::SpyCenter);
+		if (!_simulation->IsAIPlayer(_playerId)) {
+			cardSys.AddCards_BoughtHandAndInventory(CardEnum::SpyCenter);
+		}
 	}
 	else if (townhallLvl == 4) {
 		cardSys.AddDrawCards(CardEnum::SharingIsCaring, 1);

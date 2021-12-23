@@ -1881,7 +1881,9 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 			if (Building* bld = buildingAtTile(tile)) {
 				if (bld->isEnum(CardEnum::House)) {
 					House& house = bld->subclass<House>();
-					if (house.spyPlayerId() != -1) {
+					if (house.spyPlayerId() != -1 &&
+						house.spyPlayerId() != parameters.playerId) // Shouldn't reveal yourself
+					{
 						house.RemoveSpyNest();
 						spyNestsRevealed++;
 					}
@@ -1992,6 +1994,12 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 					ChangeMoney(targetPlayerId, -actualSteal);
 					ChangeMoney(playerId, actualSteal);
 
+					// AI State
+					if (IsAIPlayer(targetPlayerId)) {
+						aiPlayerSystem(targetPlayerId).SetLastStolenMoney();
+					}
+
+					// Popups
 					FText militaryPenaltyText;
 					if (militaryPenalty > 0) {
 						militaryPenaltyText = FText::Format(
@@ -2032,8 +2040,8 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 
 					int32 kidnapCount = std::min(kidnapTarget, static_cast<int>(humanIds.size()));
 
-					int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
-					kidnapCount = kidnapCount * (100 - std::min(80, militaryUnitCount * 20)) / 100;
+					//int32 militaryUnitCount = cardSystem(targetPlayerId).GetMilitaryUnitCount();
+					//kidnapCount = kidnapCount * (100 - std::min(80, militaryUnitCount * 20)) / 100;
 					
 					for (int32 i = 0; i < kidnapCount; i++) {
 						UnitStateAI& unitAI = unitSystem().unitStateAI(humanIds[i]);

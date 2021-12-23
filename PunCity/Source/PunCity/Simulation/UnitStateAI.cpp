@@ -507,6 +507,15 @@ void UnitStateAI::Update()
 				{
 					shouldGiveBirth = false;
 				}
+
+				// AI Birth Control
+				if (_simulation->IsAIPlayer(_playerId))
+				{
+					int32 aiTargetPopulation = static_cast<int32>(_simulation->GetAITargetPopulation(_playerId));
+					if (townPopulation > aiTargetPopulation) {
+						shouldGiveBirth = false;
+					}
+				}
 				
 
 				if (shouldGiveBirth) {

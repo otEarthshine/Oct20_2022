@@ -206,26 +206,29 @@ public:
 
 	void OnTick1Sec() final
 	{
-		if (IsStage(FarmStage::Dormant))
+		if (isConstructed())
 		{
-			// Farm can return to seeding spring to mid summer (round 1 summer)
-			if (Time::IsValidFarmBeginTime() &&
-				!_simulation->IsOutputTargetReached(_townId, product()) &&
-				resourceSystem().GetDropsFromArea_PickableFarm(area(), buildingId()).size() < 10)
+			if (IsStage(FarmStage::Dormant))
 			{
-				ResetStageTo(FarmStage::Seeding);
+				// Farm can return to seeding spring to mid summer (round 1 summer)
+				if (Time::IsValidFarmBeginTime() &&
+					!_simulation->IsOutputTargetReached(_townId, product()) &&
+					resourceSystem().GetDropsFromArea_PickableFarm(area(), buildingId()).size() < 10)
+				{
+					ResetStageTo(FarmStage::Seeding);
+				}
 			}
-		}
-		else
-		{
-			// Force the farm into dormant stage in winter
-			if (Time::IsSnowing())
+			else
 			{
-				ClearAllPlants();
+				// Force the farm into dormant stage in winter
+				if (Time::IsSnowing())
+				{
+					ClearAllPlants();
 
-				ResetWorkReservers(); // TODO: still worker crash???
+					ResetWorkReservers(); // TODO: still worker crash???
 
-				ResetStageTo(FarmStage::Dormant);
+					ResetStageTo(FarmStage::Dormant);
+				}
 			}
 		}
 	}

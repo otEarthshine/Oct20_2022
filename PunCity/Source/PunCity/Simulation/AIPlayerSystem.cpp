@@ -149,12 +149,24 @@ void AIPlayerSystem::Tick1Sec()
 	 */
 	int32 era = _simulation->GetEra(_aiPlayerId);
 
+	int32 aiTier = 0;
 	const std::vector<int32> popToIncreaseEra {
 		0,
-		50,
-		100,
-		200,
+		38,
+		70, // start era 2
+		120,
+		200, // start era 3
+		280,
+		370, // start era 4
+		450,
 	};
+	for (int32 i = popToIncreaseEra.size(); i-- > 0;) {
+		if (population >= popToIncreaseEra[i]) {
+			aiTier = i;
+		}
+	}
+	int32 targetEra = aiTier / 2 + 1;
+	
 
 	auto unlockTech = [&](TechEnum techEnum)
 	{
@@ -165,22 +177,16 @@ void AIPlayerSystem::Tick1Sec()
 		unlockSys->techsFinished++;
 	};
 
-	if (era == 1)
+	if (era < targetEra) 
 	{
-		if (population >= popToIncreaseEra[era]) {
+		if (era == 1) {
 			unlockTech(TechEnum::MiddleAge);
 		}
-	}
-	else if (era == 2)
-	{
-		if (population >= popToIncreaseEra[era]) {
+		else if (era == 2) {
 			unlockTech(TechEnum::EnlightenmentAge);
 			unlockTech(TechEnum::Logistics5);
 		}
-	}
-	else if (era == 3)
-	{
-		if (population >= popToIncreaseEra[era]) {
+		else if (era == 3) {
 			unlockTech(TechEnum::IndustrialAge);
 		}
 	}
@@ -326,10 +332,10 @@ void AIPlayerSystem::Tick1Sec()
 			if (Time::Ticks() > Time::TicksPerSeason * 3 / 2) // build only after food producers
 			{
 				//! Build buildings that should scale with population
-				TryPlaceNormalBuildings_ScaleToPopCount(block, era, population, shouldPlaceJobBuilding);
+				TryPlaceNormalBuildings_ScaleToPopCount(block, aiTier, population, shouldPlaceJobBuilding);
 
 				//! build single building of each type
-				TryPlaceNormalBuildings_Single(block, era, shouldPlaceJobBuilding);
+				TryPlaceNormalBuildings_Single(block, aiTier, shouldPlaceJobBuilding);
 			}
 		}
 
@@ -338,6 +344,12 @@ void AIPlayerSystem::Tick1Sec()
 		{
 			// Try house, then townhall, then storage
 			std::vector<CardEnum> buildingEnumToBeNear = { CardEnum::House, CardEnum::Townhall, CardEnum::StorageYard, CardEnum::Warehouse };
+
+			// whether to put near house depends on if it is a bad appeal building
+			if (block.HasLowAppealBuilding()) {
+				buildingEnumToBeNear = { CardEnum::StorageYard, CardEnum::Warehouse, CardEnum::Townhall, CardEnum::House };
+			}
+			
 
 			if (block.HasBuildingEnum(CardEnum::HaulingServices)) {
 				buildingEnumToBeNear = { CardEnum::TradingPort, CardEnum::TradingPost, CardEnum::House, CardEnum::Townhall, storageEnum };
@@ -397,7 +409,7 @@ void AIPlayerSystem::Tick1Sec()
 
 			int32 radiusBonus = farm.GetRadiusBonus(CardEnum::Granary, Windmill::Radius, [&](int32 bonus, Building& building) {
 				return max(bonus, 10);
-			});
+			}, true);
 
 			if (radiusBonus == 0)
 			{
@@ -839,6 +851,7 @@ void AIPlayerSystem::Tick1Sec()
 	 * Cheat Money
 	 */
 	if (Time::Seconds() % 5 == 0 &&
+		Time::Ticks() > _lastStolenMoneyTick + Time::TicksPerRound &&
 		_simulation->moneyCap32(_aiPlayerId) < std::max(700, population * 20))
 	{
 		// Cheat if no money
@@ -1489,7 +1502,8 @@ void AIPlayerSystem::TryTrade()
 						}
 					}
 					
-					if (_simulation->moneyCap32(_aiPlayerId) < moneyNeeded100 / 100 + 10)
+					if (Time::Ticks() > _lastStolenMoneyTick + Time::TicksPerRound &&
+						_simulation->moneyCap32(_aiPlayerId) < moneyNeeded100 / 100 + 10)
 					{
 						// Cheat if no money
 						int32 cheatAmount = moneyNeeded100 / 100 + 10;
@@ -1623,7 +1637,8 @@ void AIPlayerSystem::TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBloc
 	TileArea buildingArea = _simulation->building(buildingId).area();
 
 	// Ensure center is not within province reserved for foresting province
-	int32 provinceId = _simulation->GetProvinceIdClean(buildingArea.centerTile());
+	WorldTile2 centerTile = buildingArea.centerTile();
+	int32 provinceId = _simulation->GetProvinceIdClean(centerTile);
 	for (const AIRegionStatus& regionStatus : _regionStatuses) {
 		if (regionStatus.provinceId == provinceId) {
 			if (regionStatus.currentPurpose == AIRegionPurposeEnum::Forester ||
@@ -1633,6 +1648,30 @@ void AIPlayerSystem::TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBloc
 			}
 		}
 	}
+
+	// Radius buildings shouldn't too close to each other
+	auto isTooClose = [&](CardEnum buildingEnum, int32 radius)
+	{	
+		if (block.HasBuildingEnum(buildingEnum)) 
+		{
+			int32 checkRadius = radius * 2 / 3;
+			
+			const std::vector<int32>& curBuildingIds = _simulation->buildingIds(_aiPlayerId, buildingEnum);
+			for (int32 curBuildingId : curBuildingIds) {
+				if (WorldTile2::Distance(centerTile, _simulation->building(curBuildingId).centerTile()) < checkRadius) {
+					return true;
+				}
+			}
+		}
+		return false;
+	};
+	
+	if (isTooClose(CardEnum::Tavern, Tavern::Radius)) return;
+	if (isTooClose(CardEnum::Library, Library::Radius)) return;
+	if (isTooClose(CardEnum::School, School::Radius)) return;
+	if (isTooClose(CardEnum::Theatre, Theatre::Radius)) return;
+	if (isTooClose(CardEnum::Bank, Bank::Radius)) return;
+
 	
 
 	// include road
@@ -1770,7 +1809,7 @@ void AIPlayerSystem::TryPlaceMines()
 	}
 }
 
-void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population, bool shouldBuildJob)
+void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 aiTier, int32 population, bool shouldBuildJob)
 {
 	int32 basePopCountPerBuilding = 40;
 	int32 baseBuildingPrice = GetBuildingInfo(CardEnum::FurnitureWorkshop).constructionCostAsMoney();
@@ -1782,32 +1821,38 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 		return std::pair<CardEnum, int32>(buildingEnum, basePopCountPerBuilding * buildingPrice / baseBuildingPrice);
 	};
 
-	const std::vector<std::vector<std::pair<CardEnum, int32>>> eraToBuildingEnumToPopCountPerTarget
+	const std::vector<std::vector<std::pair<CardEnum, int32>>> aiTierToBuildingEnumToPopCountPerTarget
 	{
-		{},
 		// Era 1
+		{},
 		{
 			luxBuilding(CardEnum::FurnitureWorkshop),
 			luxBuilding(CardEnum::BeerBrewery),
 			luxBuilding(CardEnum::Potter),
 
 			{ CardEnum::Tavern, 60 },
-			{ CardEnum::HaulingServices, 60 },
 		},
 		// Era 2
 		{
+			{ CardEnum::HaulingServices, 60 },
 			{ CardEnum::Bakery, 40 },
 			luxBuilding(CardEnum::Tailor),
+		},
+		{
 			luxBuilding(CardEnum::Winery),
 		},
 		// Era 3
 		{
 			luxBuilding(CardEnum::CoffeeRoaster),
+		},
+		{
 			luxBuilding(CardEnum::Chocolatier),
 		},
 		// Era 4
 		{
 			luxBuilding(CardEnum::Jeweler),
+		},
+		{
 			luxBuilding(CardEnum::ClockMakers),
 		},
 	};
@@ -1818,9 +1863,9 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 		if (_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPort) ||
 			_simulation->buildingCount(_aiPlayerId, CardEnum::TradingPost))
 		{
-			for (int32 tier = 1; tier <= era; tier++)
+			for (int32 tier = 1; tier <= aiTier; tier++)
 			{
-				const std::vector<std::pair<CardEnum, int32>>& buildingEnumToPopCountPerTarget = eraToBuildingEnumToPopCountPerTarget[tier];
+				const std::vector<std::pair<CardEnum, int32>>& buildingEnumToPopCountPerTarget = aiTierToBuildingEnumToPopCountPerTarget[tier];
 				for (const std::pair<CardEnum, int32>& pair : buildingEnumToPopCountPerTarget) 
 				{
 					if (GetBuildingInfo(pair.first).workerCount > 0 &&
@@ -1844,18 +1889,20 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 	}
 }
 
-void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era, bool shouldBuildJob)
+void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 aiTier, bool shouldBuildJob)
 {
 	const std::vector<std::vector<CardEnum>> eraToSingleBuildingEnum
 	{
-		{},
 		// Era 1
+		{},
 		{},
 		// Era 2
 		{
 			CardEnum::Library,
-			CardEnum::SpyCenter,
 			CardEnum::Brickworks,
+		},
+		{
+			CardEnum::SpyCenter,
 			CardEnum::Market,
 		},
 		// Era 3
@@ -1863,6 +1910,8 @@ void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 er
 			CardEnum::School,
 			CardEnum::PolicyOffice,
 			CardEnum::Glassworks,
+		},
+		{
 			CardEnum::Theatre,
 			CardEnum::Bank,
 			CardEnum::Museum,
@@ -1871,6 +1920,8 @@ void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 er
 		// Era 4
 		{
 			CardEnum::ConcreteFactory,
+		},
+		{
 			CardEnum::CardCombiner,
 		},
 
@@ -1878,7 +1929,7 @@ void AIPlayerSystem::TryPlaceNormalBuildings_Single(AICityBlock& block, int32 er
 	
 	if (!block.IsValid())
 	{
-		for (int32 tier = 1; tier <= era; tier++)
+		for (int32 tier = 1; tier <= aiTier; tier++)
 		{
 			const std::vector<CardEnum>& buildingEnums = eraToSingleBuildingEnum[tier];
 			for (CardEnum buildingEnum : buildingEnums)

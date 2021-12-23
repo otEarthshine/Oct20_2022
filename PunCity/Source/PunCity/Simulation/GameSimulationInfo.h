@@ -3641,7 +3641,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(9, 9), GetBldResourceInfoMoney(1000)
 	),
 	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outpost"), LOCTEXT("Resource Outpost Desc", "Extract resource from a foreign province."),
-		WorldTile2(10, 10), GetBldResourceInfoMoney(10000)
+		WorldTile2(14, 14), GetBldResourceInfoMoney(10000)
 	),
 	BldInfo(CardEnum::ResearchLab, _LOCTEXT("Research Lab", "Research Lab"), LOCTEXT("Research Lab (Plural)", "Research Labs"), LOCTEXT("Research Lab Desc", "Generate Science Points. Uses Paper as input."),
 		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::Paper, ResourceEnum::None }, {1, 0, 0, 1, 1}, 0, 100, -2)

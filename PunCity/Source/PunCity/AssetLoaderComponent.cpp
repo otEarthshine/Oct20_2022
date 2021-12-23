@@ -290,7 +290,10 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::ClockMakers, "Clock_Maker_Era", "ClockMaker_ClockMakerEra", "ClockMaker", 4);
 
 	LoadBuilding(FactionEnum::Europe, CardEnum::Cathedral, "Cathedral_Era2", "Cathedral");
+	
 	LoadBuilding(FactionEnum::Europe, CardEnum::GrandPalace, "Grand_Museum_Era_", "GrandMuseum/Era4");
+
+	
 	LoadBuilding(FactionEnum::Europe, CardEnum::ExhibitionHall, "Crystal_Palace", "CrystalPalace", ModuleTransformGroup::CreateAuxSet(
 		{}, {}, {},
 		{
@@ -298,7 +301,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 			{0.4f, 70.0f, FLinearColor(1, 0.651, 0.246), FVector(70, 0, 20), FVector::OneVector}
 		}
 	));
+	
 	LoadBuilding(FactionEnum::Europe, CardEnum::Castle, "Castle", "Castle");
+	LoadBuilding(FactionEnum::Arab, CardEnum::Castle, "Castle", "Castle/Era3");
 
 	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticBureau_Era", "StatisticsBureau", 1);
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau_Era", "EmploymentBureau", 1);
@@ -335,6 +340,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Embassy, "Embassy", 2);
 
 	LoadBuilding(CardEnum::Museum, "Museum", 3);
+
+	LoadBuilding(CardEnum::PolicyOffice, "PolicyOffice", 3);
 	
 	LoadBuilding(CardEnum::CardCombiner, "ScholarsOffice", 3);
 
@@ -359,7 +366,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	//LinkBuilding(FactionEnum::Europe, CardEnum::,)
 	//CardEnum::ResourceOutpost
-
+	LoadBuilding(CardEnum::ResourceOutpost, "ResourceOutpost", 3, 4);
+	
 
 	LoadBuilding(CardEnum::MinorCityPort, "MinorCityPort", 0,4);
 	
@@ -1008,9 +1016,9 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	addCardIcon(CardEnum::SocialWelfare, "SocialWelfare");
 	addCardIcon(CardEnum::SustainabilityBook, "Sustainability");
 	addCardIcon(CardEnum::TulipSeeds, "Tulip");
-	addCardIcon(CardEnum::SpicesSeeds, "Tulip");
-	addCardIcon(CardEnum::AgaveSeeds, "Tulip");
-	addCardIcon(CardEnum::CactusFruitSeeds, "Tulip");
+	addCardIcon(CardEnum::SpicesSeeds, "SpicesSeeds");
+	addCardIcon(CardEnum::AgaveSeeds, "AgaveSeeds");
+	addCardIcon(CardEnum::CactusFruitSeeds, "CactusFruitSeeds");
 	
 	addCardIcon(CardEnum::DesertTradeForALiving, "TradeForALiving");
 	addCardIcon(CardEnum::Demolish, "Demolish");
@@ -1036,6 +1044,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	addCardIcon(CardEnum::Steal, "StealCard");
 	addCardIcon(CardEnum::StealOld, "SnatchCard");
+
+	addCardIcon(CardEnum::MinersFortune, "MinersFortune");
 
 
 	// Artifacts
@@ -1132,13 +1142,22 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 		for (CardEnum buildingEnum : SortedNameBuildingEnum)
 		{
 			FString name = GetBuildingInfo(buildingEnum).nameF().Replace(TEXT(" "), TEXT(""));
+			name = name.Replace(TEXT("_"), TEXT(""));
 			name = name.Replace(TEXT("'"), TEXT(""));
 
 			if (buildingEnum == CardEnum::CardMaker) {
-				name = FString("Archives");
+				name = FString("CardMaker");
 			}
-			else if (buildingEnum == CardEnum::Museum) {
-				name = FString("ScholarsOffice");
+			else if (buildingEnum == CardEnum::CardCombiner) {
+				name = FString("CardCombiner");
+			}
+			else if (buildingEnum == CardEnum::Garden) {
+				name = FString("Garden1");
+			}
+			else if (buildingEnum == CardEnum::Colony ||
+					buildingEnum == CardEnum::PortColony) 
+			{
+				name = FString("TownHall");
 			}
 
 			FString path = folderPath + name;
@@ -2496,7 +2515,7 @@ void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 gr
 void UAssetLoaderComponent::DetectOrLoadMeshVertexInfo(FString meshName, UStaticMesh* mesh)
 {
 	//! Turn this on to cache the result
-#if (WITH_EDITOR && 0)
+#if (WITH_EDITOR && 1)
 	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
 	TArray<FVector> vertexPositions;
 	

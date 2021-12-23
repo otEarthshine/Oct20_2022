@@ -97,7 +97,7 @@ void PlayerOwnedManager::Tick1Sec()
 				int32 spyInfluenceGainPerXSec = GameRand::RandRound(spyInfluenceGainPerRound * GameConstants::BaseFloatupIntervalSec, Time::SecondsPerRound);
 
 				// Can't steal if already 0 influence for target
-				spyInfluenceGainPerXSec = std::min(spyInfluenceGainPerXSec, _simulation->influence(nest->playerId()));
+				spyInfluenceGainPerXSec = Clamp(spyInfluenceGainPerXSec, 0, _simulation->influence(nest->playerId()));
 
 				_simulation->ChangeInfluence(nest->playerId(), -spyInfluenceGainPerXSec);
 				_simulation->ChangeInfluence(_playerId, spyInfluenceGainPerXSec);

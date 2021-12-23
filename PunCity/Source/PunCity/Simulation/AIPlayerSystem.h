@@ -130,6 +130,14 @@ public:
 
 		Ar << _needMoreTradeBuilding;
 		Ar << _totalCheatedMoney;
+
+		Ar << _lastStolenMoneyTick;
+
+		Ar << _reservedVar1;
+		Ar << _reservedVar2;
+		Ar << _reservedVar3;
+		Ar << _reservedVar4;
+		Ar << _reservedVar5;
 	}
 
 	void AIDebugString(std::stringstream& ss) {
@@ -140,6 +148,37 @@ public:
 	}
 
 	int32 totalCheatedMoney() { return _totalCheatedMoney; }
+
+	void SetLastStolenMoney() {
+		_lastStolenMoneyTick = Time::Ticks();
+	}
+
+	int64 GetBaseAITargetPopulation()
+	{
+		const int64 AITargetPopL1 = 500;
+		const int64 AITargetPopL2 = 600;
+		const int64 L1Ticks = Time::TicksPerYear * 20;
+		const int64 L2Ticks = Time::TicksPerYear * 50;
+
+		if (Time::Ticks() < L1Ticks) {
+			return AITargetPopL1 * Time::Ticks() / L1Ticks;
+		}
+		if (Time::Ticks() < Time::TicksPerYear * 50) {
+			return AITargetPopL1 + AITargetPopL2 * (Time::Ticks() - L1Ticks) / (L2Ticks - L1Ticks);
+		}
+		return AITargetPopL2;
+	}
+
+	int64 GetAITargetPopulation()
+	{
+		const int64 AIBasePop = 30;
+		int32 baseTarget = GetBaseAITargetPopulation() + AIBasePop;
+
+		// Random +/-15% of base
+		int32 randomPercent = (GameRand::Rand(_aiPlayerId * Time::Rounds()) % 30) - 15;
+
+		return baseTarget + baseTarget * randomPercent / 100;
+	}
 
 private:
 	template<class T>
@@ -206,8 +245,8 @@ private:
 		}
 	}
 
-	void TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 era, int32 population, bool shouldBuildJob);
-	void TryPlaceNormalBuildings_Single(AICityBlock& block, int32 era, bool shouldBuildJob);
+	void TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block, int32 aiTier, int32 population, bool shouldBuildJob);
+	void TryPlaceNormalBuildings_Single(AICityBlock& block, int32 aiTier, bool shouldBuildJob);
 
 	WorldTile2 GetMaxFertilityTile(int32 provinceId, int32& maxFertility)
 	{
@@ -271,4 +310,12 @@ private:
 
 	bool _needMoreTradeBuilding = false;
 	int32 _totalCheatedMoney = 0;
+
+	int32 _lastStolenMoneyTick = 0;
+
+	int32 _reservedVar1 = 0;
+	int32 _reservedVar2 = 0;
+	int32 _reservedVar3 = 0;
+	int32 _reservedVar4 = 0;
+	int32 _reservedVar5 = 0;
 };

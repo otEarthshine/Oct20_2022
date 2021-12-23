@@ -994,7 +994,7 @@ public:
 	 * Radius
 	 */
 	template<typename BonusFunc>
-	int32 GetRadiusBonus(CardEnum buildingEnum, int32 radius, BonusFunc getBonus) const
+	int32 GetRadiusBonus(CardEnum buildingEnum, int32 radius, BonusFunc getBonus, bool includeUnderConstruction = false) const
 	{
 		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, buildingEnum);
 		int32 bonus = 0;
@@ -1002,7 +1002,9 @@ public:
 			Building& building = _simulation->building(buildingId);
 			PUN_CHECK(building.isEnum(buildingEnum));
 			
-			if (building.isConstructed() && building.DistanceTo(_centerTile) <= radius) {
+			if ((building.isConstructed() || includeUnderConstruction) &&
+				building.DistanceTo(_centerTile) <= radius) 
+			{
 				bonus = getBonus(bonus, building);
 			}
 		}

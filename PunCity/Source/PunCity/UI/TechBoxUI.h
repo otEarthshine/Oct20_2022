@@ -28,39 +28,39 @@ public:
 		auto techInfo = unlockSys->GetTechInfo(techEnumIn);
 		bool isMainTree = techInfo->isMainTree;
 
+		auto setCardIcon = [&](UMaterialInstanceDynamic* material, CardEnum buildingEnum)
+		{
+			if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(playerFactionEnum(), buildingEnum)) {
+				material->SetTextureParameterValue("ColorTexture", cardIcon);
+			}
+			else {
+				material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
+			}
+		};
+
 		auto setBuildingRewardIcon = [&](UImage* rewardBuildingIcon, CardEnum buildingEnum, bool isPermanent)
 		{
 			rewardBuildingIcon->SetVisibility(ESlateVisibility::Visible);
 			auto material = rewardBuildingIcon->GetDynamicMaterial();
-
-			auto setCardIcon = [&]()
-			{
-				if (UTexture2D* cardIcon = assetLoader()->GetCardIconNullable(playerFactionEnum(), buildingEnum)) {
-					material->SetTextureParameterValue("ColorTexture", cardIcon);
-				}
-				else {
-					material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
-				}
-			};
 			
 			// Is Card-Giving Tech
 			if (!isMainTree && techInfo->_buildingEnums.size() > 0 && techInfo->maxUpgradeCount != -1)
 			{
 				material->SetScalarParameterValue("ShowCard", 1);
 
-				setCardIcon();
+				setCardIcon(material, buildingEnum);
 			}
 			else if (IsBuildingCard(buildingEnum))
 			{
 				material->SetScalarParameterValue("ShowCard", 0);
 
-				setCardIcon();
+				setCardIcon(material, buildingEnum);
 			}
 			else {
 				if (isMainTree) {
 					material->SetScalarParameterValue("ShowCard", 1);
 
-					setCardIcon();
+					setCardIcon(material, buildingEnum);
 				}
 				else {
 					material->SetScalarParameterValue("ShowCard", 0);
@@ -72,25 +72,76 @@ public:
 			UPunBoxWidget::AddBuildingTooltip(rewardBuildingIcon, buildingEnum, this, isPermanent);
 		};
 
-		// Set Building Research Icon
+		
+		RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
+		RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
+		RewardBuildingIcon3->SetVisibility(ESlateVisibility::Collapsed);
+
+		
+		//! Set Military Research Icon
+		auto setMillitaryRewardIcon = [&](UImage* rewardBuildingIcon, CardEnum buildingEnum)
+		{
+			rewardBuildingIcon->SetVisibility(ESlateVisibility::Visible);
+			auto material = rewardBuildingIcon->GetDynamicMaterial();
+
+			material->SetScalarParameterValue("ShowCard", 1);
+
+			setCardIcon(material, buildingEnum);
+
+			// Add Tooltip
+			UPunBoxWidget::AddBuildingTooltip(rewardBuildingIcon, buildingEnum, this, false);
+		};
+		
+		if (techEnum == TechEnum::Infantry) {
+			setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Infantry);
+			setMillitaryRewardIcon(RewardBuildingIcon2, CardEnum::Conscript);
+		}
+		else if (techEnum == TechEnum::Musketeer) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Musketeer);
+		else if (techEnum == TechEnum::Swordsman) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Swordsman);
+
+		else if (techEnum == TechEnum::Tank) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Tank);
+		else if (techEnum == TechEnum::Knight) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Knight);
+		
+		else if (techEnum == TechEnum::MachineGun) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::MachineGun);
+		else if (techEnum == TechEnum::Archer) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Archer);
+
+		else if (techEnum == TechEnum::Artillery) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Artillery);
+		else if (techEnum == TechEnum::MilitaryEngineering2) {
+			setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Cannon);
+			setMillitaryRewardIcon(RewardBuildingIcon2, CardEnum::Frigate);
+		}
+		else if (techEnum == TechEnum::MilitaryEngineering1) {
+			setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Catapult);
+			setMillitaryRewardIcon(RewardBuildingIcon2, CardEnum::Galley);
+		}
+
+		else if (techEnum == TechEnum::Battleship) setMillitaryRewardIcon(RewardBuildingIcon1, CardEnum::Battleship);
+
+		
+
+
+
+		//! Set Building Research Icon
 		if (techInfo->_buildingEnums.size() > 0) {
 			setBuildingRewardIcon(RewardBuildingIcon1, techInfo->_buildingEnums[0], false);
-		} else {
-			RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
 		}
-		
+		//else {
+		//	RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
+		//}
+
 		if (techInfo->_buildingEnums.size() > 1) {
 			setBuildingRewardIcon(RewardBuildingIcon2, techInfo->_buildingEnums[1], false);
-		} else {
-			RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
 		}
-		
+		//else {
+		//	RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
+		//}
+
 		if (techInfo->_buildingEnums.size() > 2) {
 			setBuildingRewardIcon(RewardBuildingIcon3, techInfo->_buildingEnums[2], false);
 		}
-		else {
-			RewardBuildingIcon3->SetVisibility(ESlateVisibility::Collapsed);
-		}
+		//else {
+		//	RewardBuildingIcon3->SetVisibility(ESlateVisibility::Collapsed);
+		//}
 
 		// TODO: clean...
 		if (techInfo->_buildingEnums.size() == 0)
@@ -98,16 +149,17 @@ public:
 			if (techInfo->_permanentBuildingEnums.size() > 0) {
 				setBuildingRewardIcon(RewardBuildingIcon1, techInfo->_permanentBuildingEnums[0], true);
 			}
-			else {
-				RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
-			}
+			//else {
+			//	RewardBuildingIcon1->SetVisibility(ESlateVisibility::Collapsed);
+			//}
 			if (techInfo->_permanentBuildingEnums.size() > 1) {
 				setBuildingRewardIcon(RewardBuildingIcon2, techInfo->_permanentBuildingEnums[1], true);
 			}
-			else {
-				RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
-			}
+			//else {
+			//	RewardBuildingIcon2->SetVisibility(ESlateVisibility::Collapsed);
+			//}
 		}
+		
 
 		// Set Bonus Icon
 		if (techInfo->HasBonus()) 

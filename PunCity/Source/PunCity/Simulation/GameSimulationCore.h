@@ -506,6 +506,10 @@ public:
 		return _aiPlayerSystem[playerId].active();
 	}
 
+	virtual int64 GetAITargetPopulation(int32 playerId) override {
+		return _aiPlayerSystem[playerId].GetAITargetPopulation();
+	}
+
 	TCHAR* AIPrintPrefix(int32 aiPlayerId) final
 	{
 		std::stringstream ss;

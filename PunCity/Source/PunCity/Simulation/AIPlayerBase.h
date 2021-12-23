@@ -250,6 +250,21 @@ public:
 		return false;
 	}
 
+	bool HasLowAppealBuilding()
+	{
+		for (CardEnum topBuildingEnum : topBuildingEnums) {
+			if (GetBuildingAppealInfo(topBuildingEnum).appealIncrease < 0) {
+				return true;
+			}
+		}
+		for (CardEnum bottomBuildingEnum : bottomBuildingEnums) {
+			if (GetBuildingAppealInfo(bottomBuildingEnum).appealIncrease < 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	void operator>>(FArchive& Ar)
 	{
 		SerializeVecValue(Ar, topBuildingEnums);

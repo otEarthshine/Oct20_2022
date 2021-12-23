@@ -431,53 +431,41 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	} },
 
 	{ TechEnum::Archer, {
-		LOCTEXT("Archer", "Archer"),
-		LOCTEXT("Archer Desc", ""),
+		LOCTEXT("Archer", "Archer")
 	} },
 	{ TechEnum::Warrior, {
-		LOCTEXT("Warrior", "Warrior"),
-		LOCTEXT("Warrior Desc", ""),
+		LOCTEXT("Warrior", "Warrior")
 	} },
 	{ TechEnum::Swordsman, {
-		LOCTEXT("Swordsman", "Swordsman"),
-		LOCTEXT("Swordsman Desc", ""),
+		LOCTEXT("Swordsman", "Swordsman")
 	} },
 	{ TechEnum::Knight, {
-		LOCTEXT("Knight", "Knight"),
-		LOCTEXT("Knight Desc", ""),
+		LOCTEXT("Knight", "Knight")
 	} },
 	{ TechEnum::MilitaryEngineering1, {
-		LOCTEXT("Military Engineering I", "Military Engineering I"),
-		LOCTEXT("Military Engineering I Desc", ""),
+		LOCTEXT("Military Engineering I", "Military Engineering I")
 	} },
 	{ TechEnum::MilitaryEngineering2, {
-		LOCTEXT("Military Engineering II", "Military Engineering II"),
-		LOCTEXT("Military Engineering II Desc", ""),
+		LOCTEXT("Military Engineering II", "Military Engineering II")
 	} },
 
 	{ TechEnum::Musketeer, {
-		LOCTEXT("Musketeer", "Musketeer"),
-		LOCTEXT("Musketeer Desc", ""),
+		LOCTEXT("Musketeer", "Musketeer")
 	} },
 	{ TechEnum::Infantry, {
-		LOCTEXT("Infantry", "Infantry"),
-		LOCTEXT("Infantry Desc", ""),
+		LOCTEXT("Infantry", "Infantry")
 	} },
 	{ TechEnum::MachineGun, {
 		LOCTEXT("Machine Gun", "Machine Gun"),
-		LOCTEXT("Machine Gun Desc", ""),
 	} },
 	{ TechEnum::Artillery, {
-		LOCTEXT("Artillery", "Artillery"),
-		LOCTEXT("Artillery Desc", ""),
+		LOCTEXT("Artillery", "Artillery")
 	} },
 	{ TechEnum::Tank, {
-		LOCTEXT("Tank", "Tank"),
-		LOCTEXT("Tank Desc", ""),
+		LOCTEXT("Tank", "Tank")
 	} },	
 	{ TechEnum::Battleship, {
-		LOCTEXT("Battleship", "Battleship"),
-		LOCTEXT("Battleship Desc", ""),
+		LOCTEXT("Battleship", "Battleship")
 	} },
 
 	/*
@@ -1293,7 +1281,7 @@ public:
 				CardEnum::Glassworks,
 				TechRequirements::HouseLvlCount(5, 30)
 			);
-			AddTech_Bonus(TechEnum::BudgetAdjustment, { TechEnum::SandMine, TechEnum::CardMaker });
+			AddTech_Bonus(TechEnum::BudgetAdjustment, { TechEnum::SandMine, TechEnum::PolicyMaking });
 			//AddTech_Bonus(TechEnum::PolicyMaking, { TechEnum::CardMaker, TechEnum::School, TechEnum::Logistics4 });
 			AddTech_Building(TechEnum::CardMaker, { TechEnum::PolicyMaking, TechEnum::School, TechEnum::Logistics4 },
 				{ CardEnum::CardMaker, CardEnum::PaperMaker }
@@ -1436,6 +1424,16 @@ public:
 			unlockedSetDeliveryTarget = false;
 
 			_unlockStates.resize(static_cast<int>(UnlockStateEnum::Count), false);
+
+
+			/*
+			 * AI shouldn't need to unlock these
+			 */
+			if (_simulation->IsAIPlayer(_playerId)) {
+				unlockedStatisticsBureau = true;
+				unlockedEmploymentBureau = true;
+			}
+			
 
 			/*
 			 * Prosperity Tech UI

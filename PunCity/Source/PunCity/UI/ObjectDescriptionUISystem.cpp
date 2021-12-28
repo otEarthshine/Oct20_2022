@@ -2171,7 +2171,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					else if (IsRegionalBuilding(building.buildingEnum()))
 					{
 						focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText,
-							building.buildingInfo().description
+							building.buildingInfo().GetDescription()
 						);
 					}
 					else if (building.isEnum(CardEnum::ResourceOutpost))

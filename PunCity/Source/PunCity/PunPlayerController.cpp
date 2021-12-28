@@ -224,6 +224,10 @@ void APunPlayerController::LoadController_GameManager()
 
 		gameInstance->saveSystem().Load(saveInfo.name);
 
+		if (gameInstance->isSinglePlayer && saveInfo.IsValid()) {
+			gameInstance->SetPlayerInfos_SinglePlayer(saveInfo.playerNames);
+		}
+
 		gameInstance->SetSavedGameToLoad(GameSaveInfo());
 
 #if CHECK_TICKHASH

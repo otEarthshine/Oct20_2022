@@ -413,7 +413,7 @@ static const std::unordered_map<TechEnum, std::vector<FText>> ResearchName_Bonus
 	} },
 	{ TechEnum::PolicyMaking, {
 		LOCTEXT("Policy Making", "Policy Making"),
-		LOCTEXT("Policy Making Desc", "TODO: TEXT"),
+		LOCTEXT("Policy Making Desc", "Unlocks Policy Office that can be upgraded for various global bonuses"),
 	} },
 	{ TechEnum::ForeignInvestment, {
 		LOCTEXT("Foreign Investment", "Foreign Investment"),
@@ -577,6 +577,9 @@ public:
 			TechEnum::GrandPalace,
 			TechEnum::ExhibitionHall,
 
+			TechEnum::Mosque,
+			TechEnum::SultansCastle,
+			TechEnum::SultansPalace,
 			TechEnum::GreatMosque,
 		};
 		for (TechEnum wonderTechEnum : wonderTechs) {
@@ -1410,10 +1413,18 @@ public:
 			AddTech_Bonus(TechEnum::EconomicTheories, { TechEnum::Printing, TechEnum::MarketInfluence });
 			AddTech_Bonus(TechEnum::SocialScience, { TechEnum::MarketInfluence });
 
-			AddTech_Building(TechEnum::ExhibitionHall, { TechEnum::MarketInfluence },
-				{ CardEnum::ExhibitionHall },
-				TechRequirements::HouseLvlCount(8, 100)
-			);
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::GreatMosque, { TechEnum::MarketInfluence },
+					{ CardEnum::GreatMosque },
+					TechRequirements::HouseLvlCount(8, 100)
+				);
+			}
+			else {
+				AddTech_Building(TechEnum::ExhibitionHall, { TechEnum::MarketInfluence },
+					{ CardEnum::ExhibitionHall },
+					TechRequirements::HouseLvlCount(8, 100)
+				);
+			}
 
 			townhallUpgradeUnlocked = false;
 			unlockedStatisticsBureau = false;
@@ -1535,10 +1546,17 @@ public:
 			);
 
 			AddTech_Bonus(TechEnum::RanchingTechnologies, {});
-			AddTech_Building(TechEnum::Cathedral, { TechEnum::Combo },
-				CardEnum::Cathedral
-			);
 
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::Mosque, { TechEnum::Combo },
+					CardEnum::Mosque
+				);
+			}
+			else {
+				AddTech_Building(TechEnum::Cathedral, { TechEnum::Combo },
+					CardEnum::Cathedral
+				);
+			}
 
 			AddTech_Bonus(TechEnum::Knight, { TechEnum::Swordsman });
 			AddTech_Bonus(TechEnum::MilitaryEngineering1, { TechEnum::Swordsman });
@@ -1597,9 +1615,16 @@ public:
 			//
 			_columnIndex = 8;
 
-			AddTech_Building(TechEnum::Castle, {},
-				CardEnum::Castle
-			);
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::SultansCastle, {},
+					CardEnum::SultansCastle
+				);
+			} else {
+				AddTech_Building(TechEnum::Castle, {},
+					CardEnum::Castle
+				);
+			}
+			
 			AddTech_CardGiving(TechEnum::HappyBreadDay, { TechEnum::PumpkinFarming },
 				{ CardEnum::HappyBreadDay }
 			);
@@ -1679,14 +1704,19 @@ public:
 			
 			//
 			_columnIndex = 12;
-			AddTech_Building(TechEnum::GrandPalace, {},
-				CardEnum::GrandPalace,
-				TechRequirements::HouseLvlCount(8, 100)
-			);
-			AddTech_Building(TechEnum::GreatMosque, {},
-				{ CardEnum::GreatMosque },
-				TechRequirements::HouseLvlCount(8, 100)
-			);
+			
+			if (factionEnum == FactionEnum::Arab) {
+				AddTech_Building(TechEnum::SultansPalace, {},
+					{ CardEnum::SultansPalace },
+					TechRequirements::HouseLvlCount(8, 100)
+				);
+			}
+			else {
+				AddTech_Building(TechEnum::GrandPalace, {},
+					CardEnum::GrandPalace,
+					TechRequirements::HouseLvlCount(8, 100)
+				);
+			}
 			
 			AddTech_CardGiving(TechEnum::SocialWelfare, {},
 				{ CardEnum::SocialWelfare }

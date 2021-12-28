@@ -104,7 +104,7 @@ public:
 	void Add_TryForestingPlantAction(TileObjEnum tileObjEnum, NonWalkableTileAccessInfo accessInfo);		void TryForestingPlantAction();
 
 
-	void ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage farmStage, int32 workplaceId = -1);
+	bool ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage farmStage, int32 workplaceId = -1);
 	
 
 	void ExecuteAction() override

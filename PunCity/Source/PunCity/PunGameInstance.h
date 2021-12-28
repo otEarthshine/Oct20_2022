@@ -508,7 +508,18 @@ public:
 		_playerReadyStates.SetNum(count);
 		playerConnectedStates.SetNum(count);
 
-		clientPacketsReceived.SetNum(count);
+		clientPacketsReceived.SetNum(count); // TODO: ??? what??
+
+		PrintPlayers();
+	}
+
+	void SetPlayerInfos_SinglePlayer(const TArray<FPlayerInfo>& playerInfos)
+	{
+		_playerInfos = playerInfos;
+		_playerReadyStates.SetNum(_playerInfos.Num());
+		playerConnectedStates.SetNum(_playerInfos.Num());
+
+		clientPacketsReceived.SetNum(_playerInfos.Num());
 
 		PrintPlayers();
 	}

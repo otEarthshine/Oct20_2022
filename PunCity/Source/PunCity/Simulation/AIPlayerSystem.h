@@ -273,7 +273,7 @@ private:
 	{
 		TileArea area(centerTile, distanceAway);
 		std::vector<FarmTile> farmTiles = _simulation->GetFarmTiles(area, centerTile, _aiPlayerId);
-		if (farmTiles.size() > 15)
+		if (farmTiles.size() > 30)
 		{
 			auto command = make_shared<FPlaceBuilding>();
 			command->playerId = _aiPlayerId;

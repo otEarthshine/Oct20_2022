@@ -1616,11 +1616,15 @@ bool HumanStateAI::TryFarm()
 
 		if (seedTile.isValid()) 
 		{
-			ReserveAndAdd_DoFarmWork(seedTile, FarmStage::Seeding);
-
-			SetActivity(UnitState::FarmSeeding);
-			AddDebugSpeech("(Succeed)TryFarm: Seeding");
-			return true;
+			if (ReserveAndAdd_DoFarmWork(seedTile, FarmStage::Seeding)) 
+			{
+				SetActivity(UnitState::FarmSeeding);
+				AddDebugSpeech("(Succeed)TryFarm: Seeding");
+				return true;
+			}
+			else {
+				return false;
+			}
 		}
 		else {
 			// Check if we can move on to next stage
@@ -1647,12 +1651,16 @@ bool HumanStateAI::TryFarm()
 
 			if (nourishTile.isValid()) 
 			{
-				ReserveAndAdd_DoFarmWork(nourishTile, FarmStage::Nourishing);
+				if (ReserveAndAdd_DoFarmWork(nourishTile, FarmStage::Nourishing)) 
+				{
+					AddDebugSpeech("(Succeed)TryFarm: Nourishing");
 
-				AddDebugSpeech("(Succeed)TryFarm: Nourishing");
-
-				SetActivity(UnitState::FarmNourishing);
-				return true;
+					SetActivity(UnitState::FarmNourishing);
+					return true;
+				}
+				else {
+					return false;
+				}
 			}
 			else {
 				// Check if we can move on to next stage
@@ -1689,11 +1697,16 @@ bool HumanStateAI::TryFarm()
 		// Try t harvest
 		if (harvestTile.isValid()) 
 		{
-			ReserveAndAdd_DoFarmWork(harvestTile, FarmStage::Harvesting);
-
-			AddDebugSpeech("(Succeed)TryFarm: FarmHarvesting");
-			SetActivity(UnitState::FarmHarvesting);
-			return true;
+			if (ReserveAndAdd_DoFarmWork(harvestTile, FarmStage::Harvesting))
+			{
+				AddDebugSpeech("(Succeed)TryFarm: FarmHarvesting");
+				SetActivity(UnitState::FarmHarvesting);
+				return true;
+			}
+			else
+			{
+				return false;
+			}
 		}
 
 		//! Beyond here, farming is almost done, ready to go into dormant stage
@@ -3392,8 +3405,16 @@ void HumanStateAI::DoFarmWork()
 	NextAction(UnitUpdateCallerEnum::DoFarmWork);
 }
 
-void HumanStateAI::ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage farmStage, int32 workplaceId)
+bool HumanStateAI::ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage farmStage, int32 workplaceId)
 {
+	// Reservation could happen after workplaceId changed
+	//  farmId is taken from buildingIdAtTile, which can be invalid so we need to check for validity
+	int32 farmId = _simulation->buildingIdAtTile(farmTile.worldTile);
+	if (!_simulation->IsValidBuilding(farmId)) {
+		return false;
+	}
+
+	
 	int32 waitTicks = 60;
 	UnitAnimationEnum animationEnum = UnitAnimationEnum::FarmPlanting;
 	
@@ -3413,6 +3434,8 @@ void HumanStateAI::ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage 
 	Add_DoFarmWork(farmTile.farmTileId, farmTile.worldTile, farmStage);
 	Add_Wait(waitTicks, animationEnum);
 	Add_MoveTo(farmTile.worldTile);
+
+	return true;
 }
 
 

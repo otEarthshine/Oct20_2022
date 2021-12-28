@@ -5,6 +5,9 @@
 
 #include "BuildingCardSystem.h"
 
+static const int32 MaxFoodPerPopulation = 10;
+static const int32 MaxNonFoodPerPopulation = 5;
+
 void AIPlayerSystem::Tick1Sec()
 {
 	SCOPE_CYCLE_COUNTER(STAT_PunAITick1Sec);
@@ -163,6 +166,7 @@ void AIPlayerSystem::Tick1Sec()
 	for (int32 i = popToIncreaseEra.size(); i-- > 0;) {
 		if (population >= popToIncreaseEra[i]) {
 			aiTier = i;
+			break;
 		}
 	}
 	int32 targetEra = aiTier / 2 + 1;
@@ -465,22 +469,31 @@ void AIPlayerSystem::Tick1Sec()
 	const std::vector<int32>& ranchIds = _simulation->buildingIds(_aiPlayerId, CardEnum::RanchPig);
 	const std::vector<int32>& fisherIds = _simulation->buildingIds(_aiPlayerId, CardEnum::Fisher);
 	const std::vector<int32>& farmIds = _simulation->buildingIds(_aiPlayerId, CardEnum::Farm);
-	
+
+	int32 foodFarmWorkers = 0;
 	int32 foodFarmCount = 0;
 	for (int32 farmId : farmIds) {
-		if (IsFoodEnum(GetTileObjInfo(_simulation->building<Farm>(farmId).currentPlantEnum).harvestResourceEnum())) {
+		Farm& farm = _simulation->building<Farm>(farmId);
+		if (IsFoodEnum(GetTileObjInfo(farm.currentPlantEnum).harvestResourceEnum())) {
 			foodFarmCount++;
+			foodFarmWorkers += farm.GetWorkerCount();
 		}
 	}
+	int32 foodWorkerCount = foodFarmWorkers;
+	foodWorkerCount += ranchIds.size() * GetBuildingInfo(CardEnum::RanchPig).workerCount;
+	foodWorkerCount += fisherIds.size() * (1 + GetBuildingInfo(CardEnum::Fisher).workerCount);
+	
 
-	auto needFarmRanch = [&]() {
-		int32 farmRanchCount = ranchIds.size() + fisherIds.size() + foodFarmCount;
-
-		const int32 farmPerPopulation = 5;
+	auto needFarmRanch = [&]()
+	{
 		const int32 populationFedByFruit = 10;
-		int32 preferredFarmRanchCount = std::max(0, (population - populationFedByFruit) / farmPerPopulation);
+		int32 populationToFeed = std::max(0, population - populationFedByFruit);
 
-		return farmRanchCount < preferredFarmRanchCount;
+		const int32 targetFoodWorkerCount = populationToFeed / 4; // food worker 1/4 of population
+		
+		//int32 preferredFarmRanchCount = std::max(0, (population - populationFedByFruit) / farmPerPopulation);
+
+		return foodWorkerCount < targetFoodWorkerCount;
 	};
 
 	//auto averageFertility = [&](TileArea curArea)
@@ -514,36 +527,6 @@ void AIPlayerSystem::Tick1Sec()
 		// Addon farms
 		bool placed = false;
 
-		//if (farmIds.size() > 0)
-		//{
-		//	int32 farmId = farmIds[GameRand::Rand() % farmIds.size()];
-		//	Building& farm = _simulation->building(farmId);
-
-		//	WorldTile2 size = GetBuildingInfo(CardEnum::Farm).size;
-		//	TileArea largerArea(farm.area().min() - size, size + size + WorldTile2(1, 1));
-
-		//	TileArea maxFertilityArea = TileArea::Invalid;
-		//	int32 maxFertility = 0;
-
-		//	largerArea.ExecuteOnBorder_WorldTile2([&](const WorldTile2& tile) {
-		//		TileArea curArea(tile, size);
-		//		bool hasInvalidTile = curArea.ExecuteOnAreaWithExit_WorldTile2([&](const WorldTile2& curTile) {
-		//			return !_simulation->IsBuildableForPlayer(curTile, _aiPlayerId);
-		//		});
-		//		if (!hasInvalidTile) {
-		//			int32 fertility = averageFertility(curArea);
-		//			if (fertility > maxFertility) {
-		//				maxFertilityArea = curArea;
-		//				maxFertility = fertility;
-		//			}
-		//		}
-		//	});
-
-		//	if (maxFertilityArea.isValid()) {
-		//		placeFarm(maxFertilityArea);
-		//		placed = true;
-		//	}
-		//}
 
 		/*
 		 * Farms
@@ -829,9 +812,9 @@ void AIPlayerSystem::Tick1Sec()
 
 		int32 townLvl = _simulation->GetTownLvlMax(_aiPlayerId);
 
-		auto tryUpgrade = [&](int32 targetPopulation, int32 townhallLvl) {
+		auto tryUpgrade = [&](int32 targetAITier, int32 townhallLvl) {
 			if (townLvl == townhallLvl &&
-				population > targetPopulation)
+				aiTier >= targetAITier)
 			{
 				TownHall& townhal = _simulation->GetTownhallCapital(_aiPlayerId);
 				int32 upgradeMoney = townhal.GetUpgradeMoney(townhallLvl + 1);
@@ -841,10 +824,10 @@ void AIPlayerSystem::Tick1Sec()
 			}
 		};
 
-		tryUpgrade(30, 1);
-		tryUpgrade(60, 2);
-		tryUpgrade(110, 3);
-		tryUpgrade(210, 4);
+		tryUpgrade(1, 1);
+		tryUpgrade(3, 2);
+		tryUpgrade(5, 3);
+		tryUpgrade(7, 4);
 	}
 
 	/*
@@ -1402,12 +1385,14 @@ void AIPlayerSystem::TryTrade()
 				// Sell Excess of food at higher supply per pop
 				ResourceEnum resourceEnum = static_cast<ResourceEnum>(i);
 				if (IsFoodEnum(resourceEnum)) {
-					sellExcess(resourceEnum, 10);
+					sellExcess(resourceEnum, MaxFoodPerPopulation);
+					_simulation->townManager(_aiPlayerId).SetOutputTarget(resourceEnum, MaxFoodPerPopulation * 2);
 				}
 
 				// Sell Excess of everything else
 				if (sellTargetAmounts[i] == 0) {
-					sellExcess(static_cast<ResourceEnum>(i), 5);
+					sellExcess(resourceEnum, MaxNonFoodPerPopulation);
+					_simulation->townManager(_aiPlayerId).SetOutputTarget(resourceEnum, MaxNonFoodPerPopulation * 2);
 				}
 			}
 
@@ -1671,7 +1656,7 @@ void AIPlayerSystem::TryPlaceCityBlock(CardEnum buildingEnumToBeNear, AICityBloc
 	if (isTooClose(CardEnum::School, School::Radius)) return;
 	if (isTooClose(CardEnum::Theatre, Theatre::Radius)) return;
 	if (isTooClose(CardEnum::Bank, Bank::Radius)) return;
-
+	if (isTooClose(CardEnum::HaulingServices, HaulingServices::Radius)) return;
 	
 
 	// include road
@@ -1736,12 +1721,28 @@ bool AIPlayerSystem::TryPlaceRiverFarm()
 {
 	const std::vector<int32>& provincesClaimed = _simulation->GetProvincesPlayer(_aiPlayerId);
 
+	// Get available tiles nearby riverTiles
+
 	for (int32 provinceClaimed : provincesClaimed)
 	{
 		const std::vector<WorldTile2>& riverTiles = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceClaimed).riverTiles;
 
+		TSet<int32> farmCenterTileIds;
 		for (const WorldTile2& riverTile : riverTiles) {
-			if (TryPlaceFarm(riverTile)) {
+			auto tryAdd = [&](WorldTile2 tile) {
+				if (_simulation->IsFarmBuildable(tile, _aiPlayerId)) {
+					farmCenterTileIds.Add(tile.tileId());
+				}
+			};
+			tryAdd(riverTile);
+			tryAdd(riverTile + WorldTile2(1, 0));
+			tryAdd(riverTile + WorldTile2(-1, 0));
+			tryAdd(riverTile + WorldTile2(0, 1));
+			tryAdd(riverTile + WorldTile2(0, -1));
+		}
+
+		for (int32 farmCenterTile : farmCenterTileIds) {
+			if (TryPlaceFarm(WorldTile2(farmCenterTile))) {
 				return true;
 			}
 		}
@@ -1834,8 +1835,8 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 		},
 		// Era 2
 		{
-			{ CardEnum::HaulingServices, 60 },
-			{ CardEnum::Bakery, 40 },
+			{ CardEnum::HaulingServices, 80 },
+			{ CardEnum::Bakery, 70 },
 			luxBuilding(CardEnum::Tailor),
 		},
 		{

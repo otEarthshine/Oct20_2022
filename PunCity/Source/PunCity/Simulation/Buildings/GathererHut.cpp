@@ -2038,7 +2038,7 @@ void ResourceOutpost::TickRound()
 			if (lordPlayerId != -1)
 			{
 				int32 influenceNeeded = GetColonyUpkeep();
-				if (_simulation->influence(lordPlayerId) <= influenceNeeded)
+				if (_simulation->influence(lordPlayerId) >= influenceNeeded)
 				{
 					_simulation->ChangeInfluence(lordPlayerId, -influenceNeeded);
 					

@@ -1024,14 +1024,16 @@ public:
 	int32 WonderScore()
 	{
 		const BldInfo& bldInfo = buildingInfo();
-		int32 moneyValue = bldInfo.baseCardPrice + bldInfo.constructionCostAsMoney();
-		int32 minEra = bldInfo.minEra();
+		//int32 moneyValue = bldInfo.baseCardPrice + bldInfo.constructionCostAsMoney();
+		//int32 minEra = bldInfo.minEra();
 
-		int32 multiplier = 15; // May 30 Adjust
-		for (int32 i = minEra; i < 4; i++) {
-			multiplier *= 2;
-		}
-		int32 wonderScore = multiplier * moneyValue / 10000; // 10000 Money = 1 Score
+		//int32 multiplier = 15; // May 30 Adjust
+		//for (int32 i = minEra; i < 4; i++) {
+		//	multiplier *= 2;
+		//}
+		//int32 wonderScore = multiplier * moneyValue / 10000; // 10000 Money = 1 Score
+
+		int32 wonderScore = GetWorldWonderScore(bldInfo.baseCardPrice, bldInfo.constructionCostAsMoney(), bldInfo.minEra());
 
 		if (_simulation->HasGlobalBonus(_playerId, CardEnum::WondersScoreMultiplier)) {
 			wonderScore *= 2;
@@ -1958,16 +1960,19 @@ public:
 
 	virtual void TickRound() override
 	{
-		auto addMoney = [&](int32 playerId) {
-			int32 moneyIncome100Temp = moneyIncome100(playerId);
-			if (moneyIncome100Temp > 0) {
-				_simulation->ChangeMoney100(playerId, moneyIncome100Temp);
-				_simulation->uiInterface()->ShowFloatupInfo(playerId, FloatupEnum::GainMoney, centerTile(), TEXT_100SIGNED(moneyIncome100Temp));
-			}
-		};
-		
-		addMoney(_playerId);
-		addMoney(foreignBuilderId());
+		if (isConstructed())
+		{
+			auto addMoney = [&](int32 playerId) {
+				int32 moneyIncome100Temp = moneyIncome100(playerId);
+				if (moneyIncome100Temp > 0) {
+					_simulation->ChangeMoney100(playerId, moneyIncome100Temp);
+					_simulation->uiInterface()->ShowFloatupInfo(playerId, FloatupEnum::GainMoney, centerTile(), TEXT_100SIGNED(moneyIncome100Temp));
+				}
+			};
+
+			addMoney(_playerId);
+			addMoney(foreignBuilderId());
+		}
 	}
 };
 

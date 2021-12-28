@@ -19,9 +19,9 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 68 // 3 digit
+#define MINOR_VERSION 70 // 3 digit
 
-#define VERSION_DAY 9
+#define VERSION_DAY 27
 #define VERSION_MONTH 12
 #define VERSION_YEAR 21
 
@@ -32,9 +32,9 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 44 // 3 digit
+#define MINOR_SAVE_VERSION 45 // 3 digit
 
-#define VERSION_SAVE_DAY 9
+#define VERSION_SAVE_DAY 24
 #define VERSION_SAVE_MONTH 12
 #define VERSION_SAVE_YEAR 21
 
@@ -1358,7 +1358,7 @@ static const ResourceInfo ResourceInfos[]
 
 	ResourceInfo(ResourceEnum::Spices, LOCTEXT("Spices", "Spices"), 30, LOCTEXT("Spices Desc", "Aromatic food seasoning. (Luxury tier 2)")),
 	ResourceInfo(ResourceEnum::Agave, LOCTEXT("Agave", "Agave"), 8, LOCTEXT("Agave Desc", "Succulent plant used to make Tequila")),
-	ResourceInfo(ResourceEnum::CactusFruit, LOCTEXT("Cactus Fruit", "Cactus Fruit"), FoodCost, LOCTEXT("Cactus Fruit Desc", "TODO: TEXT")),
+	ResourceInfo(ResourceEnum::CactusFruit, LOCTEXT("Cactus Fruit", "Cactus Fruit"), FoodCost, LOCTEXT("Cactus Fruit Desc", "Hydrating edible fruit obtained from Cactus.")),
 	ResourceInfo(ResourceEnum::Tequila, LOCTEXT("Tequila", "Tequila"), 42, LOCTEXT("Tequila Desc", "Clear alcoholic beverage made from Agave. (Luxury tier 2)")),
 };
 
@@ -2406,6 +2406,10 @@ enum class CardEnum : uint16
 	BathHouse,
 	Caravansary,
 	PitaBakery,
+	
+	Mosque,
+	SultansCastle,
+	SultansPalace,
 	GreatMosque,
 	
 	
@@ -2720,6 +2724,9 @@ static const std::vector<CardEnum> WorldWonders
 	CardEnum::GrandPalace,
 	CardEnum::ExhibitionHall,
 
+	CardEnum::Mosque,
+	CardEnum::SultansCastle,
+	CardEnum::SultansPalace,
 	CardEnum::GreatMosque,
 };
 static bool IsWorldWonder(CardEnum cardEnumIn) {
@@ -2727,6 +2734,17 @@ static bool IsWorldWonder(CardEnum cardEnumIn) {
 		if (cardEnum == cardEnumIn)	return true;
 	}
 	return false;
+}
+
+static int32 GetWorldWonderScore(int32 baseCardPrice, int32 constructionCostAsMoney, int32 minEra)
+{
+	int32 moneyValue = baseCardPrice + constructionCostAsMoney;
+
+	int32 multiplier = 15; // May 30 Adjust
+	for (int32 i = minEra; i < 4; i++) {
+		multiplier *= 2;
+	}
+	return multiplier * moneyValue / 10000; // 10000 Money = 1 Score
 }
 
 static const std::vector<CardEnum> AutoQuickBuildList
@@ -3054,7 +3072,7 @@ struct BldInfo
 	FText name;
 	FString nameFString;
 	FText namePlural;
-	FText description;
+	FText cardDescription;
 	
 	WorldTile2 size;
 	ResourceEnum input1 = ResourceEnum::None;
@@ -3086,7 +3104,19 @@ struct BldInfo
 	std::wstring nameW() const { return FTextToW(name); }
 	FString nameF() const { return nameFString; }
 	FText GetName() const { return name; }
-	FText GetDescription() const { return description; }
+
+	FText GetDescription() const
+	{
+		if (IsWorldWonder(cardEnum))
+		{
+			return FText::Format(
+				cardDescription,
+				TEXT_NUM(GetWorldWonderScore(baseCardPrice, constructionCostAsMoney(), minEra()))
+			);
+		}
+		
+		return cardDescription;
+	}
 
 	FText GetName(int32 count) { return count > 1 ? namePlural : name; }
 
@@ -3139,7 +3169,7 @@ struct BldInfo
 		name = nameIn;
 		nameFString = nameFStringIn;
 		namePlural = namePluralIn.IsEmpty() ? name : namePluralIn;
-		description = descriptionIn;
+		cardDescription = descriptionIn;
 
 		size = sizeIn;
 
@@ -3218,7 +3248,7 @@ struct BldInfo
 			cardEnum(buildingEnum),
 			name(name),
 			nameFString(nameFString),
-			description(description),
+			cardDescription(description),
 			baseCardPrice(cardPrice)
 	{}
 
@@ -3641,7 +3671,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(9, 9), GetBldResourceInfoMoney(1000)
 	),
 	BldInfo(CardEnum::ResourceOutpost, _LOCTEXT("Resource Outpost", "Resource Outpost"),	LOCTEXT("Resource Outpost (Plural)", "Resource Outpost"), LOCTEXT("Resource Outpost Desc", "Extract resource from a foreign province."),
-		WorldTile2(14, 14), GetBldResourceInfoMoney(10000)
+		WorldTile2(18, 18), GetBldResourceInfoMoney(10000)
 	),
 	BldInfo(CardEnum::ResearchLab, _LOCTEXT("Research Lab", "Research Lab"), LOCTEXT("Research Lab (Plural)", "Research Labs"), LOCTEXT("Research Lab Desc", "Generate Science Points. Uses Paper as input."),
 		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::Paper, ResourceEnum::None }, {1, 0, 0, 1, 1}, 0, 100, -2)
@@ -3760,16 +3790,16 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 6), GetBldResourceInfo(4, { ResourceEnum::Glass, ResourceEnum::GoldBar, ResourceEnum::PocketWatch }, { 0, 0, 0, 5, 10, 5, 0 }, 0, 100, -3)
 	),
 
-	BldInfo(CardEnum::Cathedral, _LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants X Victory Score. +10% Job Happiness in the city"),
+	BldInfo(CardEnum::Cathedral, _LOCTEXT("Cathedral", "Cathedral"), LOCTEXT("Cathedral (Plural)", "Cathedrals"), LOCTEXT("Cathedral Desc", "First Cathedral grants {0} Victory Score. +10% Job Happiness in the city"),
 		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 0, 0, 5, 2 }, 5000, 100, -999)
 	),
-	BldInfo(CardEnum::Castle, _LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants X Victory Score. +15%<img id=\"Influence\"/> Income from Houses"),
+	BldInfo(CardEnum::Castle, _LOCTEXT("Castle", "Castle"), LOCTEXT("Castle (Plural)", "Castles"), LOCTEXT("Castle Desc", "First Castle grants {0} Victory Score. +15%<img id=\"Influence\"/> Income from Houses"),
 		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 8000, 100, -999)
 	),
-	BldInfo(CardEnum::GrandPalace, _LOCTEXT("Grand Palace", "Grand Palace"), LOCTEXT("Grand Palace (Plural)", "Grand Palaces"), LOCTEXT("Grand Palace Desc", "First Grand Palace grants X Victory Score. +20% Building Appeal in the city. "),
+	BldInfo(CardEnum::GrandPalace, _LOCTEXT("Grand Palace", "Grand Palace"), LOCTEXT("Grand Palace (Plural)", "Grand Palaces"), LOCTEXT("Grand Palace Desc", "First Grand Palace grants {0} Victory Score. +20% Building Appeal in the city. "),
 		WorldTile2(18, 26), GetBldResourceInfo(4, {}, { 0, 0, 0, 2, 1, 5, 1 }, 20000, 100, -999)
 	),
-	BldInfo(CardEnum::ExhibitionHall, _LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), LOCTEXT("Exhibition Hall Desc", "First Exhibition Hall grants X Victory Score. +20%<img id=\"Coin\"/> from luxury consumption"),
+	BldInfo(CardEnum::ExhibitionHall, _LOCTEXT("ExhibitionHall", "Exhibition Hall"), LOCTEXT("Exhibition Hall (Plural)", "Exhibition Halls"), LOCTEXT("Exhibition Hall Desc", "First Exhibition Hall grants {0} Victory Score. +20%<img id=\"Coin\"/> from luxury consumption"),
 		WorldTile2(36, 24), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 2, 1, 5 }, 20000, 100, -999)
 	),
 
@@ -3929,10 +3959,19 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::PitaBakery, _LOCTEXT("Pita Bakery", "Pita Bakery"), LOCTEXT("Pita Bakery (Plural)", "Pita Bakeries"), LOCTEXT("Pita Bakery Desc", "Bakes Bread with Wheat Flour and heat."),
 		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Flour, ResourceEnum::Coal, ResourceEnum::PitaBread }, { 0, 1, 0, 2 })
 	),
-	BldInfo(CardEnum::GreatMosque, _LOCTEXT("Great Mosque", "Great Mosque"), LOCTEXT("Great Mosque (Plural)", "Great Mosques"), LOCTEXT("Great Mosque Desc", ""),
+
+	BldInfo(CardEnum::Mosque, _LOCTEXT("Mosque", "Mosque"), LOCTEXT("Mosque (Plural)", "Mosques"), LOCTEXT("Mosque Desc", "First Mosque grants {0} Victory Score. +10% Job Happiness in the city"),
+		WorldTile2(21, 13), GetBldResourceInfo(3, {}, { 0, 0, 0, 5, 2 }, 5000, 100, -999)
+	),
+	BldInfo(CardEnum::SultansCastle, _LOCTEXT("Sultan's Castle", "Sultan's Castle"), LOCTEXT("Sultan's Castle (Plural)", "Sultan's Castles"), LOCTEXT("Castle Desc", "First Sultan's Castle grants {0} Victory Score. +15%<img id=\"Influence\"/> Income from Houses"),
+		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 8000, 100, -999)
+	),
+	BldInfo(CardEnum::SultansPalace, _LOCTEXT("Sultan's Grand Palace", "Sultan's Grand Palace"), LOCTEXT("Sultan's Grand Palace (Plural)", "Sultan's Grand Palaces"), LOCTEXT("Sultan's Grand Palace Desc", "First Sultan's Grand Palace grants {0} Victory Score. +20% Building Appeal in the city."),
+		WorldTile2(26, 18), GetBldResourceInfo(4, {}, { 0, 0, 0, 2, 1, 5, 1 }, 20000, 100, -999)
+	),
+	BldInfo(CardEnum::GreatMosque, _LOCTEXT("Great Mosque", "Great Mosque"), LOCTEXT("Great Mosque (Plural)", "Great Mosques"), LOCTEXT("Great Mosque Desc", "First Great Mosque grants {0} Victory Score. +20%<img id=\"Coin\"/> from luxury consumption"),
 		WorldTile2(36, 24), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 2, 1, 5 }, 20000, 100, -999)
 	),
-	
 	
 	// Can no longer pickup cards
 	//BldInfo("Necromancer tower",	WorldTile2(4, 5),		ResourceEnum::None, ResourceEnum::None, ResourceEnum::None,		0,	{30, 30, 0},	"All citizens become zombie minions. Happiness becomes irrelevant. Immigration ceased."),
@@ -4064,7 +4103,7 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::SharingIsCaring,	_LOCTEXT("Sharing is Caring", "Sharing is Caring"), 120, LOCTEXT("Sharing is Caring Desc", "Give 100 Wheat to the target player. Use on Townhall.")),
 	BldInfo(CardEnum::Kidnap,			_LOCTEXT("Kidnap", "Kidnap"), 350,				LOCTEXT("Kidnap Desc", "Steal up to 3 citizens from target player. Apply on Townhall.")),
 	BldInfo(CardEnum::KidnapGuard,		_LOCTEXT("Kidnap Guard", "Kidnap Guard"), 20,	LOCTEXT("Kidnap Guard Desc", "Guard your city against Kidnap for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
-	BldInfo(CardEnum::Raid,				_LOCTEXT("Raid", "Raid"), 300,				LOCTEXT("Raid Desc", "")),
+	BldInfo(CardEnum::Raid,				_LOCTEXT("Raid", "Raid"), 300,				LOCTEXT("Raid Desc", "Attack unfortified provinces for money and influence.")),
 	BldInfo(CardEnum::Terrorism,		_LOCTEXT("Terrorism", "Terrorism"), 300,	LOCTEXT("Terrorism Desc", "Kill 5 citizens at target Town, opponent loses 1000 influence")),
 	BldInfo(CardEnum::TreasuryGuard,	_LOCTEXT("Treasury Guard", "Treasury Guard"), 20, LOCTEXT("Treasury Guard Desc", "Guard your city against Steal and Snatch for two years. Require <img id=\"Coin\"/>xPopulation to activate.")),
 
@@ -4148,30 +4187,30 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::PopulationScoreMultiplier, _LOCTEXT("Population Score", "Population Score"), 0, LOCTEXT("Population Score Desc", "+100% Scores from Population and Happiness.")),
 
 
-		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 0, LOCTEXT("Militia Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 0, LOCTEXT("Conscript Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Militia, _LOCTEXT("Militia", "Militia"), 0, LOCTEXT("Militia Desc", "A basic civilian unit. Last resort in a city defence.")),
+		BldInfo(CardEnum::Conscript, _LOCTEXT("Conscript", "Conscript"), 0, LOCTEXT("Conscript Desc", "A modern civilian unit for swarming.")),
 	
-		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		0, LOCTEXT("Warrior Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"), 0, LOCTEXT("Swordsman Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), 0, LOCTEXT("Musketeer Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), 0, LOCTEXT("Infantry Desc", "TODO: TEXT")), // (Trench Warfare = Defense Bonus for Infantry)
+		BldInfo(CardEnum::Warrior, _LOCTEXT("Warrior", "Warrior"),		0, LOCTEXT("Warrior Desc", "An ancient melee high-HP frontline unit")),
+		BldInfo(CardEnum::Swordsman, _LOCTEXT("Swordsman", "Swordsman"), 0, LOCTEXT("Swordsman Desc", "An armored melee high-HP frontline unit.")),
+		BldInfo(CardEnum::Musketeer, _LOCTEXT("Musketeer", "Musketeer"), 0, LOCTEXT("Musketeer Desc", "A firearmed high-HP frontline unit.")),
+		BldInfo(CardEnum::Infantry, _LOCTEXT("Infantry", "Infantry"), 0, LOCTEXT("Infantry Desc", "An industrial era high-HP frontline unit.")), // (Trench Warfare = Defense Bonus for Infantry)
 
-		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), 0, LOCTEXT("Knight Desc", "TODO: TEXT")), // Attack Bonus
-		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		0, LOCTEXT("Tank Desc", "TODO: TEXT")), // Attack Bonus
+		BldInfo(CardEnum::Knight, _LOCTEXT("Knight", "Knight"), 0, LOCTEXT("Knight Desc", "Armored horsemen. High attack damage, low distance attack penalty.")), // Attack Bonus
+		BldInfo(CardEnum::Tank, _LOCTEXT("Tank", "Tank"),		0, LOCTEXT("Tank Desc", "The most powerful land unit.")), // Attack Bonus
 
-		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				0, LOCTEXT("Archer Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), 0, LOCTEXT("Machine Gun Desc", "TODO: TEXT")), // Defense Bonus
+		BldInfo(CardEnum::Archer, _LOCTEXT("Archer", "Archer"),				0, LOCTEXT("Archer Desc", "An ancient range unit.")),
+		BldInfo(CardEnum::MachineGun, _LOCTEXT("Machine Gun", "Machine Gun"), 0, LOCTEXT("Machine Gun Desc", "An advanced range unit.")), // Defense Bonus
 
 		BldInfo(CardEnum::Catapult, _LOCTEXT("Catapult", "Catapult"), 0, LOCTEXT("Catapult Desc", "Catapult's attack ignores Wall's defense.")),
 		BldInfo(CardEnum::Cannon, _LOCTEXT("Cannon", "Cannon"),			0, LOCTEXT("Cannon Desc", "Cannon's attack ignores Wall's defense.")),
 		BldInfo(CardEnum::Artillery, _LOCTEXT("Artillery", "Artillery"), 0, LOCTEXT("Artillery Desc", "Artillery's attack ignores Wall's defense.")), // Defense Bonus
 
-		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			0, LOCTEXT("Galley Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		0, LOCTEXT("Frigate Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), 0, LOCTEXT("Battleship Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Galley, _LOCTEXT("Galley", "Galley"),			0, LOCTEXT("Galley Desc", "An ancient navy unit. Powerful, mobile, but coastal battles only.")),
+		BldInfo(CardEnum::Frigate, _LOCTEXT("Frigate", "Frigate"),		0, LOCTEXT("Frigate Desc", "A navy unit equipped with cannons.")),
+		BldInfo(CardEnum::Battleship, _LOCTEXT("Battleship", "Battleship"), 0, LOCTEXT("Battleship Desc", "The most powerful navy unit.")),
 
-		BldInfo(CardEnum::Wall, _LOCTEXT("Wall", "Wall"), 0, LOCTEXT("Wall Desc", "TODO: TEXT")),
-		BldInfo(CardEnum::RaidTreasure, _LOCTEXT("Raid Treasure", "Raid Treasure"), 0, LOCTEXT("Raid Treasure Desc", "TODO: TEXT")),
+		BldInfo(CardEnum::Wall, _LOCTEXT("Wall", "Wall"), 0, LOCTEXT("Wall Desc", "A protective wall for units defending a city.")),
+		BldInfo(CardEnum::RaidTreasure, _LOCTEXT("Raid Treasure", "Raid Treasure"), 0, LOCTEXT("Raid Treasure Desc", "Raid reward")),
 };
 
 #undef _LOCTEXT
@@ -6346,6 +6385,8 @@ enum class InfluenceIncomeEnum : uint8
 
 	SpyNest,
 	EnemySpyNest,
+
+	ResourceOutpost,
 	
 	Count,
 };
@@ -6368,6 +6409,8 @@ static const TArray<FText> InfluenceIncomeEnumName
 
 	LOCTEXT("Spy Nest", "Spy Nest"),
 	LOCTEXT("Enemy Spy Nest", "Enemy Spy Nest"),
+
+	LOCTEXT("Resource Outpost", "Resource Outpost"),
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
 
@@ -6683,6 +6726,9 @@ enum class TechEnum : uint8
 	GrandPalace,
 	ExhibitionHall,
 
+	Mosque,
+	SultansCastle,
+	SultansPalace,
 	GreatMosque,
 
 	SocialScience,
@@ -7598,7 +7644,8 @@ static FText GetMilitaryInfoDescription(CardEnum cardEnum)
 {
 	MilitaryCardInfo militaryInfo = GetMilitaryInfo(cardEnum);
 	return FText::Format(
-		NSLOCTEXT("Military", "Military Description", "Cost: {0}{1} \nUpkeep: -{2}<img id=\"Coin\"/><space>HP: {3}\nDefense: {4}\nAttack: {5}"),
+		NSLOCTEXT("Military", "Military Description", "{0}<space>Cost: {1}{2} \nUpkeep: -{3}<img id=\"Coin\"/><space>HP: {4}\nDefense: {5}\nAttack: {6}"),
+		GetBuildingInfo(cardEnum).GetDescription(),
 		TEXT_NUM(GetMilitaryInfo(cardEnum).resourceCost.count),
 		ResourceNameT_WithSpaceIcons(GetMilitaryInfo(cardEnum).resourceCost.resourceEnum),
 		TEXT_NUM(GetMilitaryInfo(cardEnum).upkeep),

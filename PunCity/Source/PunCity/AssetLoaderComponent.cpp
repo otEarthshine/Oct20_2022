@@ -303,7 +303,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	));
 	
 	LoadBuilding(FactionEnum::Europe, CardEnum::Castle, "Castle", "Castle");
-	LoadBuilding(FactionEnum::Arab, CardEnum::Castle, "Castle", "Castle/Era3");
+
 
 	LoadBuilding(CardEnum::StatisticsBureau, "Statistic_Bureau_Era_", "StatisticBureau_Era", "StatisticsBureau", 1);
 	LoadBuilding(CardEnum::JobManagementBureau, "Employment_Bureau_Era_", "EmploymentBureau_Era", "EmploymentBureau", 1);
@@ -334,8 +334,15 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Market, "Market", 2, 2);
 
 	LoadBuilding(CardEnum::Caravansary, "Caravansary", 2);
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
 	LoadBuildingEras(FactionEnum::Arab, CardEnum::Hotel, "Hotel", "Hotel", 3);
+
+
+	LoadBuilding(FactionEnum::Arab, CardEnum::Mosque, "Mosque", "Mosque/Era2");
+	LoadBuilding(FactionEnum::Arab, CardEnum::SultansCastle, "SultansCastle", "Castle/Era3");
+	LoadBuilding(FactionEnum::Arab, CardEnum::SultansPalace, "SultansPalace", "TajMahal/Era4");
+	LoadBuildingEras(FactionEnum::Arab, CardEnum::GreatMosque, "GreatMosque", "GreatMosque", 4);
+
+	
 
 	LoadBuilding(CardEnum::Embassy, "Embassy", 2);
 

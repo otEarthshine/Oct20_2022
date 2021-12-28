@@ -72,6 +72,15 @@ public:
 		if (heightForestColor.size() == 0) {
 			return;
 		}
+
+		int32 tileId = tile.tileId();
+
+		if (tileId >= heightForestColor.size()) {
+			return;
+		}
+		if (tileId < 0) {
+			return;
+		}
 		
 		isHeightForestColorDirty = true;
 
@@ -79,7 +88,6 @@ public:
 			isHeightForestColorDirty = false;
 		}
 
-		int32 tileId = tile.tileId();
 
 		FColor color(heightForestColor[tileId]);
 		if (isRoad) {

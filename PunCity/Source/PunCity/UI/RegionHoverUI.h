@@ -114,7 +114,7 @@ public:
 		{
 			const ProvinceOwnerInfo& provinceOwnerInfo = sim.provinceInfoSystem().provinceOwnerInfo(provinceId);
 			IconPair1->SetImage(nullptr);
-			IconPair1->SetText(provinceOwnerInfo.isSafe ? LOCTEXT("Protected", "Protected") : LOCTEXT("Unprotected", "Unprotected"), FText());
+			IconPair1->SetText(provinceOwnerInfo.isSafe ? LOCTEXT("Fortified", "Fortified") : LOCTEXT("Unfortified", "Unfortified"), FText());
 			IconPair1->SetTextColor(provinceOwnerInfo.isSafe ? FLinearColor(0.2, 1, 0.2) : FLinearColor(1, 0.1, 0));
 			IconPair1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}

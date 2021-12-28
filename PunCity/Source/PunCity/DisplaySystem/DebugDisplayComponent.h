@@ -466,7 +466,7 @@ protected:
 
 				for (WorldTile2 riverTile : slot.riverTiles) {
 					FVector tileVec = MapUtil::DisplayLocation(cameraAtom, riverTile.worldAtom2());
-					lineBatch()->DrawLine(tileVec, tileVec + FVector(0, 0, 10), FLinearColor::Blue, 100.0f, 1.0f, 10000);
+					lineBatch()->DrawLine(tileVec, tileVec + FVector(2, 2, 20), FLinearColor(0, 0, 0.5), 100.0f, 1.0f, 10000);
 				}
 
 				for (WorldTile2 mountainTile : slot.mountainTiles) {

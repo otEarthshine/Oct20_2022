@@ -816,7 +816,8 @@ void TownManager::CollectRoundIncome()
 
 	// Change Influence
 	int32 totalInfluenceIncome100WithoutDiplomaticBuilding = totalInfluenceIncome100() - influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::DiplomaticBuildings)]
-																						- influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)];
+																						- influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)]
+																						- influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::ResourceOutpost)];
 	
 	globalResourceSys.ChangeInfluence100(totalInfluenceIncome100WithoutDiplomaticBuilding);
 
@@ -1742,13 +1743,19 @@ void TownManager::RecalculateTax(bool showFloatup)
 
 	//! Spy Nest
 	{
+		std::unordered_map<int32, int32> nestHostPlayerIdToAmount;
+		
 		const std::vector<int32>& spyNestIds = _simulation->GetSpyNestIds(_playerId);
 		for (int32 spyNestId : spyNestIds)
 		{
 			if (House* nest = _simulation->buildingPtr<House>(spyNestId, CardEnum::House))
 			{
-				influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)] += 100 * _simulation->GetSpyNestInfluenceGainPerRound(_playerId, nest->townId());
+				nestHostPlayerIdToAmount[nest->playerId()] += 100 * _simulation->GetSpyNestInfluenceGainPerRound(_playerId, nest->townId());
 			}
+		}
+
+		for (const auto& it : nestHostPlayerIdToAmount) {
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::SpyNest)] = Clamp(it.second, 0, _simulation->influence(it.first));
 		}
 	}
 
@@ -1767,7 +1774,20 @@ void TownManager::RecalculateTax(bool showFloatup)
 			}
 		}
 	});
+
+	//! Resource Outpost
+	int32 resourceOutpostUpkeep = 0;
+	const std::vector<int32>& vassalTownIdsLocal = vassalTownIds();
+	for (int32 vassalTownId : vassalTownIdsLocal)
+	{
+		int32 vassalTownhallId = _simulation->townManagerBase(vassalTownId)->townhallId;
+		if (vassalTownhallId != -1 && _simulation->building(vassalTownhallId).isEnum(CardEnum::ResourceOutpost))
+		{
+			resourceOutpostUpkeep += _simulation->building<ResourceOutpost>(vassalTownhallId).GetColonyUpkeep();
+		}
+	}
 	
+	influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::ResourceOutpost)] = -100 * resourceOutpostUpkeep;
 }
 
 

@@ -1317,7 +1317,7 @@ public:
 			placeCommand.intVar1 = 0;
 			placeCommand.center = center;
 			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
-			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
+			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).baseBuildingSize, static_cast<Direction>(placeCommand.faceDirection));
 			int32 buildingId = sim.PlaceBuilding(placeCommand);
 			
 			sim.building(buildingId).InstantClearArea();
@@ -1354,7 +1354,7 @@ public:
 			placeCommand.intVar1 = 0;
 			placeCommand.center = WorldTile2(1057, 2754);
 			placeCommand.faceDirection = static_cast<uint8>(Direction::S);
-			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).size, static_cast<Direction>(placeCommand.faceDirection));
+			placeCommand.area = BuildingArea(placeCommand.center, GetBuildingInfoInt(placeCommand.buildingEnum).baseBuildingSize, static_cast<Direction>(placeCommand.faceDirection));
 			int32 buildingId = sim.PlaceBuilding(placeCommand);
 			sim.building(buildingId).InstantClearArea();
 			sim.building(buildingId).FinishConstruction();

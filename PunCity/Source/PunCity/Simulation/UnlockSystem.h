@@ -596,8 +596,8 @@ public:
 				{
 					simulation->AddPopup(playerId, {
 						LOCTEXT("UnlockedFirstWonder_Pop1", "You have unlocked your first World Wonder!"),
-						LOCTEXT("UnlockedFirstWonder_Pop2", "<space>World Wonders grant Victory Score. First World Wonder of its kind that gets built grants its owner its full score, while each subsequent wonders grants half as much score."),
-						LOCTEXT("UnlockedFirstWonder_Pop3", "<space>The game ends once all types of World Wonder gets built."),
+						LOCTEXT("UnlockedFirstWonder_Pop2", "<space>World Wonders grant Victory Score. First World Wonder of its kind that gets built grants its owner its full score, while each subsequent wonder grants half as much score."),
+						LOCTEXT("UnlockedFirstWonder_Pop3", "<space>The game ends once any player built all 4 types of wonders available to them."),
 					});
 				}
 			}

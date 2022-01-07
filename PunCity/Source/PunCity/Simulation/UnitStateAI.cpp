@@ -129,7 +129,7 @@ int32 UnitStateAI::birthChance()
 		// If it is human, we need to cap it by house
 		// the more empty space (houseCap - pop) the faster growth
 		// At pop of 0, slow factor is 1
-		// TODO: Human no longer use this...
+		// TODO: Human no longer use this... See Pregnancy
 		case UnitEnum::Human: {
 			cap = _simulation->HousingCapacity(_townId);
 			population = _simulation->populationTown(_townId);
@@ -1039,7 +1039,7 @@ void UnitStateAI::CalculateActions()
 				WorldTile2 centerTile = _simulation->GetProvinceRandomTile(_homeProvinceId, uTile, GameConstants::MaxFloodDistance_AnimalFar, false, tries);
 
 				Direction faceDirection = Direction::S;
-				TileArea area = BuildingArea(centerTile, BuildingInfo[(int)CardEnum::BoarBurrow].size, faceDirection);
+				TileArea area = BuildingArea(centerTile, BuildingInfo[(int)CardEnum::BoarBurrow].baseBuildingSize, faceDirection);
 
 				if (IsBurrowBuildable(area, faceDirection))
 				{

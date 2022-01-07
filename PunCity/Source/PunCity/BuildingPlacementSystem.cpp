@@ -642,7 +642,7 @@ void ABuildingPlacementSystem::StartBuildingPlacement(CardStatus cardStatus, boo
 		}
 		
 		ShowRadius(Theatre::Radius, overlayType);
-		_gameInterface->SetOverlayType(OverlayType::Appeal, OverlaySetterType::BuildingPlacement);
+		_gameInterface->SetOverlayType(overlayType, OverlaySetterType::BuildingPlacement);
 	}
 	else if (buildingEnum == CardEnum::Hotel)
 	{
@@ -1901,7 +1901,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 	 * Building
 	 */
 	BldInfo buildingInfo = GetBuildingInfo(_buildingEnum);
-	WorldTile2 size = buildingInfo.size;
+	FactionEnum uiPlayerFactionEnum = _simulation->playerFactionEnum(_gameInterface->playerId());
+	WorldTile2 size = buildingInfo.GetSize(uiPlayerFactionEnum);
 	BuildPlacement placement(_mouseOnTile, size, _faceDirection);
 	_area = placement.area();
 
@@ -2550,7 +2551,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				// ColonyTooFar
 				if (!_forceCannotPlace)
 				{
-					WorldTile2 gateTile = Building::CalculateGateTile(_faceDirection, _mouseOnTile, GetBuildingInfo(CardEnum::Townhall).size);
+					WorldTile2 gateTile = Building::CalculateGateTile(_faceDirection, _mouseOnTile, GetBuildingInfo(CardEnum::Townhall).baseBuildingSize);
 					if (gateTile.isValid())
 					{
 						std::vector<int32> townIds = IntercityLogisticsHub::GetApproximateTradableTownIdsByDistance(gateTile, playerId, CardEnum::IntercityLogisticsHub, -1, &simulation);
@@ -2694,7 +2695,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					WorldTile2 portCenter = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, _faceDirection);
 					if (portCenter.isValid())
 					{
-						BuildPlacement portPlacement(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, auxFaceDirection);
+						BuildPlacement portPlacement(portCenter, GetBuildingInfo(CardEnum::IntercityLogisticsPort).baseBuildingSize, auxFaceDirection);
 
 						bool setDockInstruct = false;
 						std::vector<PlacementGridInfo> grids;
@@ -3279,7 +3280,29 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	}
 
 	// Road/Gather after here
-	networkInterface->SendNetworkCommand(placeGatherCommand);
+	int32 maxPathSize = 120;
+	if (placeGatherCommand->path.Num() > maxPathSize)
+	{
+		TArray<int32> path = placeGatherCommand->path;
+		
+		// Split the command if needed
+		int32 index = 0;
+		placeGatherCommand->path.Empty();
+		while (index < path.Num())
+		{
+			placeGatherCommand->path.Add(path[index++]);
+			
+			if (placeGatherCommand->path.Num() >= maxPathSize||
+				index == path.Num()) 
+			{
+				networkInterface->SendNetworkCommand(placeGatherCommand);
+				placeGatherCommand->path.Empty();
+			}
+		}
+	}
+	else {
+		networkInterface->SendNetworkCommand(placeGatherCommand);
+	}
 
 	_gameInterface->Spawn2DSound("UI", "PlaceBuilding");
 

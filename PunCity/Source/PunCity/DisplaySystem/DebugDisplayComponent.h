@@ -476,22 +476,22 @@ protected:
 
 				// Show port
 				if (slot.portSlot.isValid()) {
-					TileArea area = BuildingArea(slot.portSlot.centerTile, GetBuildingInfo(CardEnum::MinorCityPort).size, slot.portSlot.faceDirection);
+					TileArea area = BuildingArea(slot.portSlot.centerTile, GetBuildingInfo(CardEnum::MinorCityPort).baseBuildingSize, slot.portSlot.faceDirection);
 					drawAreaBox(area, FLinearColor::Blue);
 					drawAreaBox(area.GetFrontArea(slot.portSlot.faceDirection), FLinearColor::Blue);
 				}
 				if (slot.portLandSlot.isValid()) {
-					TileArea area = BuildingArea(slot.portLandSlot.centerTile, GetBuildingInfo(CardEnum::MinorCity).size, slot.portLandSlot.faceDirection);
+					TileArea area = BuildingArea(slot.portLandSlot.centerTile, GetBuildingInfo(CardEnum::MinorCity).baseBuildingSize, slot.portLandSlot.faceDirection);
 					drawAreaBox(area, FLinearColor::Yellow);
 					drawAreaBox(area.GetExpandedArea(), FLinearColor::Yellow, false);
 				}
 				if (slot.largeLandSlot.isValid()) {
-					TileArea area = BuildingArea(slot.largeLandSlot.centerTile, GetBuildingInfo(CardEnum::MayanPyramid).size, slot.largeLandSlot.faceDirection);
+					TileArea area = BuildingArea(slot.largeLandSlot.centerTile, GetBuildingInfo(CardEnum::MayanPyramid).baseBuildingSize, slot.largeLandSlot.faceDirection);
 					drawAreaBox(area, FLinearColor(1, 0, 1));
 					drawAreaBox(area.GetFrontArea(slot.largeLandSlot.faceDirection), FLinearColor(1, 0, 1));
 				}
 				if (slot.oasisSlot.isValid()) {
-					TileArea area = BuildingArea(slot.oasisSlot.centerTile, GetBuildingInfo(CardEnum::Oasis).size, slot.oasisSlot.faceDirection);
+					TileArea area = BuildingArea(slot.oasisSlot.centerTile, GetBuildingInfo(CardEnum::Oasis).baseBuildingSize, slot.oasisSlot.faceDirection);
 					drawAreaBox(area, FLinearColor(0, 0, 1));
 					drawAreaBox(area.GetFrontArea(slot.oasisSlot.faceDirection), FLinearColor(0, 0, 1));
 				}

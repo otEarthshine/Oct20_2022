@@ -74,7 +74,7 @@ void UTopLayerGameUI::Tick()
 
 		if (dataSource()->ZoomDistanceBelow(WorldToMapZoomAmount))
 		{
-			if (overlayType == OverlayType::Appeal) {
+			if (IsAppealShowingOverlay(overlayType)) {
 				setMidscreenText(LOCTEXT("Overlay: Appeal", "Overlay: Appeal"));
 			}
 			else if (overlayType == OverlayType::Farm) {

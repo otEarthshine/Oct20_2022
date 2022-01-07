@@ -19,11 +19,11 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 70 // 3 digit
+#define MINOR_VERSION 71 // 3 digit
 
-#define VERSION_DAY 27
-#define VERSION_MONTH 12
-#define VERSION_YEAR 21
+#define VERSION_DAY 6
+#define VERSION_MONTH 1
+#define VERSION_YEAR 22
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
@@ -1191,7 +1191,7 @@ static const int32 HarvestDepositTicksBase = Time::TicksPerSecond * 14;
 // How fast people produce value when working compare to value spent on food
 // This is high because people don't spend all their time working.
 //!!! Change Base Production (Except FarmBaseYield100) !!!!
-static const int32 WorkRevenueToCost_Base = 135; // 150 -> 128 (Mar 26)... -> 150 (May 10) .. Nov 11: 150->135
+static const int32 WorkRevenueToCost_Base = 140; // 150 -> 128 (Mar 26)... -> 150 (May 10) .. Nov 11: 150->135 .. Jan 6: 135 -> 140
 
 // TODO: WorkRevenueToCost is not yet affected by resource modifiers...
 
@@ -1726,7 +1726,7 @@ static const std::vector<std::vector<ResourceEnum>> TierToLuxuryEnums =
 	{ResourceEnum::Cloth, ResourceEnum::Wine, ResourceEnum::Candle, ResourceEnum::Vodka, ResourceEnum::Spices,
 		ResourceEnum::Tequila, ResourceEnum::MagicMushroom, ResourceEnum::Coffee, ResourceEnum::Glassware, ResourceEnum::Carpet
 	},
-	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate, ResourceEnum::PocketWatch},
+	{ResourceEnum::Book, ResourceEnum::LuxuriousClothes, ResourceEnum::Jewelry, ResourceEnum::Chocolate, ResourceEnum::PocketWatch, ResourceEnum::ToiletPaper },
 };
 
 static const std::vector<ResourceEnum>& GetLuxuryResourcesByTier(int32 tier) {
@@ -2698,6 +2698,8 @@ static const TMap<CardEnum, int32> BuildingEnumToUpkeep =
 	{ CardEnum::ImmigrationOffice, 10 },
 
 	{ CardEnum::Fort, 20 },
+
+	{ CardEnum::IrrigationPump, 50 },
 };
 
 // Building upkeep per round
@@ -3074,7 +3076,7 @@ struct BldInfo
 	FText namePlural;
 	FText cardDescription;
 	
-	WorldTile2 size;
+	WorldTile2 baseBuildingSize;
 	ResourceEnum input1 = ResourceEnum::None;
 	ResourceEnum input2 = ResourceEnum::None;
 	ResourceEnum produce = ResourceEnum::None;
@@ -3097,7 +3099,7 @@ struct BldInfo
 		if (factionEnum != FactionEnum::None && sizeByFactions.size() > 0) {
 			return sizeByFactions[static_cast<int>(factionEnum)];
 		}
-		return size;
+		return baseBuildingSize;
 	}
 
 	std::string nameStd() const { return FTextToStd(name); }
@@ -3171,7 +3173,7 @@ struct BldInfo
 		namePlural = namePluralIn.IsEmpty() ? name : namePluralIn;
 		cardDescription = descriptionIn;
 
-		size = sizeIn;
+		baseBuildingSize = sizeIn;
 
 
 		resourceInfo = bldResourceInfoIn;
@@ -3464,7 +3466,7 @@ static const BldInfo BuildingInfo[]
 
 	
 	BldInfo(CardEnum::FurnitureWorkshop, _LOCTEXT("Furniture Workshop", "Furniture Workshop"), LOCTEXT("Furniture Workshop (Plural)", "Furniture Workshops"), LOCTEXT("Furniture Workshop Desc", "Make Furniture from Wood."),
-		{ WorldTile2(6, 7), WorldTile2(6, 6)},	GetBldResourceInfo(1, {ResourceEnum::Wood, ResourceEnum::Furniture}, {2, 1})
+		{ WorldTile2(6, 6), WorldTile2(6, 6)},	GetBldResourceInfo(1, {ResourceEnum::Wood, ResourceEnum::Furniture}, {2, 1})
 	),
 	BldInfo(CardEnum::Chocolatier,	_LOCTEXT("Chocolatier", "Chocolatier"),	LOCTEXT("Chocolatier (Plural)", "Chocolatiers"), LOCTEXT("Chocolatier Desc", "Make Chocolate from Milk and Cocoa."),
 		WorldTile2(6, 8),	GetBldResourceInfo(3, {ResourceEnum::Cocoa, ResourceEnum::Milk, ResourceEnum::Chocolate}, {0, 1, 1, 1}, 80)
@@ -3490,7 +3492,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::Fisher, _LOCTEXT("Fishing Lodge", "Fishing Lodge"), LOCTEXT("Fishing Lodge (Plural)", "Fishing Lodges"), LOCTEXT("Fishing Lodge Desc", "Catch Fish from seas, lakes or rivers."),
-		WorldTile2(6, 4), GetBldResourceInfo(1, { ResourceEnum::Fish }, {1}, -30)
+		WorldTile2(6, 4), GetBldResourceInfo(1, { ResourceEnum::Fish }, {1}, -10)
 	),
 	BldInfo(CardEnum::BlossomShrine, _LOCTEXT("Blossom Shrine", "Blossom Shrine"),	LOCTEXT("Blossom Shrine (Plural)", "Blossom Shrines"), FText(),
 		WorldTile2(3, 3), GetBldResourceInfoManual({0, 10})
@@ -3518,13 +3520,13 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::CharcoalMaker, _LOCTEXT("Charcoal Burner", "Charcoal Burner"), LOCTEXT("Charcoal Burner (Plural)", "Charcoal Burners"), LOCTEXT("Charcoal Burner Desc", "Burn Wood into Coal which provides x2 heat when heating houses."),
-		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Wood, ResourceEnum::Coal }, { 1 }, -30)
+		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Wood, ResourceEnum::Coal }, { 1 }, -20)
 	),
 	BldInfo(CardEnum::BeerBrewery, _LOCTEXT("Beer Brewery", "Beer Brewery"),	LOCTEXT("Beer Brewery (Plural)", "Beer Breweries"), LOCTEXT("Beer Brewery Desc", "Brew Wheat into Beer."),
 		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Wheat, ResourceEnum::Beer }, { 1, 1 }, 30)
 	),
 	BldInfo(CardEnum::ClayPit, _LOCTEXT("Claypit", "Claypit"),		LOCTEXT("Claypit (Plural)", "Claypits"), LOCTEXT("Claypit Desc", "Produce Clay, used to make Pottery or Brick. Must be built next to a river."),
-		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Clay }, { 1, 1 }, -30)
+		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Clay }, { 1, 1 }, 0)
 	),
 	BldInfo(CardEnum::Potter, _LOCTEXT("Potter", "Potter"), LOCTEXT("Potter (Plural)", "Potters"), LOCTEXT("Potter Desc", "Make Pottery from Clay."),
 		{ WorldTile2(5, 6), WorldTile2(6, 6) }, GetBldResourceInfo(1, { ResourceEnum::Clay, ResourceEnum::Pottery }, { 1, 2 })
@@ -3897,10 +3899,10 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 50 })
 	),
 	BldInfo(CardEnum::Zoo, _LOCTEXT("Zoo", "Zoo"), LOCTEXT("Zoo (Plural)", "Zoos"), LOCTEXT("Zoo Desc", "Slot Animal Cards to get bonuses."),
-		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
+		{ WorldTile2(12, 14), WorldTile2(12, 14) }, GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
 	),
 	BldInfo(CardEnum::Museum, _LOCTEXT("Museum", "Museum"), LOCTEXT("Museum (Plural)", "Museums"), LOCTEXT("Museum Desc", "Slot Artifact Cards to get bonuses"),
-		WorldTile2(10, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
+		{ WorldTile2(8, 12), WorldTile2(8, 12) } , GetBldResourceInfoManual({ 0, 0, 0, 100, 100 })
 	),
 	BldInfo(CardEnum::Embassy, _LOCTEXT("Embassy", "Embassy"), LOCTEXT("Embassy (Plural)", "Embassy"), LOCTEXT("Embassy Desc", "+50<img id=\"Influence\"/> income for builder and host player."),
 		WorldTile2(6, 10), GetBldResourceInfoManual({ 200 })
@@ -3942,7 +3944,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::IrrigationPump, _LOCTEXT("Irrigation Pump", "Irrigation Pump"), LOCTEXT("Irrigation Pump (Plural)", "Irrigation Pumps"), LOCTEXT("Irrigation Pump Desc", "Pump water to increase soil Fertility."),
-		WorldTile2(6, 4), GetBldResourceInfoManual({})
+		WorldTile2(6, 4), GetBldResourceInfoManual({ 0, 100 })
 	),
 	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", "Distribute water from Irrigation Pump to increase soil fertility (radius 5)."),
 		WorldTile2(1, 1), GetBldResourceInfoManual({})
@@ -6348,6 +6350,7 @@ enum class OverlayType
 	RevealSpyNest,
 };
 
+// Overlays which shows green-red grid
 static bool IsGridOverlay(OverlayType overlayEnum)
 {
 	switch(overlayEnum)
@@ -6356,6 +6359,21 @@ static bool IsGridOverlay(OverlayType overlayEnum)
 	case OverlayType::Fish:
 	case OverlayType::Farm:
 	case OverlayType::IrrigationReservoir:
+
+	case OverlayType::Tavern:
+	case OverlayType::Theatre:
+		return true;
+	default: return false;
+	}
+}
+
+static bool IsAppealShowingOverlay(OverlayType overlayEnum)
+{
+	switch (overlayEnum)
+	{
+	case OverlayType::Appeal:
+	case OverlayType::Tavern:
+	case OverlayType::Theatre:
 		return true;
 	default: return false;
 	}
@@ -6915,6 +6933,15 @@ static bool IsMilitaryTechEnum(TechEnum techEnum)
 {
 	return static_cast<int>(TechEnum::Warrior) <= static_cast<int>(techEnum) && static_cast<int>(techEnum) <= static_cast<int>(TechEnum::Battleship);
 }
+
+enum class TryConnectTradeEnum : uint8
+{
+	CanConnectLand,
+	CanConnectWater,
+	AlreadyConnected,
+	NeedLandRoute,
+	NeedPort,
+};
 
 
 /*
@@ -10804,13 +10831,13 @@ enum class CutTreeEnum : uint8 {
  */
 static const int32 InitialStorageSize = 4;
 static const WorldTile2 InitialStorageTileSize(4, 4);
-static const int32 InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + InitialStorageSize / 2;
+static const int32 InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).baseBuildingSize.y / 2 + InitialStorageSize / 2;
 static const WorldTile2 Storage1ShiftTileVec(0, -InitialStorageShiftFromTownhall);
 static const WorldTile2 InitialStorage2Shift(4, 0);
 
 static const int32 Colony_InitialStorageSize = 6;
 static const WorldTile2 Colony_InitialStorageTileSize(Colony_InitialStorageSize, Colony_InitialStorageSize);
-static const int32 Colony_InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).size.y / 2 + Colony_InitialStorageSize / 2;
+static const int32 Colony_InitialStorageShiftFromTownhall = GetBuildingInfo(CardEnum::Townhall).baseBuildingSize.y / 2 + Colony_InitialStorageSize / 2;
 static const WorldTile2 PortColony_Storage1ShiftTileVec(-Colony_InitialStorageShiftFromTownhall, -2);
 static const WorldTile2 PortColony_InitialStorage2Shift(0, 6);
 static const WorldTile2 PortColony_PortExtraShiftTileVec(-3, 0);
@@ -10866,11 +10893,14 @@ public:
 
 	FText name;
 
+	FString internalName;
+
 	FText uniqueBonusDescription;
 	
-	FactionInfo(FactionEnum factionEnum, FText name, FText uniqueBonusDescription) :
+	FactionInfo(FactionEnum factionEnum, FText name, FString internalName, FText uniqueBonusDescription) :
 		factionEnum(factionEnum),
 		name(name),
+		internalName(internalName),
 		uniqueBonusDescription(uniqueBonusDescription)
 	{}
 
@@ -10880,8 +10910,8 @@ public:
 
 static const std::vector<FactionInfo> FactionInfos =
 {
-	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), LOCTEXT("Europe Ability Description", "+5% research speed")),
-	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield"))
+	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), FString("Duchy"), LOCTEXT("Europe Ability Description", "+5% research speed")),
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), FString("Emirates"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield"))
 };
 
 #undef LOCTEXT_NAMESPACE
@@ -10896,11 +10926,11 @@ static const FactionInfo& GetFactionInfoInt(int32 factionEnumInt) {
 	return FactionInfos[factionEnumInt];
 }
 
-static FString WithFactionName(FactionEnum factionEnum, const FString& moduleSetName) {
-	return moduleSetName + GetFactionInfo(factionEnum).name.ToString();
+static FString WithFactionNameInternal(FactionEnum factionEnum, const FString& moduleSetName) {
+	return moduleSetName + GetFactionInfo(factionEnum).internalName;
 }
-static FString WithFactionName(const FString& moduleSetName) {
-	return moduleSetName + GetFactionInfo(FactionEnum::Europe).name.ToString();
+static FString WithFactionNameInternal(const FString& moduleSetName) {
+	return moduleSetName + GetFactionInfo(FactionEnum::Europe).internalName;
 }
 
 

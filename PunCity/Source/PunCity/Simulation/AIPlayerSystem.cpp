@@ -153,18 +153,8 @@ void AIPlayerSystem::Tick1Sec()
 	int32 era = _simulation->GetEra(_aiPlayerId);
 
 	int32 aiTier = 0;
-	const std::vector<int32> popToIncreaseEra {
-		0,
-		38,
-		70, // start era 2
-		120,
-		200, // start era 3
-		280,
-		370, // start era 4
-		450,
-	};
-	for (int32 i = popToIncreaseEra.size(); i-- > 0;) {
-		if (population >= popToIncreaseEra[i]) {
+	for (int32 i = PopToIncreaseEra.size(); i-- > 0;) {
+		if (population >= PopToIncreaseEra[i]) {
 			aiTier = i;
 			break;
 		}
@@ -867,23 +857,23 @@ void AIPlayerSystem::Tick1Sec()
 	/*
 	 * Defend land
 	 */
-	std::vector<std::vector<CardStatus>> eraToUnitCountPer100pop
+	std::vector<std::vector<CardStatus>> eraToCitizensPerUnitCount
 	{
 		{},
 		{ // Era 1
-			CardStatus(CardEnum::Warrior, 1)
+			CardStatus(CardEnum::Warrior, 90)
 		},
 		{ // Era 2
-			CardStatus(CardEnum::Swordsman, 1),
-			CardStatus(CardEnum::Archer, 1)
+			CardStatus(CardEnum::Swordsman, 110),
+			CardStatus(CardEnum::Archer, 170)
 		},
 		{ // Era 3
-			CardStatus(CardEnum::Musketeer, 1),
-			CardStatus(CardEnum::Cannon, 1)
+			CardStatus(CardEnum::Musketeer, 120),
+			CardStatus(CardEnum::Cannon, 180)
 		},
 		{ // Era 4
-			CardStatus(CardEnum::Infantry, 1),
-			CardStatus(CardEnum::MachineGun, 1)
+			CardStatus(CardEnum::Infantry, 130),
+			CardStatus(CardEnum::MachineGun, 190)
 		},
 	};
 
@@ -906,7 +896,11 @@ void AIPlayerSystem::Tick1Sec()
 		Time::Ticks() > Time::TicksPerYear &&
 		townManage.defendingClaimProgress().size() == 0)
 	{
-		const std::vector<CardStatus>& targetCards = eraToUnitCountPer100pop[era];
+		std::vector<CardStatus> citizensPerUnitCount = eraToCitizensPerUnitCount[era];
+		std::vector<CardStatus> targetCards;
+		for (const CardStatus& citizenPerUnitCount : citizensPerUnitCount) {
+			targetCards.push_back(CardStatus(citizenPerUnitCount.cardEnum, 1 + (population - 1) / citizenPerUnitCount.stackSize));
+		}
 
 		// Remove a military card if it isn't wanted for this era
 		for (const CardStatus& card : cards) 
@@ -1057,7 +1051,7 @@ void AIPlayerSystem::TryBuildTownhall()
 	int32 provinceId = provincesClaimed[0];
 	TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
 
-	WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).size;
+	WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).baseBuildingSize;
 	TileArea area = BuildingArea(provinceRectArea.centerTile(), townhallSize, Direction::S);
 
 	// Add Road...
@@ -1115,7 +1109,7 @@ void AIPlayerSystem::TryBuildTownhall()
 		command->faceDirection = static_cast<uint8>(Direction::S);
 
 		BldInfo buildingInfo = GetBuildingInfoInt(command->buildingEnum);
-		command->area = BuildingArea(command->center, buildingInfo.size, Direction::S);
+		command->area = BuildingArea(command->center, buildingInfo.baseBuildingSize, Direction::S);
 
 		_playerInterface->PlaceBuilding(*command);
 	}
@@ -1829,7 +1823,6 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 		{
 			luxBuilding(CardEnum::FurnitureWorkshop),
 			luxBuilding(CardEnum::BeerBrewery),
-			luxBuilding(CardEnum::Potter),
 
 			{ CardEnum::Tavern, 60 },
 		},
@@ -1837,13 +1830,14 @@ void AIPlayerSystem::TryPlaceNormalBuildings_ScaleToPopCount(AICityBlock& block,
 		{
 			{ CardEnum::HaulingServices, 80 },
 			{ CardEnum::Bakery, 70 },
-			luxBuilding(CardEnum::Tailor),
+			luxBuilding(CardEnum::Potter),
 		},
 		{
-			luxBuilding(CardEnum::Winery),
+			luxBuilding(CardEnum::Tailor),
 		},
 		// Era 3
 		{
+			luxBuilding(CardEnum::Winery),
 			luxBuilding(CardEnum::CoffeeRoaster),
 		},
 		{

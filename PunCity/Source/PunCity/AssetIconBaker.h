@@ -127,7 +127,7 @@ public:
 			for (int i = 0; i < BuildingEnumCount; i++)
 			{				
 				CardEnum buildingEnum = static_cast<CardEnum>(i);
-				WorldTile2 buildingSize = GetBuildingInfo(buildingEnum).size;
+				WorldTile2 buildingSize = GetBuildingInfo(buildingEnum).baseBuildingSize;
 				float usedSize = std::fmax(buildingSize.x, buildingSize.y);
 				float captureDistance = baseHouseCaptureDistance * usedSize / 4.0f; // 4.0f is house size
 

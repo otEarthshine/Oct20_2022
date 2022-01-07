@@ -67,12 +67,14 @@ public:
 		GetPunHUD()->OpenDiplomacyUI(townId());
 	}
 
-	UFUNCTION() void OnClickConnectTradeButton() {
+	UFUNCTION() void OnClickConnectTradeButton()
+	{
 		auto command = make_shared<FGenericCommand>();
 		command->callbackEnum = CallbackEnum::EstablishTradeRoute;
 		command->townId = uiTownId;
-		command->intVar1 = uiTownId;
-		command->intVar2 = playerId(); // Capital Town Id
+		command->intVar1 = uiTownId; // target
+		command->intVar2 = playerId(); // self: Capital Town Id
+		//command->intVar3 = 1; // isUsingMinorTownUI
 
 		networkInterface()->SendNetworkCommand(command);
 	}

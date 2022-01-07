@@ -155,15 +155,15 @@ public:
 
 	int64 GetBaseAITargetPopulation()
 	{
-		const int64 AITargetPopL1 = 500;
+		const int64 AITargetPopL1 = 200;
 		const int64 AITargetPopL2 = 600;
 		const int64 L1Ticks = Time::TicksPerYear * 20;
-		const int64 L2Ticks = Time::TicksPerYear * 50;
+		const int64 L2Ticks = Time::TicksPerYear * 80;
 
 		if (Time::Ticks() < L1Ticks) {
 			return AITargetPopL1 * Time::Ticks() / L1Ticks;
 		}
-		if (Time::Ticks() < Time::TicksPerYear * 50) {
+		if (Time::Ticks() < L2Ticks) {
 			return AITargetPopL1 + AITargetPopL2 * (Time::Ticks() - L1Ticks) / (L2Ticks - L1Ticks);
 		}
 		return AITargetPopL2;
@@ -171,7 +171,7 @@ public:
 
 	int64 GetAITargetPopulation()
 	{
-		const int64 AIBasePop = 30;
+		const int64 AIBasePop = 20;
 		int32 baseTarget = GetBaseAITargetPopulation() + AIBasePop;
 
 		// Random +/-15% of base
@@ -179,6 +179,19 @@ public:
 
 		return baseTarget + baseTarget * randomPercent / 100;
 	}
+
+	const std::vector<int32> PopToIncreaseEra
+	{
+		0,
+		42,
+		78, // start era 2
+		133,
+		222, // start era 3
+		311,
+		411, // start era 4
+		500,
+	};
+	
 
 private:
 	template<class T>

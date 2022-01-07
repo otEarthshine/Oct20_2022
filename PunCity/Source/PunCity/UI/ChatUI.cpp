@@ -236,7 +236,18 @@ void UChatUI::Tick()
 
 
 	// Desync Warning
-	DesyncText->SetVisibility(simulation().isDesynced ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	if (simulation().isDesynced != DesyncEnum::NotDesynced)
+	{
+		DesyncText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		DesyncText->SetText(FText::Format(
+			INVTEXT("Desync: {0}"),
+			FText::FromString(DesyncEnumName[static_cast<int>(simulation().isDesynced)])
+		));
+	}
+	else
+	{
+		DesyncText->SetVisibility(ESlateVisibility::Collapsed);
+	}
 
 #endif
 

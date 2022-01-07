@@ -18,15 +18,25 @@ void WorldTradeSystem::RefreshTradeRoutes()
 	
 }
 
-bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
+bool WorldTradeSystem::CanEstablishTradeRoute(const FGenericCommand& command)
 {
-	SCOPE_TIMER("TryEstablishTradeRoute");
-	
-	auto pathAI = _simulation->pathAI();
+	// TODO: this is for demolish.. check if trade routes are still valid
+	return true;
+}
 
+void WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
+{
+	// Trade Route always connect capital to capital
 	TradeRoutePair tradeRoutePair;
 	tradeRoutePair.townId1 = command.intVar1;
 	tradeRoutePair.townId2 = command.intVar2;
+
+	if (IsMajorTown(tradeRoutePair.townId1)) {
+		tradeRoutePair.townId1 = _simulation->townPlayerId(tradeRoutePair.townId1);
+	}
+	if (IsMajorTown(tradeRoutePair.townId2)) {
+		tradeRoutePair.townId2 = _simulation->townPlayerId(tradeRoutePair.townId2);
+	}
 
 	Building& building1 = _simulation->building(_simulation->GetTownhallId(tradeRoutePair.townId1));
 	Building& building2 = _simulation->building(_simulation->GetTownhallId(tradeRoutePair.townId2));
@@ -37,19 +47,10 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 	check(building1.townId() != -1);
 	int32 playerId2 = building2.playerId();
 
-	int32 popupPlayerId = command.playerId != -1 ? command.playerId : playerId1;
+	TryConnectTradeEnum connectTradeEnum = TryEstablishTradeRoute_Helper(tradeRoutePair);
 	
-	// Already established
-	if (HasTradeRoute(tradeRoutePair)) 
-	{
-		_simulation->AddPopupToFront(popupPlayerId,
-			LOCTEXT("AlreadyHasTradeRoute","Already establish the trade route."), 
-			ExclusiveUIEnum::None, "PopupCannot"
-		);
-		return false;
-	}
-
-	auto connectTradeRoute = [&]()
+	if (connectTradeEnum == TryConnectTradeEnum::CanConnectLand ||
+		connectTradeEnum == TryConnectTradeEnum::CanConnectWater)
 	{
 		// Connect both players
 		_tradeRoutePairs.push_back(tradeRoutePair);
@@ -73,7 +74,8 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 		/*
 		 * Unlocks Caravansary
 		 */
-		if (_simulation->TryDoCallOnceAction(command.playerId, PlayerCallOnceActionEnum::UnlockCaravan))
+		if (connectTradeEnum == TryConnectTradeEnum::CanConnectLand &&
+			_simulation->TryDoCallOnceAction(command.playerId, PlayerCallOnceActionEnum::UnlockCaravan))
 		{
 			_simulation->AddDrawCards(command.playerId, CardEnum::Caravansary);
 
@@ -90,75 +92,143 @@ bool WorldTradeSystem::TryEstablishTradeRoute(const FGenericCommand& command)
 				)
 			);
 		}
-	};
+	}
+	else
+	{
+		TryEstablishTradeFailPopup(connectTradeEnum, command);
+	}
+	
+}
+
+void WorldTradeSystem::TryEstablishTradeFailPopup(TryConnectTradeEnum connectTradeEnum, const FGenericCommand& command)
+{
+	if (connectTradeEnum == TryConnectTradeEnum::AlreadyConnected)
+	{
+		_simulation->AddPopupToFront(command.playerId,
+			LOCTEXT("AlreadyHasTradeRoute", "Already establish the trade route."),
+			ExclusiveUIEnum::None, "PopupCannot"
+		);
+	}
+	else if (connectTradeEnum == TryConnectTradeEnum::NeedLandRoute)
+	{
+		// Complain about needing road to trade
+		_simulation->AddPopupToFront(command.playerId,
+			LOCTEXT("NeedIntercityRoadToMakeTradeRoute", "Need intercity road to establish the trade route. Connect your Townhall to target Townhall with Road."),
+			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
+		);
+	}
+	else if (connectTradeEnum == TryConnectTradeEnum::NeedPort)
+	{
+		// Complain about needing port
+		_simulation->AddPopupToFront(command.playerId,
+			LOCTEXT("NeedPortToMakeTradeRoute", "Need Trading Port to establish the trade route."),
+			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
+		);
+	}
+}
+
+TryConnectTradeEnum WorldTradeSystem::TryEstablishTradeRoute_Helper(const TradeRoutePair& tradeRoutePair)
+{
+	SCOPE_TIMER("TryEstablishTradeRoute");
+	
+	auto pathAI = _simulation->pathAI();
+	
+	// Already established
+	if (HasTradeRoute(tradeRoutePair)) 
+	{
+		return TryConnectTradeEnum::AlreadyConnected;
+	}
+	
 
 	/*
 	 * Land Trade
+	 * If any pair of colony/capital can be connected, establish the trade route between capitals
 	 */
+	std::vector<int32> townIds1;
+	std::vector<int32> townIds2;
 
-	auto findNearestRoadTile = [&](WorldTile2 gateTileIn) -> WorldTile2
-	{
-		WorldTile2 result = WorldTile2::Invalid;
-		auto tryFindStartTile = [&](WorldTile2 shift) {
-			if (result == WorldTile2::Invalid) {
-				WorldTile2 testTile = gateTileIn + shift;
-				if (pathAI->isRoad(testTile.x, testTile.y)) {
-					result = testTile;
+	if (IsMajorTown(tradeRoutePair.townId1)) {
+		int32 townPlayerId = _simulation->townPlayerId(tradeRoutePair.townId1);
+		townIds1 = _simulation->GetTownIds(townPlayerId);
+	} else {
+		townIds1 = { tradeRoutePair.townId1 };
+	}
+	if (IsMajorTown(tradeRoutePair.townId2)) {
+		int32 townPlayerId = _simulation->townPlayerId(tradeRoutePair.townId2);
+		townIds2 = _simulation->GetTownIds(townPlayerId);
+	} else {
+		townIds2 = { tradeRoutePair.townId2 };
+	}
+
+	for (int32 townId1 : townIds1) {
+		for (int32 townId2 : townIds2)
+		{
+			auto findNearestRoadTile = [&](WorldTile2 gateTileIn) -> WorldTile2
+			{
+				WorldTile2 result = WorldTile2::Invalid;
+				auto tryFindStartTile = [&](WorldTile2 shift) {
+					if (result == WorldTile2::Invalid) {
+						WorldTile2 testTile = gateTileIn + shift;
+						if (pathAI->isRoad(testTile.x, testTile.y)) {
+							result = testTile;
+						}
+					}
+				};
+				tryFindStartTile(WorldTile2(1, 0));
+				tryFindStartTile(WorldTile2(-1, 0));
+				tryFindStartTile(WorldTile2(0, 1));
+				tryFindStartTile(WorldTile2(0, -1));
+				return result;
+			};
+
+			Building& building1 = _simulation->building(_simulation->GetTownhallId(townId1));
+			Building& building2 = _simulation->building(_simulation->GetTownhallId(townId2));
+
+			WorldTile2 startTile = findNearestRoadTile(building1.gateTile());
+			WorldTile2 targetTile = findNearestRoadTile(building2.gateTile());
+
+			if (startTile.isValid() && targetTile.isValid())
+			{
+				std::vector<uint32_t> path;
+				bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
+
+				if (succeed) {
+					return TryConnectTradeEnum::CanConnectLand;
 				}
 			}
-		};
-		tryFindStartTile(WorldTile2(1, 0));
-		tryFindStartTile(WorldTile2(-1, 0));
-		tryFindStartTile(WorldTile2(0, 1));
-		tryFindStartTile(WorldTile2(0, -1));
-		return result;
-	};
-
-	WorldTile2 startTile = findNearestRoadTile(building1.gateTile());
-	WorldTile2 targetTile = findNearestRoadTile(building2.gateTile());
-
-	if (startTile.isValid() && targetTile.isValid())
-	{
-		std::vector<uint32_t> path;
-		bool succeed = _simulation->pathAI()->FindPathRoadOnly(startTile.x, startTile.y, targetTile.x, targetTile.y, path);
-
-		if (succeed) {
-			connectTradeRoute();
-			return true;
 		}
 	}
+
 
 	/*
 	 * Water Trade
 	 */
 
-	//! Not Possible to Water Trade?
-	std::vector<int32> portIds2 = _simulation->GetPortIds(tradeRoutePair.townId2);
-	if (portIds2.size() == 0)
+	//! Not Possible to Water Trade? This is because the target has no port
+	bool targetHasPort = false;
+	for (int32 townId1 : townIds1)
 	{
-		// Complain about needing road to trade
-		_simulation->AddPopupToFront(popupPlayerId,
-			LOCTEXT("NeedIntercityRoadToMakeTradeRoute", "Need intercity road to establish the trade route. Connect your Townhall to target Townhall with Road."),
-			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
-		);
-		return false;
+		std::vector<int32> targetTownPortIds = _simulation->GetPortIds(townId1);
+		if (targetTownPortIds.size() > 0) {
+			targetHasPort = true;
+		}
+	}
+	if (!targetHasPort) {
+		return TryConnectTradeEnum::NeedLandRoute;
 	}
 
-
-	std::vector<int32> portIds1 = _simulation->GetPortIds(tradeRoutePair.townId1);
-	if (portIds1.size() == 0)
+	bool selfHasPort = false;
+	for (int32 townId2 : townIds2)
 	{
-		// Complain about needing port
-		_simulation->AddPopupToFront(popupPlayerId,
-			LOCTEXT("NeedPortToMakeTradeRoute", "Need Trading Port to establish the trade route."),
-			ExclusiveUIEnum::TownAutoTradeUI, "PopupCannot"
-		);
-		return false;
+		std::vector<int32> selfTownPortIds = _simulation->GetPortIds(townId2);
+		if (selfTownPortIds.size() > 0) {
+			selfHasPort = true;
+		}
 	}
 
+	return selfHasPort ? TryConnectTradeEnum::CanConnectWater : TryConnectTradeEnum::NeedPort;
 
-	connectTradeRoute();
-	return true;
+	
 
 	// TODO: Province flood to see if the water tiles are connected
 	

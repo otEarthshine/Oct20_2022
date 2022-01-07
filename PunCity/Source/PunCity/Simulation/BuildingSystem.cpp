@@ -238,6 +238,10 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::Castle, Castle);
 		CASE_BUILDING(CardEnum::GrandPalace, GrandMuseum);
 		CASE_BUILDING(CardEnum::ExhibitionHall, ExhibitionHall);
+
+		CASE_BUILDING(CardEnum::Mosque, Mosque);
+		CASE_BUILDING(CardEnum::SultansCastle, SultansCastle);
+		CASE_BUILDING(CardEnum::SultansPalace, SultansPalace);
 		CASE_BUILDING(CardEnum::GreatMosque, GreatMosque);
 
 

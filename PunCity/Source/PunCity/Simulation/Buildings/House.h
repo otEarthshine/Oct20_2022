@@ -692,7 +692,7 @@ public:
 		int32 centerYShift = 5;
 		int32 centerXShift = -8;
 
-		WorldTile2 size = buildingInfo().size;
+		WorldTile2 size = buildingInfo().baseBuildingSize;
 		check(size.x * size.y == buildingMark.size());
 		for (int32 xIndex = 0; xIndex < size.x; xIndex++) {
 			for (int32 yIndex = 0; yIndex < size.y; yIndex++) {

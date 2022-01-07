@@ -108,6 +108,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 
 	_provinceSystem.InitProvince(this);
 
+	_terrainGenerator->SetGameMap2_Walkable();
+
 	_unitSystem = make_unique<UnitSystem>();
 	_unitSystem->Init(this);
 
@@ -207,8 +209,8 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 #if CHECK_TICKHASH
 	_tickHashes.Clear();
 	_serverTickHashes.Clear();
-	_currentInputHashes = 0;
 #endif
+	_currentInputHashes = 0;
 	
 #if KEEP_ACTION_HISTORY
 	_commandsExecuted.clear();
@@ -262,7 +264,7 @@ void GameSimulationCore::InitOasis()
 	 */
 	auto plantOasis = [&](WorldTile2 oasisCenterTile, Direction oasisFaceDirection)
 	{
-		WorldTile2 size = GetBuildingInfo(CardEnum::Oasis).size;
+		WorldTile2 size = GetBuildingInfo(CardEnum::Oasis).baseBuildingSize;
 		std::vector<uint8> isHole = {
 			// Front Side... (-y)
 			0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, 0, 0,   0, 0, 0, // Y
@@ -382,7 +384,7 @@ void GameSimulationCore::InitProvinceBuildings()
 		parameters.buildingEnum = static_cast<uint8>(buildingEnum);
 		parameters.faceDirection = static_cast<uint8>(faceDirection);
 		parameters.center = centerTile;
-		parameters.area = BuildingArea(parameters.center, GetBuildingInfo(buildingEnum).size, faceDirection);
+		parameters.area = BuildingArea(parameters.center, GetBuildingInfo(buildingEnum).baseBuildingSize, faceDirection);
 		parameters.playerId = -1;
 		parameters.townId = townId;
 
@@ -665,7 +667,7 @@ void GameSimulationCore::InitProvinceBuildings()
 				//						provinceCenter.y + (GameRand::Rand() % randSize) - rangeFromCenter); // current unit's tile is gate tile.
 
 				WorldTile2 centerTile = provinceCenter;
-				TileArea area = BuildingArea(centerTile, GetBuildingInfo(buildingEnum).size, faceDirection);
+				TileArea area = BuildingArea(centerTile, GetBuildingInfo(buildingEnum).baseBuildingSize, faceDirection);
 
 				bool canPlace = true;
 				if (area.isInMap()) {
@@ -1597,7 +1599,17 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 
 		if (Time::Ticks() % (Time::TicksPerSecond * 10) == 0)
 		{
-			recentTickToHash.push_back(std::pair<int32, int32>(Time::Ticks(), GameRand::RandState()));
+			int32 tmp;
+			uint32_t randState = GameRand::RandState();
+			std::memcpy(&tmp, &randState, sizeof(tmp));
+			
+			recentTickToHash.push_back(std::vector<int32>{
+				Time::Ticks(),
+				_currentInputHashes,
+				tmp,
+			});
+
+			
 			if (recentTickToHash.size() > DesyncWarningHashCount) {
 				recentTickToHash.erase(recentTickToHash.begin());
 			}
@@ -1778,9 +1790,9 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 	default: UE_DEBUG_BREAK();
 	}
 
-#if CHECK_TICKHASH
+//#if CHECK_TICKHASH
 	_currentInputHashes += command->GetTickHash();
-#endif
+//#endif
 
 #if KEEP_ACTION_HISTORY
 	// Poor man's copy
@@ -6806,7 +6818,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 	 */
 	{
 		FPlaceBuilding params = command;
-		WorldTile2 size = GetBuildingInfo(CardEnum::Townhall).size;
+		WorldTile2 size = GetBuildingInfo(CardEnum::Townhall).baseBuildingSize;
 
 		//townhallBld.InstantClearArea();
 		//townhallBld.SetAreaWalkable();
@@ -6941,7 +6953,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			
 			if (commandBuildingEnum == CardEnum::Colony)
 			{
-				bld = makeBuilding(CardEnum::IntercityLogisticsHub, GetBuildingInfo(CardEnum::IntercityLogisticsHub).size, buildingCenter1, Direction::N);
+				bld = makeBuilding(CardEnum::IntercityLogisticsHub, GetBuildingInfo(CardEnum::IntercityLogisticsHub).baseBuildingSize, buildingCenter1, Direction::N);
 				PUN_ENSURE(bld, return);
 
 				// Unlock IntercityLogisticsHub
@@ -6954,7 +6966,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 			}
 			else {
 				WorldTile2 center = buildingCenter1 + WorldTile2::RotateTileVector(PortColony_PortExtraShiftTileVec, townhallFaceDirection);
-				bld = makeBuilding(CardEnum::IntercityLogisticsPort, GetBuildingInfo(CardEnum::IntercityLogisticsPort).size, center, Direction::N);
+				bld = makeBuilding(CardEnum::IntercityLogisticsPort, GetBuildingInfo(CardEnum::IntercityLogisticsPort).baseBuildingSize, center, Direction::N);
 				PUN_ENSURE(bld, return);
 
 				// Unlock IntercityLogisticsHub

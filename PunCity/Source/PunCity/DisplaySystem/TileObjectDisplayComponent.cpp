@@ -532,7 +532,7 @@ void UTileObjectDisplayComponent::UpdateDisplay_PrepareReset(MeshChunkInfo& chun
 
 			bool isHidingThisTree =
 				isHidingTree ||
-				(placementInfo.placementType == PlacementType::Building && WorldTile2::Distance(WorldTile2(worldTileId), placementInfo.mouseOnTile) < GetBuildingInfo(placementInfo.buildingEnum).size.maxElement() + 2);
+				(placementInfo.placementType == PlacementType::Building && WorldTile2::Distance(WorldTile2(worldTileId), placementInfo.mouseOnTile) < GetBuildingInfo(placementInfo.buildingEnum).baseBuildingSize.maxElement() + 2);
 			
 			if (isHidingThisTree) {
 				meshes->Add(GetMeshName(tileObjEnum, static_cast<int32>(TileSubmeshEnum::Stump)) /*tileObjectName + FString::FromInt(static_cast<int32>(TileSubmeshEnum::Stump))*/, worldTileId + 1 * GameMapConstants::TilesPerWorld, transform, ageState, worldTileId);

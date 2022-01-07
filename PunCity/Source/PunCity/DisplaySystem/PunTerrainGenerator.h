@@ -35,8 +35,8 @@ public:
 	
 	bool SaveOrLoad(bool isSaving);
 
-	void SetGameMap(bool isMapSetup = true);
-	//void SetProvinceMap(const std::vector<int32>& provinceId2x2Vec);
+	void SetGameMap();
+	void SetGameMap2_Walkable();
 
 	// Set some tiles to terrain (such as those without provinceId)
 	void SetMountainTile(WorldTile2 tile);

@@ -293,35 +293,37 @@ void UMinorTownWorldUI::UpdateMinorTownUI(bool isMini)
 	AttackButton3->SetVisibility(ESlateVisibility::Collapsed);
 
 	// Not already a vassal? Might be able to attack
-	if (!sim.townManagerBase(playerId())->IsVassal(townId()) &&
-		hasNoBattle)
+	if (hasNoBattle)
 	{
-		// Vassalize
-		if (canVassalize)
+		if (!sim.townManagerBase(playerId())->IsVassal(townId()))
 		{
-			//! Vassalize (AttackButton1)
-			SetText(AttackButton1RichText, 
-				LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)")
-			);
-
-			BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
-			AttackButton1->SetVisibility(ESlateVisibility::Visible);
-
-			// Can also liberate if there is an existing conquerer
-			if (uiTownManagerBase->lordPlayerId() != -1) {
-				SetText(AttackButton2RichText, 
-					LOCTEXT("LiberationButtonRichText_Text", "Liberation")
+			// Vassalize
+			if (canVassalize)
+			{
+				//! Vassalize (AttackButton1)
+				SetText(AttackButton1RichText,
+					LOCTEXT("VassalizeButtonRichText_Text", "Conquer (Vassalize)")
 				);
-				AttackButton2->SetVisibility(ESlateVisibility::Visible);
-				BUTTON_ON_CLICK(AttackButton2, this, &UMinorTownWorldUI::OnClickLiberateButton);
-			}
-		}
 
-		//! Raze
-		if (canRaze)
-		{
-			AttackButton3->SetVisibility(ESlateVisibility::Visible);
-			BUTTON_ON_CLICK(AttackButton3, this, &UMinorTownWorldUI::OnClickRazeButton);
+				BUTTON_ON_CLICK(AttackButton1, this, &UMinorTownWorldUI::OnClickVassalizeButton);
+				AttackButton1->SetVisibility(ESlateVisibility::Visible);
+
+				// Can also liberate if there is an existing conquerer
+				if (uiTownManagerBase->lordPlayerId() != -1) {
+					SetText(AttackButton2RichText,
+						LOCTEXT("LiberationButtonRichText_Text", "Liberation")
+					);
+					AttackButton2->SetVisibility(ESlateVisibility::Visible);
+					BUTTON_ON_CLICK(AttackButton2, this, &UMinorTownWorldUI::OnClickLiberateButton);
+				}
+			}
+
+			//! Raze
+			if (canRaze)
+			{
+				AttackButton3->SetVisibility(ESlateVisibility::Visible);
+				BUTTON_ON_CLICK(AttackButton3, this, &UMinorTownWorldUI::OnClickRazeButton);
+			}
 		}
 	}
 

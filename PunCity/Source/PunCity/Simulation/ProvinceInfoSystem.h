@@ -278,7 +278,7 @@ public:
 						WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
 
 						// Also need to be able to add the main Minor City Building
-						WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).size;
+						WorldTile2 oasisSize = GetBuildingInfo(CardEnum::Oasis).baseBuildingSize;
 						Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
 						TileArea largeLandSlotArea = BuildingArea(centerTile, oasisSize, faceDirection);
 
@@ -350,7 +350,7 @@ public:
 					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
 
 					// Also need to be able to add the main Minor City Building
-					WorldTile2 largeLandSlotSize = GetBuildingInfo(CardEnum::MayanPyramid).size;
+					WorldTile2 largeLandSlotSize = GetBuildingInfo(CardEnum::MayanPyramid).baseBuildingSize;
 					Direction faceDirection = Direction::S;//  static_cast<Direction>(GameRand::Rand(provinceId) % 4);
 					TileArea largeLandSlotArea = BuildingArea(centerTile, largeLandSlotSize, faceDirection);
 
@@ -381,7 +381,7 @@ public:
 						{
 							auto checkPortSlotAvailable = [&](WorldTile2 centerTile, Direction faceDirection)
 							{
-								WorldTile2 portSize = GetBuildingInfo(CardEnum::MinorCityPort).size;
+								WorldTile2 portSize = GetBuildingInfo(CardEnum::MinorCityPort).baseBuildingSize;
 								BuildPlacement portPlacement(centerTile, portSize, faceDirection);
 								TileArea portArea = portPlacement.area();
 
@@ -412,7 +412,7 @@ public:
 
 
 								// Also need to be able to add the main Minor City Building
-								WorldTile2 minorCitySize = GetBuildingInfo(CardEnum::MinorCity).size;
+								WorldTile2 minorCitySize = GetBuildingInfo(CardEnum::MinorCity).baseBuildingSize;
 								int32 shift = (portSize.x / 2 + 1) + minorCitySize.x / 2;
 								WorldTile2 minorCityCenterTile = centerTile + WorldTile2::DirectionTile(faceDirection) * shift;
 								TileArea minorCityArea = BuildingArea(minorCityCenterTile, minorCitySize, OppositeDirection(faceDirection));
@@ -476,7 +476,7 @@ public:
 					WorldTile2 centerTile = provinceSys.GetProvinceCenterTile(provinceId);
 					
 					// Also need to be able to add the main Minor City Building
-					WorldTile2 minorCitySize = GetBuildingInfo(CardEnum::MinorCity).size;
+					WorldTile2 minorCitySize = GetBuildingInfo(CardEnum::MinorCity).baseBuildingSize;
 					Direction faceDirection = static_cast<Direction>(GameRand::Rand(provinceId) % 4);
 					TileArea minorCityArea = BuildingArea(centerTile, minorCitySize, faceDirection);
 

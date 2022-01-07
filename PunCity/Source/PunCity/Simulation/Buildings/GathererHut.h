@@ -1004,19 +1004,15 @@ public:
 
 		builtNumber = _simulation->playerBuildingFinishedCount(_playerId, _buildingEnum);
 
-		bool allWondersBuilt = true;
+		std::unordered_map<CardEnum, int32> wonders;
 		for (CardEnum buildingEnum : WorldWonders) {
-			int32 wonderCount = 0;
-			_simulation->ExecuteOnPlayersAndAI([&](int32 playerId) {
-				wonderCount += _simulation->playerBuildingFinishedCount(playerId, buildingEnum);
-			});
-			if (wonderCount == 0) {
-				allWondersBuilt = false;
-				break;
+			int32 wonderCount = _simulation->playerBuildingFinishedCount(_playerId, buildingEnum);
+			if (wonderCount > 0) {
+				wonders[buildingEnum] = wonderCount;
 			}
 		}
 		
-		if (allWondersBuilt) {
+		if (wonders.size() >= 4) {
 			_simulation->ExecuteScoreVictory();
 		}
 	}
@@ -1071,6 +1067,21 @@ class ExhibitionHall final : public WorldWonder
 public:
 };
 
+
+
+
+class Mosque final : public WorldWonder
+{
+public:
+};
+class SultansCastle final : public WorldWonder
+{
+public:
+};
+class SultansPalace final : public WorldWonder
+{
+public:
+};
 class GreatMosque final : public WorldWonder
 {
 public:

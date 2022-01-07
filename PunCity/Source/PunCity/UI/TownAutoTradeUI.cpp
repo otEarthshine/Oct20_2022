@@ -248,8 +248,8 @@ void UTownAutoTradeUI::TickUI()
 
 			// Show Trade Route Status
 			TradeRoutePair tradeRoute;
-			tradeRoute.townId1 = uiTownId;
-			tradeRoute.townId2 = townId;
+			tradeRoute.townId1 = townId; // target
+			tradeRoute.townId2 = playerId(); // self
 
 			bool hasTradeRoute = worldTradeSys.HasTradeRoute(tradeRoute);
 			bool canCreateTradeRoute = !hasTradeRoute && sim.IsResearched(sim.townPlayerId(uiTownId), TechEnum::TradeRoute);
@@ -257,9 +257,10 @@ void UTownAutoTradeUI::TickUI()
 			tradeOffersRow->TradeRouteCloseXButton->SetVisibility(hasTradeRoute ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 			tradeOffersRow->TradeRouteConnectedText->SetVisibility(hasTradeRoute ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
+			// CallbackEnum::EstablishTradeRoute
 			tradeOffersRow->callbackParent = this;
-			tradeOffersRow->callbackVar1 = tradeRoute.townId1;
-			tradeOffersRow->callbackVar2 = tradeRoute.townId2;
+			tradeOffersRow->callbackVar1 = tradeRoute.townId1; // target
+			tradeOffersRow->callbackVar2 = tradeRoute.townId2; // self
 
 			tradeOffersRow->tradeRoute = tradeRoute;
 		});

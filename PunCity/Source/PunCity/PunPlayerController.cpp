@@ -1060,6 +1060,10 @@ void APunPlayerController::GamePause_ToServer_Implementation() {
 
 void APunPlayerController::CheckDesyncWarning()
 {
+	// This calls after tick has just been sent
+	// Given that the RPC arrives in order
+	//  - simulation would have executed the same amount of ticks by the time this runs
+	
 	if (APunGameMode* gameMode = Cast<APunGameMode>(UGameplayStatics::GetGameMode(this)))
 	{
 		//! Desync Warning
@@ -1067,8 +1071,9 @@ void APunPlayerController::CheckDesyncWarning()
 		const auto& tickToHashes = simulation().recentTickToHash;
 		for (int32 i = 0; i < std::min(5, static_cast<int32>(tickToHashes.size())); i++)
 		{
-			serverTickToHashes.Add(tickToHashes[i].first);
-			serverTickToHashes.Add(tickToHashes[i].second);
+			serverTickToHashes.Add(tickToHashes[i][static_cast<int>(DesyncEnum::Tick)]);
+			serverTickToHashes.Add(tickToHashes[i][static_cast<int>(DesyncEnum::Input)]);
+			serverTickToHashes.Add(tickToHashes[i][static_cast<int>(DesyncEnum::Rand)]);
 		}
 
 		//! Send Ticks
@@ -1081,12 +1086,23 @@ void APunPlayerController::CheckDesyncWarning()
 void APunPlayerController::CheckDesyncWarning_ToClient_Implementation(const TArray<int32>& serverTickToHashes)
 {
 	const auto& tickToHashes = simulation().recentTickToHash;
-	
-	for (int32 i = 0; i < serverTickToHashes.Num(); i += 2) {
-		for (int32 j = 0; j < tickToHashes.size(); j++) {
-			if (serverTickToHashes[i] == tickToHashes[j].first) {
-				if (serverTickToHashes[i + 1] != tickToHashes[j].second) {
-					simulation().isDesynced = true;
+
+	if (simulation().isDesynced == DesyncEnum::NotDesynced)
+	{
+		for (int32 i = 0; i < serverTickToHashes.Num(); i += static_cast<int>(DesyncEnum::Count)) {
+			for (int32 j = 0; j < tickToHashes.size(); j++)
+			{
+				// loop through to check for the same tick, then compare the rest of the content
+				if (serverTickToHashes[i + static_cast<int>(DesyncEnum::Tick)] == tickToHashes[j][static_cast<int>(DesyncEnum::Tick)])
+				{
+					for (int32 k = static_cast<int>(DesyncEnum::Input); k < static_cast<int>(DesyncEnum::Count); k++)
+					{
+						if (serverTickToHashes[i + k] != tickToHashes[j][k])
+						{
+							simulation().isDesynced = static_cast<DesyncEnum>(k);
+							return;
+						}
+					}
 				}
 			}
 		}

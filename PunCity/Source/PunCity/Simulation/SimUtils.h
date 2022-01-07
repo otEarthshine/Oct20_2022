@@ -103,7 +103,7 @@ public:
 		// Spiral from the middle of province's rectArea
 		TileArea provinceRectArea = provinceSys.GetProvinceRectArea(provinceId);
 		
-		WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).size;
+		WorldTile2 townhallSize = GetBuildingInfo(CardEnum::Townhall).baseBuildingSize;
 		TileArea area = BuildingArea(provinceRectArea.centerTile(), townhallSize, Direction::S);
 
 		// Add Road...

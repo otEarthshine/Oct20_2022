@@ -186,8 +186,12 @@ public:
 		route.townId2 = townId2;
 		return HasTradeRoute(route);
 	}
+
+	bool CanEstablishTradeRoute(const FGenericCommand& command);
 	
-	bool TryEstablishTradeRoute(const FGenericCommand& command);
+	void TryEstablishTradeRoute(const FGenericCommand& command);
+	void TryEstablishTradeFailPopup(TryConnectTradeEnum connectTradeEnum, const FGenericCommand& command);
+	TryConnectTradeEnum TryEstablishTradeRoute_Helper(const TradeRoutePair& tradeRoutePair);
 	void TryCancelTradeRoute(const FGenericCommand& command);
 
 	void RemoveTradeRouteNode(int32 townId);

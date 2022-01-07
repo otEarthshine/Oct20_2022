@@ -213,6 +213,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	// TODO: Garden
 	LoadBuilding(FactionEnum::Europe, CardEnum::Garden, "Garden_Variation1", "Garden/Variation1");
+	LoadBuilding(FactionEnum::Arab, CardEnum::Garden, "Garden_V1", "Garden/V1");
 	//TryLoadBuildingModuleSet("Garden2", "Garden/Variation2");
 	//TryLoadBuildingModuleSet("Garden3", "Garden/Variation3");
 
@@ -1864,7 +1865,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet_Old(FactionEnum factionEnum
 	FString buildingPath = GetBuildingPath(factionEnum);
 	IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
 
-	FString moduleSetNameWithFaction = WithFactionName(moduleSetNameIn);
+	FString moduleSetNameWithFaction = WithFactionNameInternal(moduleSetNameIn);
 
 	TArray<FString> meshTypeNames = {
 		"SpecialInstant",
@@ -1954,7 +1955,7 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet_Old(FactionEnum factionEnum
 void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FString moduleSetName, FString meshSetFolder, CardEnum buildingEnum, int32 era)
 {
 	FString buildingPath = GetBuildingPath(factionEnum);
-	moduleSetName = WithFactionName(factionEnum, moduleSetName);
+	moduleSetName = WithFactionNameInternal(factionEnum, moduleSetName);
 	
 	TArray<FString> foundFiles;
 
@@ -2622,7 +2623,7 @@ FVector UAssetLoaderComponent::DetectRotatorPosition(FString meshName, UStaticMe
 
 void UAssetLoaderComponent::DetectParticleSystemPosition(CardEnum buildingEnum, FactionEnum factionEnum, UStaticMesh* mesh)
 {
-	FString meshName = WithFactionName(factionEnum, mesh->GetName());
+	FString meshName = WithFactionNameInternal(factionEnum, mesh->GetName());
 
 	DetectOrLoadMeshVertexInfo(meshName, mesh);
 

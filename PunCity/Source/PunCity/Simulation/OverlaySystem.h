@@ -271,7 +271,14 @@ public:
 	}
 
 private:
-	DitchTile* GetIrrigationDitch(WorldTile2 tile) {
+	DitchTile* GetIrrigationDitch(WorldTile2 tile)
+	{
+		check(tile.isValid());
+		check(tile.region().IsValid());
+		//if () {
+		//	
+		//}
+		
 		std::vector<DitchTile>& ditchTiles = _regionToIrrigationDitch[tile.regionId()];
 		for (DitchTile& ditchTile : ditchTiles) {
 			if (ditchTile.tile == tile) {

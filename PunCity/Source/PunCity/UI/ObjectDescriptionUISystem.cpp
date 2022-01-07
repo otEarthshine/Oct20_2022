@@ -2149,7 +2149,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					{
 						auto& pump = building.subclass<IrrigationPump>();
 						int32 waterTotal = pump.efficiency();
-						
+
+						focusBox->AddSpacer();
 						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
 							LOCTEXT("Water usage", "Water usage"),
 							FText::Format(INVTEXT("{0}/{1}"), TEXT_NUM(pump.displayWaterUsage()), TEXT_NUM(waterTotal))
@@ -3204,6 +3205,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					case CardEnum::Windmill: overlayType = OverlayType::Windmill; break;
 
 					case CardEnum::IrrigationReservoir: overlayType = OverlayType::IrrigationReservoir; break;
+					case CardEnum::IrrigationPump: overlayType = OverlayType::IrrigationPump; break;
+					
 					case CardEnum::Market: overlayType = OverlayType::Market; break;
 					case CardEnum::ShippingDepot: overlayType = OverlayType::ShippingDepot; break;
 					

@@ -1017,7 +1017,7 @@ private:
 		_lastTempAuxGroup = auxGroup;
 
 		_factionEnumToBuildingEnumToModuleGroups[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)].Add(
-			ModuleTransformGroup::CreateSet(WithFactionName(modelFactionEnum, moduleGroupName), auxGroup)
+			ModuleTransformGroup::CreateSet(WithFactionNameInternal(modelFactionEnum, moduleGroupName), auxGroup)
 		);
 		_factionEnumToBuildingEnumToMinEraModel[static_cast<int32>(factionEnum)][static_cast<int>(buildingEnum)] = minEra;
 	}

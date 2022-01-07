@@ -854,22 +854,19 @@ bool PunTerrainGenerator::SaveOrLoad(bool isSaving)
 	return PunFileUtils::LoadFile(saveDataPath, serialize);
 }
 
-void PunTerrainGenerator::SetGameMap(bool isMapSetup)
+void PunTerrainGenerator::SetGameMap()
 {
 	{
 		SCOPE_TIMER("SetGameMap");
 
-		_LOG(PunTerrain, "SetGameMap: isMapSetup:%d tileDimX:%d tileDimY:%d", isMapSetup, _tileDimX, _tileDimY);
+		_LOG(PunTerrain, "SetGameMap: tileDimX:%d tileDimY:%d", _tileDimX, _tileDimY);
 
 		VecReset(_terrainMap, TerrainTileType::None);
 
 		// Borders are all Ocean
 		auto paintBorder = [&](WorldTile2 tile) {
-			if (isMapSetup) {
-				_simulation->SetWalkableSkipFlood(tile, false);
-			}
+			_simulation->SetWalkableSkipFlood(tile, false);
 			_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
-			//_regionWaterTileCount[tile.regionId()]++;
 		};
 		for (int y = 0; y < _tileDimY; y++) {
 			paintBorder(WorldTile2(0, y));
@@ -880,6 +877,7 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 			paintBorder(WorldTile2(x, _tileDimY - 1));
 		}
 
+		// Fill _terrainMap
 		// Ignore border
 		for (int y = 1; y < _tileDimY - 1; y++) {
 			for (int x = 1; x < _tileDimX - 1; x++)
@@ -900,9 +898,9 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 					heightMap[(x)	  + (y + 1) * _tileDimX] > MountainHeight ||
 					heightMap[(x + 1) + (y + 1) * _tileDimX] > MountainHeight)
 				{
-					if (isMapSetup) {
-						_simulation->SetWalkableSkipFlood(tile, false);
-					}
+					//if (isMapSetup) {
+					//	_simulation->SetWalkableSkipFlood(tile, false);
+					//}
 					
 					_terrainMap[tile.tileId()] = TerrainTileType::Mountain;
 					//_regionMountainTileCount[tile.regionId()]++;
@@ -919,9 +917,9 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 						heightMap[(x)	  + (y + 1) * _tileDimX] < BeachToWaterHeight ||
 						heightMap[(x + 1) + (y + 1) * _tileDimX] < BeachToWaterHeight)
 				{
-					if (isMapSetup) {
-						_simulation->SetWalkableSkipFlood(tile, false);
-					}
+					//if (isMapSetup) {
+					//	_simulation->SetWalkableSkipFlood(tile, false);
+					//}
 
 					// Resolves River vs Ocean
 					if (heightFD >= RiverMaxDepth - FD0_XXX(003) && riverFraction100(tile) > 90) {
@@ -935,13 +933,36 @@ void PunTerrainGenerator::SetGameMap(bool isMapSetup)
 				}
 			}
 		}
-
 	}
 
 	// Ocean region originate water.. water will flood
-	if (isMapSetup) {
+	//if (isMapSetup) {
 		SCOPE_TIMER("CalculateFertility");
 		CalculateAppeal();
+	//}
+}
+
+void PunTerrainGenerator::SetGameMap2_Walkable()
+{
+	// Set Walkable
+	for (int y = 1; y < _tileDimY - 1; y++) {
+		for (int x = 1; x < _tileDimX - 1; x++)
+		{
+			WorldTile2 tile(x, y);
+
+			if (_terrainMap[tile.tileId()] != TerrainTileType::None)
+			{
+				int32 nearbyNonFlatCount = 0;
+				if (_terrainMap[WorldTile2(x + 1, y).tileId()] != TerrainTileType::None) nearbyNonFlatCount++;
+				if (_terrainMap[WorldTile2(x - 1, y).tileId()] != TerrainTileType::None) nearbyNonFlatCount++;
+				if (_terrainMap[WorldTile2(x, y + 1).tileId()] != TerrainTileType::None) nearbyNonFlatCount++;
+				if (_terrainMap[WorldTile2(x, y - 1).tileId()] != TerrainTileType::None) nearbyNonFlatCount++;
+
+				if (nearbyNonFlatCount > 2) {
+					_simulation->SetWalkableSkipFlood(tile, false);
+				}
+			}
+		}
 	}
 }
 

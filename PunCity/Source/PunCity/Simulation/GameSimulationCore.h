@@ -115,6 +115,24 @@ struct TickHashes
 	}
 };
 
+
+enum class DesyncEnum : uint8
+{
+	Tick,
+	Input,
+	Rand,
+
+	Count,
+
+	NotDesynced,
+};
+const std::vector<FString> DesyncEnumName
+{
+	"Tick",
+	"Input",
+	"Rand",
+};
+
 /**
  * 
  */
@@ -4284,7 +4302,7 @@ public:
 				params.buildingEnum = static_cast<uint8>(CardEnum::Townhall);
 				params.faceDirection = static_cast<uint8>(Direction::S);
 				params.center = center;
-				params.area = BuildingArea(params.center, GetBuildingInfo(CardEnum::Townhall).size, static_cast<Direction>(params.faceDirection));
+				params.area = BuildingArea(params.center, GetBuildingInfo(CardEnum::Townhall).baseBuildingSize, static_cast<Direction>(params.faceDirection));
 				params.playerId = gameManagerPlayerId();
 				int32 townhallId = PlaceBuilding(params);
 
@@ -4329,7 +4347,7 @@ public:
 			command.center = WorldTile2(buildingJson->GetIntegerField("centerX"), buildingJson->GetIntegerField("centerY"));
 			command.faceDirection = buildingJson->GetIntegerField("faceDirection");
 
-			command.area = BuildingArea(command.center, GetBuildingInfoInt(command.buildingEnum).size, static_cast<Direction>(command.faceDirection));
+			command.area = BuildingArea(command.center, GetBuildingInfoInt(command.buildingEnum).baseBuildingSize, static_cast<Direction>(command.faceDirection));
 			command.playerId = gameManagerPlayerId();
 			
 			PlaceBuilding(command);
@@ -4580,9 +4598,9 @@ public:
 	DescriptionUIState _descriptionUIState;
 
 	// desync check
-	std::vector<std::pair<int32, int32>> recentTickToHash; // tick, hash
-	bool isDesynced = false;
-	static const int32 DesyncWarningHashCount = 10;
+	std::vector<std::vector<int32>> recentTickToHash; // tick, hash
+	DesyncEnum isDesynced = DesyncEnum::NotDesynced;
+	static const int32 DesyncWarningHashCount = 10; // 10 Hashes 100 sec
 	
 private:
 	int32 _tickCount = 0;
@@ -4647,8 +4665,8 @@ private:
 #if CHECK_TICKHASH
 	TickHashes _tickHashes;
 	TickHashes _serverTickHashes;
-	int32 _currentInputHashes = 0;
 #endif
+	int32 _currentInputHashes = 0;
 
 #if KEEP_ACTION_HISTORY
 	std::vector<std::shared_ptr<FNetworkCommand>> _commandsExecuted; // Not Serialized

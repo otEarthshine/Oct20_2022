@@ -127,7 +127,7 @@ private:
 		set(CardEnum::StoneRoad, { ModuleTransformGroup({ ModuleTransform("StoneRoad") }) });
 
 
-		setName(CardEnum::HumanitarianAidCamp, WithFactionName("StorageYard"));
+		setName(CardEnum::HumanitarianAidCamp, WithFactionNameInternal("StorageYard"));
 
 		//set(CardEnum::RegionTribalVillage, {
 		//	ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
@@ -139,9 +139,9 @@ private:
 		//	),
 		//});
 
-		setName(CardEnum::RegionShrine, WithFactionName("AncientShrine"));
+		setName(CardEnum::RegionShrine, WithFactionNameInternal("AncientShrine"));
 		//setName(CardEnum::RegionPort, "PortVillage");
-		setName(CardEnum::RegionCrates, WithFactionName("RegionCratePile"));
+		setName(CardEnum::RegionCrates, WithFactionNameInternal("RegionCratePile"));
 
 		//set(CardEnum::MinorCity, {
 		//		ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
@@ -164,15 +164,15 @@ private:
 
 		//setName(CardEnum::Fort, WithFactionName("Outpost"));
 		//setName(CardEnum::ResourceOutpost, WithFactionName("Colony"));
-		setName(CardEnum::ResearchLab, WithFactionName("InventorsWorkshop"));
+		setName(CardEnum::ResearchLab, WithFactionNameInternal("InventorsWorkshop"));
 
 		set(CardEnum::IntercityRoad, {
 			ModuleTransformGroup({ ModuleTransform("DirtRoad")})
 		});
 
-		setName(CardEnum::ChichenItza, WithFactionName("ChichenItza"));
+		setName(CardEnum::ChichenItza, WithFactionNameInternal("ChichenItza"));
 
-		setName(CardEnum::IrrigationReservoir, WithFactionName("IrrigationReservoir"));
+		setName(CardEnum::IrrigationReservoir, WithFactionNameInternal("IrrigationReservoir"));
 
 		set(CardEnum::Tunnel, {
 			ModuleTransformGroup({ ModuleTransform("Tunnel", FTransform::Identity, 1.0f, ModuleTypeEnum::Frame)}),
@@ -188,13 +188,13 @@ private:
 		});
 
 
-		setName(CardEnum::FlowerBed, WithFactionName("FlowerBed"));
-		setName(CardEnum::GardenShrubbery1, WithFactionName("GardenShrubbery1"));
-		setName(CardEnum::GardenCypress, WithFactionName("GardenCypress"));
+		setName(CardEnum::FlowerBed, WithFactionNameInternal("FlowerBed"));
+		setName(CardEnum::GardenShrubbery1, WithFactionNameInternal("GardenShrubbery1"));
+		setName(CardEnum::GardenCypress, WithFactionNameInternal("GardenCypress"));
 		
 
 		//! Trailer
-		setName(CardEnum::FakeTownhall, WithFactionName("Townhall0"));
+		setName(CardEnum::FakeTownhall, WithFactionNameInternal("Townhall0"));
 		
 		//set(CardEnum::FakeTribalVillage, {
 		//	ModuleTransformGroup::CreateSet(WithFactionName("TribalVillage"), {},
@@ -212,7 +212,7 @@ private:
 			if (buildingEnumToVariationToModuleTransforms[i].Num() == 0) {
 				CardEnum buildingEnum = static_cast<CardEnum>(i);
 				if (buildingEnum != CardEnum::Farm) {
-					setName(buildingEnum, WithFactionName("Ministry"));
+					setName(buildingEnum, WithFactionNameInternal("Ministry"));
 				}
 			}
 		}

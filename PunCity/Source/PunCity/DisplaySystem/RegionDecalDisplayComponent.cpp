@@ -195,7 +195,7 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 					int32_t localTileId = x + y * CoordinateConstants::TilesPerRegion;
 					uint8_t overlayColor = 0;
 
-					if (overlayType == OverlayType::Appeal)
+					if (IsAppealShowingOverlay(overlayType))
 					{
 						if (!simulation().IsWaterOrMountain(worldTile)) {
 							int32 appeal = overlaySys.GetAppealPercent(worldTile);
@@ -236,7 +236,7 @@ void URegionDecalDisplayComponent::UpdateDisplay(int regionId, int meshId, World
 			texture->UpdateResource();
 			_overlayDecals[meshId].material->SetTextureParameterValue(TEXT("OverlayMap"), texture);
 
-			bool isSolid = overlayType != OverlayType::Appeal; // Only Appeal is noto solid
+			bool isSolid = !IsAppealShowingOverlay(overlayType); // Only Appeal is noto solid
 			_overlayDecals[meshId].material->SetScalarParameterValue(TEXT("IsSolid"), isSolid);
 
 			simulation().SetNeedDisplayUpdate(DisplayClusterEnum::Overlay, regionId, false);

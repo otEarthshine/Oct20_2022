@@ -203,13 +203,13 @@ void UWorldSpaceUI::TickBuildings()
 			FVector displayLocation = MapUtil::DisplayLocation(data->cameraAtom(), provinceCenter.worldAtom2(), claimProgress.isValid() ? 0.0f : 50.0f);
 			
 			
-			auto getRegionHoverUI = [&]() {
+			auto getRegionHoverUI = [&](bool isBattle) {
 				return _regionHoverUIs.GetHoverUI<URegionHoverUI>(provinceId, UIEnum::RegionHoverUI, this, _worldWidgetParent, displayLocation, dataSource()->zoomDistance(),
 					[&](URegionHoverUI* ui) 
 					{
 						ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
 					}, 
-					WorldZoomTransition_Region4x4ToMap
+					isBattle ? WorldZoomTransition_WorldSpaceUIShrink : WorldZoomTransition_Region4x4ToMap
 				);
 			};
 
@@ -217,7 +217,7 @@ void UWorldSpaceUI::TickBuildings()
 			{
 				if (claimProgress.isValid())
 				{
-					URegionHoverUI* regionHoverUI = getRegionHoverUI();
+					URegionHoverUI* regionHoverUI = getRegionHoverUI(true);
 
 					regionHoverUI->UpdateBattlefieldUI(provinceId, claimProgress);
 
@@ -298,7 +298,7 @@ void UWorldSpaceUI::TickBuildings()
 					}
 					else if (dataSource()->isShowingProvinceOverlay())
 					{
-						URegionHoverUI* regionHoverUI = getRegionHoverUI();
+						URegionHoverUI* regionHoverUI = getRegionHoverUI(false);
 						regionHoverUI->UpdateProvinceOverlayInfo(provinceId);
 
 						regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -364,7 +364,7 @@ void UWorldSpaceUI::TickBuildings()
 				{
 					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
 					
-					TickTownhallInfo(buildingId);
+					TickTownhallInfo(buildingId, false);
 
 					// Townhall Upgrade notification...
 					if (simulation().parameters(playerId())->NeedTownhallUpgradeNoticed)
@@ -1396,11 +1396,12 @@ void UWorldSpaceUI::TickMap()
 							[&](URegionHoverUI* ui)
 							{
 								ui->IconImage->SetBrushFromMaterial(assetLoader()->M_GeoresourceIcon); // SetBrushFromMaterial must be here since doing it every tick causes leak
-							},
-							WorldZoomTransition_Region4x4ToMap
+							}
 						);
 
+						// Mini Battlefield on regionHover
 						regionHoverUI->UpdateBattlefieldUI(battle.provinceId, battle);
+						regionHoverUI->SetRenderScale(FVector2D(1, 1));
 						regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 						regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 					}

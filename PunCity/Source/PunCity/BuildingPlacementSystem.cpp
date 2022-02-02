@@ -2220,7 +2220,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				}
 
 				if (setDockInstruct) {
-					SetInstruction(PlacementInstructionEnum::Dock, true);
+					if (_buildingEnum == CardEnum::IrrigationPump) {
+						SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Pump_Instruct", "<Red>Pump must face fresh water</>"));
+					} else {
+						SetInstruction(PlacementInstructionEnum::Dock, true);
+					}
 				}
 			};
 

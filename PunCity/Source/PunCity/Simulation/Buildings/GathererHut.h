@@ -2114,9 +2114,9 @@ public:
 class CardCombiner : public Building
 {
 public:
-	//virtual void FinishConstruction() override {
-	//	Building::FinishConstruction();
-	//}
+	virtual int32 displayVariationIndex() override {
+		return Building::displayVariationIndex() + 1; // Card Combiner starts at Era 3, but old building+scaffolding at Era 2
+	}
 
 	virtual int32 maxCardSlots() override { return 0; }
 };

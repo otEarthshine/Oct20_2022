@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 71 // 3 digit
+#define MINOR_VERSION 72 // 3 digit
 
-#define VERSION_DAY 6
-#define VERSION_MONTH 1
+#define VERSION_DAY 1
+#define VERSION_MONTH 2
 #define VERSION_YEAR 22
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -32,11 +32,11 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 45 // 3 digit
+#define MINOR_SAVE_VERSION 46 // 3 digit
 
-#define VERSION_SAVE_DAY 24
-#define VERSION_SAVE_MONTH 12
-#define VERSION_SAVE_YEAR 21
+#define VERSION_SAVE_DAY 1
+#define VERSION_SAVE_MONTH 2
+#define VERSION_SAVE_YEAR 22
 
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 #define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
@@ -3063,6 +3063,8 @@ enum class FactionEnum : uint8
 	Arab,
 
 	None,
+
+	Viking,
 };
 
 
@@ -10910,8 +10912,8 @@ public:
 
 static const std::vector<FactionInfo> FactionInfos =
 {
-	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), FString("Duchy"), LOCTEXT("Europe Ability Description", "+5% research speed")),
-	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), FString("Emirates"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield"))
+	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), FString("Europe"), LOCTEXT("Europe Ability Description", "+5% research speed")),
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), FString("Arab"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield"))
 };
 
 #undef LOCTEXT_NAMESPACE

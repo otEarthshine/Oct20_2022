@@ -11,6 +11,7 @@
 #include "Misc/DefaultValueHelper.h"
 #include "PunCity/PunGameInstance.h"
 #include "PlayerListElementUI.h"
+#include "PunButtonImageWithGlow.h"
 #include "PunCity/PunGameMode.h"
 #include "PunCity/MainMenuPlayerController.h"
 
@@ -164,6 +165,20 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	BUTTON_ON_CLICK(ChooseFactionSectionButton, this, &ULobbyUI::OnClickChooseFactionSectionButton);
 	BUTTON_ON_CLICK(ChooseFactionButton1, this, &ULobbyUI::OnClickChooseFaction0);
 	BUTTON_ON_CLICK(ChooseFactionButton2, this, &ULobbyUI::OnClickChooseFaction1);
+
+	ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::Collapsed);
+	ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::Collapsed);
+	
+	ChooseFactionButton1->OnHovered.Clear();
+	ChooseFactionButton1->OnHovered.AddUniqueDynamic(this, &ULobbyUI::OnHoverChooseFaction1);
+	ChooseFactionButton2->OnHovered.Clear();
+	ChooseFactionButton2->OnHovered.AddUniqueDynamic(this, &ULobbyUI::OnHoverChooseFaction2);
+
+	ChooseFactionButton1->OnUnhovered.Clear();
+	ChooseFactionButton1->OnUnhovered.AddUniqueDynamic(this, &ULobbyUI::OnUnhoverChooseFaction1);
+	ChooseFactionButton2->OnUnhovered.Clear();
+	ChooseFactionButton2->OnUnhovered.AddUniqueDynamic(this, &ULobbyUI::OnUnhoverChooseFaction2);
+
 	
 	BUTTON_ON_CLICK(ChooseIconSectionButton, this, &ULobbyUI::OnClickChooseIconSectionButton);
 	BUTTON_ON_CLICK(ChooseIconColorSectionButton, this, &ULobbyUI::OnClickChooseIconColorSectionButton);
@@ -177,7 +192,7 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	const TArray<UTexture2D*>& playerLogos = _mainMenuAssetLoader->PlayerLogos;
 	for (int32 i = 0; i < playerLogos.Num(); i++)
 	{
-		auto buttonImage = AddWidget<UPunButtonImage>(UIEnum::ChooseLogoElement);
+		auto buttonImage = AddWidget<UPunButtonImageWithGlow>(UIEnum::ChooseLogoElement);
 		buttonImage->Setup(i, CallbackEnum::ChoosePlayerLogo, this);
 		buttonImage->Image1->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", FLinearColor(0.01, 0.01, 0.01));
 		buttonImage->Image2->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", FLinearColor(0.97, 0.97, 0.97));
@@ -231,7 +246,7 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	int32 index = 0;
 	for (const auto& it : _mainMenuAssetLoader->PlayerCharacters)
 	{
-		auto buttonImage = AddWidget<UPunButtonImage>(UIEnum::ChooseCharacterElement);
+		auto buttonImage = AddWidget<UPunButtonImageWithGlow>(UIEnum::ChooseCharacterElement);
 		buttonImage->Setup(index, CallbackEnum::ChoosePlayerCharacter, this);
 		buttonImage->name = it.Key;
 		buttonImage->Image1->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->GetPlayerCharacter(it.Key));
@@ -859,6 +874,8 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 	element->PlayerName->SetVisibility(ESlateVisibility::Collapsed);
 	element->FactionName->SetVisibility(ESlateVisibility::Collapsed);
 
+	element->BottomBlackFade->SetVisibility(ESlateVisibility::Collapsed);
+	element->FactionBackground->SetVisibility(ESlateVisibility::Collapsed);
 	element->PlayerLogoForeground->SetVisibility(ESlateVisibility::Collapsed);
 	element->PlayerLogoBackground->SetVisibility(ESlateVisibility::Collapsed);
 	element->PlayerCharacterImage->SetVisibility(ESlateVisibility::Collapsed);
@@ -891,11 +908,14 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		element->FactionName->SetText(GetFactionInfo(playerInfos[i].factionEnum()).name);
 		element->FactionName->SetVisibility(ESlateVisibility::Visible);
 
+		element->FactionBackground->GetDynamicMaterial()->SetTextureParameterValue("Image", _mainMenuAssetLoader->GetFactionImage(GetFactionInfoInt(playerInfos[i].factionIndex).internalName));
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[playerInfos[i].logoIndex]);
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfos[i].logoColorForeground);
 		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfos[i].logoColorBackground);
 		element->PlayerCharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", _mainMenuAssetLoader->PlayerCharacters[playerInfos[i].portraitName]);
 
+		element->BottomBlackFade->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		element->FactionBackground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerLogoForeground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerLogoBackground->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		element->PlayerCharacterImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
@@ -1000,7 +1020,11 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 
 void ULobbyUI::UpdatePreviewPlayerInfoDisplay()
 {
-	PlayerCharacterInfoUI->UpdatePlayerInfo(previewPlayerInfo, _mainMenuAssetLoader->PlayerLogos, _mainMenuAssetLoader->PlayerCharacters);
+	PlayerCharacterInfoUI->UpdatePlayerInfo(previewPlayerInfo,
+		_mainMenuAssetLoader->GetFactionImage(GetFactionInfoInt(previewPlayerInfo.factionIndex).internalName),
+		_mainMenuAssetLoader->PlayerLogos, 
+		_mainMenuAssetLoader->PlayerCharacters
+	);
 }
 
 void ULobbyUI::OnClickChoosePlayerLogoCloseButton()

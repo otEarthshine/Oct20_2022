@@ -103,6 +103,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseFactionWrapBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton1;
 	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton2;
+
+	UPROPERTY(meta = (BindWidget)) UImage* ChooseFactionButtonGlow1;
+	UPROPERTY(meta = (BindWidget)) UImage* ChooseFactionButtonGlow2;
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconWrapBox;
 	
@@ -142,6 +145,19 @@ public:
 	UFUNCTION() void OnClickChooseFaction1() {
 		previewPlayerInfo.factionIndex = 1;
 		UpdatePreviewPlayerInfoDisplay();
+	}
+
+	UFUNCTION() void OnHoverChooseFaction1() {
+		ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	UFUNCTION() void OnHoverChooseFaction2() {
+		ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+	UFUNCTION() void OnUnhoverChooseFaction1() {
+		ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	UFUNCTION() void OnUnhoverChooseFaction2() {
+		ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::Collapsed);
 	}
 
 	void UpdatePreviewPlayerInfoDisplay();

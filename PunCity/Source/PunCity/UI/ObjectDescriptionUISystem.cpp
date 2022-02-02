@@ -4083,18 +4083,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (sim.IsWater(tile)) 
 					{
-						const std::vector<int32>& oasisSlotIds = sim.provinceInfoSystem().oasisSlotProvinceIds();
-						bool hasOasis = false;
-						for (int32 i = 0; i < oasisSlotIds.size(); i++) {
-							const ProvinceBuildingSlot& slot = sim.provinceInfoSystem().provinceBuildingSlot(oasisSlotIds[i]);
-							if (slot.oasisSlot.isValid() && WorldTile2::Distance(slot.oasisSlot.centerTile, tile) < 20) {
-								hasOasis = true;
-								break;
-							}
-						}
-						
-						if (sim.terrainGenerator().terrainTileType(tile) == TerrainTileType::River ||
-							hasOasis)
+						if (sim.IsFreshWater(tile))
 						{
 							focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Fresh Water Tile", "Fresh Water Tile"));
 						}

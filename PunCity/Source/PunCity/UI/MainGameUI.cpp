@@ -683,7 +683,7 @@ void UMainGameUI::Tick()
 							{
 								// Only Cards filtered by Search Box
 								if (searchString.IsEmpty() ||
-									GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+									GetBuildingInfo(buildingEnum).name.ToString().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
 								{
 									auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::SelectCardRemoval, i);
 
@@ -750,7 +750,7 @@ void UMainGameUI::Tick()
 
 							// Only Cards filtered by Search Box
 							if (searchString.IsEmpty() ||
-								GetBuildingInfo(buildingEnum).nameF().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
+								GetBuildingInfo(buildingEnum).name.ToString().Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE)
 							{
 								auto cardButton = AddCard(CardHandEnum::ConverterHand, CardStatus(buildingEnum, 1), ConverterCardHandBox, CallbackEnum::None, i);
 

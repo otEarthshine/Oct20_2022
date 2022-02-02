@@ -2017,6 +2017,8 @@ public:
 				);
 			}
 		}
+
+		// Check to ensure that it isn't already researched
 		
 		_techQueue.clear();
 		_techQueue.push_back(researchEnum);

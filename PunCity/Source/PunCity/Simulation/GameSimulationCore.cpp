@@ -2912,6 +2912,12 @@ void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
 					AddDemolishDisplayInfo(bld.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
 					//_regionToDemolishDisplayInfos[bld.centerTile().regionId()].push_back({ bld.buildingEnum(), bld.area(), Time::Ticks() });
 				}
+				// Special cases that doesn't need ownership to destroy
+				else if (bld.buildingEnum() == CardEnum::IntercityBridge)
+				{
+					_buildingSystem->RemoveBuilding(buildingId);
+					AddDemolishDisplayInfo(bld.centerTile(), { bld.buildingEnum(), bld.area(), Time::Ticks() });
+				}
 			}
 
 			// Can delete critter building within territory
@@ -4574,7 +4580,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 			if (Time::Years() % 2 == 0) {
 				int32 sneakedIns = std::max(1, town.askedMigration / 2);
 				AddPopupToFront(command.playerId, 
-					FText::Format(LOCTEXT("ImmigrantsSneakedIn", "{0} immigrants decided to illegally sneaked in anyway..."), TEXT_NUM(sneakedIns)));
+					FText::Format(LOCTEXT("ImmigrantsSneakedIn", "{0} immigrants decided to illegally sneak in anyway..."), TEXT_NUM(sneakedIns)));
 				town.AddImmigrants(sneakedIns);
 			} else {
 				AddPopupToFront(command.playerId, immigrantsGloom);

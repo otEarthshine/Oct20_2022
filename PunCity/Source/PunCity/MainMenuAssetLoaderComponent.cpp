@@ -9,6 +9,26 @@ UMainMenuAssetLoaderComponent::UMainMenuAssetLoaderComponent()
 	PrimaryComponentTick.bCanEverTick = true;
 
 	/*
+	 * Add Faction Images
+	 */
+	FString pathPrefix = FString("UI/Images/FactionImages/FactionPortraitBackground");
+	auto addFactionImage = [&](FString factionName)
+	{
+		FString path = pathPrefix + factionName;
+		
+		IPlatformFile& platformFile = FPlatformFileManager::Get().GetPlatformFile();
+		check(platformFile.FileExists(*(FPaths::ProjectContentDir() + pathPrefix + factionName + FString(".uasset"))));
+
+		UObject* playerLogosTextureObj = StaticLoadObject(UTexture2D::StaticClass(), NULL, *(FString("/Game/") + path));
+		UTexture2D* playerLogosTexture = CastChecked<UTexture2D>(playerLogosTextureObj);
+		
+		FactionImages.Add(factionName, playerLogosTexture);
+	};
+	addFactionImage("Europe");
+	addFactionImage("Arab");
+	
+
+	/*
 	 * Add Player Logos
 	 */
 	int32 playerLogoCount = 97;

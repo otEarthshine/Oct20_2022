@@ -14,16 +14,23 @@ class PROTOTYPECITY_API UMainMenuAssetLoaderComponent : public UActorComponent
 
 public:
 	UMainMenuAssetLoaderComponent();
-
 	
 	UPROPERTY() TArray<UTexture2D*> PlayerLogos;
 	
-	//UPROPERTY() TArray<UTexture2D*> PlayerCharacters;
 	UPROPERTY() TMap<FString, UTexture2D*> PlayerCharacters;
 
-	UTexture2D* GetPlayerCharacter(const FString& name) { return PlayerCharacters[name]; }
+	UTexture2D* GetFactionImage(const FString& name) {
+		if (FactionImages.Contains(name)) {
+			return FactionImages[name];
+		}
+		return nullptr;
+	}
 
+	UTexture2D* GetPlayerCharacter(const FString& name) {
+		return PlayerCharacters[name];
+	}
 
-
+private:
+	UPROPERTY() TMap<FString, UTexture2D*> FactionImages;
 	
 };

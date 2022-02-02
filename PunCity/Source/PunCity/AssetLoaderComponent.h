@@ -513,7 +513,9 @@ public:
 
 	FSpineAsset GetSpine(CardEnum cardEnum);
 
-
+	UTexture2D* GetFactionImage(const FString& name) const {
+		return _mainMenuAssetLoader->GetFactionImage(name);
+	}
 	const TArray<UTexture2D*>& GetPlayerLogos() const {
 		return _mainMenuAssetLoader->PlayerLogos;
 	}

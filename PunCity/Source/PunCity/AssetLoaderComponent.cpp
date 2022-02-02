@@ -335,7 +335,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadBuilding(CardEnum::Market, "Market", 2, 2);
 
 	LoadBuilding(CardEnum::Caravansary, "Caravansary", 2);
-	LoadBuildingEras(FactionEnum::Arab, CardEnum::Hotel, "Hotel", "Hotel", 3);
+	LoadBuilding(CardEnum::Hotel, "Hotel", 3);
 
 
 	LoadBuilding(FactionEnum::Arab, CardEnum::Mosque, "Mosque", "Mosque/Era2");
@@ -351,7 +351,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	LoadBuilding(CardEnum::PolicyOffice, "PolicyOffice", 3);
 	
-	LoadBuilding(CardEnum::CardCombiner, "ScholarsOffice", 3);
+	LoadBuilding(CardEnum::CardCombiner, "ScholarsOffice", 2);
 
 	LoadBuilding(FactionEnum::Europe, CardEnum::MinorCity, "MinorCity", "MinorCity/Era0", ModuleTransformGroup::CreateAuxSet(
 		{
@@ -1508,8 +1508,8 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	LoadTree(TileObjEnum::SavannaTree1, "SavannaTree1/SavannaTree1Trunk", "SavannaTree1/SavannaTree1Leaf", defaultFruit, "OrangeTree/TreeLeaf_lo", "SavannaTree1/SavannaTree1Leaf", "SavannaTree1/SavannaTree1Stump");
 	LoadTree(TileObjEnum::Cactus1, "BirchSeed", "Cactus1/Cactus1", defaultFruit, "Cactus1/Cactus1", "Cactus1/Cactus1", "Cactus1/Cactus1");
 	
-	LoadTree(TileObjEnum::DesertDatePalm, "OrangeTrunk", "DesertPlants/DesertDatePalm", "Coconut/Coconut1/CoconutFruits", "DesertPlants/DesertDatePalm", "DesertPlants/DesertDatePalm", "OrangeStump");
-	LoadTree(TileObjEnum::DesertGingerbreadTree, "OrangeTrunk", "DesertPlants/DesertGingerbreadTree", defaultFruit, "DesertPlants/DesertGingerbreadTree", "DesertPlants/DesertGingerbreadTree", "OrangeStump");
+	LoadTree(TileObjEnum::DesertDatePalm, "BlankTree", "DesertPlants/DesertDatePalm", "DesertPlants/DateFruits", "DesertPlants/DesertDatePalm", "DesertPlants/DesertDatePalm", "OrangeStump");
+	LoadTree(TileObjEnum::DesertGingerbreadTree, "BlankTree", "DesertPlants/DesertGingerbreadTree", defaultFruit, "DesertPlants/DesertGingerbreadTree", "DesertPlants/DesertGingerbreadTree", "OrangeStump");
 
 	
 	LoadTileObject(TileObjEnum::Stone, { "Trees/StoneOutcrop/StoneOutcropMegascan1", 
@@ -2137,6 +2137,21 @@ void UAssetLoaderComponent::TryLoadBuildingModuleSet(FactionEnum factionEnum, FS
 				}
 
 				_tempAuxGroup.animTransforms.push_back(ModuleTransform(moduleName, transform, 0.0f, moduleTypeEnum));
+			}
+			else if (foundFiles[i].Contains("_WorkRotation3"))
+			{
+
+
+				FTransform transform;
+				ModuleTypeEnum moduleTypeEnum = ModuleTypeEnum::RotateRoll;
+				
+				if (factionEnum == FactionEnum::Viking &&
+					buildingEnum == CardEnum::IndustrialIronSmelter)
+				{
+					
+				}
+
+				
 			}
 			else if (foundFiles[i].Contains("_Scaffolding_")) 
 			{

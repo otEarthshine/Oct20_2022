@@ -45,8 +45,10 @@ public:
 		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 		int32 townPlayerId = simulation().townPlayerId(targetTownIdIn);
+		const FPlayerInfo& playerInfo = dataSource()->playerInfo(townPlayerId != -1 ? townPlayerId : targetTownId);
 		PlayerCharacterInfoUI->UpdatePlayerInfo(
-			dataSource()->playerInfo(townPlayerId != -1 ? townPlayerId : targetTownId),
+			playerInfo,
+			assetLoader()->GetFactionImage(GetFactionInfoInt(playerInfo.factionIndex).internalName),
 			assetLoader()->GetPlayerLogos(),
 			assetLoader()->GetPlayerCharacters()
 		);

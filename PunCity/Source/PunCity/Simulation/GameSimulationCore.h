@@ -948,11 +948,29 @@ public:
 	bool IsWater(WorldTile2 tile) final {
 		return IsWaterTileType(terraintileType(tile.tileId()));
 	}
+
+	bool IsFreshWater(WorldTile2 tile)
+	{
+		if (terrainGenerator().terrainTileType(tile) == TerrainTileType::River) {
+			return true;
+		}
+		const std::vector<int32>& oasisSlotIds = provinceInfoSystem().oasisSlotProvinceIds();
+		for (int32 i = 0; i < oasisSlotIds.size(); i++) {
+			const ProvinceBuildingSlot& slot = provinceInfoSystem().provinceBuildingSlot(oasisSlotIds[i]);
+			if (slot.oasisSlot.isValid() && WorldTile2::Distance(slot.oasisSlot.centerTile, tile) < 20) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+	
 	bool IsMountain(WorldTile2 tile) final { return terraintileType(tile.tileId()) == TerrainTileType::Mountain; }
 	bool IsWaterOrMountain(WorldTile2 tile) {
 		auto tileType = terraintileType(tile.tileId());
 		return IsWaterTileType(tileType) || tileType == TerrainTileType::Mountain;
 	}
+	
 	GeoresourceNode georesource(int32 provinceId) final {
 		return _georesourceSystem->georesourceNode(provinceId);
 	}
@@ -4485,6 +4503,10 @@ public:
 			});
 			return;
 		}
+
+		auto isWater = [&](WorldTile2 tile) {
+			return buildingEnum == CardEnum::IrrigationPump ? IsFreshWater(tile) : IsWater(tile);
+		};
 		
 		auto extraInfoPair = DockPlacementExtraInfo(buildingEnum);
 		int32 indexLandEnd = extraInfoPair.first;
@@ -4503,7 +4525,7 @@ public:
 					grids.push_back({ isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Red, tile });
 				}
 				else {
-					if (IsWater(tile)) {
+					if (isWater(tile)) {
 						waterCount++;
 					}
 				}
@@ -4522,7 +4544,7 @@ public:
 				// Last step is water
 				if (useLastStep && 
 					GameMap::IsLastStep(placement.faceDirection, area, tile) &&
-					!IsWater(tile))
+					!isWater(tile))
 				{
 					grids.push_back({ PlacementGridEnum::Red, tile });
 					setDockInstruction = true;
@@ -4537,7 +4559,7 @@ public:
 						grids.push_back({ PlacementGridEnum::Red, tile });
 					}
 					else {
-						bool isGreen = IsWater(tile);
+						bool isGreen = isWater(tile);
 						grids.push_back({ isGreen ? PlacementGridEnum::Green : PlacementGridEnum::Gray, tile });
 					}
 				}

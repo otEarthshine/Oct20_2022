@@ -30,6 +30,8 @@ public:
 	}
 
 	virtual void OnInit() override {
+		UPunWidget::OnInit();
+
 		BUTTON_ON_CLICK(Button1, this, &UPunButtonImage::OnClickedButton);
 	}
 

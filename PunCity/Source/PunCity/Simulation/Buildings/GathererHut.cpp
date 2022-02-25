@@ -57,7 +57,7 @@ void GathererHut::FinishConstruction()
 	AddResourceHolder(ResourceEnum::DateFruit, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade(delicateGatheringText, ResourceEnum::SteelTools, ProductionUpgrade30),
+		MakeProductionUpgrade(delicateGatheringText, ResourceEnum::IronTools, ProductionUpgrade30),
 		MakeUpgrade(pestTrapText, LOCTEXT("Pests Traps Desc", "+30% productivity if there is an adjacent hunter (does not stack)."), ResourceEnum::Wood, 30),
 	});
 }
@@ -189,8 +189,8 @@ void ShroomFarm::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeUpgrade(intensiveCareText, intensiveCareDesc, ResourceEnum::SteelTools, 100),
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Substrate Treatment", "Substrate Treatment"), ResourceEnum::SteelTools, 5),
+		MakeUpgrade(intensiveCareText, intensiveCareDesc, ResourceEnum::IronTools, 100),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Substrate Treatment", "Substrate Treatment"), ResourceEnum::IronTools, 5),
 	});
 }
 
@@ -644,7 +644,7 @@ void CardMaker::FinishConstruction()
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::SteelTools, 4),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Improved Production", "Improved Production"), ResourceEnum::IronTools, 4),
 	});
 }
 
@@ -1100,7 +1100,7 @@ void Jeweler::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade(LOCTEXT("Rigorous Training", "Rigorous Training"), ResourceEnum::Brick, ProductionUpgrade30),
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, 7),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::IronTools, 7),
 		MakeComboUpgrade(LOCTEXT("Jeweler's Guild", "Jeweler's Guild"), ResourceEnum::Brick),
 	});
 }
@@ -1125,7 +1125,7 @@ void CarpetWeaver::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, ProductionUpgrade30),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::IronTools, ProductionUpgrade30),
 		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Craftmanship", "Craftmanship"), ResourceEnum::Money, 4),
 		MakeComboUpgrade(LOCTEXT("Carpet Weaver Guild", "Carpet Weaver Guild"), ResourceEnum::Brick),
 	});
@@ -1138,7 +1138,7 @@ void CandleMaker::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::SteelTools, ProductionUpgrade30),
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::IronTools, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Candle Maker Guild", "Candle Maker Guild"), ResourceEnum::Brick),
 	});
 }
@@ -1188,7 +1188,7 @@ void ClayPit::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeWorkerSlotUpgrade(50),
+		MakeWorkerSlotUpgrade(50, 2),
 	});
 }
 
@@ -1257,7 +1257,7 @@ void Fisher::FinishConstruction() {
 
 	AddUpgrades({
 		MakeProductionUpgrade_Money(LOCTEXT("Juicier Bait", "Juicier Bait"), ProductionUpgrade30),
-		MakeProductionUpgrade(LOCTEXT("Improved Fishing Tools", "Improved Fishing Tools"), ResourceEnum::SteelTools, ProductionUpgrade50),
+		MakeProductionUpgrade(LOCTEXT("Improved Fishing Tools", "Improved Fishing Tools"), ResourceEnum::IronTools, ProductionUpgrade50),
 		MakeWorkerSlotUpgrade(30),
 		//BuildingUpgrade("Whaling", "Catch whale from deep sea instead.\n  Produces whale meat.\n  +2 worker slots.\n  No effect nearby fish population", 120)
 	});
@@ -1635,7 +1635,7 @@ void InventorsWorkshop::FinishConstruction() {
 	ConsumerIndustrialBuilding::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Better Tools", "Better Tools"), ResourceEnum::SteelTools, ProductionUpgrade50),
+		MakeProductionUpgrade(LOCTEXT("Better Tools", "Better Tools"), ResourceEnum::IronTools, ProductionUpgrade50),
 		MakeProductionUpgrade(LOCTEXT("Component Blueprints", "Component Blueprints"), ResourceEnum::Paper, ProductionUpgrade50),
 		MakeComboUpgrade(LOCTEXT("Inventor Guild", "Inventor Guild"), ResourceEnum::Brick),
 	});
@@ -1875,7 +1875,7 @@ void SandMine::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade(LOCTEXT("Improved Tooling", "Improved Tooling"), ResourceEnum::SteelTools, ProductionUpgrade30),
+		MakeProductionUpgrade(LOCTEXT("Improved Tooling", "Improved Tooling"), ResourceEnum::IronTools, ProductionUpgrade30),
 		MakeComboUpgrade(LOCTEXT("Sand Mine Town", "Sand Mine Town"), ResourceEnum::Brick),
 	});
 }
@@ -2092,7 +2092,7 @@ void IrrigationPump::FinishConstruction() {
 		unlockSys->UnlockBuilding(CardEnum::IrrigationDitch);
 	}
 
-	_simulation->overlaySystem().AddIrrigationDitch(centerTile() + WorldTile2::RotateTileVector(WorldTile2(-3, 1), _faceDirection));
+	_simulation->overlaySystem().AddIrrigationDitch(GetFirstIrrigationDitchTile());
 
 	// Invisible Irrigation Connection
 	_area.ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
@@ -2102,7 +2102,7 @@ void IrrigationPump::FinishConstruction() {
 
 void IrrigationPump::OnDeinit()
 {
-	_simulation->overlaySystem().RemoveIrrigationDitch(centerTile() + WorldTile2::RotateTileVector(WorldTile2(-3, 1), _faceDirection));
+	_simulation->overlaySystem().RemoveIrrigationDitch(GetFirstIrrigationDitchTile());
 	
 	// Invisible Irrigation Connection
 	_area.ExecuteOnBorder_WorldTile2([&](WorldTile2 tile) {
@@ -2457,17 +2457,17 @@ void SpyCenter::FinishConstruction()
 	AddUpgrades({
 		MakeLevelUpgrade(
 			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence", "Spy Nest Influence Gain"),
-			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence Desc", "TODO: Desc"),
+			LOCTEXT("SpyCenterUpgrade_SpyNestInfluence Desc", "Gain more influence from Spy Nests."),
 			ResourceEnum::Money, 0, 50, 1000
 		),
 		MakeLevelUpgrade(
 			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness", "Spy Effectiveness"),
-			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness Desc", "TODO: Desc"),
+			LOCTEXT("SpyCenterUpgrade_SpyEffectiveness Desc", "Steal/Kidnap/Terrorism/Spy Nests become more effective"),
 			ResourceEnum::Money, 0, 50, 1000
 		),
 		MakeLevelUpgrade(
-			LOCTEXT("SpyCenterUpgrade_CounterIntelligence", "Counter Intelligence"),
-			LOCTEXT("SpyCenterUpgrade_CounterIntelligence Desc", "TODO: Espionage on this city is less effective"),
+			LOCTEXT("SpyCenterUpgrade_CounterIntelligence", "Counterintelligence"),
+			LOCTEXT("SpyCenterUpgrade_CounterIntelligence Desc", "Espionage on our cities becomes less effective"),
 			ResourceEnum::Money, 0, 50, 1000
 		),
 	});
@@ -2609,21 +2609,21 @@ void WorldTradeOffice::FinishConstruction()
 }
 void WorldTradeOffice::OnTick1Sec()
 {
-	if (Time::Ticks() % (Time::TicksPerSecond * 30) == 0)
+	if (Time::Ticks() % Time::TicksPerRound == 0)
 	{
-		const int32 influenceUsagePerManipulation = 30;
 
-		if (_simulation->influence(_playerId) >= influenceUsagePerManipulation)
+		if (_simulation->influence(_playerId) >= InfluenceUsagePerManipulation &&
+			(resourceEnumToIncreasePrice != ResourceEnum::None || resourceEnumToDecreasePrice != ResourceEnum::None))
 		{
 			if (resourceEnumToIncreasePrice != ResourceEnum::None) {
-				_simulation->worldTradeSystem().ChangePrice100_Percent(resourceEnumToIncreasePrice, 1);
+				_simulation->worldTradeSystem().ChangePrice100_Percent(resourceEnumToIncreasePrice, 5);
 			}
 			if (resourceEnumToDecreasePrice != ResourceEnum::None) {
-				_simulation->worldTradeSystem().ChangePrice100_Percent(resourceEnumToDecreasePrice, -1);
+				_simulation->worldTradeSystem().ChangePrice100_Percent(resourceEnumToDecreasePrice, -5);
 			}
 
-			_simulation->ChangeInfluence(_playerId, -influenceUsagePerManipulation);
-			_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(-influenceUsagePerManipulation));
+			_simulation->ChangeInfluence(_playerId, -InfluenceUsagePerManipulation);
+			_simulation->uiInterface()->ShowFloatupInfo(_playerId, FloatupEnum::GainInfluence, centerTile(), TEXT_NUMSIGNED(-InfluenceUsagePerManipulation));
 		}
 	}
 }
@@ -2635,7 +2635,7 @@ std::vector<BonusPair> Caravansary::GetBonuses()
 {
 	std::vector<BonusPair> bonuses = Building::GetBonuses();
 
-	bonuses.push_back({ LOCTEXT("Trade Route Experience", "Trade Route Experience"), static_cast<int32>(sqrt(_cumulativeRouteMoney)) / 10 });
+	bonuses.push_back({ LOCTEXT("Trade Route Experience", "Trade Route Experience"), static_cast<int32>(sqrt(_cumulativeRouteMoney)) / 3 });
 
 
 	return bonuses;

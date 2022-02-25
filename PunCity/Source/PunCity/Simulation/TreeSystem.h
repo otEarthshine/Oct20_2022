@@ -294,7 +294,7 @@ public:
 
 	//! This is for human only
 	// regionDistance is the farthest distance we will look for gather marks
-	NonWalkableTileAccessInfo FindNearestMark(int32 townId, WorldTile2 originTile, bool treeOnly, int32_t regionDistance = 2)
+	NonWalkableTileAccessInfo FindNearestMark(int32 townId, WorldTile2 originTile, bool treeOnly, int32 regionDistance)
 	{
 		WorldRegion2 originRegion = originTile.region();
 		int32 nearestDist = GameMapConstants::TilesPerWorldX;

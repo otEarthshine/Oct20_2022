@@ -708,23 +708,6 @@ void AIPlayerSystem::Tick1Sec()
 						if (TryPlaceFarm(provinceCenter, 7)) {
 							status.currentPurpose = AIRegionPurposeEnum::CashCrop;
 						}
-						
-						//TileArea area(provinceCenter, 7);
-						//std::vector<FarmTile> farmTiles = _simulation->GetFarmTiles(area, provinceCenter, _aiPlayerId);
-						//if (farmTiles.size() > 30)
-						//{
-						//	auto command = make_shared<FPlaceBuilding>();
-						//	command->playerId = _aiPlayerId;
-						//	command->buildingEnum = static_cast<uint16>(CardEnum::Farm);
-						//	command->intVar1 = provinceCenter.tileId();
-						//	command->area = _simulation->GetActualFarmArea(farmTiles, provinceCenter); // Area2 is the trimmed area
-						//	command->center = provinceCenter;// dragStart  _area.centerTile();
-						//	command->faceDirection = static_cast<uint8>(Direction::S);
-
-						//	_simulation->ExecuteNetworkCommand(command);
-
-						//	status.currentPurpose = AIRegionPurposeEnum::CashCrop;
-						//}
 					}
 				}
 
@@ -1302,7 +1285,7 @@ void AIPlayerSystem::TryTrade()
 			}
 
 			// Emergency buy tools
-			buyUntil(ResourceEnum::SteelTools, population / 4);
+			buyUntil(ResourceEnum::IronTools, population / 4);
 
 			// Buy Cheapest Food
 			{
@@ -1321,7 +1304,7 @@ void AIPlayerSystem::TryTrade()
 			}
 
 			// Maintain 2 years tools/medicine supply
-			buyUntil(ResourceEnum::SteelTools, population * 2 / 3); // 3 years = 1 tools
+			buyUntil(ResourceEnum::IronTools, population * 2 / 3); // 3 years = 1 tools
 
 			int32 targetMedicine = population * 2;
 			if (_simulation->GetBiomeEnum(_simulation->GetTownhallGateCapital(_aiPlayerId)) == BiomeEnum::Jungle) {

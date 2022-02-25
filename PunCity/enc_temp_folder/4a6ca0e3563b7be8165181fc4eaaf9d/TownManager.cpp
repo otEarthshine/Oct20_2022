@@ -1700,7 +1700,7 @@ void TownManager::RecalculateTax(bool showFloatup)
 		influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::Population)] += incomeFromPopulation;
 
 		if (_simulation->HasTownBonus(_townId, CardEnum::SavannaGrasslandRoamer)) {
-			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GrasslandRoamer)] += 100 * 100;
+			influenceIncomes100[static_cast<int>(InfluenceIncomeEnum::GrasslandRoamer)] += 100;
 		}
 
 		//! Castle

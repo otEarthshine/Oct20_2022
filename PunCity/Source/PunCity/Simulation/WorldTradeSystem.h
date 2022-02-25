@@ -127,8 +127,21 @@ public:
 		return _enumToSupplyValue100[static_cast<int>(resourceEnum)] + 1; // Note: can't be 0
 	}
 
-	void ChangePrice100_Percent(ResourceEnum resourceEnum, int32 percent) {
-		_enumToSupplyValue100[static_cast<int>(resourceEnum)] = _enumToSupplyValue100[static_cast<int>(resourceEnum)] * 100 / (100 + percent); // more percent, less supply, more price
+	void ChangePrice100_Percent(ResourceEnum resourceEnum, int32 percent)
+	{
+		// Change price based on the Equilibrium or base price value
+		// price = basePrice100 * equilibriumSupplyValue100 / supplyValue100
+		// newPrice = price + basePrice100 * 0.02 = basePrice100 * equilibriumSupplyValue100 / supplyValue100 + basePrice100 * 0.02
+		// newPrice = basePrice100 * (equilibriumSupplyValue100 / supplyValue100 + 0.02)
+		// newPrice = basePrice100 * (equilibriumSupplyValue100 / supplyValue100 + equilibriumSupplyValue100 * 0.02 / equilibriumSupplyValue100)
+		// newPrice = basePrice100 * equilibriumSupplyValue100 * (1 / supplyValue100 + 0.02 / equilibriumSupplyValue100)
+		// newSupplyValue100 = 1 / (1 / supplyValue100 + 0.02 / equilibriumSupplyValue100);
+		// newSupplyValue100 = supplyValue100 / (1 + 0.02 * supplyValue100 / equilibriumSupplyValue100);
+		// newSupplyValue100 = supplyValue100 * 10000 / (10000 + 200 * supplyValue100 / equilibriumSupplyValue100);
+		int64 lastSupplyValue100 = _enumToSupplyValue100[static_cast<int>(resourceEnum)];
+		int64 equilibriumSupplyValue100 = EquilibriumSupplyValue100(resourceEnum);
+		
+		_enumToSupplyValue100[static_cast<int>(resourceEnum)] = lastSupplyValue100 * 10000 / (10000 + percent * 100 * lastSupplyValue100 / equilibriumSupplyValue100); // more percent, less supply, more price
 	}
 
 	const std::vector<PlayerSupplyChange>& GetSupplyChanges(ResourceEnum resourceEnum) {

@@ -296,6 +296,8 @@ void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 		sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
 		return;
 	}
+
+	//searchResult.IsSessionInfoValid()
 	
 	sessionInterface->JoinSession(0, PUN_SESSION_NAME, searchResult);
 	isJoiningGame = true;
@@ -623,7 +625,8 @@ void UPunGameInstance::OnSessionUserInviteAccepted(bool bWasSuccessful, int32 Co
 	
 	if (bWasSuccessful) 
 	{	
-		if (InviteResult.IsValid()) 
+		if (InviteResult.IsValid() &&
+			InviteResult.IsSessionInfoValid())
 		{
 			FString yourVersionStr = GetGameVersionString(GAME_VERSION, false);
 			

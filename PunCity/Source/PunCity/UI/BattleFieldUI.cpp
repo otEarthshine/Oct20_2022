@@ -86,7 +86,7 @@ std::string GetUnitLossSoundName(CardEnum cardEnum)
 
 
 
-void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher)
+void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher, bool isInit)
 {
 	// Beyond a zoom range, use mini UI
 	if (dataSource()->ZoomDistanceAbove(WorldZoomTransition_Region4x4ToMap))
@@ -106,7 +106,11 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 	if (provinceId == -1 || provinceId != provinceIdIn) 
 	{
 		provinceId = provinceIdIn;
-		
+
+		// WEIRD:
+		//  using knight with padding 0,0,0,0 will make everything works except machine gun
+		//  using non-zero padding can lead to floating chars
+		//  Is this really needed???
 		LeftArmyFrontOuterBox->ClearChildren();
 		LeftArmyBackOuterBox->ClearChildren();
 		RightArmyFrontOuterBox->ClearChildren();
@@ -222,13 +226,37 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 			auto armyColumn = GetBoxChild<UBattleFieldArmyUI>(armyOuterBox, columnIndex, UIEnum::WG_BattlefieldArmyUI, true);
 			int32 unitIndex = 0;
 
+			// Left Horizontalbox is flipped (-1, 1) scale to help with children arrangement that ensure a left child is on top of a right child
+			// we need to flip it back again
+			armyColumn->SetRenderScale(FVector2D(isLeft ? -1 : 1, 1));
+
 			for (int32 i = 0; i < calculatedRowCount; i++)
 			{
 				const CardStatus& simUnit = simUnits[simUnitIndex];
 				int32 unitPlayerId = simUnit.cardStateValue1;
+
+				////// TODO: Test
+				//if (PunSettings::Get("BattleUnitStopStage") == 4)
+				//{
+				//	simUnitIndex++;
+				//	if (simUnitIndex >= simUnits.size()) {
+				//		break;
+				//	}
+				//	continue; // TODO: Test	
+				//}
 				
 				auto unitIcon = GetBoxChild<UBattleFieldUnitIcon>(armyColumn->ArmyBox, unitIndex, UIEnum::WG_BattlefieldUnitIcon, true);
 				unitIcon->UnitCountText->SetText(TEXT_NUM(simUnit.stackSize));
+
+				////// TODO: Test
+				//if (PunSettings::Get("BattleUnitStopStage") == 3)
+				//{
+				//	simUnitIndex++;
+				//	if (simUnitIndex >= simUnits.size()) {
+				//		break;
+				//	}
+				//	continue; // TODO: Test	
+				//}
 
 				//LogoImage
 				//PunUIUtils::SetPlayerLogo(unitIcon->LogoImage, unitIcon->UnitImage, dataSource()->playerInfo(unitPlayerId), assetLoader());
@@ -236,10 +264,46 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 				unitIcon->BackgroundImage->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", dataSource()->playerInfo(unitPlayerId).logoColorBackground);
 				unitIcon->UnitImage->PunTick();
 				unitIcon->UnitImage->SetRenderScale(FVector2D(isLeft ? 1 : -1, 1));
+				//unitIcon->UnitImage->SetRenderScale(FVector2D(1, 1));
 
 				FSpineAsset spineAsset = assetLoader()->GetSpine(simUnit.cardEnum);
+
+				USizeBoxSlot* slot = CastChecked<USizeBoxSlot>(unitIcon->UnitImage->Slot);
+				slot->SetPadding(spineAsset.padding);
+
+				////// TODO: Test
+				//if (PunSettings::Get("BattleUnitStopStage") == 1)
+				//{
+				//	simUnitIndex++;
+				//	if (simUnitIndex >= simUnits.size()) {
+				//		break;
+				//	}
+				//	continue; // TODO: Test	
+				//}
+
+				// TODO: this is trying to fix weird padding bug
+				slot->Parent->SetRenderTranslation(FVector2D::ZeroVector);
+				slot->Parent->SetRenderScale(FVector2D(1, 1));
+				unitIcon->UnitImage->SetRenderTranslation(FVector2D::ZeroVector);
+				
+				unitIcon->UnitImage->InvalidateLayoutAndVolatility();
+				slot->Parent->InvalidateLayoutAndVolatility();
+				unitIcon->InvalidateLayoutAndVolatility();
+
 				unitIcon->UnitImage->Atlas = spineAsset.atlas;
 				unitIcon->UnitImage->SkeletonData = spineAsset.skeletonData;
+				// TODO:  End
+
+				////// TODO: Test
+				//if (PunSettings::Get("BattleUnitStopStage") == 2)
+				//{
+				//	simUnitIndex++;
+				//	if (simUnitIndex >= simUnits.size()) {
+				//		break;
+				//	}
+				//	continue; // TODO: Test	
+				//}
+
 
 				unitIcon->TickFXSpine();
 
@@ -405,9 +469,24 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 			BoxAfterAdd(armyColumn->ArmyBox, unitIndex);
 		}
 
-		BoxAfterAdd(armyOuterBox, columnIndex);
+		// TODO:
+		// Set the rest invisible
+		//  Ensure we set inner children invisible too
+		for (int32 i = columnIndex; i < armyOuterBox->GetChildrenCount(); i++) {
+			UWidget* armyUIWidget = armyOuterBox->GetChildAt(i);
+			UBattleFieldArmyUI* armyUI = CastChecked<UBattleFieldArmyUI>(armyUIWidget);
+			
+			auto armyBox = armyUI->ArmyBox;
+			for (int32 j = 0; j < armyBox->GetChildrenCount(); j++) {
+				armyBox->GetChildAt(j)->SetVisibility(ESlateVisibility::Collapsed);
+			}
+			
+			armyUI->SetVisibility(ESlateVisibility::Collapsed);
+		}
+		armyOuterBox->SetVisibility(columnIndex > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		//BoxAfterAdd(armyOuterBox, columnIndex);
 
-		armyOuterBox->SetVisibility(simUnits.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		//armyOuterBox->SetVisibility(simUnits.size() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	};
 
 	//! Attacker

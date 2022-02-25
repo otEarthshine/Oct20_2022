@@ -500,12 +500,19 @@ void UnitStateAI::Update()
 					shouldGiveBirth = false;
 				}
 
-				// Beyond 100 citizens, less birth when citizens are almost at limit
-				if (townPopulation > 100 &&
-					townPopulation >= houseCapacity &&
-					GameRand::Rand() % 2 == 0)
+				// Beyond X citizens, less birth when citizens are almost at limit
+				if (townPopulation >= houseCapacity)
 				{
-					shouldGiveBirth = false;
+					if (townPopulation > 300 &&
+						GameRand::Rand() % 3 != 0)
+					{
+						shouldGiveBirth = false;
+					}
+					else if (townPopulation > 100 &&
+							GameRand::Rand() % 2 == 0)
+					{
+						shouldGiveBirth = false;
+					}
 				}
 
 				// AI Birth Control
@@ -2117,7 +2124,7 @@ void UnitStateAI::UseTools()
 	//	_nextToolNeedTick = Time::Ticks() + Time::TicksPerYear; // Crude iron tool a year
 	//}
 	//else 
-	if (resourceEnum == ResourceEnum::SteelTools) 
+	if (resourceEnum == ResourceEnum::IronTools) 
 	{
 		int32 ticksUntilNextToolNeed = (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year;
 
@@ -2386,8 +2393,6 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 		}
 	}
 
-	LEAN_PROFILING_A(MoveTo);
-
 	/*
 	 * Normal Case
 	 */
@@ -2398,6 +2403,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 	// This should also guard against unit's tile becoming invalid (construction built on top)
 	if (!IsMoveValid(end, customFloodDistance)) 
 	{
+		LEAN_PROFILING_A(MoveTo_Robust);
 #if WITH_EDITOR
 		_simulation->ResetUnitActions(_id, 60);
 		AddDebugSpeech("(Bad)MoveTo: IsConnected " + tile.ToString() + end.ToString());
@@ -2414,12 +2420,12 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 	}
 	else
 	{
-		//int32 
-
 		//bool isIntelligent = IsIntelligentUnit(unitEnum());
 
 		if (unitEnum() == UnitEnum::Human)
 		{
+			LEAN_PROFILING_A(MoveTo_Human);
+			
 			int64 customCalculationCount = 30000;
 			int64 distance = WorldTile2::Distance(tile, end);
 			const int64 baseDistance = 70;
@@ -2437,9 +2443,13 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 			succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
 		}
 		else {
+			LEAN_PROFILING_A(MoveTo_Animal);
+			
 			succeed = _simulation->pathAI()->FindPathAnimal(tile.x, tile.y, end.x, end.y, rawWaypoint, 1, 30000);
 		}
 	}
+
+	LEAN_PROFILING_A(MoveTo_Ending);
 
 	if (!succeed)
 	{
@@ -2490,10 +2500,14 @@ void UnitStateAI::MoveToResource() {
 }
 bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloodDistance, UnitAnimationEnum animationEnum)
 {
-	LeanProfiler leanProfiler(customFloodDistance == -1 ? LeanProfilerEnum::MoveToResource : LeanProfilerEnum::MoveToResource_custom);
+	/*LeanProfiler leanProfiler(customFloodDistance == -1 ? LeanProfilerEnum::MoveToResource : LeanProfilerEnum::MoveToResource_custom);*/
 	//LEAN_PROFILING_A(MoveToResource);
 	
 	const ResourceHolder& holder = resourceSystem().holder(holderInfo);
+
+	LeanProfiler leanProfiler(customFloodDistance == -1 ? 
+							(holder.isDrop() ? LeanProfilerEnum::MoveToResource_Drop : LeanProfilerEnum::MoveToResource) :
+							LeanProfilerEnum::MoveToResource_custom);
 	
 	bool succeed = MoveTo(holder.tile, customFloodDistance, animationEnum);
 
@@ -3162,8 +3176,7 @@ void UnitStateAI::CaravanGiveMoney()
 				Caravansary& caravansary = workplace->subclass<Caravansary>();
 				int32 tradeMoney = caravansary.GetTradeMoney(targetBuilding->centerTile());
 
-				int32 townId = targetBuilding->townId();
-				
+				int32 townId = isGivingTarget ? targetBuilding->townId() : workplace->townId();
 				if (IsMinorTown(townId)) {
 					_simulation->townManagerBase(townId)->ChangeWealth_MinorCity(tradeMoney);
 				}

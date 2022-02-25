@@ -194,7 +194,6 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	{
 		auto buttonImage = AddWidget<UPunButtonImageWithGlow>(UIEnum::ChooseLogoElement);
 		buttonImage->Setup(i, CallbackEnum::ChoosePlayerLogo, this);
-		buttonImage->Image1->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", FLinearColor(0.01, 0.01, 0.01));
 		buttonImage->Image2->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", FLinearColor(0.97, 0.97, 0.97));
 		buttonImage->Image2->GetDynamicMaterial()->SetTextureParameterValue("Logo", playerLogos[i]);
 		ChooseIconWrapBox->AddChild(buttonImage);
@@ -872,7 +871,7 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 
 	
 	element->PlayerName->SetVisibility(ESlateVisibility::Collapsed);
-	element->FactionName->SetVisibility(ESlateVisibility::Collapsed);
+	//element->FactionName->SetVisibility(ESlateVisibility::Collapsed);
 
 	element->BottomBlackFade->SetVisibility(ESlateVisibility::Collapsed);
 	element->FactionBackground->SetVisibility(ESlateVisibility::Collapsed);
@@ -905,8 +904,8 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		));
 		element->PlayerName->SetVisibility(ESlateVisibility::Visible);
 
-		element->FactionName->SetText(GetFactionInfo(playerInfos[i].factionEnum()).name);
-		element->FactionName->SetVisibility(ESlateVisibility::Visible);
+		//element->FactionName->SetText(GetFactionInfo(playerInfos[i].factionEnum()).name);
+		//element->FactionName->SetVisibility(ESlateVisibility::Visible);
 
 		element->FactionBackground->GetDynamicMaterial()->SetTextureParameterValue("Image", _mainMenuAssetLoader->GetFactionImage(GetFactionInfoInt(playerInfos[i].factionIndex).internalName));
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[playerInfos[i].logoIndex]);

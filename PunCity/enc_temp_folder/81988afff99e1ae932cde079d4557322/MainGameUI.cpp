@@ -1236,12 +1236,9 @@ void UMainGameUI::Tick()
 				TArray<FText> args;
 				ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), cardInfo.name);
 				ADDTEXT_TAGN_("<SPColor>", LOCTEXT("Leader Skill", "Leader Skill"));
-				ADDTEXT_INV_("<space>");
-				ADDTEXT_LOCTEXT("Click to use", "Click to use");
 				ADDTEXT_(INVTEXT("\n{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
 				ADDTEXT_INV_("<line><space>");
 				ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}\n"), skillMana);
-					ADDTEXT_INV_("<space>");
 				ADDTEXT__(cardInfo.GetDescription())
 					ADDTEXT_INV_("<space>");
 				ADDTEXT_(INVTEXT("<SPColor>SP: {0}/{1}</>"), TEXT_NUM(playerOwned.GetSP()), TEXT_NUM(maxMana));

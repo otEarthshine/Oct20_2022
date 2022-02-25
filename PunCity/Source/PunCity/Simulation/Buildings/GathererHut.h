@@ -1630,8 +1630,8 @@ public:
 
 	virtual void OnDeinit() override;
 
-	WorldTile2 GetFirstIrrigationDitchTile() {
-		return centerTile() + WorldTile2::RotateTileVector(WorldTile2(-3, 1), _faceDirection);
+	WorldTile2 GetFirstIrrigationDitchTile(bool isInnerTile = false) {
+		return centerTile() + WorldTile2::RotateTileVector(WorldTile2(isInnerTile ? -2 : -3, 1), _faceDirection);
 	}
 
 	virtual int32 efficiencyBeforeBonus() override {
@@ -2097,6 +2097,28 @@ public:
 
 	virtual void OnTick1Sec() override;
 
+	virtual bool RefreshHoverWarning() override
+	{
+		if (Building::RefreshHoverWarning()) {
+			return true;
+		}
+
+		if (resourceEnumToIncreasePrice == ResourceEnum::None ||
+			resourceEnumToDecreasePrice == ResourceEnum::None)
+		{
+			hoverWarning = HoverWarning::NeedTargetResources;
+			return true;
+		}
+		
+		if (_simulation->influence(_playerId) < InfluenceUsagePerManipulation) {
+			hoverWarning = HoverWarning::NotEnoughInfluence;
+			return true;
+		}
+
+		hoverWarning = HoverWarning::None;
+		return false;
+	}
+
 	virtual void Serialize(FArchive& Ar) override {
 		Building::Serialize(Ar);
 		Ar << resourceEnumToIncreasePrice;
@@ -2109,6 +2131,8 @@ public:
 
 	ResourceEnum resourceEnumToIncreasePrice = ResourceEnum::None;
 	ResourceEnum resourceEnumToDecreasePrice = ResourceEnum::None;
+
+	static const int32 InfluenceUsagePerManipulation = 100;
 };
 
 class CardCombiner : public Building
@@ -2165,13 +2189,21 @@ public:
 	/*
 	 * Trade money depends on:
 	 *  - Distance
+	 *    - Citizens move at 2 tiles per sec
+	 *    - Horse goes at 3x speed of normal human, or 6 tiles per sec
+	 *    - 
 	 *  - Wealth of two cities.. base
 	 *  - cumulative trade experience..
 	 *  - Penalty if more caravans going to the same city.. each caravan assign to the same trade route decreases yield by 10%
 	 */
 	int32 GetTradeMoney(WorldTile2 tradeTargetTile)
 	{
-		return WorldTile2::Distance(tradeTargetTile, centerTile()) * 10 * efficiency() / 100;
+		int32 distance = WorldTile2::Distance(tradeTargetTile, centerTile());
+		const int32 travelDistancePerYear = 6 * Time::SecondsPerYear;
+		int32 workRevenue100PerRun = WorkRevenue100PerYear_perMan_Base * distance / travelDistancePerYear;
+		workRevenue100PerRun *= 2; // Extra factor
+		
+		return workRevenue100PerRun * efficiency() / 100;
 	}
 
 	virtual std::vector<BonusPair> GetBonuses() override;

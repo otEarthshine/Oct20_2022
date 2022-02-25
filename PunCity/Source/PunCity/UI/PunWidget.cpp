@@ -135,6 +135,19 @@ void UPunWidget::AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, 
 	tooltip->TooltipPunBoxWidget->AddRichTextParsed(args);
 }
 
+void UPunWidget::AddTradeOfferTooltip(UWidget* widget, bool isImport, ResourceEnum resourceEnum, int32 resourceCount, int32 orderFulfilled)
+{
+	AddToolTip(widget, FText::Format(
+		// Export 100 Furniture
+		// Order fulfilled: 100
+		isImport ? LOCTEXT("TradeOfferImport_Tip", "This city wants to import {0} {1}<space>Order fulfilled: {2}<space>To trade with this city, use the Trading Company.") :
+					LOCTEXT("TradeOfferExport_Tip", "This city wants to export {0} {1}<space>Order fulfilled: {2}<space>To trade with this city, use the Trading Company."),
+		TEXT_NUM(resourceCount),
+		ResourceNameT(resourceEnum),
+		TEXT_NUM(orderFulfilled)
+	));
+}
+
 #undef LOCTEXT_NAMESPACE
 
 

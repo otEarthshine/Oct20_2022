@@ -59,9 +59,12 @@ public:
 	}
 
 	void Add(WorldTile2 tile, T value) {
-		_subregionToValues[(tile.x / 16) + (tile.y / 16) * _subregionsPerWorldX].push_back(SubregionListPair(tile, value));
+		int32 subregionId = (tile.x / 16) + (tile.y / 16) * _subregionsPerWorldX;
+		_subregionToValues[subregionId].push_back(SubregionListPair(tile, value));
 
-		//UE_LOG(LogTemp, Error, TEXT("Subregion Add %s"), *tile.To_FString());q
+		//if (tile == WorldTile2(246, 1093)) {
+		//	UE_LOG(LogTemp, Error, TEXT("Subregion Add %s subregionId:%d"), *tile.To_FString(), subregionId);
+		//}
 	}
 
 	void Remove(WorldTile2 tile, T value) {

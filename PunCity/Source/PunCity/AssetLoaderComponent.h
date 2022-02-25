@@ -330,6 +330,8 @@ struct FSpineAsset
 
 	UPROPERTY() USpineAtlasAsset* atlas_fx;
 	UPROPERTY() USpineSkeletonDataAsset* skeletonData_fx;
+
+	FMargin padding;
 };
 
 USTRUCT()
@@ -400,8 +402,17 @@ public:
 		return _unitEnumToAsset[static_cast<int>(unitEnum)].size();
 	}
 
-	FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0) {
-		return _unitEnumToAsset[static_cast<int>(unitEnum)][variationIndex];
+	FUnitAsset unitAsset(UnitEnum unitEnum, int32 variationIndex = 0)
+	{
+		int unitEnumInt = static_cast<int>(unitEnum);
+		if (0 <= unitEnumInt && unitEnumInt < _unitEnumToAsset.size()) {
+			const std::vector<FUnitAsset>& assets = _unitEnumToAsset[unitEnumInt];
+			
+			if (0 <= variationIndex && variationIndex < assets.size()) {
+				return assets[variationIndex];
+			}
+		}
+		return FUnitAsset();
 	}
 
 	int32 maxUnitMeshVariationCount() {
@@ -510,7 +521,7 @@ public:
 		_cardIconHasFadeBorder[index] = hasFadeBorder;
 	}
 
-
+	FMargin GetFXSpineMargin(USpineAtlasAsset* fxAtlas);
 	FSpineAsset GetSpine(CardEnum cardEnum);
 
 	UTexture2D* GetFactionImage(const FString& name) const {

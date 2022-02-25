@@ -19,11 +19,11 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 72 // 3 digit
+#define MINOR_VERSION 73 // 3 digit
 
 #define VERSION_DAY 1
 #define VERSION_MONTH 2
-#define VERSION_YEAR 22
+#define VERSION_YEAR 25
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
@@ -32,11 +32,11 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 46 // 3 digit
+#define MINOR_SAVE_VERSION 47 // 3 digit
 
 #define VERSION_SAVE_DAY 1
 #define VERSION_SAVE_MONTH 2
-#define VERSION_SAVE_YEAR 22
+#define VERSION_SAVE_YEAR 25
 
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 #define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
@@ -193,7 +193,7 @@ public:
 #define TEXT_PERCENT(number) FText::Format(INVTEXT("{0}%"), FText::AsNumber(number))
 //#define TEXT_100(number) FText::Join(FText(), TEXT_INTEGER(number), TEXT_DECIMAL(number))
 #define TEXT_100(number) FText::Format(INVTEXT("{0}{1}{2}"), TEXT_INTEGER(number), TEXT_DECIMAL1(number), TEXT_DECIMAL2(number))
-#define TEXT_100_2(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber(abs(static_cast<int>(number) % 100)))
+#define TEXT_100_2(number) FText::Join(FText(), FText::AsNumber(number / 100), INVTEXT("."), FText::AsNumber(abs(static_cast<int>(number) % 100), &FNumberFormattingOptions().SetMinimumIntegralDigits(2)))
 
 //#define TEXT_100SIGNED(number) FText::Join(FText(), (number > 0 ? INVTEXT("+") : INVTEXT("")), TEXT_INTEGER(number), TEXT_DECIMAL(number))
 #define TEXT_100SIGNED(number) FText::Format(INVTEXT("{0}{1}{2}{3}"), (number > 0 ? INVTEXT("+") : INVTEXT("")), TEXT_INTEGER(number), TEXT_DECIMAL1(number), TEXT_DECIMAL2(number))
@@ -1050,7 +1050,7 @@ enum class ResourceEnum : uint8
 	Furniture,
 	Chocolate,
 
-	SteelTools,
+	IronTools,
 	Herb,
 	Medicine,
 
@@ -1191,7 +1191,7 @@ static const int32 HarvestDepositTicksBase = Time::TicksPerSecond * 14;
 // How fast people produce value when working compare to value spent on food
 // This is high because people don't spend all their time working.
 //!!! Change Base Production (Except FarmBaseYield100) !!!!
-static const int32 WorkRevenueToCost_Base = 140; // 150 -> 128 (Mar 26)... -> 150 (May 10) .. Nov 11: 150->135 .. Jan 6: 135 -> 140
+static const int32 WorkRevenueToCost_Base = 140; // 150 -> 128 (Mar 26)... -> 150 (May 10) .. Nov 15: 150->135 .. Jan 6: 135 -> 140
 
 // TODO: WorkRevenueToCost is not yet affected by resource modifiers...
 
@@ -1202,7 +1202,10 @@ static const int32 WorkRevenue100PerSec_perMan_Base = WorkRevenue100PerYear_perM
 static const int32 AssumedFoodProduction100PerYear = WorkRevenue100PerYear_perMan_Base / FoodCost;
 
 // How much a person spend on each type of luxury per year. ... /4 comes from testing... it makes houselvl 2 gives x2 income compare to house lvl 1
-static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8 * 150 / 100; // Nov 15: +50% (150 / 100)
+// Nov 15: +50% (150 / 100)
+// Feb 2: 130/100
+// Feb 25: 138/100
+static const int32 HumanLuxuryCost100PerYear_ForEachType = BaseHumanFoodCost100PerYear / 8 * 138 / 100;
 static const int32 HumanLuxuryCost100PerRound_ForEachType = HumanLuxuryCost100PerYear_ForEachType / Time::RoundsPerYear;
 
 static const std::vector<int32> HumanLuxuryConsumptionScalingByTier {
@@ -1224,6 +1227,7 @@ static const int32 BuildManSecCostFactor100 = 10; // Building work time is x% of
  *   - Encourage building multiple buildings, and balancing their count.
  *   - Use up more laborers
  *   - Indirectly nerf Building Slot Cards (now we need more)
+ *   
  * - Half Price: halve BaseCostPerWorker, (this lead to less work revenue, might need to adjust secsToBreakEven)
  * - Changes to compensate half price for production buildings:
  *	 - luxury consumption +50% -> Consume more so we need to build more [HumanLuxuryCost100PerYear_ForEachType]
@@ -1271,7 +1275,7 @@ static const ResourceInfo ResourceInfos[]
 	ResourceInfo(ResourceEnum::Chocolate,	LOCTEXT("Chocolate", "Chocolate"), 45,   LOCTEXT("Chocolate Desc", "Everyone's favorite confectionary. (Luxury tier 3)")),
 
 	//ResourceInfo(ResourceEnum::CrudeIronTools,	"Crude Iron Tools",	15,  "Medium-grade tool made by Blacksmith using Iron Ore and Wood."),
-	ResourceInfo(ResourceEnum::SteelTools,		LOCTEXT("Steel Tools", "Steel Tools"),			27,  LOCTEXT("Steel Tool Desc", "High-grade tool made by Blacksmith from Iron Bars and Wood")),
+	ResourceInfo(ResourceEnum::IronTools,		LOCTEXT("Iron Tools", "Iron Tools"),			27,  LOCTEXT("Steel Tool Desc", "High-grade tool made by Blacksmith from Iron Bars and Wood")),
 	ResourceInfo(ResourceEnum::Herb,				LOCTEXT("Medicinal Herb", "Medicinal Herb"),				6, 	LOCTEXT("Medicinal Herb Desc", "Medicinal plant used to heal sickness")),
 	ResourceInfo(ResourceEnum::Medicine,			LOCTEXT("Medicine", "Medicine"),			12,  LOCTEXT("Medicine Desc", "Potent Medicinal Herb extract used to heal sickness")),
 	
@@ -1644,7 +1648,7 @@ static bool IsMedicineEnum(ResourceEnum resourceEnumIn) {
 
 static const std::vector<ResourceEnum> ToolsEnums
 {
-	ResourceEnum::SteelTools,
+	ResourceEnum::IronTools,
 	//ResourceEnum::CrudeIronTools,
 	ResourceEnum::StoneTools,
 };
@@ -2315,7 +2319,7 @@ enum class CardEnum : uint16
 	TequilaDistillery,
 	CoffeeRoaster,
 
-	// Feb 2
+	// Feb 2, 2021
 	Colony,
 	PortColony,
 	IntercityLogisticsHub,
@@ -2914,7 +2918,9 @@ struct BldResourceInfo
 
 	static const int32 FirstIndustryIncentiveMultiplier = 80;
 
-	static const int32 BaseCostPerWorker = 125; // Nov 15: 150 -> 125
+	// Nov 15: 150 -> 125
+	// Feb 3: 125 -> 130
+	static const int32 BaseCostPerWorker = 130;
 
 	void CalculateResourceCostValueBeforeDiscount(const std::vector<ResourceEnum>& inputsAndOutput, int32 percentDiff)
 	{
@@ -3433,7 +3439,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::Forester,		_LOCTEXT("Forester", "Forester"),	LOCTEXT("Forester (Plural)", "Foresters"),	LOCTEXT("Forester Desc", "Cut/plants trees within your territory."),
-		WorldTile2(5, 5),	GetBldResourceInfoManual({50,50}, 2)
+		WorldTile2(6, 6),	GetBldResourceInfoManual({50,50}, 2)
 	),
 
 	BldInfo(CardEnum::CoalMine,		_LOCTEXT("Coal Mine", "Coal Mine"),	LOCTEXT("Coal Mine (Plural)", "Coal Mines"), LOCTEXT("Coal Mine Desc", "Mine Coal from Coal Deposits."),
@@ -3454,10 +3460,10 @@ static const BldInfo BuildingInfo[]
 
 
 	/**/ BldInfo(CardEnum::StoneToolShopOld, _LOCTEXT("Stone Tool Shop", "Stone Tool Shop"),	LOCTEXT("Stone Tool Shop (Plural)", "Stone Tool Shops"), LOCTEXT("Stone Tool Shop Desc", "Craft Stone Tools from Stone and Wood."),
-		WorldTile2(5, 8), GetBldResourceInfo(1, {ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::SteelTools}, {2, 1})
+		WorldTile2(5, 8), GetBldResourceInfo(1, {ResourceEnum::Stone, ResourceEnum::Wood, ResourceEnum::IronTools}, {2, 1})
 	),
 	BldInfo(CardEnum::Blacksmith,	_LOCTEXT("Blacksmith", "Blacksmith"),	LOCTEXT("Blacksmith (Plural)", "Blacksmiths"),	LOCTEXT("Blacksmith Desc", "Forge Tools from Iron Bars and Wood."),
-		WorldTile2(5, 8), GetBldResourceInfo(2, {ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::SteelTools}, {1, 1, 1}, 0, 100, -1)
+		WorldTile2(5, 8), GetBldResourceInfo(2, {ResourceEnum::Iron, ResourceEnum::Wood, ResourceEnum::IronTools}, {1, 1, 1}, 0, 100, -1)
 	),
 	BldInfo(CardEnum::Herbalist, _LOCTEXT("Herbalist", "Herbalist"),	LOCTEXT("Herbalist (Plural)", "Herbalists"), FText(),
 		WorldTile2(4, 4),	GetBldResourceInfoManual ({})
@@ -3494,7 +3500,7 @@ static const BldInfo BuildingInfo[]
 	),
 
 	BldInfo(CardEnum::Fisher, _LOCTEXT("Fishing Lodge", "Fishing Lodge"), LOCTEXT("Fishing Lodge (Plural)", "Fishing Lodges"), LOCTEXT("Fishing Lodge Desc", "Catch Fish from seas, lakes or rivers."),
-		WorldTile2(6, 4), GetBldResourceInfo(1, { ResourceEnum::Fish }, {1}, -10)
+		WorldTile2(6, 4), GetBldResourceInfo(1, { ResourceEnum::Fish }, {1}, 0)
 	),
 	BldInfo(CardEnum::BlossomShrine, _LOCTEXT("Blossom Shrine", "Blossom Shrine"),	LOCTEXT("Blossom Shrine (Plural)", "Blossom Shrines"), FText(),
 		WorldTile2(3, 3), GetBldResourceInfoManual({0, 10})
@@ -3528,7 +3534,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Wheat, ResourceEnum::Beer }, { 1, 1 }, 30)
 	),
 	BldInfo(CardEnum::ClayPit, _LOCTEXT("Claypit", "Claypit"),		LOCTEXT("Claypit (Plural)", "Claypits"), LOCTEXT("Claypit Desc", "Produce Clay, used to make Pottery or Brick. Must be built next to a river."),
-		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Clay }, { 1, 1 }, 0)
+		WorldTile2(6, 6), GetBldResourceInfo(1, { ResourceEnum::Clay }, { 1, 1 }, 10, 100, 1)
 	),
 	BldInfo(CardEnum::Potter, _LOCTEXT("Potter", "Potter"), LOCTEXT("Potter (Plural)", "Potters"), LOCTEXT("Potter Desc", "Make Pottery from Clay."),
 		{ WorldTile2(5, 6), WorldTile2(6, 6) }, GetBldResourceInfo(1, { ResourceEnum::Clay, ResourceEnum::Pottery }, { 1, 2 })
@@ -3728,7 +3734,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::RawCoffee, ResourceEnum::Coffee }, { 2, 0, 1, 3 }, 20, 100, -2)
 	),
 
-	// February 2
+	// February 2, 2021
 	BldInfo(CardEnum::Colony, _LOCTEXT("Colony", "Colony"), LOCTEXT("Colony (Plural)", "Colonies"), LOCTEXT("Colony Desc", "Build a new city with 10 citizens from your capital."),
 		WorldTile2(12, 12), GetBldResourceInfoMoney(15000)
 	),
@@ -3915,16 +3921,16 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::ForeignPort, _LOCTEXT("Foreign Port", "Foreign Port"), LOCTEXT("Foreign Port (Plural)", "Foreign Ports"), LOCTEXT("Foreign Port Desc", "+100<img id=\"Coin\"/> if this town has our Foreign Quarters"),
 		WorldTile2(10, 12), GetBldResourceInfoManual({ 300 })
 	),
-	BldInfo(CardEnum::SpyCenter, _LOCTEXT("Spy Center", "Spy Center"), LOCTEXT("Spy Center (Plural)", "Spy Center"), LOCTEXT("Spy Center Desc", ""),
+	BldInfo(CardEnum::SpyCenter, _LOCTEXT("Spy Center", "Spy Center"), LOCTEXT("Spy Center (Plural)", "Spy Center"), LOCTEXT("Spy Center Desc", "Engage in offensive espionage or counterintelligence."),
 		WorldTile2(12, 12), GetBldResourceInfoManual({ 0 })
 	),
-	BldInfo(CardEnum::PolicyOffice, _LOCTEXT("Policy Office", "Policy Office"), LOCTEXT("Policy Office (Plural)", "Policy Office"), LOCTEXT("Policy Office Desc", ""),
+	BldInfo(CardEnum::PolicyOffice, _LOCTEXT("Policy Office", "Policy Office"), LOCTEXT("Policy Office (Plural)", "Policy Office"), LOCTEXT("Policy Office Desc", "Enact policy upgrades that gives empire-wide bonuses"),
 		WorldTile2(8, 12), GetBldResourceInfoManual({ 0 })
 	),
-	BldInfo(CardEnum::WorldTradeOffice, _LOCTEXT("World Trade Office", "World Trade Office"), LOCTEXT("World Trade Office (Plural)", "World Trade Office"), LOCTEXT("World Trade Office Desc", ""),
-		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
+	BldInfo(CardEnum::WorldTradeOffice, _LOCTEXT("World Trade Office", "World Trade Office"), LOCTEXT("World Trade Office (Plural)", "World Trade Office"), LOCTEXT("World Trade Office Desc", "Spend <img id=\"Influence\"/> to increase/decrease goods price"),
+		WorldTile2(12, 12), GetBldResourceInfoManual({ 0, 0, 0, 1000, 1000, 1000 })
 	),
-	BldInfo(CardEnum::CardCombiner, _LOCTEXT("Card Combiner", "Card Combiner"), LOCTEXT("Card Combiner (Plural)", "Card Combiner"), LOCTEXT("Card Combiner Desc", ""),
+	BldInfo(CardEnum::CardCombiner, _LOCTEXT("Card Combiner", "Card Combiner"), LOCTEXT("Card Combiner (Plural)", "Card Combiner"), LOCTEXT("Card Combiner Desc", "Combine building-slot cards into a better one."),
 		WorldTile2(10, 8), GetBldResourceInfoManual({ 0, 0, 0, 100, 100, 100 })
 	),
 
@@ -3937,7 +3943,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::StoneHenge, _LOCTEXT("Stone Circle Ruin", "Stone Circle Ruin"), LOCTEXT("Stone Circle Ruin (Plural)", "Stone Circle Ruins"), LOCTEXT("Stone Circle Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
-	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Mysterious Statue Ruin", "Mysterious Statues Ruin"), LOCTEXT("Mysterious Statues Ruin (Plural)", "Mysterious Statues Ruins"), LOCTEXT("Mysterious Statue Ruin Desc", ""),
+	BldInfo(CardEnum::EasterIsland, _LOCTEXT("Odd Statues Ruin", "Odd Statues Ruin"), LOCTEXT("Odd Statues Ruin (Plural)", "Odd Statues Ruins"), LOCTEXT("Mysterious Statue Ruin Desc", ""),
 		WorldTile2(18, 18), GetBldResourceInfoManual({ 100 })
 	),
 	
@@ -3951,7 +3957,7 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::IrrigationDitch, _LOCTEXT("Irrigation Ditch", "Irrigation Ditch"), LOCTEXT("Irrigation Ditch (Plural)", "Irrigation Ditches"), LOCTEXT("Irrigation Ditch Desc", "Distribute water from Irrigation Pump to increase soil fertility (radius 5)."),
 		WorldTile2(1, 1), GetBldResourceInfoManual({})
 	),
-	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", ""),
+	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", "Weaves Carpet from Wool and Dye."),
 		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Wool, ResourceEnum::Dye, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
 	),
 	BldInfo(CardEnum::BathHouse, _LOCTEXT("Bath House", "Bath House"), LOCTEXT("Bath House (Plural)", "Bath Houses"), LOCTEXT("Bath House Desc", ""),
@@ -4160,10 +4166,10 @@ static const BldInfo CardInfos[]
 		BldInfo(CardEnum::DesertOreTrade, _LOCTEXT("Ore Trade", "Ore Trade"), 0, LOCTEXT("Ore Trade Desc", "Ores/Coal/Gemstone has 0% Trading Fee.")),
 		BldInfo(CardEnum::DesertIndustry, _LOCTEXT("Desert Industry", "Desert Industry"), 0, LOCTEXT("Desert Industry Desc", "+20% Productivity to all Industries. -50% Farm Productivity.")),
 
-		BldInfo(CardEnum::SavannaRanch, _LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+35% Ranch Productivity.")),
+		BldInfo(CardEnum::SavannaRanch, _LOCTEXT("Grassland Herder", "Grassland Herder"), 0, LOCTEXT("Grassland Herder Desc", "+35% Ranch Productivity.")),
 		BldInfo(CardEnum::SavannaHunt, _LOCTEXT("Grassland Hunting", "Grassland Hunting"), 0, LOCTEXT("Grassland Hunting Desc", "+50% Hunting Lodge Productivity.")),
-		BldInfo(CardEnum::SavannaGrasslandHerder, _LOCTEXT("Grassland Herder", "Grassland Herder"), 0, LOCTEXT("Grassland Herder Desc", "+50% Productivity for Ranch.")),
-		BldInfo(CardEnum::SavannaGrasslandRoamer, _LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+50% <img id=\"Influence\"/> from Houses built on Grassland/Savanna.")),
+		BldInfo(CardEnum::SavannaGrasslandHerder, _LOCTEXT("Grass Fed", "Grass Fed"), 0, LOCTEXT("Grass Fed Desc", "+50% Ranch Productivity.")),
+		BldInfo(CardEnum::SavannaGrasslandRoamer, _LOCTEXT("Grassland Roamer", "Grassland Roamer"), 0, LOCTEXT("Grassland Roamer Desc", "+100<img id=\"Influence\"/> income in this City.")),
 
 		BldInfo(CardEnum::JungleGatherer, _LOCTEXT("Jungle Gatherer", "Jungle Gatherer"), 0, LOCTEXT("Jungle Gatherer Desc", "+30% Productivity for Fruit Gatherers in Jungle Biome.")),
 		BldInfo(CardEnum::JungleMushroom, _LOCTEXT("Jungle Mushroom", "Jungle Mushroom"), 0, LOCTEXT("Jungle Mushroom Desc", "+30% Productivity for Mushroom Farms in Jungle Biome.")),
@@ -4177,7 +4183,7 @@ static const BldInfo CardInfos[]
 
 		BldInfo(CardEnum::Agriculturalist, _LOCTEXT("Agriculturalist", "Agriculturalist"), 0, LOCTEXT("Agriculturalist Desc", "+10% Farm Productivity within Granary's Radius.")),
 		BldInfo(CardEnum::Geologist, _LOCTEXT("Geologist", "Geologist"), 0, LOCTEXT("Geologist Desc", "Mines depletes 50% slower.")),
-		BldInfo(CardEnum::AlcoholAppreciation, _LOCTEXT("Alcohol Appreciation", "Alcohol Appreciation"), 0, LOCTEXT("Alcohol Appreciation Desc", "+15% Productivity when producing Beer, Vodka, and Wine.")),
+		BldInfo(CardEnum::AlcoholAppreciation, _LOCTEXT("Alcohol Appreciation", "Alcohol Appreciation"), 0, LOCTEXT("Alcohol Appreciation Desc", "+15% Productivity when producing Beer, Vodka, Tequila, and Wine.")),
 		BldInfo(CardEnum::Craftmanship, _LOCTEXT("Craftmanship", "Craftmanship"), 0, LOCTEXT("Craftmanship Desc", "+20% Productivity for Blacksmith and Potter.")),
 
 		BldInfo(CardEnum::Rationalism, _LOCTEXT("Rationalism", "Rationalism"), 0, LOCTEXT("Rationalism Desc", "+1% Science Boost for each 2% Happiness above 80%.")),
@@ -6407,6 +6413,8 @@ enum class InfluenceIncomeEnum : uint8
 	EnemySpyNest,
 
 	ResourceOutpost,
+	WorldTradeOffice,
+	GrasslandRoamer,
 	
 	Count,
 };
@@ -6431,6 +6439,9 @@ static const TArray<FText> InfluenceIncomeEnumName
 	LOCTEXT("Enemy Spy Nest", "Enemy Spy Nest"),
 
 	LOCTEXT("Resource Outpost", "Resource Outpost"),
+	LOCTEXT("World Trade Office", "World Trade Office"),
+
+	LOCTEXT("Grassland Roamer", "Grassland Roamer"),
 };
 static int32 InfluenceIncomeEnumCount = static_cast<int32>(InfluenceIncomeEnum::Count);
 
@@ -7468,7 +7479,7 @@ struct MilitaryCardInfo
 	CardEnum cardEnum;
 	int32 baseMoneyCost;
 
-	ResourcePair resourceCost;
+	ResourcePair resourceCost; // Do not use this directly... Use GetTrainUnitCost() .. because of raid
 	
 	int32 humanCost;
 
@@ -7762,7 +7773,7 @@ static const int32 HumanBaseBirthChance = 3;
 // BALANCE
 // Heat _Year100Per10Resource... 10 resources will go through 4 winters (but 4 ppl in a house, so just 1 winter, hence 025 or 0.25 year)
 // Mar29 ... 3 -> 30ppl -> 50
-static const int32 HumanHeatResourcePerYear = 10; // 5 (for most of Feb) // 10 = 025 * 5 / 2
+static const int32 HumanHeatResourcePerYear = 10; // 5 (for most of Feb, 2021) // 10 = 025 * 5 / 2
 
 // Assume area is just a box: (ColdCelsius - MinCelsius) * Time::TicksPerSeason
 inline int32 MaxWinterCelsiusBelowComfort() { return std::max(0, FDToInt(Time::ColdCelsius() - Time::MinCelsiusBase())); }
@@ -10569,6 +10580,9 @@ enum class HoverWarning : uint8 {
 	NeedTradeRoute,
 	ChooseTradeRoute,
 	AwaitingApproval,
+
+	NotEnoughInfluence,
+	NeedTargetResources,
 };
 
 static const std::vector<FText> HoverWarningString = {
@@ -10599,6 +10613,9 @@ static const std::vector<FText> HoverWarningString = {
 	LOCTEXT("Need Trade Route", "Need Trade Route"),
 	LOCTEXT("Choose Trade Route", "Choose Trade Route"),
 	LOCTEXT("Awaiting Approval", "Awaiting\nApproval"),
+
+	LOCTEXT("Not Enough Influence", "Not Enough Influence"),
+	LOCTEXT("Need Target Resources", "Need Target Resources"),
 };
 static const std::vector<FText> HoverWarningDescription = {
 	FText(),
@@ -10628,6 +10645,9 @@ static const std::vector<FText> HoverWarningDescription = {
 	LOCTEXT("Need Trade Route Desc", "Need Trade Route"),
 	LOCTEXT("Choose Trade Route Desc", "Choose Trade Route"),
 	LOCTEXT("Awaiting Approval Desc", "Waiting for another player to approve foreign building."),
+
+	LOCTEXT("Not Enough Influence Desc", "Not enough influence for this building to consume."),
+	LOCTEXT("Need Target Resources Desc", "Choose target resources"),
 };
 static FText GetHoverWarningName(HoverWarning hoverWarning) { return HoverWarningString[static_cast<int>(hoverWarning)]; }
 static FText GetHoverWarningDescription(HoverWarning hoverWarning) { return HoverWarningDescription[static_cast<int>(hoverWarning)]; }

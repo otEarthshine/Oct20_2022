@@ -42,12 +42,16 @@ public:
 			{
 				if (GetWorld()->GetTimeSeconds() < FXSpines[j]->animationDoneSec)
 				{
+					FXSpines[j]->SetVisibility(ESlateVisibility::HitTestInvisible);
 					FXSpines[j]->PunTick();
 				}
 				else {
-					//FXSpines[j]->SetVisibility(ESlateVisibility::Collapsed);
+					FXSpines[j]->SetVisibility(ESlateVisibility::Hidden);
 					FXSpines[j]->animationDoneSec = -1;
 				}
+			}
+			else {
+				FXSpines[j]->SetVisibility(ESlateVisibility::Hidden);
 			}
 		}
 	}
@@ -65,14 +69,18 @@ public:
 		if (!fxSpine)
 		{
 			fxSpine = AddWidget<UWG_PunSpine>(UIEnum::WG_PunSpine);
+
 			FXSpines.Add(fxSpine);
 			FXOverlay->AddChildToOverlay(fxSpine);
 		}
+
+		CastChecked<USizeBoxSlot>(fxSpine->Spine->Slot)->SetPadding(assetLoader()->GetFXSpineMargin(atlas_fx));
 
 		fxSpine->Spine->Atlas = atlas_fx;
 		fxSpine->Spine->SkeletonData = skeletonData_fx;
 		fxSpine->Spine->SetAnimation(0, "Attack", false);
 		fxSpine->Spine->SetTimeScale(gameSpeed);
+		
 		fxSpine->animationDoneSec = GetWorld()->GetTimeSeconds() + ProvinceClaimProgress::AnimationLengthSecs / gameSpeed;
 		fxSpine->SetVisibility(ESlateVisibility::HitTestInvisible);
 		fxSpine->PunTick();

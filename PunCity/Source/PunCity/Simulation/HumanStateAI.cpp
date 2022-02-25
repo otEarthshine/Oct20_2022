@@ -2395,7 +2395,7 @@ bool HumanStateAI::TryGather(bool treeOnly)
 	NonWalkableTileAccessInfo tileAccessInfo;
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_TryGather_FindMark);
-		tileAccessInfo = treeSystem().FindNearestMark(_townId, unitTile(), treeOnly);
+		tileAccessInfo = treeSystem().FindNearestMark(_townId, unitTile(), treeOnly, 5);
 	}
 
 	if (!tileAccessInfo.isValid()) {
@@ -3413,6 +3413,9 @@ bool HumanStateAI::ReserveAndAdd_DoFarmWork(const FarmTile& farmTile, FarmStage 
 	if (!_simulation->IsValidBuilding(farmId)) {
 		return false;
 	}
+	if (_simulation->buildingEnum(farmId) != CardEnum::Farm) {
+		return false;
+	}
 
 	
 	int32 waitTicks = 60;
@@ -3574,9 +3577,10 @@ void HumanStateAI::UpdateHappiness()
 
 		// Policy Office
 		{
-			const std::vector<int32>& policyOfficeIds = _simulation->buildingIds(_townId, CardEnum::PolicyOffice);
+			const std::vector<int32>& policyOfficeIds = _simulation->buildingIds(_playerId, CardEnum::PolicyOffice);
 			if (policyOfficeIds.size() > 0)
 			{
+				// National Pride
 				PolicyOffice& policyOffice = _simulation->building<PolicyOffice>(policyOfficeIds[0], CardEnum::PolicyOffice);
 				if (policyOffice.isConstructed()) {
 					targetHappiness += 5 * policyOffice.GetUpgrade(0).upgradeLevel;

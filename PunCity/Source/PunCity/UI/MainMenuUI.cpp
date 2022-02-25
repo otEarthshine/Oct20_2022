@@ -327,7 +327,8 @@ void UMainMenuUI::RefreshLobbyList()
 
 	LobbyRefreshThrobber->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-	SetButtonEnabled(LobbyListJoinGameButton, ButtonStateEnum::Disabled);
+	LobbyListJoinGameButton->SetIsEnabled(false);
+	//SetButtonEnabled(LobbyListJoinGameButton, ButtonStateEnum::Disabled);
 }
 
 //void UMainMenuUI::OnMultiplayerMenuInternetButtonClick()

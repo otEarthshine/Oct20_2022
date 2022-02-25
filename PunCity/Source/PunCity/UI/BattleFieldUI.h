@@ -48,7 +48,7 @@ public:
 
 	int32 lastGameSpeed = -1;
 
-	void UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher);
+	void UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgress claimProgress, bool showAttacher, bool isInit = false);
 	
 	virtual bool IsMiniUI() override { return false; }
 

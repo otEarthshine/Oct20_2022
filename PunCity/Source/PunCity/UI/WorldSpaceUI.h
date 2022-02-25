@@ -62,6 +62,8 @@ struct FHoverUIs
 			T* hoverWidget = CastChecked<T>(hoverWidgetComps[i]->GetUserWidgetObject());
 			if (hoverWidget->punId == objectId) {
 				hoverWidget->justInitializedUI = false;
+
+				// Set default RenderScale using zoomScaleDownThreshold ... This maybe overriden for some UIs
 				hoverWidgetComps[i]->GetUserWidgetObject()->SetRenderScale(FVector2D(scale, scale));
 				hoverWidgetComps[i]->SetWorldLocation(worldLocation);
 				return hoverWidget;

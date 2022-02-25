@@ -685,37 +685,17 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				}
 				else {
 					_objectDescriptionUI->DescriptionPunBox->AddWGT_ObjectFocus_Title(
-						FText::Format(LOCTEXT("TribeName", "{0} (Minor City)"), sim.townNameT(townId))
+						FText::Format(LOCTEXT("TribeName", "{0}\n(Minor City)"), sim.townNameT(townId))
 					);
 				}
 
 #if !UE_BUILD_SHIPPING
-				//if (PunSettings::IsOn("DebugFocusUI")) {
+				if (PunSettings::IsOn("DebugFocusUI")) {
 					focusBox->AddRichText(FText::Format(INVTEXT("TownId {0}"), townId));
 					focusBox->AddSpacer();
 					focusBox->AddRichText(FText::Format(INVTEXT("TownhallId {0}"), townManagerBase->townhallId));
-				//}
+				}
 #endif
-
-				focusBox->AddSpacer();
-				
-				const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
-				for (const AutoTradeElement& element : autoExportElements) {
-					focusBox->AddRichText(FText::Format(INVTEXT("Export {0}({1}) {2}"), 
-						TEXT_NUM(element.calculatedFulfillmentLeft()), 
-						TEXT_NUM(element.calculatedTradeAmountNextRound), 
-						ResourceNameT(element.resourceEnum))
-					);
-				}
-
-				const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElementsConst();
-				for (const AutoTradeElement& element : autoImportElements) {
-					focusBox->AddRichText(FText::Format(INVTEXT("Import {0}({1}) {2}"), 
-						TEXT_NUM(element.calculatedFulfillmentLeft()),
-						TEXT_NUM(element.calculatedTradeAmountNextRound),
-						ResourceNameT(element.resourceEnum))
-					);
-				}
 
 				focusBox->AddSpacer();
 
@@ -737,6 +717,36 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					TEXT_NUMSIGNED(townManagerBase->GetMinorCityMoneyIncome()),
 					assetLoader->CoinIcon
 				);
+
+				focusBox->AddSpacer();
+
+				
+				// Export/Import
+				const FText minorCity_ExportImportFulfilled = LOCTEXT("MinorCity_ExportImportFulfilled", "(filled:{0})");
+				auto showRow = [&](const AutoTradeElement& element)
+				{
+					int32 fulfilled = element.calculatedFulfilledTradeAmountNextRound;
+					FText fulfillmentText = fulfilled > 0 ? FText::Format(minorCity_ExportImportFulfilled, TEXT_NUM(fulfilled)) : FText();
+					focusBox->AddIconPair(INVTEXT("      "), element.resourceEnum, FText::Format(
+						INVTEXT("{0} {1}"),
+						TEXT_NUM(element.calculatedTradeAmountNextRound),
+						fulfillmentText
+					), false, false, 0, false);
+
+					AddTradeOfferTooltip(focusBox, element.isImport, element.resourceEnum, element.calculatedTradeAmountNextRound, element.calculatedFulfilledTradeAmountNextRound);
+				};
+				
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Export:", "Export:"));
+				const std::vector<AutoTradeElement>& autoExportElements = townManagerBase->autoExportElementsConst();
+				for (const AutoTradeElement& element : autoExportElements) {
+					showRow(element);
+				}
+
+				focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow, LOCTEXT("Import:", "Import:"));
+				const std::vector<AutoTradeElement>& autoImportElements = townManagerBase->autoImportElementsConst();
+				for (const AutoTradeElement& element : autoImportElements) {
+					showRow(element);
+				}
 
 				focusBox->AddSpacer();
 
@@ -906,9 +916,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				building.isEnum(CardEnum::Market) || 
 				building.isEnum(CardEnum::TradingCompany) ||
 				building.isEnum(CardEnum::Hotel) ||
+				building.isEnum(CardEnum::WorldTradeOffice) ||
 				IsDecorativeBuilding(building.buildingEnum()))
 			{
-				focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, building.buildingInfo().GetDescription()); // Autowrap off prevent flash
+				FText description = building.buildingInfo().GetDescription();
+				if (description.IsEmpty()) {
+					focusBox->AddWGT_PunRichText(UIEnum::WGT_ObjectFocus_FlavorText, building.buildingInfo().GetDescription()); // Autowrap off prevent flash	
+				}
 			}
 
 			
@@ -2096,7 +2110,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						{
 							auto& bld = building.subclass<WorldTradeOffice>();
 
-							focusBox->AddRichText(LOCTEXT("WorldTradeOffice Description", "Every 30 secs:\n- spend 30<img id=\"Influence\"/>\n- increase price of goods by 1%"));
+							focusBox->AddRichText(LOCTEXT("WorldTradeOffice Description", "Every round:\n- spend 100<img id=\"Influence\"/>\n- increase/decrease price by 5%"));
 							focusBox->AddSpacer(24);
 							
 							// targetAmount
@@ -3367,7 +3381,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								else if (resourceEnum == ResourceEnum::Stone) { showResourceText("Stone"); }
 								else if (resourceEnum == ResourceEnum::Wood) { showResourceText("Wood"); }
 								else if (resourceEnum == ResourceEnum::Iron) { showResourceText("IronBar"); }
-								else if (resourceEnum == ResourceEnum::SteelTools) { showResourceText("SteelTools"); }
+								else if (resourceEnum == ResourceEnum::IronTools) { showResourceText("SteelTools"); }
 								else if (resourceEnum == ResourceEnum::Brick) { showResourceText("Brick"); }
 								else if (resourceEnum == ResourceEnum::Paper) { showResourceText("Paper"); }
 								else if (resourceEnum == ResourceEnum::Glass) { showResourceText("Glass"); }

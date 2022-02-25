@@ -97,7 +97,7 @@ void OverlaySystem::RefreshIrrigationFill(int32 townId)
 	
 	for (int32 i = 0; i < bldIds.size(); i++) {
 		IrrigationPump& pump = _simulation->building<IrrigationPump>(bldIds[i]);
-		floodQueues[i].push_back(pump.GetFirstIrrigationDitchTile());
+		floodQueues[i].push_back(pump.GetFirstIrrigationDitchTile(true));
 		bldIndexToQueueIndex[i] = i;
 		waterLeft.push_back(pump.trueTotalWater());
 	}

@@ -155,7 +155,7 @@ public:
 			SetText(MedicineInventoryText, std::to_string(initialResources.medicineAmount));
 
 			// Tools
-			SetText(ToolsPriceText, std::to_string(GetResourceInfo(ResourceEnum::SteelTools).basePrice));
+			SetText(ToolsPriceText, std::to_string(GetResourceInfo(ResourceEnum::IronTools).basePrice));
 			SetText(ToolsInventoryText, std::to_string(initialResources.toolsAmount));
 
 			int32 resourceValueIncrease = initialResources.totalCost() - FChooseInitialResources::GetDefault(playerOwned.factionEnum()).totalCost();

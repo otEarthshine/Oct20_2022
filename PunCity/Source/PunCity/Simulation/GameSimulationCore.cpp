@@ -1022,8 +1022,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							unlockSys->didFirstTimeToolsLowPopup = true;
 							AddPopup(playerId, {
 								LOCTEXT("ToolsFirstWarn1_Pop", "Your Tools count is low.<space>If you run out of Tools, your citizens' work efficiency will drop.<space>"),
-								LOCTEXT("ToolsFirstWarn2_Pop", "The easiest way to acquire Tools is by importing Steel Tools from Trading Post/Port/Company.<space>"),
-								LOCTEXT("ToolsFirstWarn3_Pop", "Steel Tools are produced from Blacksmith requiring Iron Bars and Wood.")
+								LOCTEXT("ToolsFirstWarn2_Pop", "The easiest way to acquire Tools is by importing Iron Tools from Trading Post/Port/Company.<space>"),
+								LOCTEXT("ToolsFirstWarn3_Pop", "Iron Tools are produced from Blacksmith requiring Iron Bars and Wood.")
 							});
 						}
 
@@ -6408,7 +6408,7 @@ void GameSimulationCore::Cheat(FCheat command)
 				cardSys.ClearBoughtCards();
 				cardSys.ClearRareHands();
 
-				AddResourceGlobal(command.playerId, ResourceEnum::SteelTools, 2000);
+				AddResourceGlobal(command.playerId, ResourceEnum::IronTools, 2000);
 				AddResourceGlobal(command.playerId, ResourceEnum::Coal, 50000);
 				AddResourceGlobal(command.playerId, ResourceEnum::Medicine, 10000);
 				AddResourceGlobal(command.playerId, ResourceEnum::Grape, 150000);
@@ -6989,7 +6989,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 				ResourceEnum::Food,
 				ResourceEnum::Coal,
 				ResourceEnum::Medicine,
-				ResourceEnum::SteelTools,
+				ResourceEnum::IronTools,
 			};
 			hub.resourceCounts = {
 				initialResources.foodAmount,
@@ -7012,7 +7012,7 @@ void GameSimulationCore::PlaceInitialTownhallHelper(FPlaceBuilding command, int3
 		AddResourceGlobal(townId, ResourceEnum::Clay, initialResources.clayAmount);
 
 		AddResourceGlobal(townId, ResourceEnum::Medicine, initialResources.medicineAmount);
-		AddResourceGlobal(townId, ResourceEnum::SteelTools, initialResources.toolsAmount);
+		AddResourceGlobal(townId, ResourceEnum::IronTools, initialResources.toolsAmount);
 	}
 
 	/*

@@ -189,7 +189,7 @@ public:
 	
 	bool IsResourcePriceUIOpened(ResourceEnum resourceEnum) override {
 		return _statisticsUI->GetVisibility() != ESlateVisibility::Collapsed &&
-			_statisticsUI->StatSwitcher->GetActiveWidgetIndex() == 7 &&
+			_statisticsUI->StatSwitcher->GetActiveWidgetIndex() == _statisticsUI->GetWidgetIndexFromStatButton(_statisticsUI->MarketStatButton) &&
 			_statisticsUI->simulation().worldTradeSystem().resourceEnumToShowStat == resourceEnum;
 	}
 	void OpenResourcePriceUI(ResourceEnum resourceEnum) override {
@@ -197,7 +197,7 @@ public:
 		_statisticsUI->simulation().worldTradeSystem().resourceEnumToShowStat = resourceEnum;
 		_statisticsUI->OpenStatisticsUI(playerId());
 		_statisticsUI->SetTabSelection(_statisticsUI->MarketStatButton);
-		_statisticsUI->StatSwitcher->SetActiveWidgetIndex(7);
+		_statisticsUI->StatSwitcher->SetActiveWidgetIndex(_statisticsUI->GetWidgetIndexFromStatButton(_statisticsUI->MarketStatButton));
 		_statisticsUI->MarketResourceDropdown->SetSelectedOption(ResourceNameF(resourceEnum));
 	}
 

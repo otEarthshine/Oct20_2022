@@ -202,9 +202,14 @@ public:
 
 		if (_isSavingGame) {
 			bool isSaveButtonEnabled = SelectedSavePlayerNameEditable->Text.ToString().Len() > 0;
-			SetButtonEnabled(LoadGameButton, isSaveButtonEnabled ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
+
+			LoadGameButton->SetIsEnabled(isSaveButtonEnabled);
+			LoadGameButton->SetVisibility(ESlateVisibility::Visible);
+			//SetButtonEnabled(LoadGameButton, isSaveButtonEnabled ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
 		} else {
-			SetButtonEnabled(LoadGameButton, activeIndex != SaveActiveIndex_Unselected ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
+			LoadGameButton->SetIsEnabled(activeIndex != SaveActiveIndex_Unselected);
+			LoadGameButton->SetVisibility(ESlateVisibility::Visible);
+			//SetButtonEnabled(LoadGameButton, activeIndex != SaveActiveIndex_Unselected ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
 		}
 
 		NoSavedGameText->SetVisibility(saveList.Num() > 0 ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);

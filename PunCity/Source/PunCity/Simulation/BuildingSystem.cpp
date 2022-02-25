@@ -207,7 +207,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::TequilaDistillery, VodkaDistillery);
 		CASE_BUILDING(CardEnum::CoffeeRoaster, CoffeeRoaster);
 
-		// Feb 2
+		// Feb 2, 2021
 		CASE_BUILDING(CardEnum::Colony, Building);
 		CASE_BUILDING(CardEnum::PortColony, Building);
 		CASE_BUILDING(CardEnum::IntercityLogisticsHub, IntercityLogisticsHub);

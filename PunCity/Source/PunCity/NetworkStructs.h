@@ -1032,7 +1032,7 @@ public:
 		return foodAmount * FoodCost +
 			woodAmount * GetResourceInfo(ResourceEnum::Wood).basePrice +
 			medicineAmount * GetResourceInfo(ResourceEnum::Medicine).basePrice +
-			toolsAmount * GetResourceInfo(ResourceEnum::SteelTools).basePrice +
+			toolsAmount * GetResourceInfo(ResourceEnum::IronTools).basePrice +
 			stoneAmount * GetResourceInfo(ResourceEnum::Stone).basePrice +
 			clayAmount * GetResourceInfo(ResourceEnum::Clay).basePrice;
 	}
@@ -1042,7 +1042,7 @@ public:
 		resourceMap[ResourceEnum::Orange] = foodAmount;
 		resourceMap[ResourceEnum::Wood] = woodAmount;
 		resourceMap[ResourceEnum::Medicine] = medicineAmount;
-		resourceMap[ResourceEnum::SteelTools] = toolsAmount;
+		resourceMap[ResourceEnum::IronTools] = toolsAmount;
 		resourceMap[ResourceEnum::Stone] = stoneAmount;
 		resourceMap[ResourceEnum::Clay] = clayAmount;
 		return resourceMap;

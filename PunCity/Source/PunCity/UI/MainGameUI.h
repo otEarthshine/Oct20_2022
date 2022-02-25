@@ -626,27 +626,7 @@ public:
 		}
 	}
 
-	UFUNCTION() void OnClickReinforcementSubmitButton()
-	{
-		auto command = make_shared<FClaimLand>();
-		command->claimEnum = reinforcementCallbackEnum;
-		command->provinceId = reinforcementProvinceId;
-		PUN_CHECK(command->provinceId != -1);
-
-		const std::vector<CardStatus>& cards = simulation().cardSystem(playerId()).pendingMilitarySlotCards;
-		for (int32 i = 0; i < cards.size(); i++) {
-			command->cardEnums.Add(static_cast<int32>(cards[i].cardEnum));
-			command->cardCount.Add(cards[i].stackSize);
-		}
-
-		networkInterface()->SendNetworkCommand(command);
-
-		if (reinforcementCallbackEnum == CallbackEnum::RaidBattle) {
-			simulation().cardSystem(playerId()).pendingHiddenBoughtHandCards.push_back(CardStatus(CardEnum::Raid, 1));
-		}
-
-		CloseReinforcementUI(false);
-	}
+	UFUNCTION() void OnClickReinforcementSubmitButton();
 	UFUNCTION() void OnClickReinforcementCancelButton() {
 		CloseReinforcementUI();
 	}

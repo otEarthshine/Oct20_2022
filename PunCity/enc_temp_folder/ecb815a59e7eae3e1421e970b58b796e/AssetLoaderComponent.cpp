@@ -1058,9 +1058,6 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 
 	addCardIcon(CardEnum::MinersFortune, "MinersFortune");
 
-	addCardIcon(CardEnum::CardRemoval, "CardRemoval");
-	addCardIcon(CardEnum::SharingIsCaring, "SharingIsCaring");
-
 
 	// Artifacts
 	folderName = "CardImages_Artifacts/";

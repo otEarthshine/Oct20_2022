@@ -220,7 +220,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 	 */
 	if (sim.NeedDisplayUpdate(DisplayClusterEnum::Building, regionId) || isMainMenuDisplay)
 	{
-		PUN_LOG("--- Display Construction NeedDisplayUpdate regionId:%d", regionId);
+		//PUN_LOG("--- Display Construction NeedDisplayUpdate regionId:%d", regionId);
 		
 		//SCOPE_TIMER("Tick Building: Building");
 		SCOPE_CYCLE_COUNTER(STAT_PunDisplayBuilding_Core);
@@ -233,6 +233,9 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			selectedBuildingId = simulation().descriptionUIState().objectId;
 		}
 
+
+		TSet<int32> visitedBuildings; // Solve IntercityBridge duplicate issue
+
 		buildingList.ExecuteRegion(region, [&](int32 buildingId)
 		{
 			Building& building = buildingSystem.building(buildingId);
@@ -240,7 +243,7 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			FactionEnum factionEnum = building.factionEnum();
 			const std::vector<BuildingUpgrade>& upgrades = building.upgrades();
 
-			PUN_LOG(" -- Display Construction[%d] (1) %s construct:%d", building.buildingId(), *building.buildingInfo().name.ToString(), building.constructionPercent());
+			//PUN_LOG(" -- Display Construction[%d] (1) %s construct:%d", building.buildingId(), *building.buildingInfo().name.ToString(), building.constructionPercent());
 
 			// Don't display road
 			if (IsRoad(buildingEnum)) {
@@ -251,10 +254,20 @@ void UBuildingDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAto
 			if (buildingEnum == CardEnum::Bridge ||
 				buildingEnum == CardEnum::IntercityBridge)
 			{
+				int32 centerTileId = building.centerTile().tileId();
+				if (visitedBuildings.Contains(centerTileId)) {
+					return;
+				}
+				visitedBuildings.Add(centerTileId);
+				
 				std::vector<GameDisplayUtils::BridgeModule> bridgeModules = GameDisplayUtils::GetBridgeModules(building.area());
 
+				//PUN_LOG(" -- Display Construction bridge %s", *building.centerTile().To_FString());
+
 				for (int i = 0; i < bridgeModules.size(); i++) {
-					int32 instanceKey = building.centerTile().tileId() + (i + 1) * GameMapConstants::TilesPerWorld; // i + 1 to avoid oasis
+					int32 instanceKey = centerTileId + i * GameMapConstants::TilesPerWorld;
+					//PUN_LOG(" -- Display Construction bridge[%d] instanceKey:%d", i, instanceKey);
+					
 					FTransform transform(FRotator(0, bridgeModules[i].rotation, 0), bridgeModules[i].tile.localTile(region).localDisplayLocation());
 					_moduleMeshes[meshId]->Add(bridgeModules[i].moduleName, instanceKey, transform, 0, buildingId);
 				}

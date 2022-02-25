@@ -612,6 +612,40 @@ public:
 		}
 
 		/*
+		 * _provinceToRegionsOverlap only includes the edges up until now
+		 * check for those regions inside the province (that do not overlap the border)
+		 */
+		for (int32 i = 0; i < _provinceToRegionsOverlap.size(); i++)
+		{
+			std::vector<WorldRegion2>& regionsOverlap = _provinceToRegionsOverlap[i];
+			if (regionsOverlap.size() > 0)
+			{
+				WorldRegion2 min = regionsOverlap[0];
+				WorldRegion2 max = regionsOverlap[0];
+				for (int32 j = 1; j < regionsOverlap.size(); j++) {
+					min.x = std::min(min.x, regionsOverlap[j].x);
+					min.y = std::min(min.y, regionsOverlap[j].y);
+					max.x = std::max(max.x, regionsOverlap[j].x);
+					max.y = std::max(max.y, regionsOverlap[j].y);
+				}
+
+				// go through all region within the bounding box to find regions whose center is within the province
+				for (int32 x = min.x; x <= max.x; x++) {
+					for (int32 y = min.y; y <= max.y; y++) 
+					{
+						WorldRegion2 region(x, y);
+						if (!CppUtils::Contains(regionsOverlap, region) &&
+							GetProvinceIdClean(region.centerTile()) == i)
+						{
+							regionsOverlap.push_back(region);
+						}
+					}
+				}
+			}
+		}
+		
+
+		/*
 		 * Set any leftover EmptyProvinceId tile to mountain so nothing uses it
 		 */
 		//auto pathAI = _simulation->pathAI(true);
@@ -1479,7 +1513,6 @@ private:
 
 		//DEBUG
 		//PUN_LOG("changedTileCount:%d totalTilesAfter:%d", changedTileCount, totalTilesAfter);
-		PUN_CHECK(totalTilesAfter == (changedTileCount + provinceTileCount(newProvinceId)));
 
 		_provinceCenters[oldProvinceId] = WorldTile2x2();
 

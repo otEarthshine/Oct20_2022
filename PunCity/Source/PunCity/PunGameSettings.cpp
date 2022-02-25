@@ -47,7 +47,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ProvinceFlatConnectionOnly", 0},
 
 	{ "CachedWaypoints", 0 },
-	{ "CachedWaypointsThreshold", 10 },
+	{ "CachedWaypointsThreshold", 30 },
 
 	{ "PlayerCount", 1 },
 
@@ -176,6 +176,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceWorkAnimation", 0 },
 
 	{ "ShouldResetMouseCursor", 1 },
+
+	{ "BattleUnitStopStage", 0 },
 
 	{ "TestPosX", 0 },
 	{ "TestPosY", 0 },

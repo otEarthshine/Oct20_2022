@@ -213,16 +213,29 @@ void UTownAutoTradeUI::TickUI()
 							UIconTextPairWidget* iconPair = GetBoxChild<UIconTextPairWidget>(box, indexLocal, UIEnum::IconTextPair, true);
 							iconPair->SetImage(element.resourceEnum, assetLoader(), false);
 
-							if (element.calculatedFulfilledTradeAmountNextRound > 0) {
-								iconPair->SetText(FText(), FText::Format(
-									INVTEXT("{0} ({1})"),
-									TEXT_NUM(element.calculatedFulfillmentLeft()),
-									TEXT_NUM(element.calculatedTradeAmountNextRound)
-								));
-							}
-							else {
-								iconPair->SetText(FText(), TEXT_NUM(element.calculatedTradeAmountNextRound));
-							}
+							const FText minorCity_ExportImportFulfilled = LOCTEXT("CitiesTradeOffer_ExportImportFulfilled", "(filled:{0})");
+
+							int32 fulfilled = element.calculatedFulfilledTradeAmountNextRound;
+							FText fulfillmentText = fulfilled > 0 ? FText::Format(minorCity_ExportImportFulfilled, TEXT_NUM(fulfilled)) : FText();
+							iconPair->SetText(FText(), FText::Format(
+								INVTEXT("{0} {1}"),
+								TEXT_NUM(element.calculatedTradeAmountNextRound),
+								fulfillmentText
+							));
+
+							AddTradeOfferTooltip(iconPair, element.isImport, element.resourceEnum, element.calculatedTradeAmountNextRound, element.calculatedFulfilledTradeAmountNextRound);
+							
+							//if (element.calculatedFulfilledTradeAmountNextRound > 0) {
+							//	FText fulfillmentText = fulfilled > 0 ? FText::Format(minorCity_ExportImportFulfilled, TEXT_NUM(fulfilled)) : FText();
+							//	iconPair->SetText(FText(), FText::Format(
+							//		INVTEXT("{0} (filled:{1})"),
+							//		TEXT_NUM(element.calculatedFulfillmentLeft()),
+							//		TEXT_NUM(element.calculatedTradeAmountNextRound)
+							//	));
+							//}
+							//else {
+							//	iconPair->SetText(FText(), TEXT_NUM(element.calculatedTradeAmountNextRound));
+							//}
 						}
 					}
 					BoxAfterAdd(box, indexLocal);
@@ -230,15 +243,15 @@ void UTownAutoTradeUI::TickUI()
 					if (isExport) {
 						tradeOffersRow->ExportText->SetText(
 							indexLocal == 0 ?
-							LOCTEXT("Export: None", "Export: None") :
-							LOCTEXT("Export:", "Export:")
+							LOCTEXT("Export None", "Export None") :
+							LOCTEXT("Export", "Export")
 						);
 					}
 					else {
 						tradeOffersRow->ImportText->SetText(
 							indexLocal == 0 ?
-							LOCTEXT("Import: None", "Import: None") :
-							LOCTEXT("Import:", "Import:")
+							LOCTEXT("Import None", "Import None") :
+							LOCTEXT("Import", "Import")
 						);
 					}
 				};

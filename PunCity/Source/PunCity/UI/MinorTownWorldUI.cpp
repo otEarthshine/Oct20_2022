@@ -10,11 +10,7 @@
 
 
 void UMinorTownWorldUI::UpdateUIBase(bool isMini)
-{
-	if (isMini) {
-		SetRenderScale(FVector2D(0.5, 0.5));
-	}
-	
+{	
 	/*
 	 * City Name
 	 */
@@ -214,6 +210,7 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 			unitIcon->UnitCountText->SetText(TEXT_NUM(militaryCards[i].stackSize));
 
 			FSpineAsset spineAsset = assetLoader()->GetSpine(militaryCards[i].cardEnum);
+			CastChecked<USizeBoxSlot>(unitIcon->UnitImage->Slot)->SetPadding(spineAsset.padding);
 			unitIcon->UnitImage->Atlas = spineAsset.atlas;
 			unitIcon->UnitImage->SkeletonData = spineAsset.skeletonData;
 
@@ -239,6 +236,7 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 		ArmyRow->SetVisibility(ArmyRow->GetChildrenCount() > 0 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	}
 	else {
+		BoxAfterAdd(ArmyRow, 0);
 		ArmyRow->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }

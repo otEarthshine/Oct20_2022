@@ -18,7 +18,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* LogoBackground;
 	UPROPERTY(meta = (BindWidget)) UImage* CharacterImage;
 
-	UPROPERTY(meta = (BindWidget)) UTextBlock* FactionName;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* FactionName;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerName;
 
 	void UpdatePlayerInfo(const FPlayerInfo& playerInfo, UTexture2D* factionImage, const TArray<UTexture2D*>& playerLogos, const TMap<FString, UTexture2D*>& playerCharacters)
@@ -31,7 +31,7 @@ public:
 		
 		CharacterImage->GetDynamicMaterial()->SetTextureParameterValue("Character", playerCharacters[playerInfo.portraitName]);
 
-		FactionName->SetText(GetFactionInfoInt(playerInfo.factionIndex).name);
+		//FactionName->SetText(GetFactionInfoInt(playerInfo.factionIndex).name);
 		PlayerName->SetText(playerInfo.name);
 	}
 	

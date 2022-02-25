@@ -220,7 +220,8 @@ public:
 
 			PUN_DEBUG2("LobbyListElementSelect chosenSession:%s", *_chosenSession.GetSessionIdStr());
 
-			SetButtonEnabled(LobbyListJoinGameButton, ButtonStateEnum::Enabled);
+			//SetButtonEnabled(LobbyListJoinGameButton, ButtonStateEnum::Enabled);
+			LobbyListJoinGameButton->SetIsEnabled(true);
 		}
 	}
 

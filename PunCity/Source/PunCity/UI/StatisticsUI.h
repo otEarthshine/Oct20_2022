@@ -10,6 +10,7 @@
 #include "KantanChartLegend.h"
 #include "StatisticsUI.generated.h"
 
+
 /**
  * 
  */
@@ -100,7 +101,6 @@ public:
 		SetVisibility(ESlateVisibility::Collapsed);
 	}
 
-
 	void SetTabSelection(UButton* button) {
 		auto setHighlight = [&](UButton* buttonLocal) {
 			SetButtonHighlight(buttonLocal, buttonLocal == button);
@@ -128,6 +128,7 @@ public:
 		case 2: return PopulationStatButton;
 		case 3: return IncomeStatButton;
 		case 4: return ScienceStatButton;
+			
 		case 5: return FoodFuelStatButton;
 		case 6: return FoodUsageStatButton;
 		case 7: return HappinessStatButton;
@@ -135,6 +136,16 @@ public:
 		default:
 			return MarketStatButton;
 		}
+	}
+
+	int32 GetWidgetIndexFromStatButton(UButton* button)
+	{
+		for (int32 i = 0; i < 10; i++) {
+			if (GetButtonFromWidgetIndex(i) == button) {
+				return i;
+			}
+		}
+		return 0;
 	}
 
 private:

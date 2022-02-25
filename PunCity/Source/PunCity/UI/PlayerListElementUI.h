@@ -16,7 +16,7 @@ class PROTOTYPECITY_API UPlayerListElementUI : public UPunWidget
 	GENERATED_BODY()
 public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* PlayerName;
-	UPROPERTY(meta = (BindWidget)) UTextBlock* FactionName;
+	//UPROPERTY(meta = (BindWidget)) UTextBlock* FactionName;
 
 	UPROPERTY(meta = (BindWidget)) UButton* PlayerReadyButton;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerReadyFill;

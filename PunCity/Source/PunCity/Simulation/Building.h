@@ -1995,7 +1995,8 @@ public:
 			// Construction site check all tiles
 			bool isAccessible = area().ExecuteOnAreaWithExit_WorldTile2([&](WorldTile2 tile) {
 				DEBUG_ISCONNECTED_VAR(RefreshHoverWarning);
-				return _simulation->IsConnected(_simulation->GetMajorTownhallGateFast(_townId), tile, GameConstants::MaxFloodDistance_HumanLogistics);
+				// Additional +1 for MaxFloodDistance_HumanLogistics to prevent bad inaccessile detection
+				return _simulation->IsConnected(_simulation->GetMajorTownhallGateFast(_townId), tile, GameConstants::MaxFloodDistance_HumanLogistics + 1);
 			});
 
 			if (!isAccessible) {

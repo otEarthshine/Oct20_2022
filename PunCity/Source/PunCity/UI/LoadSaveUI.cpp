@@ -34,7 +34,7 @@ void ULoadSaveUI::OpenSaveUI()
 	_isSavingGame = true;
 	SetVisibility(ESlateVisibility::Visible);
 	LoadSaveOverlay->SetVisibility(ESlateVisibility::Visible);
-	SetText(LoadGameTitleText, LOCTEXT("SAVE GAME", "SAVE GAME"));
+	SetText(LoadGameTitleText, LOCTEXT("Save Game", "Save Game"));
 	SetText(LoadGameButtonText, LOCTEXT("Save Game", "Save Game"));
 
 	RefreshSaveSelectionList(SaveActiveIndex_Unselected);
@@ -46,7 +46,7 @@ void ULoadSaveUI::OpenLoadUI()
 	_isSavingGame = false;
 	SetVisibility(ESlateVisibility::Visible);
 	LoadSaveOverlay->SetVisibility(ESlateVisibility::Visible);
-	SetText(LoadGameTitleText, gameInstance()->isMultiplayer() ? LOCTEXT("LOAD MULTIPLAYER GAME", "LOAD MULTIPLAYER GAME") : LOCTEXT("LOAD GAME", "LOAD GAME"));
+	SetText(LoadGameTitleText, gameInstance()->isMultiplayer() ? LOCTEXT("Load Multiplayer Game", "Load Multiplayer Game") : LOCTEXT("Load Game", "Load Game"));
 	SetText(LoadGameButtonText, LOCTEXT("Load Game", "Load Game"));
 
 	RefreshSaveSelectionList(SaveActiveIndex_SelectFirstAvailable);
@@ -129,7 +129,8 @@ void ULoadSaveUI::OnSaveNameChanged(const FText& text)
 {
 	// Disable save button if there is no name...
 	bool isSaveButtonEnabled = SelectedSavePlayerNameEditable->Text.ToString().Len() > 0;
-	SetButtonEnabled(LoadGameButton, isSaveButtonEnabled ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
+	LoadGameButton->SetIsEnabled(isSaveButtonEnabled);
+	//SetButtonEnabled(LoadGameButton, isSaveButtonEnabled ? ButtonStateEnum::Enabled : ButtonStateEnum::Disabled);
 }
 
 void ULoadSaveUI::OnSaveNameCommited(const FText& text, ETextCommit::Type CommitMethod)

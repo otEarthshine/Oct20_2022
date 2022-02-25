@@ -224,6 +224,7 @@ void UWorldSpaceUI::TickBuildings()
 					regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 					regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
+					//regionHoverUI->SetRenderScale(FVector2D(1, 1));
 
 					/*
 					 * Battle Flash
@@ -360,7 +361,8 @@ void UWorldSpaceUI::TickBuildings()
 
 			if (building.isEnum(CardEnum::Townhall))
 			{
-				if (townhallUIActive) 
+				if (townhallUIActive &&
+					data->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap))
 				{
 					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
 					
@@ -388,7 +390,8 @@ void UWorldSpaceUI::TickBuildings()
 			else if (building.isEnum(CardEnum::MinorCity) ||
 					building.isEnum(CardEnum::ResourceOutpost))
 			{
-				if (townhallUIActive)
+				if (townhallUIActive &&
+					data->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap))
 				{
 					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
 					if (sim.townManagerBase(building.townId())->GetMinorCityLevel()) {
@@ -969,6 +972,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	bool showOccupants = building.maxOccupants() > 0;
 
 	// Processor/Trader ... show progress bar
+	// !!! If not building's Floatup isn't shown... Add it herre
 	bool showJobUI = IsProducerProcessor(building.buildingEnum()) ||
 						IsSpecialProducer(building.buildingEnum()) ||
 						IsTradingPostLike(building.buildingEnum()) ||
@@ -979,6 +983,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 						building.isEnum(CardEnum::CardCombiner) ||
 						building.isEnum(CardEnum::Caravansary) ||
 						building.isEnum(CardEnum::Hotel) ||
+						building.isEnum(CardEnum::WorldTradeOffice) ||
 						//IsBarrack(building.buildingEnum()) ||
 
 						building.isEnum(CardEnum::Farm) ||
@@ -1074,6 +1079,14 @@ void UWorldSpaceUI::TickTownhallInfo(int buildingId, bool isMini)
 		//townhallInfo->SetVisibility(isPlacing ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
 		townhallInfo->UpdateTownhallHoverInfo(isMini);
+
+		// TEST:
+		//townhallInfo->SetRenderScale(FVector2D(1, 1));
+
+		// Lock outer UI to 0.5
+		if (isMini) {
+			townhallInfo->SetRenderScale(FVector2D(0.5, 0.5));
+		}
 	}
 }
 
@@ -1091,6 +1104,11 @@ void UWorldSpaceUI::TickMinorTownInfo(int32 townId, bool isMini)
 
 	minorTownInfo->uiTownId = townId;
 	minorTownInfo->UpdateMinorTownUI(isMini);
+
+	// Lock outer UI to 0.5
+	if (isMini) {
+		minorTownInfo->SetRenderScale(FVector2D(0.5, 0.5));
+	}
 }
 
 void UWorldSpaceUI::TickUnits()
@@ -1151,7 +1169,7 @@ void UWorldSpaceUI::TickUnits()
 			//bool hasLotsOfFuel = resourceSys.fuelCount() > std::min(500, population / 2);
 			
 			bool hasLotsOfMedicine = resourceSys.resourceCountWithPop(ResourceEnum::Medicine) + resourceSys.resourceCountWithPop(ResourceEnum::Herb) > std::min(300, population / 2);
-			bool hasLotsOfTools = resourceSys.resourceCountWithPop(ResourceEnum::SteelTools) + resourceSys.resourceCountWithPop(ResourceEnum::StoneTools) > std::min(300, population / 4);
+			bool hasLotsOfTools = resourceSys.resourceCountWithPop(ResourceEnum::IronTools) + resourceSys.resourceCountWithPop(ResourceEnum::StoneTools) > std::min(300, population / 4);
 
 
 			const std::vector<int32>& unitIdsToDisplay = it.second;
@@ -1346,33 +1364,35 @@ void UWorldSpaceUI::TickMap()
 		/*
 		 * Townhall
 		 */
-		simulation.ExecuteOnPlayersAndAI([&](int32 playerId) 
+		if (data->ZoomDistanceAbove(WorldZoomTransition_Region4x4ToMap))
 		{
-			const auto& townIds = simulation.playerOwned(playerId).townIds();
-
-			for (int32 townId : townIds)
+			simulation.ExecuteOnPlayersAndAI([&](int32 playerId)
 			{
-				int32 townhallId = simulation.townManager(townId).townhallId;
-				if (townhallId != -1)
+				const auto& townIds = simulation.playerOwned(playerId).townIds();
+
+				for (int32 townId : townIds)
 				{
-					Building& building = simulation.building(townhallId);
+					int32 townhallId = simulation.townManager(townId).townhallId;
+					if (townhallId != -1)
+					{
+						Building& building = simulation.building(townhallId);
 
-					PUN_CHECK(building.isEnum(CardEnum::Townhall));
+						PUN_CHECK(building.isEnum(CardEnum::Townhall));
 
-					if (townhallUIActive) {
-						TickTownhallInfo(townhallId, true);
+						if (townhallUIActive) {
+							TickTownhallInfo(townhallId, true);
+						}
 					}
 				}
-			}
-		});
+			});
 
-		/*
-		 * Minor Towns
-		 */
-		simulation.ExecuteOnMinorTowns([&](int32 townId) {
-			TickMinorTownInfo(townId, true);
-		});
-
+			/*
+			 * Minor Towns
+			 */
+			simulation.ExecuteOnMinorTowns([&](int32 townId) {
+				TickMinorTownInfo(townId, true);
+			});
+		}
 
 
 		/*
@@ -1401,7 +1421,7 @@ void UWorldSpaceUI::TickMap()
 
 						// Mini Battlefield on regionHover
 						regionHoverUI->UpdateBattlefieldUI(battle.provinceId, battle);
-						regionHoverUI->SetRenderScale(FVector2D(1, 1));
+						regionHoverUI->SetRenderScale(FVector2D(0.5, 0.5));
 						regionHoverUI->ProvinceOverlay->SetVisibility(ESlateVisibility::Collapsed);
 						regionHoverUI->BattlefieldUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 					}

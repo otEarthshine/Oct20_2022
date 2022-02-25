@@ -411,10 +411,10 @@ public:
 		widget->SetResource(input1, input2, output, productTexture, productStr);
 	}
 
-	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, FText suffix, bool isRed = false, bool hasShadow = false, float indentationIn = 0.0f) {
+	UIconTextPairWidget* AddIconPair(FText prefix, ResourceEnum resourceEnum, FText suffix, bool isRed = false, bool hasShadow = false, float indentationIn = 0.0f, bool autoAddTooltip = true) {
 		auto widget = GetChildElement<UIconTextPairWidget>(UIEnum::IconTextPair);
 		widget->SetText(prefix, suffix);
-		widget->SetImage(resourceEnum, dataSource()->assetLoader(), true);
+		widget->SetImage(resourceEnum, dataSource()->assetLoader(), autoAddTooltip);
 		if (isRed) {
 			widget->SetTextRed();
 		}

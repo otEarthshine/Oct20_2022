@@ -625,7 +625,6 @@ public:
 	 */
 	void AddTownBonus(CardEnum cardEnum) {
 		_townBonuses.push_back(cardEnum);
-		RecalculateTaxDelayed();
 	}
 	const std::vector<CardEnum>& townBonuses() {
 		return _townBonuses;

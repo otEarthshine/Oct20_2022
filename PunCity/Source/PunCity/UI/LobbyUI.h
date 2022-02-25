@@ -111,7 +111,7 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UVerticalBox* ChooseIconColorOuterVerticalBox;
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox1;
-	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox2; // TODO: Remove?
+	//UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconColorWrapBox2; // TODO: Remove?
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseCharacterWrapBox;
 
@@ -123,6 +123,23 @@ public:
 		ChooseIconWrapBox->SetVisibility(index == 1 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		ChooseIconColorOuterVerticalBox->SetVisibility(index == 2 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 		ChooseCharacterWrapBox->SetVisibility(index == 3 ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+
+		// Highlight Tab Button
+		TArray<UButton*> tabButtons {
+			ChooseFactionSectionButton,
+			ChooseIconSectionButton,
+			ChooseIconColorSectionButton,
+			ChooseCharacterSectionButton,
+		};
+
+		for (int32 i = 0; i < tabButtons.Num(); i++)
+		{
+			TArray<UImage*> images;
+			FindChildrenRecursive<UImage>(CastChecked<UPanelWidget>(tabButtons[i]), images);
+			for (UImage* image : images) {
+				image->SetVisibility(i == index ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			}
+		}
 	}
 	
 	UFUNCTION() void OnClickChooseFactionSectionButton() {

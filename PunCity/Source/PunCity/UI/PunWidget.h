@@ -458,6 +458,8 @@ public:
 
 	void AddResourceTooltip(UWidget* widget, ResourceEnum resourceEnum, bool skipWidgetHoverCheck = false);
 
+	void AddTradeOfferTooltip(UWidget* widget, bool isImport, ResourceEnum resourceEnum, int32 resourceCount, int32 orderFulfilled);
+
 	template<typename Func>
 	void ExecuteFillScoreBreakdownText(Func func, int32 playerIdIn)
 	{

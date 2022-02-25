@@ -2019,6 +2019,9 @@ public:
 		}
 
 		// Check to ensure that it isn't already researched
+		if (!IsResearchable(researchEnum)) {
+			return;
+		}
 		
 		_techQueue.clear();
 		_techQueue.push_back(researchEnum);

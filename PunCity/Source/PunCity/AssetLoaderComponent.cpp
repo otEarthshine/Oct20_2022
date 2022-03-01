@@ -1700,7 +1700,7 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	M_Province = Load<UMaterial>("/Game/Models/Decals/M_Province");
 	M_Province_Top = Load<UMaterial>("/Game/Models/Decals/M_Province_Top");
 	
-	RegionBorderMaterial = Load<UMaterial>("/Game/Models/Decals/RegionBorderMaterial");
+	//RegionBorderMaterial = Load<UMaterial>("/Game/Models/Decals/RegionBorderMaterial");
 	OverlayMaterial = Load<UMaterial>("/Game/Models/Decals/OverlayMaterial");
 	GridGuideMaterial = Load<UMaterial>("/Game/Models/Decals/GridGuideMaterial");
 	M_GridGuideLine = Load<UMaterial>("/Game/Models/Decals/M_GridGuideLine");
@@ -1709,22 +1709,22 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	M_Radius = Load<UMaterial>("/Game/Models/SelectionMesh/M_Radius");
 	MI_RadiusRed = Load<UMaterialInstance>("/Game/Models/SelectionMesh/MI_RadiusRed");
 	
-	RadiusMaterial = Load<UMaterial>("/Game/Models/Decals/RadiusMaterial");
-	MI_RedRadius = Load<UMaterialInstance>("/Game/Models/Decals/MI_RedRadius");
+	//RadiusMaterial = Load<UMaterial>("/Game/Models/Decals/RadiusMaterial");
+	//MI_RedRadius = Load<UMaterialInstance>("/Game/Models/Decals/MI_RedRadius");
 
 	M_GoldOreDecal = Load<UMaterial>("/Game/Models/Decals/M_GoldOreDecal");
 	M_IronOreDecal = Load<UMaterial>("/Game/Models/Decals/M_IronOreDecal");
 	M_CoalOreDecal = Load<UMaterial>("/Game/Models/Decals/M_CoalOreDecal");
 	M_GemstoneDecal = Load<UMaterial>("/Game/Models/Decals/M_GemstoneDecal");
 
-	FarmDecalMaterial = Load<UMaterial>("/Game/Models/Buildings/Farm/M_Farm");
+	//FarmDecalMaterial = Load<UMaterial>("/Game/Models/Buildings/Farm/M_Farm");
 	ConstructionBaseDecalMaterial = Load<UMaterial>("/Game/Models/Buildings/BuildingModule1/ConstructionBase/M_BuildingBase");
 	
-	WetnessMaterial = Load<UMaterial>("/Game/Models/Decals/WetnessMaterial");
+	//WetnessMaterial = Load<UMaterial>("/Game/Models/Decals/WetnessMaterial");
 
 	M_PlainMaterial = Load<UMaterial>("/Game/Models/Materials/M_PlainMaterial");
 	
-	M_WoodFrameBurned = Load<UMaterial>("/Game/Models/Buildings/BuildingModule1/WoodFrame/M_WoodFrameBurned");
+	//M_WoodFrameBurned = Load<UMaterial>("/Game/Models/Buildings/BuildingModule1/WoodFrame/M_WoodFrameBurned");
 	
 	M_TileHighlightDecal = Load<UMaterial>("/Game/Models/Decals/M_TileHighlightDecal");
 	M_TileHighlightForMesh = Load<UMaterial>("/Game/Models/Decals/M_TileHighlightForMesh");
@@ -1737,13 +1737,13 @@ UAssetLoaderComponent::UAssetLoaderComponent()
 	
 	M_TerritoryMapDecal = Load<UMaterial>("/Game/Models/Decals/M_TerritoryMapDecal");
 	
-	M_RegionHighlightDecal = Load<UMaterial>("/Game/Models/Decals/M_RegionHighlightDecal");
-	M_RegionHighlightDecalFaded = Load<UMaterial>("/Game/Models/Decals/M_RegionHighlightDecalFaded");
+	//M_RegionHighlightDecal = Load<UMaterial>("/Game/Models/Decals/M_RegionHighlightDecal");
+	//M_RegionHighlightDecalFaded = Load<UMaterial>("/Game/Models/Decals/M_RegionHighlightDecalFaded");
 	
 	HighlightMaterial = Load<UMaterialInstance>("/Game/Models/Decals/M_HighlightDecal");
 
 	RoadMaterial = Load<UMaterial>("/Game/Models/Ground/Road/RoadMaterial");
-	TextMaterial = Load<UMaterial>("/Game/Models/Others/TextMaterial");
+	//TextMaterial = Load<UMaterial>("/Game/Models/Others/TextMaterial");
 
 	collection = Load<UMaterialParameterCollection>("/Game/Models/Ground/GlobalWeather");
 	snowParticles = Load<UParticleSystem>("/Game/Models/Weather/Snow/SnowParticles");
@@ -3440,7 +3440,7 @@ FSpineAsset UAssetLoaderComponent::GetSpine(CardEnum cardEnum)
 		asset.skeletonData = data;
 		asset.atlas_fx = atlas_fx;
 		asset.skeletonData_fx = data_fx;
-		asset.padding = padding;
+		asset.padding = FMargin(); // padding; No longer need padding
 		
 		return asset;
 	};

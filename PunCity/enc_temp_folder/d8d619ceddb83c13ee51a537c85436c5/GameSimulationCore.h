@@ -4476,43 +4476,16 @@ public:
 				}
 			}
 		});
+
+		if (!canPlace) {
+			return false;
+		}
 		
 		if (mountainCount < 5) {
 			return false;
 		}
-
-
-		GeoresourceEnum georesourceEnum = GeoresourceEnum::None;
-		switch (buildingEnum)
-		{
-		case CardEnum::CoalMine: georesourceEnum = GeoresourceEnum::CoalOre; break;
-		case CardEnum::IronMine: georesourceEnum = GeoresourceEnum::IronOre; break;
-		case CardEnum::GoldMine: georesourceEnum = GeoresourceEnum::GoldOre; break;
-		case CardEnum::GemstoneMine: georesourceEnum = GeoresourceEnum::Gemstone; break;
-		default: break;
-		}
-
-		auto isCorrectResource = [&](WorldTile2 tile)
-		{
-			return buildingEnum == CardEnum::Quarry ||
-				_georesourceSystem->georesourceNode(GetProvinceIdClean(tile)).info().georesourceEnum == georesourceEnum;
-		};
-
-		// Check this, starting Mar 1, 2022
-		// When not checking this previously, there is a mysterious crash with Mine::FinishConstruction
-		area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-			int steps = GameMap::GetFacingStep(placement.faceDirection, area, tile);
-			if (steps > 1) {
-				if (!isCorrectResource(tile)) {
-					canPlace = false;
-				}
-				else if (buildingIdAtTile(tile) != -1) {
-					canPlace = false;
-				}
-			}
-		});
 		
-		return canPlace;
+		return true;
 	}
 	
 	virtual void CheckPortArea(BuildPlacement placement, CardEnum buildingEnum, std::vector<PlacementGridInfo>& grids,

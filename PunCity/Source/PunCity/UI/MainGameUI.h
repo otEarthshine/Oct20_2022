@@ -218,6 +218,7 @@ private:
 
 	// Card Inventory
 	UPROPERTY(meta = (BindWidget)) UButton* CardInventoryToggleButton;
+	UPROPERTY(meta = (BindWidget)) UButton* CardInventoryToggleButton_Close;
 	UPROPERTY(meta = (BindWidget)) UImage* CardInventoryLinkImage;
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* CardInventoryUIWrap;

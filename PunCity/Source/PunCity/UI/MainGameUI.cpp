@@ -40,7 +40,7 @@ void UMainGameUI::PunInit()
 
 	// Card Inventory UI
 	CardInventoryToggleButton->OnClicked.AddDynamic(this, &UMainGameUI::ToggleCardInventoryButton);
-
+	CardInventoryToggleButton_Close->OnClicked.AddDynamic(this, &UMainGameUI::ToggleCardInventoryButton);
 
 	CardRerollButton->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
 	CardRerollButton1->OnClicked.AddDynamic(this, &UMainGameUI::ClickRerollButton);
@@ -127,8 +127,9 @@ void UMainGameUI::PunInit()
 	// Tooltips 
 	AddToolTip(BuildMenuTogglerButton, LOCTEXT("BuildMenuTogglerButton_Tip", "Build houses, farms, and infrastructures\n<Orange>[B]</>"));
 	AddToolTip(GatherButton, LOCTEXT("GatherButton_Tip", "Gather trees, stone etc\n<Orange>[G]</><space>Activate this button, then Click and Drag to Gather."));
-	AddToolTip(CardInventoryToggleButton, LOCTEXT("CardInventoryToggleButton_Tip", "Show the Card Inventory where you can keep cards that are rarely used."));
-
+	
+	AddToolTip(CardInventoryToggleButton, LOCTEXT("CardInventoryToggleButton_Tip", "Show the <Bold>Card Inventory</> where you can keep cards that are rarely used."));
+	AddToolTip(CardInventoryToggleButton_Close, LOCTEXT("CardInventoryToggleButton_Close_Tip", "Close the Card Inventory."));
 	
 	AddToolTip(CardStackButton, LOCTEXT("CardStackButton_Tip", "Show drawn cards that can be bought.\n<Orange>[C]</>"));
 	AddToolTip(RoundCountdownImage, LOCTEXT("RoundCountdownImage_Tip", "Round timer<space>You get a new card hand each round.<space>Each season contains 2 rounds."));
@@ -1237,10 +1238,10 @@ void UMainGameUI::Tick()
 				ADDTEXT_(INVTEXT("<Bold>{0}</>\n"), cardInfo.name);
 				ADDTEXT_TAGN_("<SPColor>", LOCTEXT("Leader Skill", "Leader Skill"));
 				ADDTEXT_INV_("<space>");
-				ADDTEXT_LOCTEXT("Click to use", "Click to use");
-				ADDTEXT_(INVTEXT("\n{0}: <Orange>[V]</>"), LOCTEXT("Hotkey", "Hotkey"));
+				ADDTEXT_(INVTEXT("{0}: <Orange>[V]</>\n"), LOCTEXT("Hotkey", "Hotkey"));
+				ADDTEXT_TAGN_("<Gray>", LOCTEXT("(Click to use)", "(Click to use)"));
 				ADDTEXT_INV_("<line><space>");
-				ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}\n"), skillMana);
+				ADDTEXT_(LOCTEXT("SP cost: {0}\n", "SP cost: {0}"), skillMana);
 					ADDTEXT_INV_("<space>");
 				ADDTEXT__(cardInfo.GetDescription())
 					ADDTEXT_INV_("<space>");
@@ -1629,7 +1630,10 @@ void UMainGameUI::Tick()
 		auto& cardSys = sim.cardSystem(playerId());
 
 		int32 maxCardInventorySlots = cardSys.maxCardInventorySlots();
-		CardInventoryToggleButton->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+		CardInventoryToggleButton->SetVisibility(maxCardInventorySlots > 0 && !CardInventorySizeBox->IsVisible() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		CardInventoryToggleButton_Close->SetVisibility(maxCardInventorySlots > 0 && CardInventorySizeBox->IsVisible() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		
 		CardInventoryLinkImage->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 
 		const std::vector<CardStatus>& cardInventory = cardSys.cardInventory();
@@ -2804,22 +2808,36 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				if (buildingEnum == CardEnum::SellFood) {
 					sendCommandWithWarning(LOCTEXT("SellFood_Ask", "Are you sure you want to sell half of this city's food?"));
 				} 
-				else if (buildingEnum == CardEnum::BuyWood) {
+				else if (buildingEnum == CardEnum::BuyWood) 
+				{
 					int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
-					int32 amountToBuy = simulation().moneyCap32(playerId()) / 2 / cost;
-					amountToBuy = min(amountToBuy, 1000);
+					int32 money = simulation().moneyCap32(playerId());
 
-					if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
-						sendCommandWithWarning(
-							FText::Format(
-								LOCTEXT("BuyWood_Ask", "Are you sure you want to spend {0}<img id=\"Coin\"/> to buy {1} wood?"),
-								TEXT_NUM(amountToBuy * cost),
-								TEXT_NUM(amountToBuy)
-							)
-						);
-					} else {
-						simulation().AddPopupToFront(playerId(), 
-							FText::Format(LOCTEXT("BuyWoodNoStorageFit_Pop", "Not enough storage space to fit {0} wood in this city."), TEXT_NUM(amountToBuy)),
+					if (money >= cost)
+					{
+						int32 amountToBuy = money / 2 / cost;
+						amountToBuy = min(amountToBuy, 1000);
+
+						if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy))
+						{
+							sendCommandWithWarning(
+								FText::Format(
+									LOCTEXT("BuyWood_Ask", "Are you sure you want to spend {0}<img id=\"Coin\"/> to buy {1} wood?"),
+									TEXT_NUM(amountToBuy * cost),
+									TEXT_NUM(amountToBuy)
+								)
+							);
+						}
+						else {
+							simulation().AddPopupToFront(playerId(),
+								FText::Format(LOCTEXT("BuyWoodNoStorageFit_Pop", "Not enough storage space to fit {0} wood in this city."), TEXT_NUM(amountToBuy)),
+								ExclusiveUIEnum::None, "PopupCannot"
+							);
+						}
+					}
+					else {
+						simulation().AddPopupToFront(playerId(),
+							LOCTEXT("Not Enough Money", "Not Enough Money"),
 							ExclusiveUIEnum::None, "PopupCannot"
 						);
 					}

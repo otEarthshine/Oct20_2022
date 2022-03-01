@@ -5738,26 +5738,24 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 	
 	else if (command.claimEnum == CallbackEnum::ReinforceAttackProvince)
 	{
-		if (TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId)))
+		TownManagerBase* provinceTownManager = townManagerBase(provinceOwnerTownSafe(command.provinceId));
+		ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
+		
+		if (claimProgress) 
 		{
-			ProvinceClaimProgress* claimProgress = provinceTownManager->GetDefendingClaimProgressPtr(command.provinceId);
-
-			if (claimProgress)
+			// Reinforcement Notification
+			AddPopup(claimProgress->defenderTownId, 
+				LOCTEXT("ReinforcementAttack_NotificationToDefender", "Your enemies have reinforced their attack.")
+			);
+			if (claimProgress->attackerPlayerId != command.playerId)
 			{
-				// Reinforcement Notification
-				AddPopup(claimProgress->defenderTownId,
-					LOCTEXT("ReinforcementAttack_NotificationToDefender", "Your enemies have reinforced their attack.")
-				);
-				if (claimProgress->attackerPlayerId != command.playerId)
-				{
-					AddPopup(claimProgress->attackerPlayerId, FText::Format(
-						LOCTEXT("ReinforcementAttack_NotificationToAttacker", "Reinforcements from {0} have arrived to help your attack."),
-						playerNameT(command.playerId)
-					));
-				}
-
-				claimProgress->Reinforce(militaryCards, true, command.playerId);
+				AddPopup(claimProgress->attackerPlayerId, FText::Format(
+					LOCTEXT("ReinforcementAttack_NotificationToAttacker", "Reinforcements from {0} have arrived to help your attack."),
+					playerNameT(command.playerId)
+				));
 			}
+			
+			claimProgress->Reinforce(militaryCards, true, command.playerId);
 		}
 	}
 	

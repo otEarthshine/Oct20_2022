@@ -821,42 +821,42 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_Province_Top;
 
 	
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RegionBorderMaterial;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RegionBorderMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* OverlayMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* GridGuideMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_GridGuideLine;
 	
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RadiusMaterial;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RadiusMaterial;
 	
 	UPROPERTY(EditAnywhere) UStaticMesh* RadiusMesh;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_Radius;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* MI_RadiusRed;
 	
 	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstanceDynamic* RadiusMaterialInstance;
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* MI_RedRadius;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* MI_RedRadius;
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_GoldOreDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_IronOreDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_CoalOreDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_GemstoneDecal;
 
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* FarmDecalMaterial;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* FarmDecalMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* ConstructionBaseDecalMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* RoadMaterial;
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* WetnessMaterial;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* WetnessMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_PlainMaterial;
 
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_WoodFrameBurned;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_WoodFrameBurned;
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TileHighlightDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TileHighlightForMesh;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_ConstructionHighlightDecal;
 	
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_RegionHighlightDecal;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_RegionHighlightDecal;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryHighlightForMesh;
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_RegionHighlightDecalFaded;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_RegionHighlightDecalFaded;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryHighlightForMeshFaded;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryBattleHighlight;
 
@@ -864,7 +864,7 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialInstance* HighlightMaterial;
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* M_TerritoryMapDecal;
 
-	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* TextMaterial;
+	//UPROPERTY(EditAnywhere, Category = "Material Import") UMaterial* TextMaterial;
 
 	UPROPERTY(EditAnywhere, Category = "Material Import") UMaterialParameterCollection* collection;
 	UPROPERTY(EditAnywhere, Category = "Weather") UParticleSystem* snowParticles;

@@ -98,7 +98,7 @@ inline void SerializeVecBool(FArchive& Ar, std::vector<bool>& vecBool)
 		vecBool.clear();
 		vecBool.reserve(vecUint.size());
 		for (const uint8& uint : vecUint) {
-			vecBool.push_back(uint);
+			vecBool.push_back(static_cast<bool>(uint));
 		}
 	}
 }

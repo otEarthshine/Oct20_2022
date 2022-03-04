@@ -187,23 +187,23 @@ void UGameSettingsUI::PunInit(UPunWidget* callbackParent)
 	));
 
 	MultithreadedMeshGenerationCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnMultithreadedMeshGenerationCheckBoxChecked);
-	MultithreadedMeshGenerationCheckBox->SetIsChecked(PunSettings::Get("MultithreadedMeshGeneration"));
+	MultithreadedMeshGenerationCheckBox->SetIsChecked(static_cast<bool>(PunSettings::Get("MultithreadedMeshGeneration")));
 	AddToolTip(MultithreadedMeshGenerationText, 
 		LOCTEXT("MultithreadedMeshGeneration_Tip", "Turn this off might help people experiencing random crashes (even if paused)."
 	));
 
 	ForceClickthroughCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnForceClickthroughCheckBoxChecked);
-	ForceClickthroughCheckBox->SetIsChecked(PunSettings::Get("ForceClickthrough"));
+	ForceClickthroughCheckBox->SetIsChecked(static_cast<bool>(PunSettings::Get("ForceClickthrough")));
 	AddToolTip(ForceClickthroughText, 
 		LOCTEXT("ForceClickthrough_Tip", "Turn this on if you cannot click objects in the world to show its description UI."
 	));
 
 
 	HomelessWarningSoundCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnHomelessWarningSoundCheckBoxChecked);
-	HomelessWarningSoundCheckBox->SetIsChecked(PunSettings::Get("HomelessWarningSound"));
+	HomelessWarningSoundCheckBox->SetIsChecked(static_cast<bool>(PunSettings::Get("HomelessWarningSound")));
 
 	RoundCountdownSoundCheckBox->OnCheckStateChanged.AddDynamic(this, &UGameSettingsUI::OnRoundCountdownSoundCheckBoxChecked);
-	RoundCountdownSoundCheckBox->SetIsChecked(PunSettings::Get("RoundCountdownSound"));
+	RoundCountdownSoundCheckBox->SetIsChecked(static_cast<bool>(PunSettings::Get("RoundCountdownSound")));
 
 	//RefreshDropdowns();
 	//ResetTabSelection();

@@ -3167,7 +3167,7 @@ void UnitStateAI::CaravanGiveMoney()
 {
 	int32 workplaceId = action().int32val1;
 	int32 targetBuildingId = action().int32val2;
-	bool isGivingTarget = action().int32val3;
+	bool isGivingTarget = static_cast<bool>(action().int32val3);
 
 	if (Building* workplace = _simulation->buildingPtr(workplaceId)) {
 		if (workplace->isEnum(CardEnum::Caravansary))

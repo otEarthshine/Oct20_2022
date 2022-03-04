@@ -383,6 +383,8 @@ public:
 
 	void ResetHolderReservers(int32 holderId, ResourceSystem& resourceSys) {
 		_resourceCountCache = -1;
+
+		check(0 <= holderId && holderId < _holders.size());
 		
 		ResourceHolder& holder = _holders[holderId]; // _enumToHolders[(int)info.resourceEnum].holderMutable(info.holderId);
 		holder.ResetPopReservers(*_simulation);
@@ -1128,7 +1130,7 @@ public:
 	bool CanAddResourceGlobal(ResourceEnum resourceEnum, int32 amount) {
 		LEAN_PROFILING_R(CanAddResourceGlobal);
 		
-		return holderGroup(resourceEnum).CanAddResourceGlobal(amount, *this);
+		return static_cast<bool>(holderGroup(resourceEnum).CanAddResourceGlobal(amount, *this));
 	}
 	void AddResourceGlobal(ResourceEnum resourceEnum, int32 amount, IGameSimulationCore& simulation)
 	{

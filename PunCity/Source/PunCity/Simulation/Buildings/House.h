@@ -338,7 +338,7 @@ public:
 		if (_adjacentConnectionMask.size() == 0) {
 			return false;
 		}
-		return _adjacentConnectionMask[static_cast<int>(direction)];
+		return static_cast<bool>(_adjacentConnectionMask[static_cast<int>(direction)]);
 	}
 	
 

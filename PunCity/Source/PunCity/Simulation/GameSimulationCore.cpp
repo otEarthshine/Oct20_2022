@@ -490,7 +490,7 @@ void GameSimulationCore::InitProvinceBuildings()
 	
 	const std::vector<int32>& largeLandSlotProvinceIds = provinceInfoSys.largeLandSlotProvinceIds();
 
-	auto tryBuildAncientWonder = [&](bool checkBiome, int32 biomeIndex)
+	auto tryBuildAncientWonder = [&](bool checkBiome, bool checkGeoresource, int32 biomeIndex)
 	{
 		for (int32 i = 0; i < skipCount; i++) {
 			for (int32 j = i; j < largeLandSlotProvinceIds.size(); j += skipCount)
@@ -508,7 +508,7 @@ void GameSimulationCore::InitProvinceBuildings()
 						if (!checkBiome || biomeEnum == AncientWonderToBiomeEnums[k][biomeIndex])
 						{
 							// Check georesource
-							if (!georesource(provinceId).HasResource())
+							if (!checkGeoresource || !georesource(provinceId).HasResource())
 							{
 								int32 buildingId = createBuilding(-1, AncientWonderEnums[k], slot.largeLandSlot.centerTile, Direction::S, 14);
 								if (buildingId != -1) {
@@ -524,12 +524,13 @@ void GameSimulationCore::InitProvinceBuildings()
 	};
 
 	//! Ancient Wonders: Biomes
-	tryBuildAncientWonder(true, 0);
-	tryBuildAncientWonder(true, 1);
-	tryBuildAncientWonder(true, 2);
+	tryBuildAncientWonder(true, true, 0);
+	tryBuildAncientWonder(true, true, 1);
+	tryBuildAncientWonder(true, true, 2);
 
 	//! Ancient Wonders: Anywhere
-	tryBuildAncientWonder(false, 0);
+	tryBuildAncientWonder(false, true, 0);
+	tryBuildAncientWonder(false, false, 0);
 
 	for (int32 i = 0; i < ancientWondersCounts.size(); i++) {
 		check(ancientWondersCounts[i] == 1);
@@ -3193,7 +3194,10 @@ void GameSimulationCore::SetAllowResource(FSetAllowResource command)
 				storage.SetHolderTypeAndTarget(command.resourceEnum, command.allowed ? storage.defaultHolderType(command.resourceEnum) : ResourceHolderType::Provider, 0);
 
 				// Refresh storage after setting allowed resource, so that citizens taking the resources to this storage will be reset.
-				resourceSystem(command.playerId).ResetHolderReservers(storage.holderInfo(command.resourceEnum));
+				ResourceHolderInfo holderInfo = storage.holderInfo(command.resourceEnum);
+				if (holderInfo.isValid()) {
+					resourceSystem(command.playerId).ResetHolderReservers(holderInfo);
+				}
 			}
 			else {
 				// Not yet constructed, queue the checkState to apply once construction finishes
@@ -3488,7 +3492,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 		else if (command.callbackEnum == CallbackEnum::BudgetAdjust)
 		{
 			int32 buildingId = command.intVar1;
-			bool isBudgetOrTime = command.intVar2;
+			bool isBudgetOrTime = static_cast<bool>(command.intVar2);
 			int32 level = command.intVar3;
 
 			if (Building* bld = buildingPtr(buildingId))
@@ -3502,7 +3506,7 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 					}
 				};
 				
-				bool isShiftDown = command.intVar4;
+				bool isShiftDown = static_cast<bool>(command.intVar4);
 				if (isShiftDown)
 				{
 					// Adjust all buildings of the same type
@@ -4767,7 +4771,7 @@ void GameSimulationCore::PopupDecision(FPopupDecision command)
 		vector<int32> attackerTownIds = GetProvinceAttackerTownIds(command.playerId, provinceId);
 		if (command.choiceIndex < attackerTownIds.size()) {
 			int32 townId = attackerTownIds[command.choiceIndex];
-			bool isFull = command.replyVar2;
+			bool isFull = static_cast<bool>(command.replyVar2);
 			if (isFull) { // Full ProvinceClaim
 				SetProvinceOwnerFull(provinceId, townId);
 			} else {
@@ -5535,6 +5539,10 @@ void GameSimulationCore::ClaimLand(FClaimLand command)
 		int32 provinceTownId = provinceOwnerTownSafe(command.provinceId);
 		check(provinceTownId != -1);
 		TownManagerBase* provinceTownManager = townManagerBase(provinceTownId);
+
+		if (provinceTownManager == nullptr) {
+			return;
+		}
 
 		int32 provincePlayerId = provinceTownManager->playerId();
 

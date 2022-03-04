@@ -494,7 +494,7 @@ public:
 		else if (callbackEnum == CallbackEnum::RemoveTradeDealCard)
 		{
 			auto selectedCardButton = CastChecked<UBuildingPlacementButton>(punWidgetCaller);
-			bool isLeftCard = selectedCardButton->cardHandIndex;
+			bool isLeftCard = selectedCardButton->cardHandIndex >= 0;
 			CardEnum cardEnum = selectedCardButton->cardStatus.cardEnum;
 
 			UWrapBox* cardBox = isLeftCard ? LeftCardBox : RightCardBox;

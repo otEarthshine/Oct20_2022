@@ -511,7 +511,7 @@ public:
 	}
 
 	bool HasFadeBorder(FactionEnum factionEnum, CardEnum cardEnum) {
-		return _cardIconHasFadeBorder[static_cast<int32>(factionEnum) * CardEnumCount_WithNone + static_cast<int32>(cardEnum)];
+		return static_cast<bool>(_cardIconHasFadeBorder[static_cast<int32>(factionEnum) * CardEnumCount_WithNone + static_cast<int32>(cardEnum)]);
 	}
 	
 

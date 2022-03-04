@@ -10753,7 +10753,7 @@ public:
 	}
 
 	//! Alliance
-	bool isAlly(int32 askingPlayerId) const { return _isAlly[askingPlayerId]; }
+	bool isAlly(int32 askingPlayerId) const { return static_cast<bool>(_isAlly[askingPlayerId]); }
 	bool CanCreateAlliance(int32 askingPlayerId) {
 		return GetTotalRelationship(askingPlayerId) >= AllyRelationshipRequirement(askingPlayerId);
 	}
@@ -11254,7 +11254,7 @@ public:
 			Add(value);
 		}
 		else {
-			value = (*this)[readIndex++];
+			value = static_cast<bool>((*this)[readIndex++]);
 		}
 	}
 

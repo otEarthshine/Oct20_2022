@@ -2124,7 +2124,7 @@ public:
 	int64 science100() { return science100XsecPerRound / Time::SecondsPerRound; }
 
 
-	bool unlockState(UnlockStateEnum unlockStateEnum) { return _unlockStates[static_cast<int>(unlockStateEnum)]; }
+	bool unlockState(UnlockStateEnum unlockStateEnum) { return static_cast<bool>(_unlockStates[static_cast<int>(unlockStateEnum)]); }
 	void SetUnlockState(UnlockStateEnum unlockStateEnum, bool value) {
 		_unlockStates[static_cast<int>(unlockStateEnum)] = value;
 

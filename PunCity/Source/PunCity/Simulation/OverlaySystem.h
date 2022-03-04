@@ -16,7 +16,7 @@ struct RoadTile
 
 	RoadTile() : tile(0), isDirt(false), isConstructed(false), buildingId(-1) {}
 	RoadTile(WorldTile2 tile, bool isDirt, float isConstructed, int32 buildingId)
-			: tile(tile), isDirt(isDirt), isConstructed(isConstructed), buildingId(buildingId) {}
+			: tile(tile), isDirt(isDirt), isConstructed(isConstructed > 0), buildingId(buildingId) {}
 	
 	bool isValid() { return tile.isValid(); }
 	bool operator==(const RoadTile& a) {

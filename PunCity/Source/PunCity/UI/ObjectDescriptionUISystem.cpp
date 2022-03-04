@@ -2367,7 +2367,7 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							bool isAllowed = storage.ResourceAllowed(resourceEnum);
 							ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
 
-							int32 showTarget = isMarket && building.subclass<StorageBase>().ResourceAllowed(resourceEnum);
+							bool showTarget = isMarket && building.subclass<StorageBase>().ResourceAllowed(resourceEnum);
 							int32 target = showTarget ? uiResourceTargetsToDisplay[static_cast<int>(resourceEnum)] : -1;
 							
 							manageStorageBox->AddManageStorageElement(resourceEnum, FText(), objectId, checkState, isSection, _justOpenedDescriptionUI, showTarget, target);
@@ -4972,7 +4972,7 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 		_objectDescriptionUI->OpenNameEditPopup();
 	}
 	else if (callbackEnum == CallbackEnum::BuildingSwapArrow) {
-		SwitchToNextBuilding(punWidgetCaller->callbackVar1);
+		SwitchToNextBuilding(static_cast<bool>(punWidgetCaller->callbackVar1));
 	}
 
 	/*

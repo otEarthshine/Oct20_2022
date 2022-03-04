@@ -8,7 +8,6 @@ void UDisplaySystemComponent::Display(std::vector<int>& sampleIds)
 
 	WorldAtom2 cameraAtom = gameManager()->cameraAtom();
 
-	bool cameraMovedLargeDistance = WorldTile2::Distance(_lastCameraTile, cameraAtom.worldTile2());
 	_lastCameraTile = cameraAtom.worldTile2();
 	
 	// When display just switched from off to on (because of zoom), we should display everything to prevent display hole flashing on the screen.

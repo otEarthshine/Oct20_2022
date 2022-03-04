@@ -544,7 +544,7 @@ public:
 	 * Resource Management
 	 */
 	bool GetHouseResourceAllow(ResourceEnum resourceEnum) {
-		return _houseResourceAllowed[static_cast<int>(resourceEnum)];
+		return static_cast<bool>(_houseResourceAllowed[static_cast<int>(resourceEnum)]);
 	}
 	void SetHouseResourceAllow(ResourceEnum resourceEnum, bool resourceAllowed);
 
@@ -771,7 +771,7 @@ public:
 	{
 		CallbackEnum callbackEnum = command.callbackEnum;
 		
-		bool isExport = command.intVar1;
+		bool isExport = static_cast<bool>(command.intVar1);
 		ResourceEnum resourceEnum = static_cast<ResourceEnum>(command.intVar2);
 		int32 targetInventory = command.intVar3;
 		int32 maxTradeAmount = command.intVar4;

@@ -130,7 +130,7 @@ public:
 	}
 
 	bool isInitialized() {
-		return _terrainChunks.Num();
+		return static_cast<bool>(_terrainChunks.Num());
 	}
 
 private:

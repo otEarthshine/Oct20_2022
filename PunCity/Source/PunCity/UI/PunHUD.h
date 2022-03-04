@@ -530,7 +530,7 @@ protected:
 		path.insert(0, "/Game/UI/");
 		ConstructorHelpers::FClassFinder<UUserWidget> finder(*FString(path.c_str()));
 		if (!finder.Succeeded()) {
-			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, TEXT("Failed to get class from path: %s"), *FString(path.c_str()));
+			if (GEngine) GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::White, FString::Printf(TEXT("Failed to get class from path: %s"), *FString(path.c_str())));
 			UE_DEBUG_BREAK();
 		}
 		_uiClasses[static_cast<int>(uiEnum)] = finder.Class;

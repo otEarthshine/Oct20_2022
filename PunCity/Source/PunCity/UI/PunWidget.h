@@ -425,7 +425,7 @@ public:
 		return viewportPos;
 	}
 
-	const FGeometry& GetViewportGeometry()
+	FGeometry GetViewportGeometry()
 	{
 		UWorld* World = GetWorld();
 		check(World && World->IsGameWorld());

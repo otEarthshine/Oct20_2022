@@ -458,7 +458,7 @@ public:
 
 
 	TArray<FString> replayFilesToLoad;
-	bool ReplayCount() { return replayFilesToLoad.Num(); }
+	bool ReplayCount() { return static_cast<bool>(replayFilesToLoad.Num()); }
 
 private:
 	TArray<FPlayerInfo> _playerInfos;

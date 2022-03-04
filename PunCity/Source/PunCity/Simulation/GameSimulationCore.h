@@ -268,7 +268,6 @@ public:
 		if (townId >= MinorTownShift) {
 			int32 minorTownId = townId - MinorTownShift;
 			check(minorTownId < _minorTownManagers.size());
-			check(_minorTownManagers[minorTownId]->isValid());
 			return _minorTownManagers[minorTownId].get();
 		}
 		check(townId < _townManagers.size());
@@ -1226,7 +1225,7 @@ public:
 	}
 
 	bool isValidBuildingId(int32 id) final {
-		return _buildingSystem->isValidBuildingId(id);
+		return static_cast<bool>(_buildingSystem->isValidBuildingId(id));
 	}
 
 	template <typename T>

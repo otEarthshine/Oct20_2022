@@ -37,7 +37,7 @@ public:
 		if (isConstructed()) {
 			return holder(resourceEnum).type != ResourceHolderType::Provider;
 		}
-		return queuedResourceAllowed[static_cast<int>(resourceEnum)];
+		return static_cast<bool>(queuedResourceAllowed[static_cast<int>(resourceEnum)]);
 	}
 
 	int32 GetFoodCount() {

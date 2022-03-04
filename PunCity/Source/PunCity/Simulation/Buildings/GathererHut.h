@@ -909,7 +909,7 @@ public:
 
 		// Half chance for oil
 		if (shouldBurnFuel && resourceEnum == ResourceEnum::Oil) {
-			shouldBurnFuel = GameRand::Rand() % 2;
+			shouldBurnFuel = static_cast<bool>(GameRand::Rand() % 2);
 		}
 
 		if (shouldBurnFuel) {

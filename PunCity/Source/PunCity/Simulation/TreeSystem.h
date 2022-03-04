@@ -516,7 +516,7 @@ public:
 				int32 int32Val = 0;
 				if (Ar.IsSaving()) int32Val = treeShade(tileId);
 				Ar << int32Val;
-				if (Ar.IsLoading()) setTreeShade(tileId, int32Val);
+				if (Ar.IsLoading()) setTreeShade(tileId, static_cast<bool>(int32Val));
 			});
 		}
 	}

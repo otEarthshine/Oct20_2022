@@ -452,7 +452,7 @@ void ULobbyUI::Tick()
 	 */
 	if (_worldInitCompletedFuture.IsReady())
 	{
-		bool isCompleted = _worldInitCompletedFuture.Get();
+		bool isCompleted = static_cast<bool>(_worldInitCompletedFuture.Get());
 		int32 percentLoaded = _terrainGenerator->percentLoaded();
 		PUN_LOG("World Future %d, %d percent", isCompleted, percentLoaded);
 		_worldInitCompletedFuture.Reset();

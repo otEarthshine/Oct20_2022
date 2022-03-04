@@ -167,8 +167,8 @@ void UBattleFieldUI::UpdateBattleFieldUI(int32 provinceIdIn, ProvinceClaimProgre
 		SetShowReinforceRetreat(false, false, true, true);
 	}
 	else {
-		int32 reinforcingAttacker = claimProgress.IsPlayerReinforcingAttacker(playerId());
-		int32 reinforcingDefender = claimProgress.IsPlayerReinforcingDefender(playerId());
+		bool reinforcingAttacker = claimProgress.IsPlayerReinforcingAttacker(playerId());
+		bool reinforcingDefender = claimProgress.IsPlayerReinforcingDefender(playerId());
 		SetShowReinforceRetreat(!reinforcingDefender, reinforcingAttacker,
 								!reinforcingAttacker, reinforcingDefender);
 	}

@@ -790,7 +790,7 @@ public:
 	int32 lastPregnantTick() { return _lastPregnant; }
 
 	bool isMale() {
-		return GameRand::Rand(_id + birthTicks()) % 2;
+		return static_cast<bool>(GameRand::Rand(_id + birthTicks()) % 2);
 	}
 
 	virtual bool isBelowWorkingAge() {

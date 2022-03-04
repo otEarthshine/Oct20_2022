@@ -329,7 +329,7 @@ public:
 	CardEnum useWildCard = CardEnum::None;
 	int32 buildingIdToSetDelivery = -1;
 
-	bool isTrailerPreBuilt() { return area2.minX; }
+	bool isTrailerPreBuilt() { return static_cast<bool>(area2.minX); }
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceBuilding; }
 
@@ -377,7 +377,7 @@ public:
 	int32 placementType;
 	ResourceEnum harvestResourceEnum;
 
-	bool isTrailerPreBuilt() { return area2.minX; }
+	bool isTrailerPreBuilt() { return static_cast<bool>(area2.minX); }
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::PlaceDrag; }
 

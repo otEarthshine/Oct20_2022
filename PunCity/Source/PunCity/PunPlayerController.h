@@ -1516,7 +1516,7 @@ public:
 			record.transition = cameraRecordJson->GetStringField("transition");
 			record.transitionTime = cameraRecordJson->GetNumberField("transitionTime");
 
-			record.isCameraReplayUnpause = FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause"));
+			record.isCameraReplayUnpause = static_cast<bool>(FGenericPlatformMath::RoundToInt(cameraRecordJson->GetNumberField("unpause")));
 			//_LOG(PunTrailer, "TrailerCameraLoad isCameraReplayUnpause %d", record.isCameraReplayUnpause);
 			
 			record.lightAngle = cameraRecordJson->GetNumberField("lightAngle");

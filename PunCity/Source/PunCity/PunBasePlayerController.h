@@ -150,7 +150,7 @@ public:
 	UFUNCTION(Exec) void GetLanguages(uint8 localizedName) {
 		TArray<FString> languageOptions = UKismetInternationalizationLibrary::GetLocalizedCultures(ELocalizationLoadFlags::Game);
 		for (FString language : languageOptions) {
-			PUN_DEBUG2("Culture: %s", *UKismetInternationalizationLibrary::GetCultureDisplayName(language, localizedName));
+			PUN_DEBUG2("Culture: %s", *UKismetInternationalizationLibrary::GetCultureDisplayName(language, static_cast<bool>(localizedName)));
 		}
 	}
 	UFUNCTION(Exec) void GetCulture() {

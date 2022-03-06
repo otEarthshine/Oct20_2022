@@ -532,9 +532,9 @@ void GameSimulationCore::InitProvinceBuildings()
 	tryBuildAncientWonder(false, true, 0);
 	tryBuildAncientWonder(false, false, 0);
 
-	for (int32 i = 0; i < ancientWondersCounts.size(); i++) {
-		check(ancientWondersCounts[i] == 1);
-	}
+	//for (int32 i = 0; i < ancientWondersCounts.size(); i++) {
+	//	check(ancientWondersCounts[i] == 1);
+	//}
 
 	/*
 	 * Minor City
@@ -2358,24 +2358,25 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	{
 		// Note: startTile was sent through parameters.center
 		std::vector<FarmTile> farmTiles = GetFarmTiles(area, parameters.center, parameters.playerId);
-		check(farmTiles.size() > 0);
+		if (farmTiles.size() > 0)
+		{
+			// Calculate farm center
+			parameters.center = WorldTile2::Invalid;
+			int32 minDist = 99999;
 
-		// Calculate farm center
-		parameters.center = WorldTile2::Invalid;
-		int32 minDist = 99999;
-		
-		WorldTile2 targetCenter = area.centerTile();
-		for (int32 i = 0; i < farmTiles.size(); i++) {
-			int32 dist = WorldTile2::Distance(targetCenter, farmTiles[i].worldTile);
-			if (dist < minDist) {
-				minDist = dist;
-				parameters.center = farmTiles[i].worldTile;
+			WorldTile2 targetCenter = area.centerTile();
+			for (int32 i = 0; i < farmTiles.size(); i++) {
+				int32 dist = WorldTile2::Distance(targetCenter, farmTiles[i].worldTile);
+				if (dist < minDist) {
+					minDist = dist;
+					parameters.center = farmTiles[i].worldTile;
+				}
 			}
-		}
-		check(parameters.center.isValid());
-		
-		if (IsFarmSizeInvalid(farmTiles, area)) {
-			canPlace = false;
+			check(parameters.center.isValid());
+
+			if (IsFarmSizeInvalid(farmTiles, area)) {
+				canPlace = false;
+			}
 		}
 	}
 	// Road Overlap Building

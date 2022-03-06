@@ -140,8 +140,11 @@ public:
 		// newSupplyValue100 = supplyValue100 * 10000 / (10000 + 200 * supplyValue100 / equilibriumSupplyValue100);
 		int64 lastSupplyValue100 = _enumToSupplyValue100[static_cast<int>(resourceEnum)];
 		int64 equilibriumSupplyValue100 = EquilibriumSupplyValue100(resourceEnum);
-		
-		_enumToSupplyValue100[static_cast<int>(resourceEnum)] = lastSupplyValue100 * 10000 / (10000 + percent * 100 * lastSupplyValue100 / equilibriumSupplyValue100); // more percent, less supply, more price
+
+		int resourceEnumInt = static_cast<int>(resourceEnum);
+		_enumToSupplyValue100[resourceEnumInt] = lastSupplyValue100 * 10000 / (10000 + percent * 100 * lastSupplyValue100 / equilibriumSupplyValue100); // more percent, less supply, more price
+
+		_enumToSupplyValue100[resourceEnumInt] = std::max(_enumToSupplyValue100[resourceEnumInt], GetMinSupplyValue100());
 	}
 
 	const std::vector<PlayerSupplyChange>& GetSupplyChanges(ResourceEnum resourceEnum) {
@@ -329,6 +332,10 @@ private:
 	// How fast price goes back to base price without tampering
 	int64 EquilibriumSupplyValue100(ResourceEnum resourceEnum) {
 		return EquilibriumSupplyValue100_PerPerson(resourceEnum) * worldPopulationWithBase();
+	}
+
+	int64 GetMinSupplyValue100() {
+		return MinSupplyValue100_PerPerson * worldPopulationWithBase();
 	}
 
 	static const int64 BaseWorldPopulation = 300;

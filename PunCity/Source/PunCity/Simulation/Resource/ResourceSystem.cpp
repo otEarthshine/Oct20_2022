@@ -195,6 +195,8 @@ int32 ResourceTypeHolders::AddResourceGlobal(int32 amount, ResourceSystem& resou
 		// add to storage only
 		if (_holders[i].type == ResourceHolderType::Storage)
 		{
+			check(0 <= i && i < _holders.size());
+			
 			ResetHolderReservers(i, resourceSys);
 
 			resourceSys.UpdateResourceDisplay(_holders[i]);
@@ -225,6 +227,8 @@ void ResourceTypeHolders::RemoveResourceGlobal(int32 amount, ResourceSystem& res
 			_holders[i].type == ResourceHolderType::Provider ||
 			_holders[i].type == ResourceHolderType::Market)
 		{
+			check(0 <= i && i < _holders.size());
+			
 			//_holders[i].ResetPopReservers(*resourceSystem.simulation());
 			ResetHolderReservers(i, resourceSys);
 

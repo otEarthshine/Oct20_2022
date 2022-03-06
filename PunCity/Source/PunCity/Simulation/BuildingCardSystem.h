@@ -680,7 +680,7 @@ public:
 		std::vector<CardStatus> cardInventoryFinal = _cardsInventory;
 
 		// Add Reserved Cards for final cardStacks calculation
-		check(_cardsHand1Reserved.size() <= _cardsHand.size());
+		//check(_cardsHand1Reserved.size() <= _cardsHand.size());
 		for (size_t i = 0; i < _cardsHand1Reserved.size(); i++) {
 			if (_cardsHand1Reserved[i]) {
 				bool succeed = TryAddCards(CardStatus(_cardsHand[i], 1), cardsBoughtFinal, maxCardsBought);

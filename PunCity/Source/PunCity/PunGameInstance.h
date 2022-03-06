@@ -312,6 +312,15 @@ public:
 	
 public:
 	void InitOnline(FName subsystemName);
+
+	static IOnlineSessionPtr GetSessionInterface()
+	{
+		IOnlineSubsystem* onlineSubsystem = IOnlineSubsystem::Get("Steam");
+		if (onlineSubsystem) {
+			return onlineSubsystem->GetSessionInterface();
+		}
+		return nullptr;
+	}
 	
 	IOnlineSessionPtr sessionInterface;
 	TSharedPtr<class FOnlineSessionSearch> sessionSearch;

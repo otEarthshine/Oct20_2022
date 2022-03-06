@@ -166,9 +166,16 @@ public:
 	{
 		_farmStage = farmStage;
 
-		// Reset Workers
+		// Reset Workers TODO: Don't need this?
 		for (int32 occupantId : _occupantIds) {
 			_simulation->ResetUnitActions(occupantId);
+		}
+
+		// Reset Workers on farm
+		for (FarmTile& farmTile : _farmTiles) {
+			if (farmTile.reservedUnitId != -1) {
+				_simulation->ResetUnitActions(farmTile.reservedUnitId);
+			}
 		}
 
 		// Reset Farm Tiles

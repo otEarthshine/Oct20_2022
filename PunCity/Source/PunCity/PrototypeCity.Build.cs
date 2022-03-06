@@ -35,11 +35,19 @@ public class PrototypeCity : ModuleRules
             "SpinePlugin",
             //"OnlineSubsystemSteam",
 
+            "OnlineSubsystemNull",
+
             "Networking",
             "Sockets",
         });
 
         DynamicallyLoadedModuleNames.Add("OnlineSubsystemSteam");
+
+
+        PublicIncludePaths.AddRange(new string[] {
+        //    "SpinePlugin/Public",
+        //    "SpinePlugin/Classes",
+        });
 
         AddEngineThirdPartyPrivateStaticDependencies(Target,
             "UEOgg",

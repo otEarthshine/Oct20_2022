@@ -129,6 +129,10 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 	#endif
 #endif
 
+#if !defined(PUN_CHECK2)
+	#define PUN_CHECK2(expr) if (!(expr)) { FDebug::CheckVerifyFailed(#expr, __FILE__, __LINE__, TEXT("")); PLATFORM_BREAK(); }
+#endif
+
 #if !defined(PUN_CHECK_DEBUG)
 	#if UE_BUILD_DEBUG
 		#define PUN_CHECK_DEBUG(x) if (!(x)) { FDebug::DumpStackTraceToLog(); checkNoEntry(); }

@@ -2730,7 +2730,7 @@ public:
 		int32 targetPlayerMoney = moneyCap32(targetPlayerId);
 		targetPlayerMoney = max(0, targetPlayerMoney); // Ensure no negative steal..
 
-		int32 targetStealMoney = GameRand::RandRound(10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId), 100);
+		int32 targetStealMoney = 10 * populationTown(targetPlayerId) * GetSpyEffectivenessOnTarget(playerId, targetPlayerId) / 100;
 
 		int32 actualSteal = min(targetPlayerMoney, targetStealMoney);
 

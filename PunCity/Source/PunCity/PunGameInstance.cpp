@@ -12,10 +12,9 @@
 #include "PunCity/PunPlayerController.h"
 
 #include "OnlineSubsystem.h"
+#include "Online.h"
+#include "OnlineSubsystemNull.h"
 //#include "OnlineSubsystemSteam.h"
-//#include "OnlineSubsystemSteamTypes.h"
-//#include "Steam/steam_api.h"
-
 
 /*
  * Steam API warning disable
@@ -276,31 +275,30 @@ void UPunGameInstance::FindGame()
 void UPunGameInstance::JoinGame(const FOnlineSessionSearchResult& searchResult)
 {
 	LLM_SCOPE_(EPunSimLLMTag::PUN_GameInstance);
-	
-	if (!IsSessionInterfaceValid()) {
+
+	IOnlineSubsystem* onlineSubsystem = IOnlineSubsystem::Get("Steam");
+	if (onlineSubsystem)
+	{
+		IOnlineSessionPtr SessionInterfaceScope = onlineSubsystem->GetSessionInterface();
+
+		FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
+		if (Session) {
+			PUN_DEBUG2("[ERROR]JoinGame: failed, already in a session");
+			mainMenuPopup = LOCTEXT("JoinGame_AlreadyASession", "Join game failed, try again in a moment.");
+
+			sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
+			return;
+		}
+
+		SessionInterfaceScope->JoinSession(0, PUN_SESSION_NAME, searchResult);
+		isJoiningGame = true;
+	}
+	else
+	{
 		PUN_DEBUG2("[ERROR]JoinGame: Not connected to Steam");
 		mainMenuPopup = LOCTEXT("JoinGame_NotConnectedToSteam", "Failed to join the game. Please connect to Steam.");
 		return;
 	}
-
-	if (IOnlineSubsystem::Get()->GetSubsystemName() != "Steam") {
-		mainMenuPopup = LOCTEXT("JoinGame_NotConnectedToSteam", "Failed to join the game. Please connect to Steam.");
-		return;
-	}
-	
-	FNamedOnlineSession* Session = sessionInterface->GetNamedSession(PUN_SESSION_NAME);
-	if (Session) {
-		PUN_DEBUG2("[ERROR]JoinGame: failed, already in a session");
-		mainMenuPopup = LOCTEXT("JoinGame_AlreadyASession", "Join game failed, try again in a moment.");
-
-		sessionInterface->DestroySession(PUN_SESSION_NAME, DestroySessionThenDoesNothingCompleteDelegate);
-		return;
-	}
-
-	//searchResult.IsSessionInfoValid()
-	
-	sessionInterface->JoinSession(0, PUN_SESSION_NAME, searchResult);
-	isJoiningGame = true;
 }
 
 void UPunGameInstance::DestroyGame()

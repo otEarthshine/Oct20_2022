@@ -806,21 +806,22 @@ public:
 					break;
 				}
 			}
-			check(oldIndex != -1);
-
-			if (callbackEnum == CallbackEnum::ShiftAutoTradeRowUp) {
-				int32 index = std::max(0, oldIndex - 1);
-				autoTradeElements.insert(autoTradeElements.begin() + index, oldAutoTradeElement);
-			}
-			else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowDown) {
-				int32 index = std::min(initialElementsSize - 1, oldIndex + 1);
-				autoTradeElements.insert(autoTradeElements.begin() + index, oldAutoTradeElement);
-			}
-			else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowFastUp) {
-				autoTradeElements.insert(autoTradeElements.begin(), oldAutoTradeElement);
-			}
-			else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowFastDown) {
-				autoTradeElements.push_back(oldAutoTradeElement);
+			if (oldIndex != -1)
+			{
+				if (callbackEnum == CallbackEnum::ShiftAutoTradeRowUp) {
+					int32 index = std::max(0, oldIndex - 1);
+					autoTradeElements.insert(autoTradeElements.begin() + index, oldAutoTradeElement);
+				}
+				else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowDown) {
+					int32 index = std::min(initialElementsSize - 1, oldIndex + 1);
+					autoTradeElements.insert(autoTradeElements.begin() + index, oldAutoTradeElement);
+				}
+				else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowFastUp) {
+					autoTradeElements.insert(autoTradeElements.begin(), oldAutoTradeElement);
+				}
+				else if (callbackEnum == CallbackEnum::ShiftAutoTradeRowFastDown) {
+					autoTradeElements.push_back(oldAutoTradeElement);
+				}
 			}
 		}
 		else if (callbackEnum == CallbackEnum::AutoTradeRowTargetInventoryChanged ||

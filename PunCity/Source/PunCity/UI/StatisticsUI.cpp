@@ -215,7 +215,11 @@ void UStatisticsUI::TickUI()
 				SetText(row->ConsumptionSeason3, to_string(stat.consumptionStats[(3 + seasonShift) % 4]));
 				SetText(row->ConsumptionTotal, to_string(CppUtils::Sum(stat.consumptionStats)));
 
-				SetResourceImage(row->ResourceImage, stat.resourceEnum, assetLoader());
+				if (row->uiResourceEnum != stat.resourceEnum) {
+					row->uiResourceEnum = stat.resourceEnum;
+					SetResourceImage_MemoryLeak(row->ResourceImage, stat.resourceEnum, assetLoader());
+				}
+				
 				SetText(row->ResourceText, GetResourceInfo(stat.resourceEnum).name);
 			}
 		}
@@ -420,7 +424,11 @@ void UStatisticsUI::TickUI()
 			LOCTEXT("Net import (yearly):", "Net import (yearly):")
 		);
 		SetText(NetExportAmount, to_string(abs(netSupplyChange)));
-		SetResourceImage(NetExportImage, resourceEnum, assetLoader());
+
+		if (lastNetExportImageResourceEnum != resourceEnum) {
+			lastNetExportImageResourceEnum = resourceEnum;
+			SetResourceImage_MemoryLeak(NetExportImage, resourceEnum, assetLoader());
+		}
 
 		TArray<FText> args;
 

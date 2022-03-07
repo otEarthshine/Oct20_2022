@@ -278,6 +278,21 @@ public:
 		_size >> Ar;
 	}
 
+	FString ToFstring()
+	{
+		FString buildingEnums("top(");
+		for (CardEnum cardEnum : topBuildingEnums) {
+			buildingEnums += GetBuildingInfo(cardEnum).GetName().ToString() + ",";
+		}
+		buildingEnums += ") bot(";
+		for (CardEnum cardEnum : bottomBuildingEnums) {
+			buildingEnums += GetBuildingInfo(cardEnum).GetName().ToString() + ",";
+		}
+		buildingEnums += ")";
+
+		return FString::Printf(TEXT("[Block %s %s]"), *buildingEnums, *GetFactionInfo(factionEnum).internalName);
+	}
+
 public:
 	// City block is composed of two opposite facing sides
 	// arranged from left to right

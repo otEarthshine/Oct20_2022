@@ -199,6 +199,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "ForceDelayInput", 0 },
 	{ "FixedDeltaTime", 1 },
 
+	{ "TickHashInterval", 60 },
+
 	// Trailer
 	
 	{ "TrailerTundraMinSnowPercent", 0 },

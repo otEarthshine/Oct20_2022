@@ -30,7 +30,7 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UExclamationIcon* ExclamationIcon;
 
-	void Setup(std::shared_ptr<Quest> quest, UPunWidget* callbackParent, CallbackEnum callbackEnum)
+	void UpdateQuestElement(std::shared_ptr<Quest> quest, UPunWidget* callbackParent, CallbackEnum callbackEnum)
 	{
 		// Changed quest... reset this
 		if (questEnum != quest->classEnum())
@@ -38,6 +38,21 @@ public:
 			questEnum = quest->classEnum();
 			_timesClicked = 0;
 			ExclamationIcon->SetVisibility(ESlateVisibility::Collapsed);
+
+			// Quest image
+			switch (quest->classEnum())
+			{
+			case QuestEnum::GatherMarkQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Wood, assetLoader()); break;
+
+			case QuestEnum::CooperativeFishingQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Fish, assetLoader()); break;
+			case QuestEnum::BeerQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Beer, assetLoader()); break;
+			case QuestEnum::PotteryQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Pottery, assetLoader()); break;
+
+			case QuestEnum::TradeQuest: QuestImage->SetBrushFromTexture(assetLoader()->CoinIcon); break;
+
+			default:
+				QuestImage->SetBrushFromTexture(assetLoader()->HouseIcon);
+			}
 		}
 		
 		//if (TextEquals(title, quest->questTitle()) ||
@@ -59,20 +74,20 @@ public:
 		_callbackParent = callbackParent;
 		_callbackEnum = callbackEnum;
 
-		// Quest image
-		switch (quest->classEnum())
-		{
-		case QuestEnum::GatherMarkQuest: SetResourceImage(QuestImage, ResourceEnum::Wood, assetLoader()); break;
-			
-		case QuestEnum::CooperativeFishingQuest: SetResourceImage(QuestImage, ResourceEnum::Fish, assetLoader()); break;
-		case QuestEnum::BeerQuest: SetResourceImage(QuestImage, ResourceEnum::Beer, assetLoader()); break;
-		case QuestEnum::PotteryQuest: SetResourceImage(QuestImage, ResourceEnum::Pottery, assetLoader()); break;
+		//// Quest image
+		//switch (quest->classEnum())
+		//{
+		//case QuestEnum::GatherMarkQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Wood, assetLoader()); break;
+		//	
+		//case QuestEnum::CooperativeFishingQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Fish, assetLoader()); break;
+		//case QuestEnum::BeerQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Beer, assetLoader()); break;
+		//case QuestEnum::PotteryQuest: SetResourceImage_MemoryLeak(QuestImage, ResourceEnum::Pottery, assetLoader()); break;
 
-		case QuestEnum::TradeQuest: QuestImage->SetBrushFromTexture(assetLoader()->CoinIcon); break;
+		//case QuestEnum::TradeQuest: QuestImage->SetBrushFromTexture(assetLoader()->CoinIcon); break;
 
-		default:
-			QuestImage->SetBrushFromTexture(assetLoader()->HouseIcon);
-		}
+		//default:
+		//	QuestImage->SetBrushFromTexture(assetLoader()->HouseIcon);
+		//}
 
 		//// Special Quest Mark as another color
 		//if (IsImportantQuest(quest->classEnum())) {

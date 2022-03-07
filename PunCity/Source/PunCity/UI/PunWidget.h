@@ -315,7 +315,8 @@ public:
 		textBlock->SetText(FText::FromString(str));
 	}
 
-	static void SetResourceImage(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader)
+	// !!! Be sure to not do this every update.. only when resourceEnum changed
+	static void SetResourceImage_MemoryLeak(UImage* image, ResourceEnum resourceEnum, UAssetLoaderComponent* assetLoader)
 	{
 		image->SetBrushFromMaterial(assetLoader->ResourceIconMaterial);
 		image->GetDynamicMaterial()->SetTextureParameterValue("ColorTexture", assetLoader->GetResourceIcon(resourceEnum));

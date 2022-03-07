@@ -326,7 +326,7 @@ public:
 		Indent(textWidget->LeftBox->Slot, textWidget->RightBox->Slot);
 
 		if (resourceEnum != ResourceEnum::None) {
-			SetResourceImage(textWidget->Icon, resourceEnum, assetLoader());
+			SetResourceImage_MemoryLeak(textWidget->Icon, resourceEnum, assetLoader());
 			textWidget->Icon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		} else {
 			textWidget->Icon->SetVisibility(ESlateVisibility::Collapsed);

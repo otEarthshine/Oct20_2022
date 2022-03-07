@@ -727,6 +727,10 @@ struct TileArea
 		return "[Area: min(" + std::to_string(minX) + "," + std::to_string(minY) + ") max(" + std::to_string(maxX) + "," + std::to_string(maxY) + ")]";
 	}
 
+	FString ToFstring() {
+		return FString("[Area: min(") + FString::FromInt(minX) + "," + FString::FromInt(minY) + ") max(" + FString::FromInt(maxX) + "," + FString::FromInt(maxY) + ")]";
+	}
+
 	void EnforceWorldLimit();
 	
 

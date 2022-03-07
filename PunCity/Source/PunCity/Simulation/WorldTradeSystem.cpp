@@ -243,7 +243,7 @@ void WorldTradeSystem::TryCancelTradeRoute(const FGenericCommand& command)
 	if (succeed)
 	{
 		int32 playerId1 = _simulation->building(_simulation->GetTownhallId(tradeRoutePair.townId1)).playerId();
-		check(playerId1 != -1);
+		//check(playerId1 != -1);
 		int32 playerId2 = _simulation->building(_simulation->GetTownhallId(tradeRoutePair.townId2)).playerId();
 		
 		_simulation->RecalculateTaxDelayedPlayer(playerId1);
@@ -302,7 +302,7 @@ void WorldTradeSystem::Tick1Sec()
 		sellValue100PerSec = GameRand::RandFluctuate(sellValue100PerSec, WorldTradeFluctuationPercent);
 		_enumToSupplyValue100[i] += sellValue100PerSec;
 
-		_enumToSupplyValue100[i] = std::max(_enumToSupplyValue100[i], MinSupplyValue100_PerPerson * worldPopulationWithBase());
+		_enumToSupplyValue100[i] = std::max(_enumToSupplyValue100[i], GetMinSupplyValue100());
 
 		check(_enumToSupplyValue100[i] >= 0);
 		//PUN_LOG("Resource:%s, buy:%d sell:%d supply:%d eq:%d", *ResourceNameF(resourceEnum), buyValue100PerSec, sellValue100PerSec, _enumToSupplyValue100[i], EquilibriumSupplyValue100());

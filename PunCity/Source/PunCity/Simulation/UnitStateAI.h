@@ -664,7 +664,7 @@ public:
 
 	template<class T>
 	T& subclass(UnitEnum unitEnumIn) { 
-		check(unitEnumIn == unitEnum());
+		checkf(unitEnumIn == unitEnum(), TEXT("unitEnumIn:%d unitEnum:%d"), unitEnumIn, unitEnum());
 		return *static_cast<T*>(this); 
 	}
 

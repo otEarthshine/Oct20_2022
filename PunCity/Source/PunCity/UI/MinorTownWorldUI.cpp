@@ -157,7 +157,12 @@ void UMinorTownWorldUI::UpdateUIBase(bool isMini)
 		BottomCaptionResource->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		ResourceEnum resourceEnum = resourceOutpost.GetColonyResourceEnum();
 		BottomCaptionPrefixText->SetText(TEXT_NUMSIGNED(resourceOutpost.GetColonyResourceIncome(resourceEnum)));
-		SetResourceImage(BottomCaptionImage, resourceEnum, assetLoader());
+
+		if (bottomCaptionResourceEnum != resourceEnum) {
+			bottomCaptionResourceEnum = resourceEnum;
+			SetResourceImage_MemoryLeak(BottomCaptionImage, resourceEnum, assetLoader());
+		}
+		
 		BottomCaptionSuffixText->SetText(LOCTEXT("per round", "per round"));
 	}
 	else {

@@ -2415,7 +2415,7 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 					}
 					else {
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
-						SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Must be built on a province without any owner", "<Red>Must be built on\na province without any owner</>"));
+						SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Must be built on a province without any owner", "<Red>Must be built on</>\n<Red>a province without any owner</>"));
 					}
 				});
 			}
@@ -2733,9 +2733,13 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 		}
 		else if (IsRanch(_buildingEnum))
 		{
-			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-				if (IsPlayerBuildable(tile)) {
-					if (simulation.GetBiomeEnum(tile) == BiomeEnum::Desert) {
+			_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) 
+			{
+				if (IsPlayerBuildable(tile)) 
+				{
+					if (simulation.GetBiomeEnum(tile) == BiomeEnum::Desert &&
+						simulation.GetFertilityPercent(tile) < 28)
+					{
 						SetInstruction(PlacementInstructionEnum::FarmAndRanch, true);
 						_placementGrid.SpawnGrid(PlacementGridEnum::Red, cameraAtom, tile);
 						return;
@@ -3284,7 +3288,7 @@ void ABuildingPlacementSystem::NetworkDragPlace(IGameNetworkInterface* networkIn
 	}
 
 	// Road/Gather after here
-	int32 maxPathSize = 120;
+	int32 maxPathSize = 100;
 	if (placeGatherCommand->path.Num() > maxPathSize)
 	{
 		TArray<int32> path = placeGatherCommand->path;

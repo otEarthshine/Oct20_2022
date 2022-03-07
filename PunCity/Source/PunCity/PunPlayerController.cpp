@@ -805,7 +805,7 @@ void APunPlayerController::SendTickToClient(NetworkTickInfo& tickInfo)
 	}
 	//PUN_DEBUG(FString::Printf(TEXT("Server Add Tick:%d queue:%d"), tickInfo.tickCount, gameManager->networkTickQueueCount()));
 
-	check(networkTickInfoBlob.Num() <= MaxPacketSize32 || gameInstance()->isSinglePlayer);
+	PUN_CHECK3(networkTickInfoBlob.Num() <= MaxPacketSize32 || gameInstance()->isSinglePlayer);
 
 	// TickSimulations
 	if (gameInstance()->shouldDelayInput()) {
@@ -1093,12 +1093,15 @@ void APunPlayerController::CheckDesyncWarning_ToClient_Implementation(const TArr
 			for (int32 j = 0; j < tickToHashes.size(); j++)
 			{
 				// loop through to check for the same tick, then compare the rest of the content
-				if (serverTickToHashes[i + static_cast<int>(DesyncEnum::Tick)] == tickToHashes[j][static_cast<int>(DesyncEnum::Tick)])
+				int32 serverTick = serverTickToHashes[i + static_cast<int>(DesyncEnum::Tick)];
+				int32 localTick = tickToHashes[j][static_cast<int>(DesyncEnum::Tick)];
+				if (serverTick == localTick)
 				{
 					for (int32 k = static_cast<int>(DesyncEnum::Input); k < static_cast<int>(DesyncEnum::Count); k++)
 					{
 						if (serverTickToHashes[i + k] != tickToHashes[j][k])
 						{
+							PUN_LOG("Desynced at serverTick:%d serverHash:%d localHash:%d", serverTick, serverTickToHashes[i + k], tickToHashes[j][k]);
 							simulation().isDesynced = static_cast<DesyncEnum>(k);
 							return;
 						}

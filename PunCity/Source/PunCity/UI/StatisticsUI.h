@@ -75,6 +75,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NetExportText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* NetExportAmount;
 	UPROPERTY(meta = (BindWidget)) UImage* NetExportImage;
+	ResourceEnum lastNetExportImageResourceEnum = ResourceEnum::None;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* MainExportersText;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* MainImportersText;

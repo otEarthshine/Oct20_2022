@@ -355,6 +355,8 @@ public:
 
 	static void PlaceCityBlock(AICityBlock& block, int32 playerId, std::vector<std::shared_ptr<FNetworkCommand>>& commands, IGameSimulationCore* simulation)
 	{
+		PUN_LOG("PlaceCityBlock Begin playerId:%d", playerId);
+		
 		TileArea blockArea = block.area();
 
 		// Build surrounding road...

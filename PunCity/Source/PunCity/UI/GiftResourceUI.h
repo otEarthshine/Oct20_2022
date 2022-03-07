@@ -471,16 +471,19 @@ public:
 		else if (callbackEnum == CallbackEnum::RemoveTradeDealResource)
 		{
 			auto callerTradeRow = CastChecked<UTradeDealResourceRow>(punWidgetCaller);
-			ResourceEnum resourceEnum = callerTradeRow->resourceEnum;
 			
-			UVerticalBox* cardBox = isChoosingLeftResource ? LeftTradeResourceRows : LeftResourceValueBox;
-			for (int32 i = cardBox->GetChildrenCount(); i-- > 0;) {
-				auto tradeRow = CastChecked<UTradeDealResourceRow>(cardBox->GetChildAt(i));
-				if (tradeRow->resourceEnum == resourceEnum) {
-					cardBox->RemoveChildAt(i);
-					break;
-				}
-			}
+			RemoveTradeDealResource(isChoosingLeftResource, callerTradeRow->resourceEnum);
+			
+			//ResourceEnum resourceEnum = callerTradeRow->resourceEnum;
+			
+			//UVerticalBox* cardBox = isChoosingLeftResource ? LeftTradeResourceRows : LeftResourceValueBox;
+			//for (int32 i = cardBox->GetChildrenCount(); i-- > 0;) {
+			//	auto tradeRow = CastChecked<UTradeDealResourceRow>(cardBox->GetChildAt(i));
+			//	if (tradeRow->resourceEnum == resourceEnum) {
+			//		cardBox->RemoveChildAt(i);
+			//		break;
+			//	}
+			//}
 		}
 		
 		else if (callbackEnum == CallbackEnum::AddTradeDealCard)
@@ -524,6 +527,22 @@ public:
 
 		UVerticalBox* resourceBox = isLeft ? LeftResourceValueBox : RightResourceValueBox;
 		resourceBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	}
+
+	void RemoveTradeDealResource(bool isLeft, ResourceEnum resourceEnum)
+	{
+		UVerticalBox* cardBox = isLeft ? LeftTradeResourceRows : RightTradeResourceRows;
+		for (int32 i = cardBox->GetChildrenCount(); i-- > 0;) {
+			auto tradeRow = CastChecked<UTradeDealResourceRow>(cardBox->GetChildAt(i));
+			if (tradeRow->resourceEnum == resourceEnum) {
+				cardBox->RemoveChildAt(i);
+				break;
+			}
+		}
+
+		bool shouldShowResourceValueBox = cardBox->GetChildrenCount() > 0;
+		UVerticalBox* resourceBox = isLeft ? LeftResourceValueBox : RightResourceValueBox;
+		resourceBox->SetVisibility(shouldShowResourceValueBox ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 	}
 
 	void AddTradeDealCard(bool isLeft, CardEnum cardEnum, int32 stackSize = 1)

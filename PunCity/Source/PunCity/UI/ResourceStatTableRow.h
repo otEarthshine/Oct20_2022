@@ -29,4 +29,6 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UImage* ResourceImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* ResourceText;
+
+	ResourceEnum uiResourceEnum = ResourceEnum::None;
 };

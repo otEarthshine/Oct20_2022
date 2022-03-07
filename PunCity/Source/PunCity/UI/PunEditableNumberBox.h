@@ -70,7 +70,7 @@ public:
 		resourceEnum = resourceEnumIn;
 		if (resourceEnum != ResourceEnum::None && isChecked) {
 			IconImage->SetVisibility(ESlateVisibility::Visible);
-			SetResourceImage(IconImage, resourceEnum, assetLoader());
+			SetResourceImage_MemoryLeak(IconImage, resourceEnum, assetLoader());
 		} else {
 			IconImage->SetVisibility(ESlateVisibility::Collapsed);
 		}

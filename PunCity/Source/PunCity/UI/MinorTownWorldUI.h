@@ -40,6 +40,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* BottomCaptionPrefixText;
 	UPROPERTY(meta = (BindWidget)) UImage* BottomCaptionImage;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* BottomCaptionSuffixText;
+	ResourceEnum bottomCaptionResourceEnum = ResourceEnum::None;
 
 	int32 uiTownId = -1;
 

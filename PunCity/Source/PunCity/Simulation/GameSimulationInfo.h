@@ -19,11 +19,11 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 73 // 3 digit
+#define MINOR_VERSION 77 // 3 digit
 
-#define VERSION_DAY 1
-#define VERSION_MONTH 2
-#define VERSION_YEAR 25
+#define VERSION_DAY 7
+#define VERSION_MONTH 3
+#define VERSION_YEAR 22
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
 #define COMBINE_VERSION (MAJOR_VERSION * 1000000000) + (MINOR_VERSION * 1000000) + VERSION_DATE
@@ -129,8 +129,8 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 	#endif
 #endif
 
-#if !defined(PUN_CHECK2)
-	#define PUN_CHECK2(expr) if (!(expr)) { FDebug::CheckVerifyFailed(#expr, __FILE__, __LINE__, TEXT("")); PLATFORM_BREAK(); }
+#if !defined(PUN_CHECK3)
+	#define PUN_CHECK3(expr) if (!(expr)) { PLATFORM_BREAK(); }
 #endif
 
 #if !defined(PUN_CHECK_DEBUG)
@@ -4635,7 +4635,7 @@ inline CardEnum FindCardEnumByName(FString nameIn)
 
 
 
-
+//! Could cause desync !!! Not the same for different language
 static std::vector<CardEnum> GetSortedBuildingEnum()
 {
 	TArray<FString> cardNames;
@@ -4659,6 +4659,15 @@ static std::vector<CardEnum> GetSortedBuildingEnum()
 static std::vector<CardEnum> SortedNameBuildingEnum = GetSortedBuildingEnum();
 static void ResetSortedNameBuildingEnum() {
 	SortedNameBuildingEnum = GetSortedBuildingEnum();
+}
+
+static std::vector<CardEnum> GetBuildingEnums()
+{
+	std::vector<CardEnum> results;
+	for (int32 i = 0; i < BuildingEnumCount; i++) {
+		results.push_back(static_cast<CardEnum>(i));
+	}
+	return results;
 }
 
 

@@ -31,18 +31,18 @@ public:
 
 	void PunInit(ResourceEnum resourceEnumIn, FText sectionNameIn, int32 buildingIdIn, ECheckBoxState checkBoxState, bool isSection)
 	{
+		bool resourceEnumChanged = (resourceEnumIn != uiResourceEnum);
+		
 		sectionName = sectionNameIn;
 		buildingId = buildingIdIn;
 		uiResourceEnum = resourceEnumIn;
 		
 		AcceptBox->SetVisibility(ESlateVisibility::Visible);
-		if (AcceptBox->OnCheckStateChanged.GetAllObjects().Num() == 0) {
-			AcceptBox->OnCheckStateChanged.AddDynamic(this, &UManageStorageElement::OnCheckAllowResource);
-		}
+		AcceptBox->OnCheckStateChanged.Clear();
+		AcceptBox->OnCheckStateChanged.AddDynamic(this, &UManageStorageElement::OnCheckAllowResource);
 
-		if (ExpandArrow->OnClicked.GetAllObjects().Num() == 0) {
-			ExpandArrow->OnClicked.AddDynamic(this, &UManageStorageElement::OnClickExpandArrow);
-		}
+		ExpandArrow->OnClicked.Clear();
+		ExpandArrow->OnClicked.AddDynamic(this, &UManageStorageElement::OnClickExpandArrow);
 
 		IndentationSpacer->SetVisibility(isSection ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 
@@ -72,7 +72,11 @@ public:
 		else 
 		{
 			ResourceIcon->SetVisibility(ESlateVisibility::Visible);
-			SetResourceImage(ResourceIcon, resourceEnumIn, assetLoader());
+
+			if (resourceEnumChanged) {
+				SetResourceImage_MemoryLeak(ResourceIcon, resourceEnumIn, assetLoader());
+			}
+			
 			SetText(ResourceText, ResourceNameT(resourceEnumIn));
 
 			ExpandArrow->SetVisibility(ESlateVisibility::Collapsed);

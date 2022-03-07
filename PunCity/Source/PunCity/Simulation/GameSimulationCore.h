@@ -4648,7 +4648,6 @@ public:
 	// desync check
 	std::vector<std::vector<int32>> recentTickToHash; // tick, hash
 	DesyncEnum isDesynced = DesyncEnum::NotDesynced;
-	static const int32 DesyncWarningHashCount = 10; // 10 Hashes 100 sec
 	
 private:
 	int32 _tickCount = 0;

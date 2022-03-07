@@ -1598,7 +1598,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		}
 #endif
 
-		if (Time::Ticks() % (Time::TicksPerSecond * 10) == 0)
+		int32 TickHashInterval = PunSettings::Get("TickHashInterval");
+
+		if (Time::Ticks() % TickHashInterval == 0)
 		{
 			int32 tmp;
 			uint32_t randState = GameRand::RandState();
@@ -1610,7 +1612,12 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 				tmp,
 			});
 
-			
+			PUN_LOG("TickHash: TickHashInterval Time::Ticks():%d _currentInputHashes:%d tmp:%d", Time::Ticks(), _currentInputHashes, tmp);
+
+			const int32 TargetHashKeepingTicks = 100 * Time::TicksPerSecond;
+
+			//const int32 DesyncWarningHashCount = 10; // 10 Hashes 100 sec
+			const int32 DesyncWarningHashCount = TargetHashKeepingTicks / TickHashInterval; // 100 Hashes 100 sec
 			if (recentTickToHash.size() > DesyncWarningHashCount) {
 				recentTickToHash.erase(recentTickToHash.begin());
 			}
@@ -1792,7 +1799,10 @@ bool GameSimulationCore::ExecuteNetworkCommand(std::shared_ptr<FNetworkCommand> 
 	}
 
 //#if CHECK_TICKHASH
-	_currentInputHashes += command->GetTickHash();
+	int32 newTickHash = command->GetTickHash();
+	_currentInputHashes += newTickHash;
+
+	PUN_LOG("TickHash: ExecuteNetworkCommand tick:%d playerId:%d type:%d _currentInputHashes:%d newTickHash:%d", Time::Ticks(), command->playerId, command->commandType(), _currentInputHashes, newTickHash);
 //#endif
 
 #if KEEP_ACTION_HISTORY
@@ -1828,7 +1838,7 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 	if (cardEnum != CardEnum::BoarBurrow &&
 		parameters.playerId != -1)
 	{
-		_LOG(LogNetworkInput, "[%d] PlaceBuilding (pid:%d) %s %s", tempVariable, playerId, *BuildingInfo[parameters.buildingEnum].nameF(), *ToFString(parameters.area.ToString()));
+		_LOG(LogNetworkInput, "[%d] PlaceBuilding (pid:%d) %s %s faceDirection:%d", tempVariable, playerId, *BuildingInfo[parameters.buildingEnum].nameF(), *ToFString(parameters.area.ToString()), faceDirection);
 	}
 
 	// Don't allow building without bought card...
@@ -2733,12 +2743,11 @@ int32 GameSimulationCore::PlaceBuilding(FPlaceBuilding parameters)
 }
 
 void GameSimulationCore::PlaceDrag(FPlaceDrag parameters)
-{
-	_LOG(LogNetworkInput, " PlaceDrag pid:%d type:%d", parameters.playerId, parameters.placementType);
-	
+{	
 	TileArea area = parameters.area;
 	auto placementType = static_cast<PlacementType>(parameters.placementType);
-	//PUN_LOG("sim PlaceDrag: %d, %d, %d, %d", area.minX, area.minY, area.maxX, area.maxY);
+
+	_LOG(LogNetworkInput, " PlaceDrag pid:%d type:%d area(%d, %d, %d, %d)", parameters.playerId, parameters.placementType, area.minX, area.minY, area.maxX, area.maxY);
 
 	if (placementType == PlacementType::Gather) {
 		int32 markCount = _treeSystem->MarkArea(parameters.playerId, area, false, parameters.harvestResourceEnum);

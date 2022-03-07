@@ -414,7 +414,7 @@ public:
 	void SetHolderTypeAndTarget(int32 holderId, ResourceHolderType type, int32 target, ResourceSystem& resourceSys) {
 		_resourceCountCache = -1;
 
-		PUN_CHECK2(holderId < _holders.size());
+		PUN_CHECK3(holderId < _holders.size());
 		check(holderId < _holders.size());
 		
 		_holders[holderId].SetTarget(target);

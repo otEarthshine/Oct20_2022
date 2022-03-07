@@ -79,7 +79,7 @@ public:
 				}
 
 				auto questElement = CastChecked<UQuestScreenElement>(QuestBox->GetChildAt(shownIndex));
-				questElement->Setup(quest, this, CallbackEnum::QuestOpenDescription);
+				questElement->UpdateQuestElement(quest, this, CallbackEnum::QuestOpenDescription);
 				questElement->SetVisibility(ESlateVisibility::Visible);
 
 				shownIndex++;

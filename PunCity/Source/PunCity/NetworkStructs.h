@@ -289,7 +289,7 @@ class FBuildingCommand : public FNetworkCommand
 public:
 	virtual ~FBuildingCommand() {}
 
-	int32 buildingId;
+	int32 buildingId = -1;
 	int32 buildingTileId = -1; // Replay Only
 	CardEnum buildingEnum = CardEnum::None; // Replay Only
 
@@ -317,13 +317,13 @@ public:
 	virtual ~FPlaceBuilding() {}
 
 	PlacementType placementType = PlacementType::Building;
-	uint16 buildingEnum;
+	int32 buildingEnum = static_cast<int32>(CardEnum::None);
 	int32 intVar1 = 0; // Note TrailerMode - Farm: use buildingLevel to specify plant type (need after-edit..)
 
 	TileArea area; // Needed in the case for manipulable area
 	TileArea area2;
-	WorldTile2 center;
-	uint8 faceDirection;
+	WorldTile2 center = WorldTile2::Invalid;
+	int32 faceDirection = -1;
 	
 	bool useBoughtCard = false; //  Note TrailerMode - use useBoughtCard to specify if it is prebuilt
 	CardEnum useWildCard = CardEnum::None;
@@ -374,8 +374,8 @@ public:
 	TileArea area = TileArea::Invalid; // Needed in the case for manipulable area
 	TileArea area2 = TileArea::Invalid;
 	TArray<int32> path;
-	int32 placementType;
-	ResourceEnum harvestResourceEnum;
+	int32 placementType = -1;
+	ResourceEnum harvestResourceEnum = ResourceEnum::None;
 
 	bool isTrailerPreBuilt() { return static_cast<bool>(area2.minX); }
 
@@ -402,7 +402,7 @@ class FJobSlotChange final : public FBuildingCommand
 public:
 	virtual ~FJobSlotChange() {}
 
-	int32 allowedOccupants;
+	int32 allowedOccupants = 0;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::JobSlotChange; }
 
@@ -488,7 +488,7 @@ public:
 		SendGift,
 		SetProduceUntil,
 		SendImmigrants,
-	} genericCommandType;
+	} genericCommandType = Type::SendGift;
 
 	int32 intVar1 = -1;
 	int32 intVar2 = -1;
@@ -568,7 +568,12 @@ public:
 	int32 targetBuilderCount = -1;
 	int32 targetRoadMakerCount = -1;
 
-	NetworkCommandEnum commandType() override { return NetworkCommandEnum::SetTownPriority; }
+	virtual NetworkCommandEnum commandType() override { return NetworkCommandEnum::SetTownPriority; }
+
+	virtual int32 GetTickHash() override {
+		return FNetworkCommand::GetTickHash() + laborerPriority + builderPriority + roadMakerPriority + 
+													targetLaborerCount + targetBuilderCount + targetRoadMakerCount;
+	}
 
 	void Serialize(PunSerializedData& blob) override
 	{
@@ -590,7 +595,7 @@ public:
 	virtual ~FChangeName() {}
 
 	FString name;
-	int32 objectId;
+	int32 objectId = -1;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::ChangeName; }
 
@@ -632,8 +637,8 @@ public:
 
 	TArray<uint8> buyEnums;
 	TArray<int32> buyAmounts;
-	int32 totalGain;
-	int32 objectId;
+	int32 totalGain = -1;
+	int32 objectId = -1;
 	uint8 isIntercityTrade = 0;
 
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::TradeResource; }
@@ -715,7 +720,7 @@ public:
 	int32 tileId = -1;
 #endif
 	
-	int32 buildingId;
+	int32 buildingId = -1;
 	int32 upgradeLevel = -1; // use -1 if not needed
 	int32 upgradeType = -1;
 	int32 isShiftDown = false;
@@ -745,7 +750,7 @@ class FChangeWorkMode : public FBuildingCommand
 public:
 	virtual ~FChangeWorkMode() {}
 
-	int32 enumInt;
+	int32 enumInt = -1;
 
 	int32 intVar1 = -1;
 	int32 intVar2 = -1;
@@ -778,11 +783,11 @@ public:
 	virtual ~FPopupDecision() {}
 	NetworkCommandEnum commandType() final { return NetworkCommandEnum::PopupDecision; }
 
-	int32 replyReceiverIndex;
-	int8 choiceIndex;
-	int32 replyVar1;
-	int32 replyVar2;
-	int32 replyVar3;
+	int32 replyReceiverIndex = -1;
+	int8 choiceIndex = -1;
+	int32 replyVar1 = -1;
+	int32 replyVar2 = -1;
+	int32 replyVar3 = -1;
 
 	void Serialize(PunSerializedData& blob) final
 	{
@@ -1001,8 +1006,8 @@ public:
 	virtual ~FChooseLocation() {}
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::ChooseLocation; }
 
-	int32 provinceId;
-	int8 isChoosingOrReserving;
+	int32 provinceId = -1;
+	int8 isChoosingOrReserving = -1;
 
 	void Serialize(PunSerializedData& blob) override {
 		FNetworkCommand::Serialize(blob);
@@ -1087,12 +1092,12 @@ class FCheat : public FNetworkCommand
 {
 public:
 	virtual ~FCheat() {}
-	CheatEnum cheatEnum;
-	int32 var1;
-	int32 var2;
-	int32 var3;
-	int32 var4;
-	int32 var5;
+	CheatEnum cheatEnum = CheatEnum::Money;
+	int32 var1 = -1;
+	int32 var2 = -1;
+	int32 var3 = -1;
+	int32 var4 = -1;
+	int32 var5 = -1;
 	FString stringVar1;
 
 	NetworkCommandEnum commandType() override { return NetworkCommandEnum::Cheat; }

@@ -103,7 +103,7 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "LeanProfilingUI", 0 },
 	{ "LeanProfilingTicksInterval", 120 },
 	{ "LeanProfilingMin", 1 },
-	{ "LeanProfilingMaxMin", 1 },
+	{ "LeanProfilingMaxMin", 300 },
 
 	{ "DisplayProfilingUI", 0 },
 	

@@ -90,15 +90,72 @@ public:
 
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* PunBox;
 
+	/**
+	 * State Cache
+	 *  For performance optimization
+	 */
+	bool bLastShowBar = false;
+	bool bLastShowHouseUpgradeBar = false;
+	bool bLastHasSpeedBoost = false;
+
+	int32 LastCalculatedProtectionIncomeTick = -1;
+	int32 LastCalculatedProtectedProvinces = 0;
+	int32 LastCalculatedProtectionIncome100 = 0;
+
+	std::vector<int32> resourceIconsStateCache;
+
+	bool bLastVisible_Self = true;
+	void SetVisibility_Self(bool bNewVisible)
+	{
+		if (bLastVisible_Self != bNewVisible) {
+			bLastVisible_Self = bNewVisible;
+			SetVisibility(bNewVisible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+		}
+	}
+
+#define SET_VISIBILITY_FAST(widgetName, VisibleState) \
+	bool bLastVisible_##widgetName = true; \
+	void SetVisibility_##widgetName(bool bNewVisible) { \
+		if (bLastVisible_##widgetName != bNewVisible) { \
+			bLastVisible_##widgetName = bNewVisible; \
+			widgetName->SetVisibility(bNewVisible ? VisibleState : ESlateVisibility::Collapsed); \
+		} \
+	}
+
+	SET_VISIBILITY_FAST(ForeignLogo, ESlateVisibility::Visible)
+	SET_VISIBILITY_FAST(ForeignAllowBox, ESlateVisibility::SelfHitTestInvisible)
+	SET_VISIBILITY_FAST(LargeWhiteText, ESlateVisibility::Visible)
+	SET_VISIBILITY_FAST(MediumGrayText, ESlateVisibility::Visible)
+
+	SET_VISIBILITY_FAST(DepletedText, ESlateVisibility::SelfHitTestInvisible)
+
+	SET_VISIBILITY_FAST(HumanSlotsUI, ESlateVisibility::Visible)
+	
+	
+#undef SET_VISIBILITY_FAST
+
+
 public:
 	void PunInit(int buildingId, bool isHouse);
 
 	void SetShowHumanSlots(bool isVisible, bool canManipulateOccupants, bool isTileBld = false);
 	void SetShowBar(bool showBar, bool showHouseUpgradeBar = false) {
-		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobShowBars);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobShowBars);
+
+		//SetVisibility_HitTestInvisible(ProductionBarOverlay, showBar);
+		//SetVisibility_HitTestInvisible(HouseUpgradeCountdownBar, showHouseUpgradeBar);
+
+		SetVisibilityFast(ProductionBarOverlay, showBar, bLastShowBar);
+		SetVisibilityFast(HouseUpgradeCountdownBar, showHouseUpgradeBar, bLastShowHouseUpgradeBar);
 		
-		ProductionBarOverlay->SetVisibility(showBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-		HouseUpgradeCountdownBar->SetVisibility(showHouseUpgradeBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		//if (bLastShowBar != showBar) {
+		//	bLastShowBar = showBar;
+		//	ProductionBarOverlay->SetVisibility(showBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		//}
+		//if (bLastShowHouseUpgradeBar != showHouseUpgradeBar) {
+		//	bLastShowHouseUpgradeBar = showHouseUpgradeBar;
+		//	HouseUpgradeCountdownBar->SetVisibility(showHouseUpgradeBar ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		//}
 	}
 	void SetSlots(int filledSlotCount, int allowedSlotCount, int slotCount, FLinearColor color, bool fromInput = false);
 
@@ -106,7 +163,8 @@ public:
 
 	void SetBarFraction(float fraction) {
 		ProductionBar->GetDynamicMaterial()->SetScalarParameterValue(FName("Fraction"), fraction);
-		ProductionBarOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		//ProductionBarOverlay->SetVisibility(ESlateVisibility::HitTestInvisible);
+		SetVisibilityFast(ProductionBarOverlay, true, bLastShowBar);
 	}
 
 	void SetHouseBarFraction(float fraction) {
@@ -118,12 +176,14 @@ public:
 	void SetSpeedBoost(Building& building)
 	{
 		bool hasSpeedBoost = simulation().playerOwned(playerId()).HasSpeedBoost(building.buildingId());
-		SpeedBoostIcon->SetVisibility(hasSpeedBoost ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+
+		SetVisibilityFast(SpeedBoostIcon, hasSpeedBoost, bLastHasSpeedBoost);
+		//SpeedBoostIcon->SetVisibility(hasSpeedBoost ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 	}
 
 	void SetBuildingStatus(Building& building, JobUIState jobUIState)
 	{	
-		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobBldStatus);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobBldStatus);
 
 		auto isOwnedOrFastBuild = [&]() {
 			return building.ownedBy(playerId()) || PunSettings::IsOn("CheatFastBuild");
@@ -295,7 +355,7 @@ public:
 
 	void SetHoverWarning(Building& building)
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobHoverWarning);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobHoverWarning);
 		
 		// Refresh Hover Warning
 		// Check every sec
@@ -317,7 +377,9 @@ public:
 		{
 			//PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().nameStd()), static_cast<int>(building.hoverWarning));
 
-			DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			//DepletedText->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			SetVisibility_DepletedText(true);
+			
 			SetText(DepletedText, GetHoverWarningName(building.hoverWarning));
 
 			FLinearColor color(1.0, 0.05, 0.05);
@@ -329,7 +391,8 @@ public:
 			DepletedText->SetColorAndOpacity(color);
 		}
 		else {
-			DepletedText->SetVisibility(ESlateVisibility::Collapsed);
+			//DepletedText->SetVisibility(ESlateVisibility::Collapsed);
+			SetVisibility_DepletedText(false);
 		}
 	}
 	

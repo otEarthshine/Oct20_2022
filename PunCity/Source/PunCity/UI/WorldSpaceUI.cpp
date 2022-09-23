@@ -26,6 +26,8 @@
 
 using namespace std;
 
+//static int32 kTickCount = 0; // local tick count. Can't use Time::Tick() since it may be paused
+
 #define LOCTEXT_NAMESPACE "PunBoxWidget"
 
 void UWorldSpaceUI::SetupClasses(TSharedPtr<FSlateStyleSet> style, USceneComponent* worldWidgetParent)
@@ -117,13 +119,15 @@ FVector UWorldSpaceUI::GetBuildingTrueCenterDisplayLocation(int buildingId, floa
 
 void UWorldSpaceUI::TickWorldSpaceUI()
 {
-	LEAN_PROFILING_UI(TickWorldSpaceUI);
+	LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI);
 #if !UI_WORLDSPACE
 	return;
 #endif
 	if (!PunSettings::IsOn("UIWorldSpace")) {
 		return;
 	}
+
+	//kTickCount++;
 	
 	TickBuildings();
 	TickUnits();
@@ -182,7 +186,7 @@ void UWorldSpaceUI::TickBuildings()
 	 * Province UI
 	 */
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_Province);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Province);
 
 		int32 provinceMeshIndex = 0;
 		
@@ -320,7 +324,7 @@ void UWorldSpaceUI::TickBuildings()
 
 
 	{
-		LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickWorldSpaceUI_Building);
+		LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickWorldSpaceUI_Bld);
 
 		/*
 		 * Fill buildingIdsToDisplay
@@ -364,7 +368,7 @@ void UWorldSpaceUI::TickBuildings()
 				if (townhallUIActive &&
 					data->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap))
 				{
-					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
+					LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Bld_Townhall);
 					
 					TickTownhallInfo(buildingId, false);
 
@@ -393,7 +397,7 @@ void UWorldSpaceUI::TickBuildings()
 				if (townhallUIActive &&
 					data->ZoomDistanceBelow(WorldZoomTransition_Region4x4ToMap))
 				{
-					LEAN_PROFILING_UI(TickWorldSpaceUI_Townhall);
+					LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Bld_Outpost);
 					if (sim.townManagerBase(building.townId())->GetMinorCityLevel()) {
 						TickMinorTownInfo(building.townId());
 					}
@@ -404,7 +408,7 @@ void UWorldSpaceUI::TickBuildings()
 				//  (Zoom distance... 455 to 541)
 				if (zoomDistance < WorldZoomTransition_WorldSpaceUIHide) 
 				{
-					LEAN_PROFILING_UI(TickWorldSpaceUI_BldJob);
+					LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob);
 					
 					TickJobUI(buildingId);
 				}
@@ -413,7 +417,7 @@ void UWorldSpaceUI::TickBuildings()
 				}
 			}
 
-			LEAN_PROFILING_UI(TickWorldSpaceUI_BldOverlay);
+			LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Bld_Overlay);
 
 			auto isInOverlayRadiusHouse = [&](OverlayType overlayTypeCurrent, int32 minimumHouseLvl, int32 radius)
 			{
@@ -559,7 +563,7 @@ void UWorldSpaceUI::TickBuildings()
 
 		_iconTextHoverIcons.AfterAdd();
 
-	} // End TickWorldSpaceUI_Building
+	} // End TickWorldSpaceUI_Bld
 
 	
 
@@ -570,7 +574,7 @@ void UWorldSpaceUI::TickBuildings()
 	 */
 	if (zoomDistance < WorldZoomTransition_WorldSpaceUIHide)
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_BldFloatup);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldFloatup);
 		
 		for (const FloatupInfo& floatupInfo : _floatupInfos)
 		{
@@ -697,7 +701,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		int32 foreignBuilderId = building.foreignBuilderId();
 		if (foreignBuilderId != -1)
 		{
-			buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Visible);
+			//buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Visible);
+			buildingJobUI->SetVisibility_ForeignLogo(true);
 
 			FPlayerInfo playerInfo = dataSource()->playerInfo(foreignBuilderId);
 
@@ -714,11 +719,14 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			bool shouldShowForeignBuildingAllow = building.playerId() == playerId() &&
 				!building.isForeignBuildingApproved();
 
-			buildingJobUI->ForeignAllowBox->SetVisibility(shouldShowForeignBuildingAllow ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			//buildingJobUI->ForeignAllowBox->SetVisibility(shouldShowForeignBuildingAllow ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			buildingJobUI->SetVisibility_ForeignAllowBox(shouldShowForeignBuildingAllow);
 		}
 		else {
-			buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Collapsed);
-			buildingJobUI->ForeignAllowBox->SetVisibility(ESlateVisibility::Collapsed);
+			//buildingJobUI->ForeignLogo->SetVisibility(ESlateVisibility::Collapsed);
+			//buildingJobUI->ForeignAllowBox->SetVisibility(ESlateVisibility::Collapsed);
+			buildingJobUI->SetVisibility_ForeignLogo(false);
+			buildingJobUI->SetVisibility_ForeignAllowBox(false);
 		}
 	};
 	
@@ -728,7 +736,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	bool isTileBld = IsRoad(building.buildingEnum()) || building.isEnum(CardEnum::Fence);
 	if (isTileBld)
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobTile);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobTile);
 		
 		UBuildingJobUI* buildingJobUI = GetJobUI(buildingId, 10);
 		
@@ -750,48 +758,39 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	}
 
 	int32 jobUIHeight = 25;
-	if (building.isEnum(CardEnum::Windmill)) {
-		jobUIHeight = 50;
-	}
-
-	UBuildingJobUI* buildingJobUI = GetJobUI(buildingId, jobUIHeight);
-
-	DescriptionUIState uiState = simulation().descriptionUIState();
-	_uiStateDirty = (uiState != _lastUIState);
-	_lastUIState = uiState;
-
-	//bool shouldUpdateUI = uiStateDirty || buildingJobUI->justInitializedUI || building.isBuildingUIDirty();
-	//if (!shouldUpdateUI) {
-	//	return;
-	//}
-	//building.SetBuildingUIDirty(false);
-	
-
-	// Special case hide when constructed
-	if (building.isConstructed())
+	UBuildingJobUI* buildingJobUI;
 	{
-		//switch(building.buildingEnum())
-		//{
-		//case CardEnum::StorageYard:
-		//	buildingJobUI->SetVisibility(ESlateVisibility::Collapsed);
-		//	return;
-		//default:
-		//	break;
-		//}
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_Pre);
+
+		if (building.isEnum(CardEnum::Windmill)) {
+			jobUIHeight = 50;
+		}
+
+		buildingJobUI = GetJobUI(buildingId, jobUIHeight);
+
+		DescriptionUIState uiState = simulation().descriptionUIState();
+		_uiStateDirty = (uiState != _lastUIState);
+		_lastUIState = uiState;
 	}
-	buildingJobUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-	buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
-	buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+	{
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_Pre2);
+		
+		//buildingJobUI->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		buildingJobUI->SetVisibility_Self(true);
 
-	
-	setForeignLogo(buildingJobUI);
-	
+		//buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
+		//buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+		buildingJobUI->SetVisibility_MediumGrayText(false);
+		buildingJobUI->SetVisibility_LargeWhiteText(false);
+		
+		setForeignLogo(buildingJobUI);
+	}
 
 	// Under construction
 	if (!building.isConstructed())
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobUC);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobUC);
 		
 		if (building.shouldDisplayConstructionUI())
 		{
@@ -840,7 +839,8 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			buildingJobUI->SetSpeedBoost(building);
 		}
 		else {
-			buildingJobUI->SetVisibility(ESlateVisibility::Collapsed);
+			//buildingJobUI->SetVisibility(ESlateVisibility::Collapsed);
+			buildingJobUI->SetVisibility_Self(false);
 		}
 		return;
 	}
@@ -856,7 +856,7 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	{
 		if (IsHumanHouse(building.buildingEnum()))
 		{
-			LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobHouse);
+			LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobHouse);
 			
 			FLinearColor lightGreen(0.7, 1, 0.7);
 
@@ -887,8 +887,10 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			// Spy
 			if (house.spyPlayerId() == playerId())
 			{
-				buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Visible);
-				buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+				//buildingJobUI->LargeWhiteText->SetVisibility(ESlateVisibility::Visible);
+				//buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+				buildingJobUI->SetVisibility_LargeWhiteText(true);
+				buildingJobUI->SetVisibility_MediumGrayText(true);
 
 				buildingJobUI->LargeWhiteText->SetText(LOCTEXT("Spy Nest", "Spy Nest"));
 
@@ -915,10 +917,13 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	//! DiplomaticBuilding
 	if (IsForeignOnlyBuilding(building.buildingEnum()))
 	{
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_ForeignOnly);
+		
 		if (building.foreignBuilderId() == playerId() ||
 			building.playerId() == playerId())
 		{
-			buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+			//buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+			buildingJobUI->SetVisibility_MediumGrayText(true);
 
 			int32 influenceIncome100 = building.subclass<DiplomaticBuilding>().influenceIncome100(playerId());
 
@@ -934,27 +939,35 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 	//! Fort
 	if (building.isEnum(CardEnum::Fort))
 	{
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_Fort);
+		
 		if (building.playerId() == playerId())
 		{
-			buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+			//buildingJobUI->MediumGrayText->SetVisibility(ESlateVisibility::Visible);
+			buildingJobUI->SetVisibility_MediumGrayText(true);
+			
+			if (Time::Ticks() - buildingJobUI->LastCalculatedProtectionIncomeTick > Time::TicksPerSecond) 
+			{
+				buildingJobUI->LastCalculatedProtectionIncomeTick = Time::Ticks();
 
-			// Show provinces protected, and income increase
-			int32 protectedProvinces = 0;
-			int32 protectionIncome100 = 0;
-			const std::vector<int32>& provinceIds = simulation().townManager(building.playerId()).provincesClaimed();
-			for (int32 provinceId : provinceIds) {
-				if (simulation().provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe) {
-					protectedProvinces++;
-					protectionIncome100 += simulation().GetProvinceIncome100(provinceId) * 2 / 3;
+				// Show provinces protected, and income increase
+				int32 protectedProvinces = 0;
+				int32 protectionIncome100 = 0;
+				const std::vector<int32>& provinceIds = simulation().townManager(building.playerId()).provincesClaimed();
+				for (int32 provinceId : provinceIds) {
+					if (simulation().provinceInfoSystem().provinceOwnerInfo(provinceId).isSafe) {
+						protectedProvinces++;
+						protectionIncome100 += simulation().GetProvinceIncome100(provinceId) * 2 / 3;
+					}
 				}
-			}
 
-			buildingJobUI->MediumGrayText->SetText(FText::Format(
-				LOCTEXT("Fort Hover Text", "Protected Provinces: {0}/{1}\nProtection Income: +{2}<img id=\"Coin\"/>"),
-				TEXT_NUM(protectedProvinces),
-				TEXT_NUM(provinceIds.size()),
-				TEXT_100(protectionIncome100)
-			));
+				buildingJobUI->MediumGrayText->SetText(FText::Format(
+					LOCTEXT("Fort Hover Text", "Protected Provinces: {0}/{1}\nProtection Income: +{2}<img id=\"Coin\"/>"),
+					TEXT_NUM(protectedProvinces),
+					TEXT_NUM(provinceIds.size()),
+					TEXT_100(protectionIncome100)
+				));
+			}
 		}
 		else if (!simulation().townManager(building.townId()).GetDefendingClaimProgress(building.provinceId()).isValid()) // no battle here
 		{
@@ -963,56 +976,83 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 
 		return;
 	}
-	
-	
 
-	LeanProfiler leanProfilerOuter(LeanProfilerEnum::TickWorldSpaceUI_BldJobWork);
-
-	// Non-house finished buildings beyond this
-	bool showOccupants = building.maxOccupants() > 0;
-
-	// Processor/Trader ... show progress bar
-	// !!! If not building's Floatup isn't shown... Add it herre
-	bool showJobUI = IsProducerProcessor(building.buildingEnum()) ||
-						IsSpecialProducer(building.buildingEnum()) ||
-						IsTradingPostLike(building.buildingEnum()) ||
-						building.isEnum(CardEnum::TradingCompany) ||
-						building.isEnum(CardEnum::SpyCenter) ||
-						building.isEnum(CardEnum::Zoo) ||
-						building.isEnum(CardEnum::Museum) ||
-						building.isEnum(CardEnum::CardCombiner) ||
-						building.isEnum(CardEnum::Caravansary) ||
-						building.isEnum(CardEnum::Hotel) ||
-						building.isEnum(CardEnum::WorldTradeOffice) ||
-						//IsBarrack(building.buildingEnum()) ||
-
-						building.isEnum(CardEnum::Farm) ||
-						building.isEnum(CardEnum::HuntingLodge) ||
-						building.isEnum(CardEnum::FruitGatherer) ||
-						building.isEnum(CardEnum::ShippingDepot) ||
-						building.isEnum(CardEnum::IntercityLogisticsHub) ||
-						building.isEnum(CardEnum::IntercityLogisticsPort) ||
-						IsStorage(building.buildingEnum()) || // TODO: may be this is for all buildings??
-
-						building.isEnum(CardEnum::JobManagementBureau) ||
-						building.isEnum(CardEnum::StatisticsBureau);
-
-	// Every buildings can be boosted
-	buildingJobUI->SetSpeedBoost(building);
-	
-	if (jobUIState == JobUIState::Job)
 	{
-		if (showOccupants || showJobUI)
-		{
-			bool canManipulateOccupant = showOccupants && playerId() == building.playerId();
-			buildingJobUI->SetShowHumanSlots(showOccupants, canManipulateOccupant);
-			buildingJobUI->SetShowBar(false);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_SpeedBoost);
+		
+		// Every buildings can be boosted
+		buildingJobUI->SetSpeedBoost(building);
+	}
 
-			if (showOccupants) {
-				buildingJobUI->SetSlots(building.occupantCount(), building.allowedOccupants(), building.maxOccupants(), FLinearColor::White);
-			} else {
-				buildingJobUI->SetSlots(0, 0, 0, FLinearColor::White);
+	{
+
+		// Non-house finished buildings beyond this
+		bool showOccupants = building.maxOccupants() > 0;
+
+		// Processor/Trader ... show progress bar
+		// !!! If not building's Floatup isn't shown... Add it herre
+		bool showJobUI;
+		{
+			LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_showJobUI);
+			
+			showJobUI = IsProducerProcessor(building.buildingEnum()) ||
+				IsSpecialProducer(building.buildingEnum()) ||
+				IsTradingPostLike(building.buildingEnum()) ||
+				building.isEnum(CardEnum::TradingCompany) ||
+				building.isEnum(CardEnum::SpyCenter) ||
+				building.isEnum(CardEnum::Zoo) ||
+				building.isEnum(CardEnum::Museum) ||
+				building.isEnum(CardEnum::CardCombiner) ||
+				building.isEnum(CardEnum::Caravansary) ||
+				building.isEnum(CardEnum::Hotel) ||
+				building.isEnum(CardEnum::WorldTradeOffice) ||
+				//IsBarrack(building.buildingEnum()) ||
+
+				building.isEnum(CardEnum::Farm) ||
+				building.isEnum(CardEnum::HuntingLodge) ||
+				building.isEnum(CardEnum::FruitGatherer) ||
+				building.isEnum(CardEnum::ShippingDepot) ||
+				building.isEnum(CardEnum::IntercityLogisticsHub) ||
+				building.isEnum(CardEnum::IntercityLogisticsPort) ||
+				IsStorage(building.buildingEnum()) || // TODO: may be this is for all buildings??
+
+				building.isEnum(CardEnum::JobManagementBureau) ||
+				building.isEnum(CardEnum::StatisticsBureau);
+		}
+
+
+		if (jobUIState == JobUIState::Job)
+		{
+			LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_Job);
+			
+			if (showOccupants || showJobUI)
+			{
+				bool canManipulateOccupant = showOccupants && playerId() == building.playerId();
+				buildingJobUI->SetShowHumanSlots(showOccupants, canManipulateOccupant);
+				buildingJobUI->SetShowBar(false);
+
+				if (showOccupants) {
+					buildingJobUI->SetSlots(building.occupantCount(), building.allowedOccupants(), building.maxOccupants(), FLinearColor::White);
+				}
+				else {
+					buildingJobUI->SetSlots(0, 0, 0, FLinearColor::White);
+				}
+
+				if (showJobUI) {
+					buildingJobUI->SetBuildingStatus(building, jobUIState);
+					buildingJobUI->SetHoverWarning(building);
+				}
+
+				return;
 			}
+		}
+		else
+		{
+			LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_NonJob);
+			
+			// Always show the progress
+			buildingJobUI->SetShowHumanSlots(false, false);
+			buildingJobUI->SetShowBar(false);
 
 			if (showJobUI) {
 				buildingJobUI->SetBuildingStatus(building, jobUIState);
@@ -1022,24 +1062,12 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 			return;
 		}
 	}
-	else
-	{
-		// Always show the progress
-		buildingJobUI->SetShowHumanSlots(false, false);
-		buildingJobUI->SetShowBar(false);
-
-		if (showJobUI) {
-			buildingJobUI->SetBuildingStatus(building, jobUIState);
-			buildingJobUI->SetHoverWarning(building);
-		}
-
-		return;
-	}
-	
 
 	// Always show stars
 	if (building.level() > 0)
 	{
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_Star);
+		
 		buildingJobUI->SetShowHumanSlots(false, false);
 		buildingJobUI->SetShowBar(false);
 
@@ -1127,7 +1155,7 @@ void UWorldSpaceUI::TickUnits()
 	auto& unitLists = sim.unitSystem().unitSubregionLists();
 
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_Unit);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Unit);
 		
 		// TODO: don't do accumulation and use ExecuteRegion directly??
 		for (int32_t sampleRegionId : sampleRegionIds) {
@@ -1145,7 +1173,7 @@ void UWorldSpaceUI::TickUnits()
 
 	if (!PunSettings::IsOn("SuppressHoverIcon"))
 	{
-		LEAN_PROFILING_UI(TickWorldSpaceUI_Unit2);
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Unit2);
 
 		for (auto it : townIdToUnitIdsToDisplay)
 		{
@@ -1280,7 +1308,7 @@ void UWorldSpaceUI::TickUnits()
 
 void UWorldSpaceUI::TickMap()
 {
-	LEAN_PROFILING_UI(TickWorldSpaceUI_Map);
+	LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_Map);
 	
 	if (InterfacesInvalid()) return;
 

@@ -1143,6 +1143,17 @@ void CandleMaker::FinishConstruction() {
 	});
 }
 
+/*
+ * CheeseMaker
+ */
+void CheeseMaker::FinishConstruction() {
+	Building::FinishConstruction();
+
+	AddUpgrades({
+		MakeProductionUpgrade(LOCTEXT("Specialized Tools", "Specialized Tools"), ResourceEnum::IronTools, ProductionUpgrade30),
+		MakeComboUpgrade(LOCTEXT("Cheese Maker Guild", "Cheese Maker Guild"), ResourceEnum::Brick),
+	});
+}
 
 /*
  * CottonMill

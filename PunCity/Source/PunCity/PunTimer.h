@@ -158,7 +158,11 @@ struct ScopeTimerLoop
 	entry(TickDisplayMisc) \
 	entry(TickMiniBuildingDisplay) \
 	entry(TickBuildingDisplay) \
-	entry(TickBuildingLOD2Display)
+	entry(TickBuildingLOD2Display) \
+	\
+	entry(TestCityNetworkStage) \
+	entry(TestCityNetworkStage2) \
+	entry(TestCityNetworkStage3)
 
 #define UI_PROFILING_LIST(entry) \
 	entry(TickMainGameUI) \
@@ -180,6 +184,19 @@ struct ScopeTimerLoop
 	entry(TickMainGameUI_LeftResources) \
 	entry(TickMainGameUI_TechBar) \
 	entry(TickMainGameUI_JobPrior) \
+	entry(TickMainGameUI_MidScreenMessage) \
+	entry(TickMainGameUI_CardInventory) \
+	entry(TickMainGameUI_CardInventory_Pre) \
+	entry(TickMainGameUI_CardInventory_Loop) \
+	entry(TickMainGameUI_CardInventory_PunInit) \
+	entry(TickMainGameUI_CardInventory_SetCardStatus) \
+	entry(TickMainGameUI_CardInventory_RefreshBuildingIcon) \
+	entry(TickMainGameUI_ReinforcementUI) \
+	entry(TickMainGameUI_CardSetsUI) \
+	entry(TickMainGameUI_ShowDebugExtra) \
+	entry(TickMainGameUI_ZoomDistance) \
+	entry(TickMainGameUI_TEST1) \
+	entry(TickMainGameUI_TEST2) \
 	entry(TickPopupUI) \
 	entry(TickQuestUI) \
 	entry(TickPlayerDetails) \
@@ -189,27 +206,6 @@ struct ScopeTimerLoop
 	entry(TickChatUI) \
 	entry(TickDebugUI) \
 	entry(TickTopLayerGameUI) \
-	entry(TickWorldSpaceUI) \
-	entry(TickWorldSpaceUI_Building) \
-	entry(TickWorldSpaceUI_Townhall) \
-	entry(TickWorldSpaceUI_BldJob) \
-	entry(TickWorldSpaceUI_BldJobTile) \
-	entry(TickWorldSpaceUI_BldJobUC) \
-	entry(TickWorldSpaceUI_BldJobHouse) \
-	entry(TickWorldSpaceUI_BldJobWork) \
-	entry(TickWorldSpaceUI_BldJobHumanSlots) \
-	entry(TickWorldSpaceUI_BldJobShowBars) \
-	entry(TickWorldSpaceUI_BldJobSetSlots) \
-	entry(TickWorldSpaceUI_BldJobBldStatus) \
-	entry(TickWorldSpaceUI_BldJobResourceComplete) \
-	entry(TickWorldSpaceUI_BldJobHoverWarning) \
-	entry(TickWorldSpaceUI_BldOverlay) \
-	entry(TickWorldSpaceUI_Province) \
-	entry(TickWorldSpaceUI_BldFloatup) \
-	entry(TickWorldSpaceUI_Unit) \
-	entry(TickWorldSpaceUI_Unit2) \
-	entry(TickWorldSpaceUI_GetHoverUI) \
-	entry(TickWorldSpaceUI_Map) \
 	entry(TickObjDescriptionUI) \
 	entry(TickWorldTradeUI) \
 	entry(TickIntercityTradeUI) \
@@ -219,6 +215,56 @@ struct ScopeTimerLoop
 	entry(TickDiplomacyUI) \
 	entry(TickTechTreeUI) \
 	entry(TickStatisticsUI)
+
+#define WORLD_UI_PROFILING_LIST(entry) \
+	entry(TickWorldSpaceUI) \
+	entry(TickWorldSpaceUI_Bld) \
+	entry(TickWorldSpaceUI_Bld_Townhall) \
+	entry(TickWorldSpaceUI_Bld_Outpost) \
+	entry(TickWorldSpaceUI_Bld_Overlay) \
+	entry(TickWorldSpaceUI_BldJob) \
+	entry(TickWorldSpaceUI_BldJobTile) \
+	entry(TickWorldSpaceUI_BldJob_Pre) \
+	entry(TickWorldSpaceUI_BldJob_Pre2) \
+	entry(TickWorldSpaceUI_BldJob_PunInit) \
+	entry(TickWorldSpaceUI_BldJobUC) \
+	entry(TickWorldSpaceUI_BldJobHouse) \
+	entry(TickWorldSpaceUI_BldJob_ForeignOnly) \
+	entry(TickWorldSpaceUI_BldJob_Fort) \
+	entry(TickWorldSpaceUI_BldJob_SpeedBoost) \
+	entry(TickWorldSpaceUI_BldJob_showJobUI) \
+	entry(TickWorldSpaceUI_BldJob_Job) \
+	entry(TickWorldSpaceUI_BldJob_NonJob) \
+	entry(TickWorldSpaceUI_BldJob_Star) \
+	entry(TickWorldSpaceUI_BldJobHumanSlots) \
+	entry(TickWorldSpaceUI_BldJobShowBars) \
+	entry(TickWorldSpaceUI_BldJobSetSlots) \
+	entry(TickWorldSpaceUI_BldJobBldStatus) \
+	entry(TickWorldSpaceUI_BldJobResourceComplete) \
+	entry(TickWorldSpaceUI_BldJobResourceComplete_In) \
+	entry(TickWorldSpaceUI_BldJobResourceComplete_Out) \
+	entry(TickWorldSpaceUI_BldJobHoverWarning) \
+	entry(TickWorldSpaceUI_Province) \
+	entry(TickWorldSpaceUI_BldFloatup) \
+	entry(TickWorldSpaceUI_Unit) \
+	entry(TickWorldSpaceUI_Unit2) \
+	entry(TickWorldSpaceUI_GetHoverUI) \
+	entry(TickWorldSpaceUI_Map) \
+	entry(TickWorldSpaceUI_TEST1) \
+	entry(TickWorldSpaceUI_TEST2) \
+	entry(TickWorldSpaceUI_TEST3) \
+	entry(TickWorldSpaceUI_TEST4) \
+	entry(TickWorldSpaceUI_TEST5) \
+	entry(TickWorldSpaceUI_TEST6) \
+	entry(TickWorldSpaceUI_TEST7) \
+	entry(TickWorldSpaceUI_TEST8) \
+	entry(TickWorldSpaceUI_TEST9) \
+	entry(TickWorldSpaceUI_TEST01) \
+	entry(TickWorldSpaceUI_TEST02) \
+	entry(TickWorldSpaceUI_TEST03) \
+	entry(TickWorldSpaceUI_TEST04) \
+	entry(TickWorldSpaceUI_TEST05) \
+	entry(TickWorldSpaceUI_TEST0) // TickWorldSpaceUI_TEST5 is used to mark the end of UI LeanProfiling
 
 
 #define RESOURCE_PROFILING_LIST(entry) \
@@ -248,7 +294,28 @@ struct ScopeTimerLoop
 
 
 
-
+#define PATH_PROFILING_LIST(entry) \
+	\
+	entry(TickSim_CheckIntegrity) \
+	entry(TickSim_Commands) \
+	entry(TickSim_Replays) \
+	entry(TickSim_Pre) \
+	\
+	entry(P_FindPath) \
+	entry(P_FindPathAnimal) \
+	entry(P_FindPathRoadOnly) \
+	entry(P_FindPathRobust) \
+	\
+	entry(IsConnected) \
+	entry(IsConnectedBuilding) \
+	entry(FindNearestBuildingId) \
+	entry(FindNearestMark) \
+	entry(FindNearestMark_IsReserved) \
+	entry(FindNearestMark_TryAccessNonWalkableTile) \
+	entry(FindNearestMark_TryAccessNonWalkableTile_Cached) \
+	entry(FindNearestMark_TryAccessNonWalkableTile_Full) \
+	entry(FindNearestMark_TryAccessNonWalkableTile_Update) \
+	entry(TreeSystemTick_CacheUpdate) 
 
 
 
@@ -267,20 +334,25 @@ struct ScopeTimerLoop
 #if USE_UI_PROFILING
 		UI_PROFILING_LIST(CREATE_ENUM)
 #endif
+
+#if USE_WORLD_UI_PROFILING
+		WORLD_UI_PROFILING_LIST(CREATE_ENUM)
+#endif
 		
 #if USE_RESOURCE_PROFILING
 		RESOURCE_PROFILING_LIST(CREATE_ENUM)
 #endif
 
 #if USE_PATH_PROFILING
-		P_FindPath, // Also ResourceProfiling Count;
-		P_FindPathAnimal,
-		P_FindPathRoadOnly,
-		P_FindPathRobust,
-		
-		IsConnected,
-		IsConnectedBuilding,
-		FindNearestBuildingId,
+		PATH_PROFILING_LIST(CREATE_ENUM)
+		//P_FindPath, // Also ResourceProfiling Count;
+		//P_FindPathAnimal,
+		//P_FindPathRoadOnly,
+		//P_FindPathRobust,
+		//
+		//IsConnected,
+		//IsConnectedBuilding,
+		//FindNearestBuildingId,
 #endif
 
 #if USE_UNIT_PROFILING
@@ -377,20 +449,25 @@ struct ScopeTimerLoop
 #if USE_UI_PROFILING
 		UI_PROFILING_LIST(CREATE_STRINGS)
 #endif
+
+#if USE_WORLD_UI_PROFILING
+		WORLD_UI_PROFILING_LIST(CREATE_STRINGS)
+#endif
 		
 #if USE_RESOURCE_PROFILING
 		RESOURCE_PROFILING_LIST(CREATE_STRINGS)
 #endif
 
 #if USE_PATH_PROFILING
-		"P_FindPath",
-		"P_FindPathAnimal",
-		"P_FindPathRoadOnly",
-		"P_FindPathRobust",
+		PATH_PROFILING_LIST(CREATE_STRINGS)
+		//"P_FindPath",
+		//"P_FindPathAnimal",
+		//"P_FindPathRoadOnly",
+		//"P_FindPathRobust",
 
-		"IsConnected",
-		"IsConnectedBuilding",
-		"FindNearestBuildingId",
+		//"IsConnected",
+		//"IsConnectedBuilding",
+		//"FindNearestBuildingId",
 #endif
 
 #if USE_UNIT_PROFILING
@@ -550,48 +627,60 @@ struct ScopeTimerLoop
 		}
 	};
 
-#define LEAN_PROFILING(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+
+#define LEAN_PROFILING_BASE(leanProfilerEnum) \
+	__pragma(warning(suppress: 4456)) \
+	LeanProfiler leanProfiler(leanProfilerEnum);
+
+
+#define LEAN_PROFILING(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::##leanProfilerEnumName);
 
 #if USE_RESOURCE_PROFILING
-	#define LEAN_PROFILING_R(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::R_##leanProfilerEnumName);
+	#define LEAN_PROFILING_R(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::R_##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_R(leanProfilerEnumName)
 #endif
 
 #if USE_PATH_PROFILING
-	#define LEAN_PROFILING_P(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::P_##leanProfilerEnumName);
+	#define LEAN_PROFILING_P(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::P_##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_P(leanProfilerEnumName)
 #endif
 
 #if USE_UNIT_PROFILING
-	#define LEAN_PROFILING_U(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::U_##leanProfilerEnumName);
+	#define LEAN_PROFILING_U(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::U_##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_U(leanProfilerEnumName)
 #endif
 
 #if USE_TRYCALC_PROFILING
-	#define LEAN_PROFILING_T(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+	#define LEAN_PROFILING_T(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_T(leanProfilerEnumName)
 #endif
 
 #if USE_ACTION_PROFILING
-	#define LEAN_PROFILING_A(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+	#define LEAN_PROFILING_A(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_A(leanProfilerEnumName)
 #endif
 
 #if USE_DISPLAY_PROFILING
-	#define LEAN_PROFILING_D(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+	#define LEAN_PROFILING_D(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_D(leanProfilerEnumName)
 #endif
 
 #if USE_UI_PROFILING
-	#define LEAN_PROFILING_UI(leanProfilerEnumName) LeanProfiler leanProfiler(LeanProfilerEnum::##leanProfilerEnumName);
+	#define LEAN_PROFILING_UI(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::##leanProfilerEnumName);
 #else
 	#define LEAN_PROFILING_UI(leanProfilerEnumName)
+#endif
+
+#if USE_WORLD_UI_PROFILING
+	#define LEAN_PROFILING_WORLD_UI(leanProfilerEnumName) LEAN_PROFILING_BASE(LeanProfilerEnum::##leanProfilerEnumName);
+#else
+	#define LEAN_PROFILING_WORLD_UI(leanProfilerEnumName)
 #endif
 
 #else
@@ -606,3 +695,95 @@ struct ScopeTimerLoop
 	#define LEAN_PROFILING_D(leanProfilerEnumName)
 
 #endif
+
+/**
+ * Lean Call Counter
+ * - Count number of calls in a function
+ * Better than LeanProfiler for:
+ * - finding edge-case with max calls (function that called another one too many times)
+ *
+ * TODO: Finish this
+ * 
+ */
+
+//enum class LeanCallCounterEnum
+//{
+//	FindNearestMark_TryAccessNonWalkableTile_Cached,
+//	FindNearestMark_TryAccessNonWalkableTile_Full,
+//};
+//
+//static const TArray<FString> LeanCallCounterDescription
+//{
+//	"FindNearestMark_TryAccessNonWalkableTile_Cached",
+//	"FindNearestMark_TryAccessNonWalkableTile_Full",
+//};
+//
+//struct LeanCallCounterElement
+//{
+//	LeanCallCounterEnum profilerEnum;
+//	int32 count;
+//	long long nanosecondsSum;
+//
+//	long long tickNanosecondsSum;
+//	long long maxTickNanosecondsSum;
+//};
+//
+//struct LeanCallCounter
+//{
+//	int32 callCount = 0;
+//	LeanCallCounterEnum callEnum = LeanCallCounterEnum::FindNearestMark_TryAccessNonWalkableTile_Cached;
+//
+//	static std::vector<LeanCallCounterEnum> EnumToElements;
+//	static std::vector<LeanCallCounterEnum> LastEnumToElements;
+//
+//	LeanCallCounter() {}
+//
+//	LeanCallCounter(LeanCallCounterEnum callEnumIn) {
+//		callEnum = callEnumIn;
+//
+//		if (EnumToElements.size() < LeanCallCounterDescription.Num()) {
+//			for (int32 i = 0; i < LeanCallCounterDescription.Num(); i++) {
+//				EnumToElements.push_back({ static_cast<LeanCallCounterEnum>(i), 0, 0 });
+//				LastEnumToElements.push_back({ static_cast<LeanCallCounterEnum>(i), 0, 0 });
+//			}
+//		}
+//	}
+//
+//	~LeanProfiler()
+//	{
+//		auto time2 = std::chrono::high_resolution_clock::now();
+//		auto time_span = std::chrono::duration_cast<std::chrono::nanoseconds>(time2 - time1);
+//
+//		auto nanoseconds = time_span.count();
+//		EnumToElements[static_cast<long long>(timerEnum)].count++;
+//		EnumToElements[static_cast<long long>(timerEnum)].nanosecondsSum += nanoseconds;
+//		EnumToElements[static_cast<long long>(timerEnum)].tickNanosecondsSum += nanoseconds;
+//	}
+//
+//	static void FinishInterval(int32 startIndex, int32 endIndex)
+//	{
+//		check(endIndex < EnumToElements.size());
+//
+//		for (int32 i = startIndex; i <= endIndex; i++)
+//		{
+//			LastEnumToElements[i] = EnumToElements[i];
+//
+//			EnumToElements[i].count = 0;
+//			EnumToElements[i].nanosecondsSum = 0;
+//
+//			EnumToElements[i].tickNanosecondsSum = 0;
+//			EnumToElements[i].maxTickNanosecondsSum = 0;
+//		}
+//	}
+//
+//	static void FinishTick(int32 startIndex, int32 endIndex)
+//	{
+//		check(endIndex < EnumToElements.size());
+//
+//		for (int32 i = startIndex; i <= endIndex; i++)
+//		{
+//			EnumToElements[i].maxTickNanosecondsSum = std::max(EnumToElements[i].maxTickNanosecondsSum, EnumToElements[i].tickNanosecondsSum);
+//			EnumToElements[i].tickNanosecondsSum = 0;
+//		}
+//	}
+//};

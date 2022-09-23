@@ -38,8 +38,11 @@ public:
 
 	void LoadBuildingSets(UAssetLoaderComponent* assetLoader)
 	{
-		LoadBuildingSets(assetLoader, FactionEnum::Europe);
-		LoadBuildingSets(assetLoader, FactionEnum::Arab);
+		//LoadBuildingSets(assetLoader, FactionEnum::Europe);
+		//LoadBuildingSets(assetLoader, FactionEnum::Arab);
+		for (int32 i = 0; i < FactionEnumCount; i++) {
+			LoadBuildingSets(assetLoader, static_cast<FactionEnum>(i));
+		}
 	}
 
 	// Things that gets added when zoomed out

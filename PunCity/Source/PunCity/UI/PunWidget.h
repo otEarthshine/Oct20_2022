@@ -233,6 +233,7 @@ public:
 		textBlock->SetText(str);
 	}
 	
+	// TODO: Eventually remove this?
 	static void SetTextNumber(UTextBlock* textBlock, float value, int32 precision) {
 		std::stringstream ss;
 		ss.precision(precision);
@@ -515,7 +516,43 @@ public:
 			}
 		}
 	}
-	
+
+
+	/**
+	 * Optimizations
+	 */
+	static TMap<uint32, bool> WidgetUniqueIdToVisibility;
+	static void SetVisibility_HitTestInvisible(UWidget* widget, bool bIsVisible)
+	{
+		if (auto Value = WidgetUniqueIdToVisibility.Find(widget->GetUniqueID())) {
+			if (*Value != bIsVisible) {
+				*Value = bIsVisible;
+				widget->SetVisibility(bIsVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+			}
+		}
+		else {
+			WidgetUniqueIdToVisibility.Add(widget->GetUniqueID(), bIsVisible);
+			widget->SetVisibility(bIsVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		}
+	}
+
+	static void SetVisibilityFast(UWidget* widget, bool bIsVisible, bool& bLastIsVisible)
+	{
+		if (bLastIsVisible != bIsVisible) {
+			bLastIsVisible = bIsVisible;
+			widget->SetVisibility(bIsVisible ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		}
+	}
+
+	// Note: HashAdd with IsStateChanged global isn't too different from this performance-wise
+	static bool IsStateChanged(int32 newState, int32& lastState)
+	{
+		if (lastState != newState) {
+			lastState = newState;
+			return true;
+		}
+		return false;
+	}
 
 public:
 
@@ -542,3 +579,90 @@ protected:
 private:
 	UPROPERTY() TScriptInterface<IPunHUDInterface> _punHUD;
 };
+
+
+/**
+ * SET_TEXT with state check for performance
+ */
+class PunGlobalHashCache
+{
+public:
+	static TMap<uint32, uint32> TextUniqueIdToStateHash;
+
+	static bool IsStateChanged(UObject* object, uint32 stateHash)
+	{
+		if (auto Value = TextUniqueIdToStateHash.Find(object->GetUniqueID())) {
+			if (*Value != stateHash) {
+				*Value = stateHash;
+				return true;
+			}
+			return false;
+		}
+		
+		TextUniqueIdToStateHash.Add(object->GetUniqueID(), stateHash);
+		return true;
+	}
+
+	static bool IsStateChanged(uint32 uniqueId, uint32 stateHash)
+	{
+		if (auto Value = TextUniqueIdToStateHash.Find(uniqueId)) {
+			if (*Value != stateHash) {
+				*Value = stateHash;
+				return true;
+			}
+			return false;
+		}
+
+		TextUniqueIdToStateHash.Add(uniqueId, stateHash);
+		return true;
+	}
+};
+
+class PunHashUtils
+{
+public:
+	static uint32 HashAdd(uint32 a, uint32 b)
+	{
+		uint32 hash = 17;
+		hash = hash * 31 + a;
+		hash = hash * 31 + b;
+		return hash;
+	}
+
+	template<typename A, typename B>
+	static uint32 HashAdd(A a, B b) {
+		return HashAdd(static_cast<uint32>(a), static_cast<uint32>(b));
+	}
+
+	static uint32 HashAdd(uint32 a, uint32 b, uint32 c)
+	{
+		return HashAdd(HashAdd(a, b), c);
+	}
+
+	static uint32 HashAdd(uint32 a, uint32 b, uint32 c, uint32 d)
+	{
+		return HashAdd(HashAdd(HashAdd(a, b), c), d);
+	}
+
+	template<typename A, typename B, typename C, typename D>
+	static uint32 HashAdd(A a, B b, C c, D d)
+	{
+		return HashAdd(HashAdd(HashAdd(
+			static_cast<uint32>(a), static_cast<uint32>(b)), static_cast<uint32>(c)), static_cast<uint32>(d)
+		);
+	}
+};
+
+#define SET_TEXT_BASE(textblock, stateHash, setTextFunc) \
+	if (auto Value = PunGlobalHashCache::TextUniqueIdToStateHash.Find(textblock->GetUniqueID())) { \
+		if (*Value != stateHash) { \
+			*Value = stateHash; \
+			textblock->SetText(setTextFunc); \
+		} \
+	} else { \
+		PunGlobalHashCache::TextUniqueIdToStateHash.Add(textblock->GetUniqueID(), stateHash); \
+		textblock->SetText(setTextFunc); \
+	}
+
+#define SET_TEXT_FORMAT(textblock, stateHash, ftext, ...) SET_TEXT_BASE(textblock, stateHash, FText::Format(ftext, __VA_ARGS__))
+#define SET_TEXT_INT(textblock, value) SET_TEXT_BASE(textblock, value, FText::AsNumber(value))

@@ -272,7 +272,7 @@ void UChatUI::TickDebugUI()
 
 		std::vector<LeanProfilerElement> allProfilerElements = LeanProfiler::LastEnumToElements;
 
-		const int32 groupCount = 8;
+		const int32 groupCount = 9;
 		std::vector<std::vector<LeanProfilerElement>> groupToProfilingElements(groupCount);
 		
 		auto addToProfilingGroup = [&](int32 i)
@@ -280,18 +280,21 @@ void UChatUI::TickDebugUI()
 			int32 profilerEnumInt = static_cast<int32>(allProfilerElements[i].profilerEnum);
 
 			if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::AttackOutgoing)) {
-				groupToProfilingElements[7].push_back(allProfilerElements[i]);
+				groupToProfilingElements[8].push_back(allProfilerElements[i]);
 			}
 			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::TryCheckBadTile_Human)) {
-				groupToProfilingElements[6].push_back(allProfilerElements[i]);
+				groupToProfilingElements[7].push_back(allProfilerElements[i]);
 			}
 			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::U_Update_FoodAge)) {
-				groupToProfilingElements[5].push_back(allProfilerElements[i]);
+				groupToProfilingElements[6].push_back(allProfilerElements[i]);
 			}
 			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::P_FindPath)) {
-				groupToProfilingElements[4].push_back(allProfilerElements[i]);
+				groupToProfilingElements[5].push_back(allProfilerElements[i]);
 			}
 			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::R_resourceCount)) {
+				groupToProfilingElements[4].push_back(allProfilerElements[i]);
+			}
+			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::TickWorldSpaceUI)) {
 				groupToProfilingElements[3].push_back(allProfilerElements[i]);
 			}
 			else if (profilerEnumInt >= static_cast<int32>(LeanProfilerEnum::TickMainGameUI)) {

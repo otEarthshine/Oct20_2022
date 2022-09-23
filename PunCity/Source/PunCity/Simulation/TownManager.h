@@ -70,6 +70,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::MagicMushroomFarm,
 	CardEnum::VodkaDistillery,
 	CardEnum::TequilaDistillery,
+	CardEnum::MeadMaker,
 	CardEnum::CoffeeRoaster,
 
 	CardEnum::GoldMine,
@@ -93,6 +94,7 @@ static const std::vector<CardEnum> DefaultJobPriorityListAllSeason
 	CardEnum::Beekeeper,
 	CardEnum::Brickworks,
 	CardEnum::CandleMaker,
+	CardEnum::CheeseMaker,
 	CardEnum::CarpetWeaver,
 	CardEnum::CottonMill,
 	CardEnum::GarmentFactory,

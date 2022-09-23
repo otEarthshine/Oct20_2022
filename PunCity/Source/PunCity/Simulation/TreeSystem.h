@@ -294,54 +294,120 @@ public:
 
 	//! This is for human only
 	// regionDistance is the farthest distance we will look for gather marks
-	NonWalkableTileAccessInfo FindNearestMark(int32 townId, WorldTile2 originTile, bool treeOnly, int32 regionDistance)
+	NonWalkableTileAccessInfo FindNearestMark(int32 townId, WorldTile2 originTile, WorldTile2 townGateTile, bool treeOnly, int32 regionDistance)
 	{
+		LEAN_PROFILING(FindNearestMark);
+		
 		WorldRegion2 originRegion = originTile.region();
 		int32 nearestDist = GameMapConstants::TilesPerWorldX;
-		NonWalkableTileAccessInfo nearestAcessInfo = NonWalkableTileAccessInfoInvalid;
+		WorldTile2 nearestMarkedTile = WorldTile2::Invalid;
 
-		for (int32 x = originRegion.x - regionDistance; x <= originRegion.x + regionDistance; x++) {
-			for (int32 y = originRegion.y - regionDistance; y <= originRegion.y + regionDistance; y++)
+		const int32 maxValidMarksToProcess = 500;
+		int32 validMarksProcessed = 0;
+
+		//for (int32 x = originRegion.x - regionDistance; x <= originRegion.x + regionDistance; x++) {
+		//	for (int32 y = originRegion.y - regionDistance; y <= originRegion.y + regionDistance; y++)
+		AlgorithmUtils::LoopSpiralOutward_Regions(originRegion, regionDistance, [&](WorldRegion2 region)
+		{
+			int32 regionId = region.regionId();
+
+			_regionToMarkTileIds[regionId].Execute([&](WorldTile2 tile)
 			{
-				WorldRegion2 region(x, y);
+				// 
+				if (treeOnly && tileInfo(tile.tileId()).type != ResourceTileType::Tree) {
+					return;
+				}
 
-				if (region.IsValid())
 				{
-					int32 regionId = region.regionId();
+					LEAN_PROFILING(FindNearestMark_IsReserved);
 					
-					{
-						_regionToMarkTileIds[regionId].Execute([&](WorldTile2 tile)
-						{
-							// 
-							if (treeOnly && tileInfo(tile.tileId()).type != ResourceTileType::Tree) {
-								return;
-							}
-
-							if (IsReserved(tile.tileId())) {
-								return;
-							}
-
-							// Ensure tile is owned by player..
-							if (_simulation->tileOwnerTown(tile) != townId) {
-								return;
-							}
-
-							// After finding an inaccessible target tile, find an adjacent tile to walk to
-							NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(originTile, tile, regionDistance, true);
-							if (accessInfo.isValid()) {
-								int32 dist = WorldTile2::ManDistance(tile, originTile);
-								if (dist < nearestDist) {
-									nearestDist = dist;
-									nearestAcessInfo = accessInfo;
-								}
-							}
-						});
+					if (IsReserved(tile.tileId())) {
+						return;
 					}
 				}
-			}
+
+				// Ensure tile is owned by player..
+				if (_simulation->tileOwnerTown(tile) != townId) {
+					return;
+				}
+
+				//{
+				//	LEAN_PROFILING(FindNearestMark_TryAccessNonWalkableTile);
+
+				//	// After finding an inaccessible target tile, find an adjacent tile to walk to
+				//	NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(originTile, tile, regionDistance, true);
+				//	if (accessInfo.isValid()) {
+				//		int32 dist = WorldTile2::ManDistance(tile, originTile);
+				//		if (dist < nearestDist) {
+				//			nearestDist = dist;
+				//			nearestAcessInfo = accessInfo;
+				//		}
+				//	}
+				//}
+
+				{
+					LEAN_PROFILING(FindNearestMark_TryAccessNonWalkableTile);
+
+					bool isAccessible;
+					
+					if (bool* found = _markedTileIdToIsAccessible.Find(tile.tileId())) 
+					{
+						LEAN_PROFILING(FindNearestMark_TryAccessNonWalkableTile_Cached);
+						
+						isAccessible = *found;
+					}
+					else 
+					{
+						LEAN_PROFILING(FindNearestMark_TryAccessNonWalkableTile_Full);
+						
+						// After finding an inaccessible target tile, find an adjacent tile to walk to
+						NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(townGateTile, tile, regionDistance, true);
+
+						isAccessible = accessInfo.isValid();
+
+						int32 tileId = tile.tileId();
+						_cachedMarkedTileIds.Add(tileId);
+						_markedTileIdToIsAccessible.Add(tileId, isAccessible);
+						_markedTileIdToNearbyAccessibleTile.Add(tileId, accessInfo.nearbyTile.tileId());
+					}
+
+					if (isAccessible)
+					{
+						int32 dist = WorldTile2::ManDistance(tile, originTile);
+						if (dist < nearestDist) {
+							nearestDist = dist;
+							nearestMarkedTile = tile;
+
+							validMarksProcessed++;
+						}
+					}
+				}
+			});
+
+			return validMarksProcessed >= maxValidMarksToProcess;
+		});
+
+		if (nearestMarkedTile.isValid()) {
+			return NonWalkableTileAccessInfo(nearestMarkedTile, WorldTile2(_markedTileIdToNearbyAccessibleTile[nearestMarkedTile.tileId()]));
 		}
-		return nearestAcessInfo;
+		
+		return NonWalkableTileAccessInfoInvalid;
 	}
+
+	// Cache update is done when:
+	// - "Cached accessible, but is inaccessible" will be corrected in TryGather
+	// - "Cached inaccessible, but is accessible" will be updated once in a while in treeSystem.Tick()
+	void UpdateMarkedTileCache(const WorldTile2& townGateTile, const WorldTile2& targetTile, int32 regionDistance)
+	{
+		LEAN_PROFILING(FindNearestMark_TryAccessNonWalkableTile_Update);
+		
+		// After finding an inaccessible target tile, find an adjacent tile to walk to
+		NonWalkableTileAccessInfo accessInfo = _simulation->TryAccessNonWalkableTile(townGateTile, targetTile, regionDistance, true);
+
+		_markedTileIdToIsAccessible[targetTile.tileId()] = accessInfo.isValid();
+		_markedTileIdToNearbyAccessibleTile[targetTile.tileId()] = accessInfo.nearbyTile.tileId();
+	}
+	
 
 	int32 MarkArea(int32 playerId, TileArea area, bool isRemoving, ResourceEnum resourceEnum);
 
@@ -493,6 +559,11 @@ public:
 			SERIALIZE_TIMER("Tree - _treeShade", data, crcs, crcLabels);
 			SerializeVecValue(Ar, _treeShade);
 		}
+
+		// Viking Patch
+		Ar << _cachedMarkedTileIds;
+		Ar << _markedTileIdToIsAccessible;
+		Ar << _markedTileIdToNearbyAccessibleTile;
 	}
 
 	void SerializeForMainMenu(FArchive &Ar, const std::vector<int32>& sampleRegionIds, TArray<uint8>& data)
@@ -609,11 +680,14 @@ private:
 		_simulation->SetNeedDisplayUpdate(DisplayClusterEnum::Trees, WorldTile2(tileId).regionId(), true);
 		
 		_regionToMarkTileIds[WorldTile2(tileId).regionId()].Set(WorldTile2(tileId).localTileId(), false);
-		//for (int32 i = size - 1; i >= 0; i--) {
-		//	auto& regionToMarkedTileIds = _regionToMarkTileIds[i];
-		//	//PUN_DEBUG_FAST(FString::Printf(TEXT("RemoveMarks playerId: %d size:%lu size2:%lu"), i, _playerIdToRegionToMarkedTileIds.size(), regionToMarkedTileIds.size()));
-		//	_regionToMarkTileIds[WorldTile2(tileId).regionId()].Set(WorldTile2(tileId).localTileId(), false);
-		//}
+
+		// Remove Cache
+		if (_markedTileIdToIsAccessible.Contains(tileId))
+		{
+			_cachedMarkedTileIds.Remove(tileId);
+			_markedTileIdToIsAccessible.Remove(tileId);
+			_markedTileIdToNearbyAccessibleTile.Remove(tileId);
+		}
 	}
 
 	//void CheckAddPlayer(int32_t playerId) {
@@ -708,6 +782,13 @@ private:
 
 	//std::vector<std::vector<FastRegionBoolMap>> _playerIdToRegionToMarkTileIds;
 	std::vector<FastRegionBoolMap> _regionToMarkTileIds;
+
+	/*
+	 * Non-Serialize
+	 */
+	TArray<int32> _cachedMarkedTileIds;
+	TMap<int32, bool> _markedTileIdToIsAccessible;
+	TMap<int32, int32> _markedTileIdToNearbyAccessibleTile;
 	
 public:
 	//! Debug...

@@ -10,6 +10,9 @@
 int32 UPunWidget::kPointerOnUI = 0;
 TArray<FString> UPunWidget::kPointerOnUINames;
 
+TMap<uint32, uint32> PunGlobalHashCache::TextUniqueIdToStateHash;
+TMap<uint32, bool> UPunWidget::WidgetUniqueIdToVisibility;
+
 void UPunWidget::ResetTooltip(UWidget* widget) {
 	if (widget->ToolTipWidget) {
 		auto tooltip = Cast<UToolTipWidgetBase>(widget->ToolTipWidget);

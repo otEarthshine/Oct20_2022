@@ -1106,6 +1106,41 @@ void TreeSystem::Tick()
 			}
 		}
 	}
+
+	{
+		LEAN_PROFILING(TreeSystemTick_CacheUpdate);
+
+		// Clean unused cache
+		// Update tile accessibility for those that aren't accessible
+
+		// process max 100 per batch
+		// 120 ticks process cycle
+		const int32 maxProcessPerTick = 10;
+		const int32 processCycleTicks = 1200;
+		int32 tickProcessStartIndex = (Time::Ticks() % processCycleTicks) * maxProcessPerTick;
+
+		if (tickProcessStartIndex < _cachedMarkedTileIds.Num())
+		{
+			int32 tickProcessEndIndex = tickProcessStartIndex + maxProcessPerTick - 1;
+			tickProcessEndIndex = std::min(tickProcessEndIndex, _cachedMarkedTileIds.Num() - 1);
+
+			for (int32 i = tickProcessStartIndex; i <= tickProcessEndIndex; i++)
+			{
+				int32 tileId = _cachedMarkedTileIds[i];
+				if (!_markedTileIdToIsAccessible[tileId]) 
+				{
+					WorldTile2 tile(tileId);
+					int32 townId = _simulation->tileOwnerTown(tile);
+					if (townId != -1) {
+						WorldTile2 townGateTile = _simulation->GetTownhallGate_All(townId);
+						if (townGateTile.isValid()) {
+							UpdateMarkedTileCache(townGateTile, tile, GameConstants::MaxFindNearestMarkRegionDistance);
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 int32 TreeSystem::MarkArea(int32 playerId, TileArea area, bool isRemoving, ResourceEnum resourceEnum)

@@ -581,6 +581,11 @@ public:
 			TechEnum::SultansCastle,
 			TechEnum::SultansPalace,
 			TechEnum::GreatMosque,
+
+			TechEnum::LongHall,
+			TechEnum::StaveChurch,
+			TechEnum::VikingPalace,
+			TechEnum::NotreDame,
 		};
 		for (TechEnum wonderTechEnum : wonderTechs) {
 			if (techEnum == wonderTechEnum)
@@ -1200,6 +1205,17 @@ public:
 					TechRequirements::HouseLvlCount(2, 30)
 				);
 			}
+			else if (factionEnum == FactionEnum::Viking)
+			{
+				techLinkEnum_VodkaDistillery = TechEnum::MeadMaking;
+				AddTech_Building(techLinkEnum_VodkaDistillery, { techLinkEnum_Potato },
+					{ CardEnum::MeadMaker }
+				);
+
+				AddTech_Building(techLinkEnum_Beekeeper, { techLinkEnum_Potato },
+					CardEnum::Beekeeper
+				);
+			}
 			else {
 				AddTech_Building(techLinkEnum_VodkaDistillery, { techLinkEnum_Potato },
 					{ CardEnum::VodkaDistillery }
@@ -1330,10 +1346,18 @@ public:
 				CardEnum::Chocolatier,
 				TechRequirements::HouseLvlCount(6, 50)
 			);
-			
-			AddTech_Building(TechEnum::RanchCow, { techLinkEnum_ShroomFarm },
-				{ CardEnum::RanchCow }
-			);
+
+			if (factionEnum == FactionEnum::Viking) {
+				AddTech_Building(TechEnum::RanchCow, { techLinkEnum_ShroomFarm },
+					{ CardEnum::RanchCow, CardEnum::CheeseMaker }
+				);
+			}
+			else
+			{
+				AddTech_Building(TechEnum::RanchCow, { techLinkEnum_ShroomFarm },
+					{ CardEnum::RanchCow }
+				);
+			}
 
 			//
 			_columnIndex = 9;
@@ -1416,6 +1440,12 @@ public:
 			if (factionEnum == FactionEnum::Arab) {
 				AddTech_Building(TechEnum::GreatMosque, { TechEnum::MarketInfluence },
 					{ CardEnum::GreatMosque },
+					TechRequirements::HouseLvlCount(8, 100)
+				);
+			}
+			else if (factionEnum == FactionEnum::Viking) {
+				AddTech_Building(TechEnum::NotreDame, { TechEnum::MarketInfluence },
+					{ CardEnum::NotreDame },
 					TechRequirements::HouseLvlCount(8, 100)
 				);
 			}
@@ -1552,6 +1582,11 @@ public:
 					CardEnum::Mosque
 				);
 			}
+			else if (factionEnum == FactionEnum::Viking) {
+				AddTech_Building(TechEnum::LongHall, { TechEnum::Combo },
+					CardEnum::LongHall
+				);
+			}
 			else {
 				AddTech_Building(TechEnum::Cathedral, { TechEnum::Combo },
 					CardEnum::Cathedral
@@ -1619,7 +1654,13 @@ public:
 				AddTech_Building(TechEnum::SultansCastle, {},
 					CardEnum::SultansCastle
 				);
-			} else {
+			}
+			else if (factionEnum == FactionEnum::Viking) {
+				AddTech_Building(TechEnum::StaveChurch, {},
+					CardEnum::StaveChurch
+				);
+			}
+			else {
 				AddTech_Building(TechEnum::Castle, {},
 					CardEnum::Castle
 				);
@@ -1708,6 +1749,12 @@ public:
 			if (factionEnum == FactionEnum::Arab) {
 				AddTech_Building(TechEnum::SultansPalace, {},
 					{ CardEnum::SultansPalace },
+					TechRequirements::HouseLvlCount(8, 100)
+				);
+			}
+			else if (factionEnum == FactionEnum::Viking) {
+				AddTech_Building(TechEnum::VikingPalace, {},
+					{ CardEnum::VikingPalace },
 					TechRequirements::HouseLvlCount(8, 100)
 				);
 			}

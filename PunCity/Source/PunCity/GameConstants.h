@@ -33,6 +33,8 @@ public:
 	static const int32 MaxFloodDistance_HumanLogistics = 8;
 	static const int32 MaxFloodDistance_HumanDropFetch = 4;
 
+	static const int32 MaxFindNearestMarkRegionDistance = 5;
+
 	static const int32 MaxFloodDistance_Army = 10;
 
 	static const int32 MaxDistanceFetch_MedTools = 120;

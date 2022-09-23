@@ -416,8 +416,14 @@ void GameSimulationCore::InitProvinceBuildings()
 		BiomeEnum biomeEnum = GetBiomeProvince(provinceId);
 		FactionEnum factionEnum = FactionEnum::Europe;
 		if (biomeEnum == BiomeEnum::Desert ||
-			biomeEnum == BiomeEnum::Savanna) {
+			biomeEnum == BiomeEnum::Savanna) 
+		{
 			factionEnum = FactionEnum::Arab;
+		}
+		else if (biomeEnum == BiomeEnum::Tundra ||
+			biomeEnum == BiomeEnum::BorealForest)
+		{
+			factionEnum = FactionEnum::Viking;
 		}
 
 		int32 townId = AddMinorTown(provinceId, factionEnum, CardEnum::MinorCity);
@@ -729,7 +735,7 @@ void GameSimulationCore::InitProvinceBuildings()
  */
 void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool tickOnce)
 {
-	LEAN_PROFILING_D(TickSim);
+	LEAN_PROFILING(TickSim);
 	PUN_LLM(PunSimLLMTag::Simulation);
 
 #if PUN_LLM_ON
@@ -749,62 +755,68 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 
 	//PUN_LOG("TickSim UnitSystem unitCount():%d _unitLeans:%d", unitSystem().unitCount(), unitCount() - unitSystem().deadCount());
 
-	
+	{
+		LEAN_PROFILING(TickSim_CheckIntegrity);
 
-	CheckIntegrity();
+		CheckIntegrity();
+	}
 
 	// Issue Commands
 	std::vector<shared_ptr<FNetworkCommand>> commands = tickInfo.commands;
-
-	if (tickOnce) { // Skip commands precessing for StepSimulation
-		commands.clear();
-	}
-	
-
 	vector<bool> commandSuccess(commands.size(), true);
-
-	if (commands.size() > 0) {
-		_LOG(LogNetworkInput, "!!!ExecuteNetworkCommands  TickCount:%d commands:%d", Time::Ticks(), commands.size());
-	}
-
-	for (size_t i = 0; i < commands.size(); i++) 
 	{
-		PUN_CHECK(IsValidPlayer(commands[i]->playerId));
+		LEAN_PROFILING(TickSim_Commands);
 
-		// Player not initialized, only allow choosing location
-		// This check prevent the case where commands arrived after abandoning town (such as commands from leftover popups etc.)
-		if (!HasChosenLocation(commands[i]->playerId))
-		{
-			if (commands[i]->commandType() != NetworkCommandEnum::ChooseLocation &&
-				commands[i]->commandType() != NetworkCommandEnum::AddPlayer)
-			{
-				continue;
-			}
+		
+		if (tickOnce) { // Skip commands precessing for StepSimulation
+			commands.clear();
 		}
 
-		tempVariable = i;
-		commandSuccess[i] = ExecuteNetworkCommand(commands[i]);
 
-
-		// Special case: Townhall after refresh and put in animation
-		if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
-		{
-			auto placeCommand = static_pointer_cast<FPlaceBuilding>(commands[i]);
-			if (placeCommand->buildingEnum == static_cast<int>(CardEnum::Townhall))
-			{
-				_gameManager->RefreshMapAnnotation();
-
-				// Ensure Map was refreshed (In case AI built city at tick=0)
-				RefreshHeightForestColorTexture(TileArea(placeCommand->center, 12), true);
-				RefreshHeightForestRoadTexture();
-
-			}
+		if (commands.size() > 0) {
+			_LOG(LogNetworkInput, "!!!ExecuteNetworkCommands  TickCount:%d commands:%d", Time::Ticks(), commands.size());
 		}
 
-	}
+		for (size_t i = 0; i < commands.size(); i++)
+		{
+			PUN_CHECK(IsValidPlayer(commands[i]->playerId));
 
-	if (commands.size() > 0) {
-		_LOG(LogNetworkInput, "!!!ExecuteNetworkCommands End----");
+			// Player not initialized, only allow choosing location
+			// This check prevent the case where commands arrived after abandoning town (such as commands from leftover popups etc.)
+			if (!HasChosenLocation(commands[i]->playerId))
+			{
+				if (commands[i]->commandType() != NetworkCommandEnum::ChooseLocation &&
+					commands[i]->commandType() != NetworkCommandEnum::AddPlayer)
+				{
+					continue;
+				}
+			}
+
+			tempVariable = i;
+			commandSuccess[i] = ExecuteNetworkCommand(commands[i]);
+
+
+			// Special case: Townhall after refresh and put in animation
+			if (commands[i]->commandType() == NetworkCommandEnum::PlaceBuilding)
+			{
+				auto placeCommand = static_pointer_cast<FPlaceBuilding>(commands[i]);
+				if (placeCommand->buildingEnum == static_cast<int>(CardEnum::Townhall))
+				{
+					_gameManager->RefreshMapAnnotation();
+
+					// Ensure Map was refreshed (In case AI built city at tick=0)
+					RefreshHeightForestColorTexture(TileArea(placeCommand->center, 12), true);
+					RefreshHeightForestRoadTexture();
+
+				}
+			}
+
+		}
+
+		if (commands.size() > 0) {
+			_LOG(LogNetworkInput, "!!!ExecuteNetworkCommands End----");
+		}
+
 	}
 
 	// Server tick is not the same as SimulationTick
@@ -815,46 +827,52 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 	/*
 	 * Replays
 	 */
-	// Remove unsuccessful commands
-	for (size_t i = commands.size(); i-- > 0;) {
-		if (!commandSuccess[i]) {
-			commands.erase(commands.begin() + i);
+	{
+		LEAN_PROFILING(TickSim_Replays);
+		
+		// Remove unsuccessful commands
+		for (size_t i = commands.size(); i-- > 0;) {
+			if (!commandSuccess[i]) {
+				commands.erase(commands.begin() + i);
+			}
 		}
+
+		// Record tickInfo
+		_replaySystem.AddTrailerCommands(commands);
+		_replaySystem.AddNetworkTickInfo(tickInfo, commands);
+
+		// AutoSave Replay
+		if (_tickCount % Time::TicksPerSeason == 0) {
+			// TODO: for now hard code player action saving (Save client1)
+			_replaySystem.SavePlayerActions(0, "ReplaySave0");
+		}
+
 	}
-	
-	// Record tickInfo
-	_replaySystem.AddTrailerCommands(commands);
-	_replaySystem.AddNetworkTickInfo(tickInfo, commands);
-
-	// AutoSave Replay
-	if (_tickCount % Time::TicksPerSeason == 0) {
-		// TODO: for now hard code player action saving (Save client1)
-		_replaySystem.SavePlayerActions(0, "ReplaySave0");
-	}
-
-
 
 	/*
 	 * Tick simulation 
 	 */
-
-	// Note: _tickCount contains simulation local tick as oppose to server's tick
-
+	int32 simTicksForThisControllerTick;
 	int32 gameSpeed = tickInfo.gameSpeed;
-	if (!AllPlayerHasTownhallAfterInitialTicks()) {
-		gameSpeed = 0; // Pause while players are still choosing location.
-	}
+	{
+		LEAN_PROFILING(TickSim_Replays);
+		// Note: _tickCount contains simulation local tick as oppose to server's tick
 
-	if (tickOnce) {
-		gameSpeed = 1;
-	}
-	
-	_lastGameSpeed = gameSpeed;
+		if (!AllPlayerHasTownhallAfterInitialTicks()) {
+			gameSpeed = 0; // Pause while players are still choosing location.
+		}
 
-	// Special -12 game speed which means 1/2 discard a tick
-	int32 simTicksForThisControllerTick = gameSpeed;
-	if (gameSpeed == -12) {
-		simTicksForThisControllerTick = tickInfo.proxyControllerTick % 2;
+		if (tickOnce) {
+			gameSpeed = 1;
+		}
+
+		_lastGameSpeed = gameSpeed;
+
+		// Special -12 game speed which means 1/2 discard a tick
+		simTicksForThisControllerTick = gameSpeed;
+		if (gameSpeed == -12) {
+			simTicksForThisControllerTick = tickInfo.proxyControllerTick % 2;
+		}
 	}
 
 	for (size_t localTickIndex = 0; localTickIndex < simTicksForThisControllerTick; localTickIndex++)
@@ -1706,7 +1724,11 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		}
 	}
 
-	CheckIntegrity();
+	{
+		LEAN_PROFILING(TickSim_CheckIntegrity);
+
+		CheckIntegrity();
+	}
 }
 
 /**
@@ -6596,7 +6618,7 @@ void GameSimulationCore::Cheat(FCheat command)
 			break;
 		}
 		
-		case CheatEnum::RemoveAllCards:
+		case CheatEnum::ClearCards:
 		{
 			cardSys.ClearBoughtCards();
 			break;
@@ -7142,13 +7164,12 @@ void GameSimulationCore::TestCityNetworkStage()
 		return;
 	}
 
-	
+
 	const int32 addCount = 500;
 
 	int32 commandPlayerId = gameManagerPlayerId();
 	int32 townId = gameManagerPlayerId();
 	auto& townManage = townManager(townId);
-
 
 	// Money
 	if (moneyCap32(commandPlayerId) < 1000000)
@@ -7161,7 +7182,7 @@ void GameSimulationCore::TestCityNetworkStage()
 		return;
 	}
 
-	
+
 
 	// Add enough province
 	std::vector<int32> provinceIds = townManage.provincesClaimed();
@@ -7205,8 +7226,8 @@ void GameSimulationCore::TestCityNetworkStage()
 			return IsPlayerBuildable(tile, commandPlayerId);
 		},
 			[&](WorldTile2 tile) {
-			return WorldTile2::ManDistance(curTile, tile) > 200;
-		}
+				return WorldTile2::ManDistance(curTile, tile) > 300;
+			}
 		);
 
 		if (!endArea.isValid()) {
@@ -7243,88 +7264,109 @@ void GameSimulationCore::TestCityNetworkStage()
 				_gameManager->SendNetworkCommand(command);
 
 				PUN_LOG("TestCityNetworkStage QuickBuild:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);
+				return true;
 			}
 		}
+		return false;
 	};
 
-	// Build Storages
 	{
-		int32 numberOfBuildings = 5;
-		if (townBuildingFinishedCount(townId, CardEnum::Warehouse) < numberOfBuildings)
+		LEAN_PROFILING_D(TestCityNetworkStage);
+
+		// Build Storages
 		{
-			if (buildingCount(townId, CardEnum::Warehouse) < numberOfBuildings) {
-				if (placeBuilding(CardEnum::Warehouse)) {
+			int32 numberOfBuildings = 5;
+			if (townBuildingFinishedCount(townId, CardEnum::Warehouse) < numberOfBuildings)
+			{
+				if (buildingCount(townId, CardEnum::Warehouse) < numberOfBuildings) {
+					if (placeBuilding(CardEnum::Warehouse)) {
+						return;
+					}
+				}
+
+				quickBuild(CardEnum::Warehouse);
+				return;
+			}
+		}
+
+
+		// Build Houses
+		int32 numberOfHouses = 10;
+		if (townBuildingFinishedCount(townId, CardEnum::House) < numberOfHouses)
+		{
+			if (buildingCount(townId, CardEnum::House) < numberOfHouses) {
+				if (placeBuilding(CardEnum::House)) {
 					return;
 				}
 			}
 
-			quickBuild(CardEnum::Warehouse);
+			quickBuild(CardEnum::House);
 			return;
 		}
-	}
-	
 
-	// Build Houses
-	int32 numberOfHouses = 10;
-	if (townBuildingFinishedCount(townId, CardEnum::House) < numberOfHouses)
-	{
-		if (buildingCount(townId, CardEnum::House) < numberOfHouses) {
-			if (placeBuilding(CardEnum::House)) {
-				return;
-			}
+		// Research
+		if (!unlockSystem(commandPlayerId)->IsResearched(TechEnum::IndustrialAge))
+		{
+			auto command = make_shared<FCheat>();
+			command->cheatEnum = CheatEnum::UnlockAll;
+			_gameManager->SendNetworkCommand(command);
+
+			PUN_LOG("TestCityNetworkStage UnlockAll");
+			return;
 		}
-		
-		quickBuild(CardEnum::House);
-		return;
-	}
 
-	// Research
-	if (!unlockSystem(commandPlayerId)->IsResearched(TechEnum::IndustrialAge))
-	{
-		auto command = make_shared<FCheat>();
-		command->cheatEnum = CheatEnum::UnlockAll;
-		_gameManager->SendNetworkCommand(command);
-
-		PUN_LOG("TestCityNetworkStage UnlockAll");
-		return;
 	}
-	
 
 	std::vector<CardEnum> availableCards = cardSystem(gameManagerPlayerId()).GetAllPiles();
 	unordered_set<CardEnum> uniqueAvailableCards(availableCards.begin(), availableCards.end());
 
 	std::vector<CardEnum> buildingsToSpawn = SortedNameBuildingEnum;
-	
+
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ForeignQuarter);
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ForeignPort);
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::Embassy);
 	CppUtils::TryRemove(buildingsToSpawn, CardEnum::ResourceOutpost);
+
+	{
+		LEAN_PROFILING_D(TestCityNetworkStage2);
+
+		for (CardEnum buildingEnum : buildingsToSpawn)
+		{
+			if (static_cast<int32>(buildingEnum) >= PunSettings::Get("TestCityNetwork_BuildingEnumToStop")) {
+				continue;
+			}
+			if (static_cast<int32>(buildingEnum) < PunSettings::Get("TestCityNetwork_BuildingEnumToStart")) {
+				continue;
+			}
+
+			if (buildingCount(townId, buildingEnum) < 1)
+			{
+				if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end() &&
+					buildingCount(townId, buildingEnum) < 1 &&
+					buildingEnum != CardEnum::Bridge &&
+					buildingEnum != CardEnum::ClayPit &&
+					buildingEnum != CardEnum::IrrigationReservoir &&
+					!IsPortBuilding(buildingEnum) &&
+					!IsMountainMine(buildingEnum))
+				{
+					if (placeBuilding(buildingEnum)) {
+						PUN_LOG("TestCityNetworkStage placeBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
+						quickBuild(buildingEnum);
+						return;
+					}
+				}
+			}
+		}
+	}
 	
-	
+
+	LEAN_PROFILING_D(TestCityNetworkStage3);
+
 	for (CardEnum buildingEnum : buildingsToSpawn)
 	{
-		if (static_cast<int32>(buildingEnum) >= PunSettings::Get("TestCityNetwork_BuildingEnumToStop")) {
-			continue;
-		}
-		if (static_cast<int32>(buildingEnum) < PunSettings::Get("TestCityNetwork_BuildingEnumToStart")) {
-			continue;
-		}
-
-		if (buildingCount(townId, buildingEnum) < 1)
-		{
-			if (uniqueAvailableCards.find(buildingEnum) != uniqueAvailableCards.end() &&
-				buildingCount(townId, buildingEnum) < 1 &&
-				buildingEnum != CardEnum::Bridge &&
-				buildingEnum != CardEnum::ClayPit &&
-				buildingEnum != CardEnum::IrrigationReservoir &&
-				!IsPortBuilding(buildingEnum) &&
-				!IsMountainMine(buildingEnum))
-			{
-				if (placeBuilding(buildingEnum)) {
-					PUN_LOG("TestCityNetworkStage placeBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
-					quickBuild(buildingEnum);
-					return;
-				}
+		if (townBuildingFinishedCount(townId, buildingEnum) < 1) {
+			if (quickBuild(buildingEnum)) {
+				return;
 			}
 		}
 
@@ -7349,14 +7391,6 @@ void GameSimulationCore::TestCityNetworkStage()
 
 			fillResource(bld.input1());
 			fillResource(bld.input2());
-		}
-	}
-
-	for (CardEnum buildingEnum : buildingsToSpawn)
-	{
-		if (townBuildingFinishedCount(townId, buildingEnum) < 1) {
-			quickBuild(buildingEnum);
-			return;
 		}
 	}
 }

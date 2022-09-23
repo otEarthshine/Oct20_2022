@@ -12,12 +12,12 @@ public class PrototypeCityTarget : TargetRules
         bUsesSteam = true;
 
         //Use these config options in shipping to enable logs, and to enable debugger.
-        if (Configuration == UnrealTargetConfiguration.Shipping)
-        {
-            BuildEnvironment = TargetBuildEnvironment.Unique;
-            bUseChecksInShipping = true;
-            //bUseLoggingInShipping = true;
-        }
+        //if (Configuration == UnrealTargetConfiguration.Shipping)
+        //{
+        //    BuildEnvironment = TargetBuildEnvironment.Unique;
+        //    bUseChecksInShipping = true;
+        //    //bUseLoggingInShipping = true;
+        //}
 
         //bUseLoggingInShipping = true;
 

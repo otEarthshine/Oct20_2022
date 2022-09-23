@@ -110,6 +110,7 @@ static FString GetGameVersionString(int32 version, bool includeDate = true)
 #define USE_ACTION_PROFILING (USE_LEAN_PROFILING && 1)
 #define USE_DISPLAY_PROFILING (USE_LEAN_PROFILING && 1)
 #define USE_UI_PROFILING (USE_LEAN_PROFILING && 1)
+#define USE_WORLD_UI_PROFILING (USE_LEAN_PROFILING && 1)
 
 #if !defined(REMINDER_CHECK)
 	#if FULL_CHECK
@@ -2321,6 +2322,7 @@ enum class CardEnum : uint16
 	MagicMushroomFarm,
 	VodkaDistillery,
 	TequilaDistillery,
+	MeadMaker,
 	CoffeeRoaster,
 
 	// Feb 2, 2021
@@ -2411,6 +2413,7 @@ enum class CardEnum : uint16
 	IrrigationPump,
 	IrrigationDitch,
 	CarpetWeaver,
+	CheeseMaker,
 	BathHouse,
 	Caravansary,
 	PitaBakery,
@@ -2419,7 +2422,11 @@ enum class CardEnum : uint16
 	SultansCastle,
 	SultansPalace,
 	GreatMosque,
-	
+
+	LongHall,
+	StaveChurch,
+	VikingPalace,
+	NotreDame,
 	
 	//! Non-Building Cards
 	Investment,
@@ -2738,6 +2745,11 @@ static const std::vector<CardEnum> WorldWonders
 	CardEnum::SultansCastle,
 	CardEnum::SultansPalace,
 	CardEnum::GreatMosque,
+
+	CardEnum::LongHall,
+	CardEnum::StaveChurch,
+	CardEnum::VikingPalace,
+	CardEnum::NotreDame,
 };
 static bool IsWorldWonder(CardEnum cardEnumIn) {
 	for (CardEnum cardEnum : WorldWonders) {
@@ -3069,12 +3081,11 @@ struct BldResourceInfo
 
 enum class FactionEnum : uint8
 {
-	Europe,
+	Europe = 0,
 	Arab,
-
-	None,
-
 	Viking,
+	
+	None,
 };
 
 
@@ -3108,7 +3119,9 @@ struct BldInfo
 	std::vector<WorldTile2> sizeByFactions;
 
 	WorldTile2 GetSize(FactionEnum factionEnum) const {
-		if (factionEnum != FactionEnum::None && sizeByFactions.size() > 0) {
+		if ((factionEnum == FactionEnum::Europe || factionEnum == FactionEnum::Arab) &&
+			sizeByFactions.size() > 0) 
+		{
 			return sizeByFactions[static_cast<int>(factionEnum)];
 		}
 		return baseBuildingSize;
@@ -3734,6 +3747,9 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::TequilaDistillery, _LOCTEXT("Tequila Distillery", "Tequila Distillery"), LOCTEXT("Tequila Distillery (Plural)", "Tequila Distilleries"), LOCTEXT("Tequila Distillery Desc", "Brew Agave into Tequila."),
 		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Agave, ResourceEnum::Tequila }, { 1, 1, 1 }, 20)
 	),
+	BldInfo(CardEnum::MeadMaker, _LOCTEXT("Mead Maker", "Mead Maker"), LOCTEXT("Mead Maker (Plural)", "Mead Maker"), LOCTEXT("Mead Maker Desc", "TODO."),
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Agave, ResourceEnum::Tequila }, { 1, 1, 1 }, 20)
+	),
 	BldInfo(CardEnum::CoffeeRoaster, _LOCTEXT("Coffee Roaster", "Coffee Roaster"),		LOCTEXT("Coffee Roaster (Plural)", "Coffee Roasters"), LOCTEXT("Coffee Roaster Desc", "Roast Raw Coffee into Coffee."),
 		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::RawCoffee, ResourceEnum::Coffee }, { 2, 0, 1, 3 }, 20, 100, -2)
 	),
@@ -3777,7 +3793,8 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 8), GetBldResourceInfo(3, { ResourceEnum::Glass, ResourceEnum::Coal, ResourceEnum::Glassware }, { 1, 1, 1, 5 }, 0)
 	),
 	BldInfo(CardEnum::ConcreteFactory, _LOCTEXT("ConcreteFactory", "Concrete Factory"), LOCTEXT("Concrete Factory (Plural)", "Concrete Factories"), LOCTEXT("Concrete Factory Desc", "Make Concrete from Stone and Sand."),
-		WorldTile2(8, 8), GetBldResourceInfo(4, { ResourceEnum::Stone, ResourceEnum::Sand, ResourceEnum::Concrete }, { 0, 0, 1, 5 }, 0, 100, -3)
+		{ WorldTile2(8, 8), WorldTile2(8, 8), WorldTile2(8, 8) },
+		GetBldResourceInfo(4, { ResourceEnum::Stone, ResourceEnum::Sand, ResourceEnum::Concrete }, { 0, 0, 1, 5 }, 0, 100, -3)
 	),
 	BldInfo(CardEnum::CoalPowerPlant, _LOCTEXT("CoalPowerPlant", "Coal Power Plant"), LOCTEXT("CoalPowerPlant (Plural)", "Coal Power Plants"), LOCTEXT("Coal Power Plants Desc", "Provide Electricity converting 1 Coal to 1 kWh of Electricity."),
 		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Coal, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 3 }, 0, 100, -8)
@@ -3964,6 +3981,9 @@ static const BldInfo BuildingInfo[]
 	BldInfo(CardEnum::CarpetWeaver, _LOCTEXT("Carpet Weaver", "Carpet Weaver"), LOCTEXT("Carpet Weaver (Plural)", "Carpet Weavers"), LOCTEXT("Carpet Weaver Desc", "Weaves Carpet from Wool and Dye."),
 		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Wool, ResourceEnum::Dye, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
 	),
+	BldInfo(CardEnum::CheeseMaker, _LOCTEXT("Cheese Maker", "Cheese Maker"), LOCTEXT("Cheese Maker (Plural)", "Cheese Makers"), LOCTEXT("Cheese Maker Desc", ".TODO_DESC"),
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Milk, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
+	),
 	BldInfo(CardEnum::BathHouse, _LOCTEXT("Bath House", "Bath House"), LOCTEXT("Bath House (Plural)", "Bath Houses"), LOCTEXT("Bath House Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
 	),
@@ -3985,6 +4005,19 @@ static const BldInfo BuildingInfo[]
 	),
 	BldInfo(CardEnum::GreatMosque, _LOCTEXT("Great Mosque", "Great Mosque"), LOCTEXT("Great Mosque (Plural)", "Great Mosques"), LOCTEXT("Great Mosque Desc", "First Great Mosque grants {0} Victory Score. +20%<img id=\"Coin\"/> from luxury consumption"),
 		WorldTile2(36, 24), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 2, 1, 5 }, 20000, 100, -999)
+	),
+
+	BldInfo(CardEnum::LongHall, _LOCTEXT("LongHall", "Great Long Hall"), LOCTEXT("LongHall (Plural)", "Great Long Halls"), LOCTEXT("LongHall Desc", "..TODO"),
+		WorldTile2(24, 10), GetBldResourceInfo(3, {}, { 0, 0, 0, 5, 2 }, 5000, 100, -999)
+	),
+	BldInfo(CardEnum::StaveChurch, _LOCTEXT("Stave Church", "Stave Church"), LOCTEXT("Stave Church (Plural)", "Stave Churchs"), LOCTEXT("Castle Desc", "..TODO"),
+		WorldTile2(16, 16), GetBldResourceInfo(3, {}, { 0, 5, 1, 0, 1 }, 8000, 100, -999)
+	),
+	BldInfo(CardEnum::VikingPalace, _LOCTEXT("Viking Palace", "Viking Palace"), LOCTEXT("Viking Palace (Plural)", "Viking Palaces"), LOCTEXT("Viking Palace Desc", "..TODO"),
+		WorldTile2(30, 20), GetBldResourceInfo(4, {}, { 0, 0, 0, 2, 1, 5, 1 }, 20000, 100, -999)
+	),
+	BldInfo(CardEnum::NotreDame, _LOCTEXT("Notre Dame", "Basilica"), LOCTEXT("Notre Dame (Plural)", "Basilicas"), LOCTEXT("Notre Dame Desc", "..TODO"),
+		WorldTile2(26, 14), GetBldResourceInfo(4, {}, { 0, 0, 0, 0, 2, 1, 5 }, 20000, 100, -999)
 	),
 	
 	// Can no longer pickup cards
@@ -6742,6 +6775,7 @@ enum class TechEnum : uint8
 	ShroomFarm,
 	VodkaDistillery,
 	TequilaDistillery,
+	MeadMaking,
 	CoffeeRoaster,
 
 	// Mar 12
@@ -6774,6 +6808,11 @@ enum class TechEnum : uint8
 	SultansCastle,
 	SultansPalace,
 	GreatMosque,
+
+	LongHall,
+	StaveChurch,
+	VikingPalace,
+	NotreDame,
 
 	SocialScience,
 
@@ -8220,7 +8259,7 @@ static FLinearColor PlayerColor2(int32 playerId)
 	entry(DemolishNoDrop) \
 	entry(God) \
 	\
-	entry(RemoveAllCards) \
+	entry(ClearCards) \
 	entry(BuyMap) \
 	entry(TrailerCityGreen1) \
 	entry(TrailerCityGreen2) \
@@ -10946,7 +10985,8 @@ public:
 static const std::vector<FactionInfo> FactionInfos =
 {
 	FactionInfo(FactionEnum::Europe, LOCTEXT("Duchy", "Duchy"), FString("Europe"), LOCTEXT("Europe Ability Description", "+5% research speed")),
-	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), FString("Arab"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield"))
+	FactionInfo(FactionEnum::Arab, LOCTEXT("Emirates", "Emirates"), FString("Arab"), LOCTEXT("Arab Ability Description", "-20% trade fee, -50% wood cutting yield")),
+	FactionInfo(FactionEnum::Viking, LOCTEXT("Norsemen", "Norsemen"), FString("Viking"), LOCTEXT("Norsemen Ability Description", ""))
 };
 
 #undef LOCTEXT_NAMESPACE

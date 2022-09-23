@@ -121,6 +121,41 @@ public:
 		return WorldTile2::Invalid;
 	}
 
+
+	template<typename Func>
+	static WorldRegion2 LoopSpiralOutward_Regions(WorldRegion2 originRegion, int32 regionDistance, Func shouldExitFunc)
+	{
+		int32 maxLookup = (1 + regionDistance * 2);
+		maxLookup = maxLookup * maxLookup;
+		
+		// Spiral
+		int x = 0;
+		int y = 0;
+		int dx = 0;
+		int dy = -1;
+		for (int i = 0; i < maxLookup; i++) 
+		{
+			WorldRegion2 region = originRegion;
+			region.x += x;
+			region.y += y;
+			
+			if (region.IsValid()) {
+				if (shouldExitFunc(region)) {
+					return region;
+				}
+			}
+			if ((x == y) || ((x < 0) && (x == -y)) || ((x > 0) && (x == 1 - y))) {
+				int temp = dx;
+				dx = -dy;
+				dy = temp;
+			}
+			x += dx;
+			y += dy;
+		}
+
+		return WorldRegion2();	
+	}
+
 	
 	// Shift display location so it is right a the center... useful for decal placement
 	static void ShiftDisplayLocationToTrueCenter(FVector& displayLocation, TileArea area, Direction faceDirection)

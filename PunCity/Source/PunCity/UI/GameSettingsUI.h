@@ -51,6 +51,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* ShadowsDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* TexturesDropdown;
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* EffectsDropdown;
+	
+	// Note: VSync/FPS options are disabled for now
+	//			(causes lag issues)
 	UPROPERTY(meta = (BindWidget)) UComboBoxString* MaxFrameRateDropdown;
 	UPROPERTY(meta = (BindWidget)) UCheckBox* VSyncCheckBox;
 	

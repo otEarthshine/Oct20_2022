@@ -774,6 +774,12 @@ public:
 	void FinishConstruction() final;
 };
 
+class CheeseMaker final : public IndustrialBuilding
+{
+public:
+	void FinishConstruction() final;
+};
+
 class CottonMill final : public IndustrialBuilding
 {
 public:
@@ -1090,6 +1096,24 @@ class SultansPalace final : public WorldWonder
 public:
 };
 class GreatMosque final : public WorldWonder
+{
+public:
+};
+
+
+class LongHall final : public WorldWonder
+{
+public:
+};
+class StaveChurch final : public WorldWonder
+{
+public:
+};
+class VikingPalace final : public WorldWonder
+{
+public:
+};
+class NotreDame final : public WorldWonder
 {
 public:
 };
@@ -2044,9 +2068,9 @@ public:
 		return 0;
 	}
 
-	//virtual int32 displayVariationIndex() override {
-	//	return _simulation->GetTownLvl(foreignBuilderId()) >= 4 ? 1 : 0;
-	//}
+	virtual int32 displayVariationIndex() override {
+		return _simulation->GetTownLvl(foreignBuilderId()) >= 4 ? 1 : 0;
+	}
 };
 
 

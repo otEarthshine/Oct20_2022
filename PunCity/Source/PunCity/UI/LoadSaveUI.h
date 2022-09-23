@@ -337,7 +337,7 @@ private:
 		
 		GameSaveInfo saveInfo = saveSystem().SaveDataToFile(nameString);
 
-#if WITH_EDITOR
+#if WITH_EDITOR && UE_BUILD_DEBUG
 		if (!saveInfo.IsAutosave())
 		{
 			// Test that after loading the file up and saving again, the checksum is still the same

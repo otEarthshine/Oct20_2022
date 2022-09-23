@@ -103,9 +103,11 @@ public:
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseFactionWrapBox;
 	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton1;
 	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton2;
+	UPROPERTY(meta = (BindWidget)) UButton* ChooseFactionButton3;
 
 	UPROPERTY(meta = (BindWidget)) UImage* ChooseFactionButtonGlow1;
 	UPROPERTY(meta = (BindWidget)) UImage* ChooseFactionButtonGlow2;
+	UPROPERTY(meta = (BindWidget)) UImage* ChooseFactionButtonGlow3;
 	
 	UPROPERTY(meta = (BindWidget)) UWrapBox* ChooseIconWrapBox;
 	
@@ -163,19 +165,18 @@ public:
 		previewPlayerInfo.factionIndex = 1;
 		UpdatePreviewPlayerInfoDisplay();
 	}
+	UFUNCTION() void OnClickChooseFaction2() {
+		previewPlayerInfo.factionIndex = 2;
+		UpdatePreviewPlayerInfoDisplay();
+	}
 
-	UFUNCTION() void OnHoverChooseFaction1() {
-		ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
-	UFUNCTION() void OnHoverChooseFaction2() {
-		ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
-	UFUNCTION() void OnUnhoverChooseFaction1() {
-		ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::Collapsed);
-	}
-	UFUNCTION() void OnUnhoverChooseFaction2() {
-		ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::Collapsed);
-	}
+	UFUNCTION() void OnHoverChooseFaction1() { ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::SelfHitTestInvisible); }
+	UFUNCTION() void OnHoverChooseFaction2() { ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::SelfHitTestInvisible); }
+	UFUNCTION() void OnHoverChooseFaction3() { ChooseFactionButtonGlow3->SetVisibility(ESlateVisibility::SelfHitTestInvisible); }
+	
+	UFUNCTION() void OnUnhoverChooseFaction1() { ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::Collapsed); }
+	UFUNCTION() void OnUnhoverChooseFaction2() { ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::Collapsed); }
+	UFUNCTION() void OnUnhoverChooseFaction3() { ChooseFactionButtonGlow3->SetVisibility(ESlateVisibility::Collapsed); }
 
 	void UpdatePreviewPlayerInfoDisplay();
 

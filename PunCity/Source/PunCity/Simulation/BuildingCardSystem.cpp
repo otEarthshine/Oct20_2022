@@ -120,7 +120,8 @@ void BuildingCardSystem::RollRareHandExecute()
 		};
 
 		FactionEnum factionEnum = _simulation->playerFactionEnum(_playerId);
-		if (factionEnum == FactionEnum::Arab)
+		if (factionEnum == FactionEnum::Arab ||
+			factionEnum == FactionEnum::Viking)
 		{
 			_cardsRareHand = {
 				CardEnum::TradingPost,

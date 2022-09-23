@@ -14,13 +14,15 @@ using namespace std;
 
 void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 {
+	LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_PunInit);
+	
 	_buildingId = buildingId;
 
-	ArrowUp->OnClicked.Clear();
-	ArrowDown->OnClicked.Clear();
-	PriorityButton->OnClicked.Clear();
-	NonPriorityButton->OnClicked.Clear();
-	DisabledButton->OnClicked.Clear();
+	//ArrowUp->OnClicked.Clear();
+	//ArrowDown->OnClicked.Clear();
+	//PriorityButton->OnClicked.Clear();
+	//NonPriorityButton->OnClicked.Clear();
+	//DisabledButton->OnClicked.Clear();
 
 	BUTTON_ON_CLICK(ArrowUp, this, &UBuildingJobUI::ArrowUpButtonDown);
 	BUTTON_ON_CLICK(ArrowDown, this, &UBuildingJobUI::ArrowDownButtonDown);
@@ -33,10 +35,13 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	NonPriorityButton->SetVisibility(ESlateVisibility::Visible);
 	DisabledButton->SetVisibility(ESlateVisibility::Collapsed);
 
-	DepletedText->SetVisibility(ESlateVisibility::Collapsed);
+	//DepletedText->SetVisibility(ESlateVisibility::Collapsed);
+	SetVisibility_DepletedText(false);
 
-	LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
-	MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+	//LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
+	//MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
+	SetVisibility_LargeWhiteText(false);
+	SetVisibility_MediumGrayText(false);
 
 	TradeButton->OnClicked.Clear();
 	TradeButton->OnClicked.AddDynamic(this, &UBuildingJobUI::OnClickTradeButton);
@@ -80,11 +85,13 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 
 	_lastInputTime = -999.0f;
 	_lastPriorityInputTime = -999.0f;
+
+	resourceIconsStateCache.resize(10);
 }
 
 void UBuildingJobUI::SetSlots(int filledSlotCount, int allowedSlotCount, int slotCount, FLinearColor color, bool fromInput)
 {
-	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobSetSlots);
+	LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobSetSlots);
 	
 	// Don't set slots for a while after last user input
 	if (!fromInput && UGameplayStatics::GetTimeSeconds(this) < _lastInputTime + NetworkInputDelayTime) {
@@ -321,7 +328,7 @@ void UBuildingJobUI::SetTradeProgress(TradeBuilding& tradeBuilding, float fracti
 
 void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std::vector<ResourceEnum> outputs, Building& building)
 {
-	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobResourceComplete);
+	LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobResourceComplete);
 
 	if (building.isEnum(CardEnum::Farm) && outputs.size() > 0)
 	{
@@ -351,23 +358,44 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 	{
 		for (size_t i = 0; i < inputs.size(); i++)
 		{
-			auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+			LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobResourceComplete_In)
+			
+			int32 hasCount;
+			int32 needCount;
+			{
+				LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_TEST3);
 
-			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(inputs[i]));
-			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
+				hasCount = building.resourceCount(inputs[i]);
+				needCount = building.inputPerBatch(inputs[i]);
+			}
+			
+			UResourceCompletionIcon* completionIcon;
+			{
+				LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_TEST1);
+				completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
+			}
 
-			int32 hasCount = building.resourceCount(inputs[i]);
-			int32 needCount = building.inputPerBatch(inputs[i]);
+			PriorityEnum priority = building.priority();
+			
+			if (IsStateChanged(1 + 2 * static_cast<uint32>(priority) + 6 * static_cast<uint32>(inputs[i]) + 1800 * hasCount + (1800 * 300) * needCount, resourceIconsStateCache[index]))
+			{
+				LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_TEST2);
+				
+				UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+				material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
+				material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCountTown(building.townId(), inputs[i]) == 0);
 
-			material->SetScalarParameterValue("Fraction", static_cast<float>(hasCount) / needCount);
-			material->SetScalarParameterValue("IsInput", 1.0f);
-			material->SetScalarParameterValue("HasNoResource", hasCount < needCount && simulation().resourceCountTown(building.townId(), inputs[i]) == 0);
+				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(inputs[i]));
+				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(inputs[i]));
+				material->SetScalarParameterValue("IsInput", 1.0f);
 
-			completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
+				completionIcon->SetIsPaused(priority == PriorityEnum::Disable);
+			}
 
 			if (completionIcon->ResourceImage->IsHovered())
 			{
+				LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_TEST6);
+				
 				TArray<FText> args;
 				ADDTEXT_LOCTEXT("Input", "Input");
 				ADDTEXT_INV_("<space>");
@@ -385,25 +413,34 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 
 	for (size_t i = 0; i < outputs.size(); i++)
 	{
+		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobResourceComplete_Out)
+		
 		auto completionIcon = GetBoxChild<UResourceCompletionIcon>(ResourceCompletionIconBox, index, UIEnum::ResourceCompletionIcon, true);
-		UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
 
-		if (outputs[i] == ResourceEnum::None) {
-			// Show a blank completion when there is not output
-			material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
-			material->SetTextureParameterValue("DepthTexture", assetLoader()->BlackIcon);
-		}
-		else {
-			material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(outputs[i]));
-			material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(outputs[i]));
-		}
-
+		ResourceEnum outputEnum = outputs[i];
 		float outputFraction = building.barFraction();
-		material->SetScalarParameterValue("Fraction", outputFraction);
-		material->SetScalarParameterValue("IsInput", 0.0f);
-		material->SetScalarParameterValue("HasNoResource", 0.0f);
+		PriorityEnum priority = building.priority();
 
-		completionIcon->SetIsPaused(building.priority() == PriorityEnum::Disable);
+		if (IsStateChanged(0 + 2 * static_cast<uint32>(priority) + 6 * static_cast<uint32>(outputEnum) + 1800 * static_cast<uint32>(outputFraction * 100), resourceIconsStateCache[index]))
+		{
+			UMaterialInstanceDynamic* material = completionIcon->ResourceImage->GetDynamicMaterial();
+
+			if (outputEnum == ResourceEnum::None) {
+				// Show a blank completion when there is not output
+				material->SetTextureParameterValue("ColorTexture", assetLoader()->BlackIcon);
+				material->SetTextureParameterValue("DepthTexture", assetLoader()->BlackIcon);
+			}
+			else {
+				material->SetTextureParameterValue("ColorTexture", assetLoader()->GetResourceIcon(outputEnum));
+				material->SetTextureParameterValue("DepthTexture", assetLoader()->GetResourceIconAlpha(outputEnum));
+			}
+
+			material->SetScalarParameterValue("Fraction", outputFraction);
+			material->SetScalarParameterValue("IsInput", 0.0f);
+			material->SetScalarParameterValue("HasNoResource", 0.0f);
+
+			completionIcon->SetIsPaused(priority == PriorityEnum::Disable);
+		}
 
 		//index++;
 
@@ -428,11 +465,12 @@ void UBuildingJobUI::SetResourceCompletion(std::vector<ResourceEnum> inputs, std
 
 void UBuildingJobUI::SetShowHumanSlots(bool isVisible, bool canManipulateOccupants, bool isTileBld)
 {
-	LEAN_PROFILING_UI(TickWorldSpaceUI_BldJobHumanSlots);
+	LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJobHumanSlots);
 	
 	if (isVisible)
 	{
-		HumanSlotsUI->SetVisibility(ESlateVisibility::Visible);
+		//HumanSlotsUI->SetVisibility(ESlateVisibility::Visible);
+		SetVisibility_HumanSlotsUI(true);
 		
 		if (canManipulateOccupants) {
 			PriorityEnum priority = building().priority();
@@ -463,7 +501,8 @@ void UBuildingJobUI::SetShowHumanSlots(bool isVisible, bool canManipulateOccupan
 	}
 	else
 	{
-		HumanSlotsUI->SetVisibility(ESlateVisibility::Collapsed);
+		//HumanSlotsUI->SetVisibility(ESlateVisibility::Collapsed);
+		SetVisibility_HumanSlotsUI(false);
 	}
 
 	

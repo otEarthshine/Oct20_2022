@@ -165,19 +165,25 @@ void ULobbyUI::Init(UMainMenuAssetLoaderComponent* maimMenuAssetLoaderIn)
 	BUTTON_ON_CLICK(ChooseFactionSectionButton, this, &ULobbyUI::OnClickChooseFactionSectionButton);
 	BUTTON_ON_CLICK(ChooseFactionButton1, this, &ULobbyUI::OnClickChooseFaction0);
 	BUTTON_ON_CLICK(ChooseFactionButton2, this, &ULobbyUI::OnClickChooseFaction1);
+	BUTTON_ON_CLICK(ChooseFactionButton3, this, &ULobbyUI::OnClickChooseFaction2);
 
 	ChooseFactionButtonGlow1->SetVisibility(ESlateVisibility::Collapsed);
 	ChooseFactionButtonGlow2->SetVisibility(ESlateVisibility::Collapsed);
+	ChooseFactionButtonGlow3->SetVisibility(ESlateVisibility::Collapsed);
 	
 	ChooseFactionButton1->OnHovered.Clear();
 	ChooseFactionButton1->OnHovered.AddUniqueDynamic(this, &ULobbyUI::OnHoverChooseFaction1);
 	ChooseFactionButton2->OnHovered.Clear();
 	ChooseFactionButton2->OnHovered.AddUniqueDynamic(this, &ULobbyUI::OnHoverChooseFaction2);
+	ChooseFactionButton3->OnHovered.Clear();
+	ChooseFactionButton3->OnHovered.AddUniqueDynamic(this, &ULobbyUI::OnHoverChooseFaction3);
 
 	ChooseFactionButton1->OnUnhovered.Clear();
 	ChooseFactionButton1->OnUnhovered.AddUniqueDynamic(this, &ULobbyUI::OnUnhoverChooseFaction1);
 	ChooseFactionButton2->OnUnhovered.Clear();
 	ChooseFactionButton2->OnUnhovered.AddUniqueDynamic(this, &ULobbyUI::OnUnhoverChooseFaction2);
+	ChooseFactionButton3->OnUnhovered.Clear();
+	ChooseFactionButton3->OnUnhovered.AddUniqueDynamic(this, &ULobbyUI::OnUnhoverChooseFaction3);
 
 	
 	BUTTON_ON_CLICK(ChooseIconSectionButton, this, &ULobbyUI::OnClickChooseIconSectionButton);

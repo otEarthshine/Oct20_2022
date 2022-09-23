@@ -70,8 +70,11 @@ public:
 				
 		};
 		
-		highlight(FactionEnum::Europe);
-		highlight(FactionEnum::Arab);
+		//highlight(FactionEnum::Europe);
+		//highlight(FactionEnum::Arab);
+		for (int32 i = 0; i < FactionEnumCount; i++) {
+			highlight(static_cast<FactionEnum>(i));
+		}
 	}
 
 protected:

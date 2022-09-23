@@ -290,6 +290,8 @@ void UMainGameUI::Tick()
 	// TODO: Debug kPointerOnUI
 	if (PunSettings::IsOn("ShowDebugExtra"))
 	{
+		LEAN_PROFILING_UI(TickMainGameUI_ShowDebugExtra);
+		
 		std::stringstream ss;
 		ss << "kPointerOnUI: " << kPointerOnUI << "\n";
 
@@ -323,51 +325,39 @@ void UMainGameUI::Tick()
 
 
 	//! Set visibility
-	bool shouldDisplayMainGameUI = dataSource()->ZoomDistanceBelow(WorldZoomAmountStage3) &&
-									sim.HasChosenLocation(playerId()) &&
-									!inputSystemInterface()->isSystemMovingCamera();
-
-	if (shouldDisplayMainGameUI && GetVisibility() == ESlateVisibility::Collapsed) {
-		SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
-	else if (!shouldDisplayMainGameUI && GetVisibility() != ESlateVisibility::Collapsed) {
-		SetVisibility(ESlateVisibility::Collapsed);
-	}
-
-
-	/*
-	 * Initial hide before building a townhall
-	 */
-	if (sim.HasTownhall(playerId()))
+	bool shouldDisplayMainGameUI;
 	{
-		BuildGatherMenu->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		CardStackSizeBox->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		RoundCountdownOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		LeaderSkillOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		ResourceOverlay->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-	}
-	else
-	{
-		BuildGatherMenu->SetVisibility(ESlateVisibility::Hidden);
-		CardStackSizeBox->SetVisibility(ESlateVisibility::Hidden);
-		RoundCountdownOverlay->SetVisibility(ESlateVisibility::Hidden);
-		LeaderSkillOverlay->SetVisibility(ESlateVisibility::Hidden);
-		ResourceOverlay->SetVisibility(ESlateVisibility::Hidden);
+		LEAN_PROFILING_UI(TickMainGameUI_ZoomDistance);
+
+		shouldDisplayMainGameUI = dataSource()->ZoomDistanceBelow(WorldZoomAmountStage3) &&
+																	sim.HasChosenLocation(playerId()) &&
+																	!inputSystemInterface()->isSystemMovingCamera();
+
+		if (shouldDisplayMainGameUI && GetVisibility() == ESlateVisibility::Collapsed) {
+			SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+		}
+		else if (!shouldDisplayMainGameUI && GetVisibility() != ESlateVisibility::Collapsed) {
+			SetVisibility(ESlateVisibility::Collapsed);
+		}
+		
+
+		/*
+		 * Initial hide before building a townhall
+		 */
+		
+		bool hasTownhall = sim.HasTownhall(playerId());
+		if (PunGlobalHashCache::IsStateChanged(BuildGatherMenu, hasTownhall))
+		{
+			ESlateVisibility VisibilityTemp = hasTownhall ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Hidden;
+			BuildGatherMenu->SetVisibility(VisibilityTemp);
+			CardStackSizeBox->SetVisibility(VisibilityTemp);
+			RoundCountdownOverlay->SetVisibility(VisibilityTemp);
+			LeaderSkillOverlay->SetVisibility(VisibilityTemp);
+			ResourceOverlay->SetVisibility(VisibilityTemp);
+		}
 	}
 	
 
-	////! If clicked something else, remove confirmation UI
-	//if (ConfirmationOverlay->GetVisibility() != ESlateVisibility::Collapsed)
-	//{
-	//	// Started other task, close the Confirmation overlay
-	//	int32 numUITasks = GetPunHUD()->NumberOfUITasks();
-	//	if (numUITasks > _onConfirmationNumUITask) {
-	//		OnClickConfirmationNo();
-	//	} else if (numUITasks < _onConfirmationNumUITask) {
-	//		// Rarecard UI was closed
-	//		_onConfirmationNumUITask = numUITasks;
-	//	}
-	//}
 	
 	{
 		LEAN_PROFILING_UI(TickMainGameUI_Cards);
@@ -400,7 +390,9 @@ void UMainGameUI::Tick()
 		}
 
 		
-		SetText(RoundCountdownText, to_string(rollCountdown) + "s");
+		//SetText(RoundCountdownText, to_string(rollCountdown) + "s");
+		SET_TEXT_FORMAT(RoundCountdownText, rollCountdown, INVTEXT("{0}s"), TEXT_NUM(rollCountdown));
+		
 		RoundCountdownImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", static_cast<float>(Time::Seconds() % Time::SecondsPerRound) / Time::SecondsPerRound);
 
 		ResourceSystem& resourceSystem = sim.resourceSystem(playerId());
@@ -433,35 +425,46 @@ void UMainGameUI::Tick()
 		}
 
 		// Card Hand Queue Count
-		FText submitStr = LOCTEXT("Submit", "Submit");
+		//FText submitStr = LOCTEXT("Submit", "Submit");
+		bool bShowAsSubmit = true;
 		if (queueCount > 1) {
-			SetText(CardHandCount, to_string(queueCount));
+			//SetText(CardHandCount, to_string(queueCount));
+			SET_TEXT_INT(CardHandCount, queueCount);
+			
 			CardHandCount->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 			CardRerollButton->SetVisibility(ESlateVisibility::Collapsed); // Also hide reroll button when there is card queue to prevent confusion
 
 			// "Pass" instead of "Submit" when there is no card selected, and there are 2+ card hand queue
 			int32 reservedCount = CppUtils::Sum(_lastHand1ReserveStatus);
 			if (reservedCount == 0) {
-				submitStr = LOCTEXT("Pass", "Pass");
+				//submitStr = LOCTEXT("Pass", "Pass");
+				bShowAsSubmit = false;
 			}
 		}
 		else {
 			CardHandCount->SetVisibility(ESlateVisibility::Collapsed);
 			CardRerollButton->SetVisibility(ESlateVisibility::Visible);
 		}
-		SetText(CardHand1SubmitButtonText, submitStr);
+		//SetText(CardHand1SubmitButtonText, submitStr);
+		SET_TEXT_BASE(CardHand1SubmitButtonText, static_cast<uint32>(bShowAsSubmit), (bShowAsSubmit ? LOCTEXT("Submit", "Submit") : LOCTEXT("Pass", "Pass")));
 
 		// Reroll price
 		int32 rerollPrice = cardSystem.GetRerollPrice();
 		RerollPrice->SetColorAndOpacity(globalResourceSys.moneyCap32() >= rerollPrice ? FLinearColor::White : FLinearColor(0.4, 0.4, 0.4));
 		if (rerollPrice == 0) {
-			RerollPrice->SetText(LOCTEXT("Free", "Free"));
-			RerollPrice1->SetText(LOCTEXT("Free", "Free"));
+			//RerollPrice->SetText(LOCTEXT("Free", "Free"));
+			//RerollPrice1->SetText(LOCTEXT("Free", "Free"));
+			SET_TEXT_BASE(RerollPrice, rerollPrice, LOCTEXT("Free", "Free"));
+			SET_TEXT_BASE(RerollPrice1, rerollPrice, LOCTEXT("Free", "Free"));
+			
 			RerollCoinIcon->SetVisibility(ESlateVisibility::Collapsed);
 			RerollCoinIcon1->SetVisibility(ESlateVisibility::Collapsed);
 		} else {
-			RerollPrice->SetText(TEXT_NUM(rerollPrice));
-			RerollPrice1->SetText(TEXT_NUM(rerollPrice));
+			//RerollPrice->SetText(TEXT_NUM(rerollPrice));
+			//RerollPrice1->SetText(TEXT_NUM(rerollPrice));
+			SET_TEXT_BASE(RerollPrice, rerollPrice, TEXT_NUM(rerollPrice));
+			SET_TEXT_BASE(RerollPrice1, rerollPrice, TEXT_NUM(rerollPrice));
+			
 			RerollCoinIcon->SetVisibility(ESlateVisibility::HitTestInvisible);
 			RerollCoinIcon1->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
@@ -973,24 +976,64 @@ void UMainGameUI::Tick()
 		{
 			LEAN_PROFILING_UI(TickMainGameUI_TopLeft);
 
-			SetText(TimeText, FText::FormatNamed(
-				LOCTEXT("InGameTopLeft_SeasonYear", "{EarlyMidLate} {SeasonName}"),
-				TEXT("EarlyMidLate"), Time::SeasonPrefix(Time::Ticks()),
-				TEXT("SeasonName"), Time::SeasonName(Time::Seasons())
-			));
+			//SetText(TimeText, FText::Format(
+			//	INVTEXT("{0} {1}"),
+			//	Time::SeasonPrefix(Time::Ticks()),
+			//	Time::SeasonName(Time::Seasons())
+			//));
 
-			SetText(YearText, FText::FormatNamed(
-				LOCTEXT("InGameTopLeft_SeasonYear", "Year {Years}"),
-				TEXT("Years"), TEXT_NUM(Time::Years())
-			));
+			SET_TEXT_FORMAT(TimeText, 
+				Time::Ticks() / (Time::TicksPerSeason * 3), 
+				INVTEXT("{0} {1}"),
+				Time::SeasonPrefix(Time::Ticks()),
+				Time::SeasonName(Time::Seasons())
+			)
+			//uint32 StateHash = Time::Ticks() / (Time::TicksPerSeason * 3);
+			//if (auto Value = TextUniqueIdToStateHash.Find(TimeText->GetUniqueID())) 
+			//{
+			//	if (*Value != StateHash) {
+			//		*Value = StateHash;
+			//		
+			//		SetText(TimeText, FText::Format(
+			//			INVTEXT("{0} {1}"),
+			//			Time::SeasonPrefix(Time::Ticks()),
+			//			Time::SeasonName(Time::Seasons())
+			//		));
+			//	}
+			//}
+			//else {
+			//	TextUniqueIdToStateHash.Add(TimeText->GetUniqueID(), StateHash);
+			//	
+			//	SetText(TimeText, FText::Format(
+			//		INVTEXT("{0} {1}"),
+			//		Time::SeasonPrefix(Time::Ticks()),
+			//		Time::SeasonName(Time::Seasons())
+			//	));
+			//}
+
+			//SetText(YearText, FText::FormatNamed(
+			//	LOCTEXT("InGameTopLeft_SeasonYear", "Year {Years}"),
+			//	TEXT("Years"), TEXT_NUM(Time::Years())
+			//));
+			SET_TEXT_FORMAT(YearText,
+				Time::Years(),
+				LOCTEXT("InGameTopLeft_SeasonYear", "Year {0}"),
+				TEXT_NUM(Time::Years())
+			);
 
 
 			FloatDet celsius = sim.Celsius(dataSource()->cameraAtom().worldTile2());
-			SetText(TemperatureText, FText::Format(
+			//SetText(TemperatureText, FText::Format(
+			//	INVTEXT("{0}°C ({1}°F)"),
+			//	TEXT_NUM(FDToInt(celsius)),
+			//	TEXT_NUM(FDToInt(CelsiusToFahrenheit(celsius)))
+			//));
+			SET_TEXT_FORMAT(TemperatureText,
+				celsius,
 				INVTEXT("{0}°C ({1}°F)"),
 				TEXT_NUM(FDToInt(celsius)),
 				TEXT_NUM(FDToInt(CelsiusToFahrenheit(celsius)))
-			));
+			);
 
 			float fraction = FDToFloat(celsius - Time::MinCelsiusBase()) / FDToFloat(Time::MaxCelsiusBase() - Time::MinCelsiusBase());
 			TemperatureImage->GetDynamicMaterial()->SetScalarParameterValue("Fraction", fraction);
@@ -999,8 +1042,10 @@ void UMainGameUI::Tick()
 
 			int32 childPopulation = sim.townManager(currentTownId()).childPopulation();
 			int32 adultPopulation = population - childPopulation;
-			AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
-			ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
+			//AdultPopulationText->SetText(FText::FromString(FString::FromInt(adultPopulation)));
+			//ChildPopulationText->SetText(FText::FromString(FString::FromInt(childPopulation)));
+			SET_TEXT_INT(AdultPopulationText, adultPopulation);
+			SET_TEXT_INT(ChildPopulationText, childPopulation);
 
 			if (runEachXTicks(60))
 			{
@@ -1040,13 +1085,25 @@ void UMainGameUI::Tick()
 			LEAN_PROFILING_UI(TickMainGameUI_TopLeft);
 			
 			int32 housingCapacity = sim.HousingCapacity(currentTownId());
-			HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(housingCapacity)));
+			//HousingSpaceText->SetText(FText::FromString(FString::FromInt(population) + FString("/") + FString::FromInt(housingCapacity)));
+			SET_TEXT_FORMAT(HousingSpaceText,
+				PunHashUtils::HashAdd(population, housingCapacity),
+				INVTEXT("{0}/{1}"),
+				TEXT_NUM(population),
+				TEXT_NUM(housingCapacity)
+			);
 
 
 			std::pair<int32, int32> slotsPair = sim.GetStorageCapacity(currentTownId());
 			int32 usedSlots = slotsPair.first;
 			int32 totalSlots = slotsPair.second;
-			SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
+			//SetText(StorageSpaceText, to_string(usedSlots) + "/" + to_string(totalSlots));
+			SET_TEXT_FORMAT(StorageSpaceText,
+				PunHashUtils::HashAdd(usedSlots, totalSlots),
+				INVTEXT("{0}/{1}"),
+				TEXT_NUM(usedSlots),
+				TEXT_NUM(totalSlots)
+			);
 
 			if (runEachXTicks(60))
 			{
@@ -1260,18 +1317,30 @@ void UMainGameUI::Tick()
 		 */
 
 		// This will set IconTextPair to red text when amount is zero
-		auto SetResourceIconPair = [&](UIconTextPairWidget* iconTextPair, ResourceEnum resourceEnum)
+		auto SetResourceIconPair = [&](UIconTextPairWidget* iconTextPair, ResourceEnum resourceEnum, bool bShouldDisplay)
 		{
-			int32 resourceCount = sim.resourceCountTown(currentTownId(), resourceEnum);
-			iconTextPair->SetFString(FString(), FString::FromInt(resourceCount));
-			iconTextPair->SetTextColor(resourceCount == 0 ? FLinearColor::Red : FLinearColor::White);
+			if (bShouldDisplay)
+			{
+				int32 resourceCount = sim.resourceCountTown(currentTownId(), resourceEnum);
 
-			if (iconTextPair->HasAnimation()) {
-				iconTextPair->PlayAnimationIf("Flash", resourceCount == 0);
+				if (PunGlobalHashCache::IsStateChanged(iconTextPair, PunHashUtils::HashAdd(static_cast<uint32>(resourceEnum), resourceCount)))
+				{
+					iconTextPair->SetFString(FString(), FString::FromInt(resourceCount));
+					iconTextPair->SetTextColor(resourceCount == 0 ? FLinearColor::Red : FLinearColor::White);
+
+					if (iconTextPair->HasAnimation()) {
+						iconTextPair->PlayAnimationIf("Flash", resourceCount == 0);
+					}
+
+					iconTextPair->SetImage(resourceEnum, assetLoader(), true); // Note.. AddResourceTooltip already checked for IsHovered
+					iconTextPair->InitBackgroundButton(resourceEnum);
+				}
 			}
 
-			iconTextPair->SetImage(resourceEnum, assetLoader(), true); // Note.. AddResourceTooltip already checked for IsHovered
-			iconTextPair->InitBackgroundButton(resourceEnum);
+			if (PunGlobalHashCache::IsStateChanged(iconTextPair->OuterOverlay, bShouldDisplay)) // Note: OuterOverlay just used for UniqueID so it doesn't overlap with iconTextPair
+			{
+				iconTextPair->SetVisibility(bShouldDisplay ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+			}
 		};
 
 		//SetResourceIconPair(WoodCount, ResourceEnum::Wood);
@@ -1283,9 +1352,13 @@ void UMainGameUI::Tick()
 			
 			// Food
 			int32 foodCount = sim.foodCount(currentTownId());
-			FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
-			FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
-			PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
+
+			if (PunGlobalHashCache::IsStateChanged(FoodCountText, foodCount))
+			{
+				FoodCountText->SetText(FText::Format(LOCTEXT("Food: {0}", "Food: {0}"), TEXT_NUM(foodCount)));
+				FoodCountText->SetColorAndOpacity(foodCount > 0 ? FLinearColor::White : FLinearColor::Red);
+				PlayAnimationIf("FoodCountLowFlash", foodCount == 0);
+			}
 
 			BUTTON_ON_CLICK(FoodCountButton, this, &UMainGameUI::OnClickFoodCountButton);
 
@@ -1376,19 +1449,20 @@ void UMainGameUI::Tick()
 				{
 					// Display normally = display only those above 0
 					auto displayNormally = [&]() {
-						if (amount > 0) {
-							iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-							SetResourceIconPair(iconTextPair, resourceEnum);
-						}
-						else {
-							iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
-						}
+						//if (amount > 0) {
+						//	iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						//	SetResourceIconPair(iconTextPair, resourceEnum);
+						//}
+						//else {
+						//	iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+						//}
+						SetResourceIconPair(iconTextPair, resourceEnum, amount > 0);
 					};
 					
 					if (resourceEnum == ResourceEnum::Wood)
 					{
-						iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-						SetResourceIconPair(iconTextPair, resourceEnum);
+						//iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						SetResourceIconPair(iconTextPair, resourceEnum, true);
 					}
 					else if (IsMedicineEnum(resourceEnum)) 
 					{
@@ -1397,12 +1471,13 @@ void UMainGameUI::Tick()
 							displayNormally();
 						} else {
 							// Without medicine, we show flashing medicine
-							if (resourceEnum == ResourceEnum::Medicine) {
-								iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-								SetResourceIconPair(iconTextPair, resourceEnum);
-							} else {
-								iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
-							}
+							//if (resourceEnum == ResourceEnum::Medicine) {
+							//	iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+							//	SetResourceIconPair(iconTextPair, resourceEnum);
+							//} else {
+							//	iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+							//}
+							SetResourceIconPair(iconTextPair, resourceEnum, resourceEnum == ResourceEnum::Medicine);
 						}
 					}
 					else if (IsToolsEnum(resourceEnum)) 
@@ -1412,19 +1487,20 @@ void UMainGameUI::Tick()
 							displayNormally();
 						} else {
 							// Without tools, we show flashing Iron tools
-							if (resourceEnum == ResourceEnum::IronTools) {
-								iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-								SetResourceIconPair(iconTextPair, resourceEnum);
-							} else {
-								iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
-							}
+							//if (resourceEnum == ResourceEnum::IronTools) {
+							//	iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+							//	SetResourceIconPair(iconTextPair, resourceEnum);
+							//} else {
+							//	iconTextPair->SetVisibility(ESlateVisibility::Collapsed);
+							//}
+							SetResourceIconPair(iconTextPair, resourceEnum, resourceEnum == ResourceEnum::IronTools);
 						}
 					}
 					// Special case stone.. Always show
 					else if (resourceEnum == ResourceEnum::Stone) 
 					{
-						iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-						SetResourceIconPair(iconTextPair, resourceEnum);
+						//iconTextPair->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+						SetResourceIconPair(iconTextPair, resourceEnum, true);
 					}
 					else {
 						displayNormally();
@@ -1519,6 +1595,8 @@ void UMainGameUI::Tick()
 
 	// Midscreen message
 	{
+		LEAN_PROFILING_UI(TickMainGameUI_MidScreenMessage);
+		
 		PlacementInfo placementInfo = inputSystemInterface()->PlacementBuildingInfo();
 
 		auto setMidscreenText = [&](FText text) {
@@ -1627,19 +1705,26 @@ void UMainGameUI::Tick()
 	 * CardInventory
 	 */
 	{
-		auto& cardSys = sim.cardSystem(playerId());
-
-		int32 maxCardInventorySlots = cardSys.maxCardInventorySlots();
-
-		CardInventoryToggleButton->SetVisibility(maxCardInventorySlots > 0 && !CardInventorySizeBox->IsVisible() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		CardInventoryToggleButton_Close->SetVisibility(maxCardInventorySlots > 0 && CardInventorySizeBox->IsVisible() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		LEAN_PROFILING_UI(TickMainGameUI_CardInventory);
 		
-		CardInventoryLinkImage->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		auto& cardSys = sim.cardSystem(playerId());
+		int32 maxCardInventorySlots = cardSys.maxCardInventorySlots();
+		
+		{
+			LEAN_PROFILING_UI(TickMainGameUI_CardInventory_Pre);
+
+			CardInventoryToggleButton->SetVisibility(maxCardInventorySlots > 0 && !CardInventorySizeBox->IsVisible() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+			CardInventoryToggleButton_Close->SetVisibility(maxCardInventorySlots > 0 && CardInventorySizeBox->IsVisible() ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+
+			CardInventoryLinkImage->SetVisibility(maxCardInventorySlots > 0 ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		}
 
 		const std::vector<CardStatus>& cardInventory = cardSys.cardInventory();
 
 		for (int i = CardInventoryUIWrap->GetChildrenCount(); i-- > 0;)
 		{
+			LEAN_PROFILING_UI(TickMainGameUI_CardInventory_Loop);
+			
 			CardStatus cardStatus;
 			if (i < cardInventory.size()) {
 				cardStatus = cardInventory[i];
@@ -1652,66 +1737,40 @@ void UMainGameUI::Tick()
 				continue;
 			}
 			cardButton->SetVisibility(ESlateVisibility::Visible);
-			
-			cardButton->PunInit(cardStatus, i, this, CallbackEnum::SelectInventorySlotCard, CardHandEnum::CardInventorySlots);
-			cardButton->SetCardStatus(CardHandEnum::CardInventorySlots, false, false);
-			cardButton->RefreshBuildingIcon(assetLoader());
+
+			if (PunGlobalHashCache::IsStateChanged(cardButton, PunHashUtils::HashAdd(cardStatus.cardEnum, cardStatus.stackSize)))
+			{
+
+				{
+					LEAN_PROFILING_UI(TickMainGameUI_CardInventory_PunInit);
+					cardButton->PunInit(cardStatus, i, this, CallbackEnum::SelectInventorySlotCard, CardHandEnum::CardInventorySlots);
+				}
+				{
+					LEAN_PROFILING_UI(TickMainGameUI_CardInventory_SetCardStatus);
+					cardButton->SetCardStatus(CardHandEnum::CardInventorySlots, false, false);
+				}
+				{
+					LEAN_PROFILING_UI(TickMainGameUI_CardInventory_RefreshBuildingIcon);
+					cardButton->RefreshBuildingIcon(assetLoader());
+				}
+
+			}
 			
 			//cardButton->ParentOverlay->SetVisibility(cardEnum == CardEnum::None ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 			//cardButton->CardSlotUnderneath->SetVisibility(ESlateVisibility::HitTestInvisible);
 		}
 	}
 
+	{
+		LEAN_PROFILING_UI(TickMainGameUI_ReinforcementUI);
+		TickReinforcementUI();
+	}
 
-	TickReinforcementUI();
-	TickCardSetsUI();
-	
-	/*
-	 * Card animation, the beginning part
-	 */
-	//DescriptionUIState uiState = simulation.descriptionUIState();
-	//
-	//for (int32 i = AnimatedCardOverlay->GetChildrenCount(); i-- > 0;)
-	//{
-	//	// TODO: so much simillar
-	//	auto cardButton = CastChecked<UBuildingPlacementButton>(AnimatedCardOverlay->GetChildAt(i));
-	//	if (cardButton->animationEnum == CardAnimationEnum::ToGlobalSlot)
-	//	{
-	//		if (uiState.objectType == ObjectTypeEnum::Building &&
-	//			simulation.building(uiState.objectId).isEnum(CardEnum::Townhall))
-	//		{
-	//			std::vector<CardStatus> cardStatuses = simulation.cardSystem(playerId()).cardsInTownhall();
-	//			// Remove if the card arrived at the building already
-	//			for (CardStatus& cardStatus : cardStatuses) {
-	//				if ((cardStatus.animationStartTime100 / 100.0f) == cardButton->cardAnimationStartTime) {
-	//					cardButton->RemoveFromParent();
-	//				}
-	//			}
-	//		}
-	//		else {
-	//			// No longer displaying townhall ObjectDescriptionUI, close this
-	//			cardButton->RemoveFromParent();
-	//		}
-	//	}
-	//	else if (cardButton->animationEnum == CardAnimationEnum::ToBuildingSlot)
-	//	{
-	//		if (uiState.objectType == ObjectTypeEnum::Building)
-	//		{
-	//			std::vector<CardStatus> cardStatuses = simulation.building(uiState.objectId).slotCards();
-	//			
-	//			// Remove if the card arrived at the building already
-	//			for (CardStatus& cardStatus : cardStatuses) {
-	//				if ((cardStatus.animationStartTime100 / 100.0f) == cardButton->cardAnimationStartTime) {
-	//					cardButton->RemoveFromParent();
-	//				}
-	//			}
-	//		}
-	//		else {
-	//			// No longer displaying building DescriptionUI, close this
-	//			cardButton->RemoveFromParent();
-	//		}
-	//	}
-	//}
+	{
+		LEAN_PROFILING_UI(TickMainGameUI_CardSetsUI);
+		TickCardSetsUI();
+	}
+
 }
 
 //UBuildingPlacementButton* UMainGameUI::AddAnimationCard(CardEnum buildingEnum)

@@ -1,6 +1,6 @@
 {
 	"FileVersion": 3,
-	"EngineAssociation": "{E324AF86-43B7-AFC8-D255-44AB271DC4E8}",
+	"EngineAssociation": "4.25",
 	"Category": "",
 	"Description": "",
 	"Modules": [
@@ -18,50 +18,50 @@
 			]
 		}
 	],
-  "Plugins": [
-    {
-      "Name": "OnlineSubsystemSteam",
-      "Enabled": true
-    },
-    {
-      "Name": "OnlineSubsystemNull",
-      "Enabled": true
-    },
-    {
-      "Name": "KantanCharts",
-      "Enabled": true,
-      "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/89bd18db011b4bd19606db2e31020f13"
-    },
-    {
-      "Name": "LogViewer",
-      "Enabled": false,
-      "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/4853cdc0a6a54d7b9c0712cbe72f6b68"
-    },
-    {
-      "Name": "SteamVR",
-      "Enabled": false,
-      "SupportedTargetPlatforms": [
-        "Win32",
-        "Win64",
-        "Linux",
-        "Mac"
-      ]
-    },
-    {
-      "Name": "OculusVR",
-      "Enabled": false,
-      "SupportedTargetPlatforms": [
-        "Win32",
-        "Win64",
-        "Android"
-      ]
-    },
-    {
-      "Name": "Etherlinker",
-      "Enabled": true,
-      "MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/e029bbf9d6b04f95b9d9ef52e3934be5"
-    }
-  ],
+	"Plugins": [
+		{
+			"Name": "OnlineSubsystemSteam",
+			"Enabled": true
+		},
+		{
+			"Name": "OnlineSubsystemNull",
+			"Enabled": true
+		},
+		{
+			"Name": "KantanCharts",
+			"Enabled": true,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/89bd18db011b4bd19606db2e31020f13"
+		},
+		{
+			"Name": "LogViewer",
+			"Enabled": false,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/4853cdc0a6a54d7b9c0712cbe72f6b68"
+		},
+		{
+			"Name": "SteamVR",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"Win32",
+				"Win64",
+				"Linux",
+				"Mac"
+			]
+		},
+		{
+			"Name": "OculusVR",
+			"Enabled": false,
+			"SupportedTargetPlatforms": [
+				"Win32",
+				"Win64",
+				"Android"
+			]
+		},
+		{
+			"Name": "Etherlinker",
+			"Enabled": false,
+			"MarketplaceURL": "com.epicgames.launcher://ue/marketplace/content/e029bbf9d6b04f95b9d9ef52e3934be5"
+		}
+	],
 	"TargetPlatforms": [
 		"AllDesktop",
 		"MacNoEditor",

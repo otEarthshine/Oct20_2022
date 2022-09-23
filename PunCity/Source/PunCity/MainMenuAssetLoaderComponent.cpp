@@ -26,7 +26,7 @@ UMainMenuAssetLoaderComponent::UMainMenuAssetLoaderComponent()
 	};
 	addFactionImage("Europe");
 	addFactionImage("Arab");
-	
+	addFactionImage("Viking");
 
 	/*
 	 * Add Player Logos

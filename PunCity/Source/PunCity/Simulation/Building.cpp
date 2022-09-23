@@ -1443,10 +1443,6 @@ std::vector<BonusPair> Building::GetBonuses()
 			bonuses.push_back({ LOCTEXT("Desert Industry", "Desert Industry"), 20 });
 		}
 
-		//if (factionEnum() == FactionEnum::Arab) {
-		//	bonuses.push_back({ LOCTEXT("Faction Bonus", "Faction Bonus"), 10 });
-		//}
-
 		if (int32 industrialTechUpgradeCount = _simulation->GetTechnologyUpgradeCount(_playerId, TechEnum::IndustrialTechnologies)) {
 			bonuses.push_back({ LOCTEXT("Industrial Technologies", "Industrial Technologies"), 3 * industrialTechUpgradeCount });
 		}

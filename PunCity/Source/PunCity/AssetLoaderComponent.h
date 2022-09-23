@@ -1008,7 +1008,7 @@ private:
 	void LoadAnimModule(FName moduleName, FString meshFile);
 
 	//! Auxiliary requiring full folder name (doesn't automatically add /Era)
-	void LoadBuilding(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1, int32 era = 1)
+	void LoadBuilding_WithoutEraFoler(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupName, FString moduleGroupFolderName, ModuleTransformGroup auxGroup = ModuleTransformGroup(), int32 minEra = 1, int32 era = 1)
 	{
 		TryLoadBuildingModuleSet(factionEnum, moduleGroupName, moduleGroupFolderName, buildingEnum, era);
 		LinkBuilding(factionEnum, buildingEnum, moduleGroupName, auxGroup, minEra);
@@ -1036,22 +1036,24 @@ private:
 	}
 
 	/*
-	 * Main LoadBuilding
+	 * Main LoadBuilding_FactionSpecific
 	 * - All Factions, All Eras
 	 */
 	// TODO: moduleGroupFolderPrefix should be usable as moduleGroupPrefix
-	void LoadBuilding(CardEnum buildingEnum, 
-		FString moduleGroupPrefix_europe, FString moduleGroupPrefix_arab, FString moduleGroupFolderPrefix,
+	void LoadBuilding_FactionSpecific(CardEnum buildingEnum, 
+		FString moduleGroupPrefix_europe, FString moduleGroupPrefix_arab, FString moduleGroupPrefix_Viking, FString moduleGroupFolderPrefix,
 		int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
 	{
 		LoadBuildingEras(FactionEnum::Europe, buildingEnum, moduleGroupPrefix_europe, moduleGroupFolderPrefix, minEra, maxEra, auxGroup);
 		LoadBuildingEras(FactionEnum::Arab, buildingEnum, moduleGroupPrefix_arab, moduleGroupFolderPrefix, minEra, maxEra, auxGroup);
+		LoadBuildingEras(FactionEnum::Viking, buildingEnum, moduleGroupPrefix_Viking, moduleGroupFolderPrefix, minEra, maxEra, auxGroup);
 	}
 	void LoadBuilding(CardEnum buildingEnum, FString moduleGroupFolderPrefix,
 					int32 minEra, int32 maxEra = 4, ModuleTransformGroup auxGroup = ModuleTransformGroup())
 	{
 		LoadBuildingEras(FactionEnum::Europe, buildingEnum, moduleGroupFolderPrefix, moduleGroupFolderPrefix, minEra, maxEra, auxGroup);
 		LoadBuildingEras(FactionEnum::Arab, buildingEnum, moduleGroupFolderPrefix, moduleGroupFolderPrefix, minEra, maxEra, auxGroup);
+		LoadBuildingEras(FactionEnum::Viking, buildingEnum, moduleGroupFolderPrefix, moduleGroupFolderPrefix, minEra, maxEra, auxGroup);
 	}
 
 	void LoadBuildingEras(FactionEnum factionEnum, CardEnum buildingEnum, FString moduleGroupPrefix, FString moduleGroupFolderPrefix, 
@@ -1063,7 +1065,7 @@ private:
 		for (int32 i = minEra; i <= maxEra; i++) {
 			FString moduleGroupName = moduleGroupPrefix + FString::FromInt(i);
 			FString moduleGroupFolderName = moduleGroupFolderPrefix + FString("/Era") + FString::FromInt(i);
-			LoadBuilding(factionEnum, buildingEnum, moduleGroupName, moduleGroupFolderName,
+			LoadBuilding_WithoutEraFoler(factionEnum, buildingEnum, moduleGroupName, moduleGroupFolderName,
 				auxGroup, minEra, i
 			);
 		}
@@ -1103,8 +1105,11 @@ private:
 		if (factionEnum == FactionEnum::Europe) {
 			buildingPath = "Models/Buildings/";
 		}
-		else {
+		else if (factionEnum == FactionEnum::Arab) {
 			buildingPath = "Models/Desertfaction/Models/";
+		}
+		else {
+			buildingPath = "Models/Viking_faction/Models/";
 		}
 		return buildingPath;
 	}

@@ -354,7 +354,7 @@ void APunPlayerController::Tick(float DeltaTime)
 
 	if (LeanProfiler::EnumToElements.size() > 0) 
 	{
-		int32 endIndex = static_cast<int32>(LeanProfilerEnum::TickStatisticsUI);
+		int32 endIndex = static_cast<int32>(LeanProfilerEnum::TickWorldSpaceUI_TEST0);
 		LeanProfiler::FinishTick(0, endIndex);
 		if (_playerControllerTick % (PunSettings::Get("LeanProfilingTicksInterval")) == 0) {
 			LeanProfiler::FinishInterval(0, endIndex);

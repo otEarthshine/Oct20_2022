@@ -248,6 +248,27 @@ public:
 			int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLocalIndex;
 			return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
 		}
+
+		if (factionEnum() == FactionEnum::Viking)
+		{
+			int32 maxLocalIndex = 2;
+			switch (_houseLvl) {
+			case 1: maxLocalIndex = 2; break;
+			case 2: maxLocalIndex = 2; break;
+			case 3: maxLocalIndex = 2; break;
+			case 4: maxLocalIndex = 2; break;
+
+			case 5: maxLocalIndex = 2; break;
+			case 6: maxLocalIndex = 2; break;
+			case 7: maxLocalIndex = 2; break;
+			case 8: maxLocalIndex = 2; break;
+			default: break;
+			}
+
+			// Checker board like pattern so houses doesn't look the same next to each other...
+			int32 localIndex = (((centerTile().x / 6) % 2) + ((centerTile().y / 6) % 2) + 1) % maxLocalIndex;
+			return (_houseLvl - 1) * houseTypesPerLevel + localIndex;
+		}
 		
 		UE_DEBUG_BREAK();
 		return 0;

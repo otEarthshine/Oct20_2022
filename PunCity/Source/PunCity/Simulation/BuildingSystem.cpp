@@ -205,6 +205,7 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::MagicMushroomFarm, ShroomFarm);
 		CASE_BUILDING(CardEnum::VodkaDistillery, VodkaDistillery);
 		CASE_BUILDING(CardEnum::TequilaDistillery, VodkaDistillery);
+		CASE_BUILDING(CardEnum::MeadMaker, VodkaDistillery);
 		CASE_BUILDING(CardEnum::CoffeeRoaster, CoffeeRoaster);
 
 		// Feb 2, 2021
@@ -244,6 +245,10 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 		CASE_BUILDING(CardEnum::SultansPalace, SultansPalace);
 		CASE_BUILDING(CardEnum::GreatMosque, GreatMosque);
 
+		CASE_BUILDING(CardEnum::LongHall, LongHall);
+		CASE_BUILDING(CardEnum::StaveChurch, StaveChurch);
+		CASE_BUILDING(CardEnum::VikingPalace, VikingPalace);
+		CASE_BUILDING(CardEnum::NotreDame, NotreDame);
 
 		// Others
 		CASE_BUILDING(CardEnum::BoarBurrow, BoarBurrow);
@@ -344,6 +349,8 @@ void BuildingSystem::CreateBuilding(CardEnum buildingEnum, std::unique_ptr<Build
 
 		  CASE_BUILDING(CardEnum::PitaBakery, PitaBakery);
 		  CASE_BUILDING(CardEnum::CarpetWeaver, CarpetWeaver);
+
+		  CASE_BUILDING(CardEnum::CheeseMaker, CheeseMaker);
 
 		  CASE_BUILDING(CardEnum::IrrigationPump, IrrigationPump);
 

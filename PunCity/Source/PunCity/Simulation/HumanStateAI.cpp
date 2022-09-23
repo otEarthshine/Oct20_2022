@@ -2390,18 +2390,38 @@ bool HumanStateAI::TryGather(bool treeOnly)
 	if (isBelowWorkingAge()) {
 		return false;
 	}
+
+	// FindNearestMark's cache keeps accessibility to townhall
+	// if this citizen isn't connected to townhall, exit
+	WorldTile2 townGateTile = _simulation->GetTownhallGate_All(_townId);
+	if (!townGateTile.isValid()) {
+		return false;
+	}
+	
+	if (!_simulation->IsConnected(unitTile(), townGateTile, unitMaxFloodDistance())) {
+		return false;
+	}
 	
 	// Filter for trees to cut
 	NonWalkableTileAccessInfo tileAccessInfo;
 	{
 		SCOPE_CYCLE_COUNTER(STAT_PunUnit_CalcHuman_TryGather_FindMark);
-		tileAccessInfo = treeSystem().FindNearestMark(_townId, unitTile(), treeOnly, 5);
+		tileAccessInfo = treeSystem().FindNearestMark(_townId, unitTile(), townGateTile, treeOnly, GameConstants::MaxFindNearestMarkRegionDistance);
 	}
 
 	if (!tileAccessInfo.isValid()) {
 		AddDebugSpeech("(Failed)TryGather: no tree nearby");
 		return false;
 	}
+
+	// FindNearestMark's cache might not be updated, double check
+	//  - update the cache if needed
+	if (!_simulation->IsConnected(unitTile(), tileAccessInfo.nearbyTile, unitMaxFloodDistance()))
+	{
+		treeSystem().UpdateMarkedTileCache(townGateTile, tileAccessInfo.tile, GameConstants::MaxFindNearestMarkRegionDistance);
+		return false;
+	}
+	
 
 	const int32 maxDistanceToGather_NonLaborer = 50;
 	Building* workplc = workplace();

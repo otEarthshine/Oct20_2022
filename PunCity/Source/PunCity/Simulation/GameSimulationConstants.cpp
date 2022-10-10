@@ -28,6 +28,10 @@ int GameMapConstants::RegionsPerWorldY_Inner = 0;
 int32 GameMapConstants::MaxInnerRegionX = 0;
 int32 GameMapConstants::MaxInnerRegionY = 0;
 
+int32 GameMapConstants::TundraTemperatureStart10000 = 6000;
+int32 GameMapConstants::BorealTemperatureStart10000 = 4000;
+int32 GameMapConstants::ForestTemperatureStart10000 = 700;
+
 void GameMapConstants::SetRegionsPerWorld(int regionPerWorldX, int regionPerWorldY)
 {
 	RegionsPerWorldX = regionPerWorldX;

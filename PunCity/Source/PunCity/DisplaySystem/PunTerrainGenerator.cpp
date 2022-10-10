@@ -324,8 +324,8 @@ void PunTerrainGenerator::GenerateMoisture()
 		/*
 		 * Parameters
 		 */
-		const int32 normalCloudStartSize_MediumWet = 5000; // Oct5: 5800
-		const int32 desertCloudStartSize_MediumWet = 1200 * 3 / 4;// Oct5: 3000
+		const int32 normalCloudStartSize_MediumWet = 7000; // Arab:5000, Oct5: 5800
+		const int32 desertCloudStartSize_MediumWet = 900;// Arab:900, Oct5: 3000
 
 		int32 moistureInt = static_cast<int>(_mapSettings.mapMoisture);
 		int32 normalCloudStartSize = moistureInt * normalCloudStartSize_MediumWet / 2;
@@ -344,96 +344,146 @@ void PunTerrainGenerator::GenerateMoisture()
 			desertCloudStartSize = desertCloudStartSize * 20;
 		}
 
+		const int32 bandSize10000 = PunSettings::Get("DesertLatitudeBandSize10000");
+		const int32 longitudeSize10000 = PunSettings::Get("DesertLongitudeSize10000");
+
 		// At desert latitude, we get less rain...
-		auto isDesertLatitudeLongitude = [&](int x4, int y4) {
-			int32 latitudeFraction100 = abs(x4 - half4x4DimX) * 100 / half4x4DimX;
-			// latitudeFraction100... 0 at equator .. 1 at poles
-			if (forestTemperatureStart100 < latitudeFraction100 && latitudeFraction100 < borealTemperatureStart100) {
-				int32 longitudeFraction100 = abs(y4 - _tile4x4DimY / 2) * 100 / (_tile4x4DimY / 2);
-				// longitudeFraction100 .. 0 at middle of map .. 1 at outer part of map
-				return 22 < longitudeFraction100 && longitudeFraction100 < 73; // middle X% and outer Y% of map is forced to be forest
+		auto desertFactorFromLatitudeLongitude10000 = [&](int x4, int y4)
+		{
+			int32 latitudeFraction10000 = abs(x4 - half4x4DimX) * 10000 / half4x4DimX;
+
+			const int32 forestStart10000 = GameMapConstants::ForestTemperatureStart10000;
+			const int32 borealStart10000 = GameMapConstants::BorealTemperatureStart10000;
+
+			int32 factorFromLatitude;
+			if (forestStart10000 - bandSize10000 > latitudeFraction10000) {
+				factorFromLatitude = 10000;
 			}
-			return false;
+			else if (forestStart10000 + bandSize10000 > latitudeFraction10000) {
+				factorFromLatitude = 10000 - 10000 * (latitudeFraction10000 - (forestStart10000 - bandSize10000)) / (2 * bandSize10000);
+			}
+			else if (borealStart10000 - bandSize10000 > latitudeFraction10000) {
+				factorFromLatitude = 0;
+			}
+			else if (borealStart10000 + bandSize10000 > latitudeFraction10000) {
+				factorFromLatitude = 10000 * (latitudeFraction10000 - (borealStart10000 - bandSize10000)) / (2 * bandSize10000);
+			}
+			else {
+				factorFromLatitude = 10000;
+			}
+
+
+			int32 longitudeFraction10000 = abs(y4 - _tile4x4DimY / 2) * 10000 / (_tile4x4DimY / 2);
+
+			int32 factorFromLongitude;
+			if (longitudeSize10000 - bandSize10000 > longitudeFraction10000) {
+				factorFromLongitude = 10000;
+			}
+			else if (longitudeSize10000 + bandSize10000 > longitudeFraction10000) {
+				factorFromLongitude = 10000 - 10000 * (longitudeFraction10000 - (longitudeSize10000 - bandSize10000)) / (2 * bandSize10000);
+			}
+			else {
+				factorFromLongitude = 0;
+			}
+
+			return std::max(factorFromLatitude, factorFromLongitude);
+
+			//// latitudeFraction100... 0 at equator .. 1 at poles
+			//if (forestTemperatureStart100 < latitudeFraction100 && latitudeFraction100 < borealTemperatureStart100) 
+			//{
+			//	int32 longitudeFraction100 = abs(y4 - _tile4x4DimY / 2) * 100 / (_tile4x4DimY / 2);
+			//	// longitudeFraction100 .. 0 at middle of map .. 1 at outer part of map
+			//	return 25 < longitudeFraction100; // middle X% and outer Y% of map is forced to be forest
+			//}
+
+			//return false;
 		};
-		
 
-#define WESTWARD_WIND
-#ifdef WESTWARD_WIND
-		// Westward wind
-		// Note: Westward wind is exclusively for desert latitude wind.
-		for (int y4 = _tile4x4DimY - 2; y4-- > 0;) 
+		const int32 cloudSmoothWidth = PunSettings::Get("EastwardCloudSmoothWidth");  // 11
+
+		if (PunSettings::IsOn("EnableWestwardWind")) 
 		{
-			// Calculate all tiles perpendicular to the wind
-			for (int x4 = 0; x4 < _tile4x4DimX; x4++) 
+			// Westward wind
+			// Note: Westward wind is exclusively for desert latitude wind.
+			for (int y4 = _tile4x4DimY - 2; y4-- > 0;)
 			{
-				int32 startCloudSize = isDesertLatitudeLongitude(x4, y4) ? desertCloudStartSize : 0;
-				wind(x4 + y4 * _tile4x4DimX, cloudLeftVec[x4], startCloudSize);
-			}
+				// Calculate all tiles perpendicular to the wind
+				for (int x4 = 0; x4 < _tile4x4DimX; x4++)
+				{
+					int32 startCloudSize = desertFactorFromLatitudeLongitude10000(x4, y4) * desertCloudStartSize / 10000;
+					wind(x4 + y4 * _tile4x4DimX, cloudLeftVec[x4], startCloudSize);
+				}
 
-			// Smooth cloud
-			int smoothWidth = 11;
-			int smoothSum = 0;
-			for (int x4 = 0; x4 < smoothWidth; x4++) {
-				smoothSum += cloudLeftVec[x4];
+				// Smooth cloud
+				int smoothWidth = cloudSmoothWidth;
+				int smoothSum = 0;
+				for (int x4 = 0; x4 < smoothWidth; x4++) {
+					smoothSum += cloudLeftVec[x4];
+				}
+
+				for (int x4 = smoothWidth; x4 < _tile4x4DimX; x4++)
+				{
+					cloudLeftSmoothVec[x4 - (smoothWidth + 1) / 2] = smoothSum / smoothWidth;
+					smoothSum -= cloudLeftVec[x4 - smoothWidth];
+					smoothSum += cloudLeftVec[x4];
+				}
+				swap(cloudLeftSmoothVec, cloudLeftVec);
 			}
-			
-			for (int x4 = smoothWidth; x4 < _tile4x4DimX; x4++)
-			{
-				cloudLeftSmoothVec[x4 - (smoothWidth + 1) / 2] = smoothSum / smoothWidth;
-				smoothSum -= cloudLeftVec[x4 - smoothWidth];
-				smoothSum += cloudLeftVec[x4];
-			}
-			swap(cloudLeftSmoothVec, cloudLeftVec);
 		}
-#endif
 
-#define EASTWARD_WIND
-#ifdef EASTWARD_WIND
-		// Eastward wind
-		for (int y4 = 0; y4 < _tile4x4DimY; y4++) 
+		if (PunSettings::IsOn("EnableEastwardWind"))
 		{
-			for (int x4 = 0; x4 < _tile4x4DimX; x4++) {
-				int32 startCloudSize = isDesertLatitudeLongitude(x4, y4) ? 0 : normalCloudStartSize;
-				wind(x4 + y4 * _tile4x4DimX, cloudLeftVec[x4], startCloudSize);
-			}
+			bool isCloudSmoothOn = PunSettings::IsOn("EnableEastwardCloudSmooth");
 
-			// Smooth cloud
-			int smoothWidth = 11;
-			int smoothSum = 0;
-			for (int x4 = 0; x4 < smoothWidth; x4++) {
-				smoothSum += cloudLeftVec[x4];
-			}
-
-			for (int x4 = smoothWidth; x4 < _tile4x4DimX; x4++)
+			// Eastward wind
+			for (int y4 = 0; y4 < _tile4x4DimY; y4++)
 			{
-				cloudLeftSmoothVec[x4 - (smoothWidth + 1) / 2] = smoothSum / smoothWidth;
-				smoothSum -= cloudLeftVec[x4 - smoothWidth];
-				smoothSum += cloudLeftVec[x4];
+				for (int x4 = 0; x4 < _tile4x4DimX; x4++) {
+					int32 startCloudSize = desertFactorFromLatitudeLongitude10000(x4, y4) * normalCloudStartSize / 10000;
+					wind(x4 + y4 * _tile4x4DimX, cloudLeftVec[x4], startCloudSize);
+				}
+
+				// Smooth cloud
+				if (isCloudSmoothOn)
+				{
+					int smoothWidth = cloudSmoothWidth;
+					int smoothSum = 0;
+					for (int x4 = 0; x4 < smoothWidth; x4++) {
+						smoothSum += cloudLeftVec[x4];
+					}
+
+					for (int x4 = smoothWidth; x4 < _tile4x4DimX; x4++)
+					{
+						cloudLeftSmoothVec[x4 - (smoothWidth + 1) / 2] = smoothSum / smoothWidth;
+						smoothSum -= cloudLeftVec[x4 - smoothWidth];
+						smoothSum += cloudLeftVec[x4];
+					}
+					swap(cloudLeftSmoothVec, cloudLeftVec);
+				}
 			}
-			swap(cloudLeftSmoothVec, cloudLeftVec);
 		}
-#endif
 
 		// Adjust rainfall by latitude... so that Tundra have little rain
-		const int32 tundraStartNorth4x4 = tundraTemperatureStart100 * half4x4DimX / 100 + half4x4DimX;
-		const int32 tundraStartSouth4x4 = half4x4DimX - tundraTemperatureStart100 * half4x4DimX / 100;
-		
-		for (int y4 = 0; y4 < _tile4x4DimY; y4++) {
-			// South rainfall deduction
-			const int32_t lerpTiles = 64;
-			int32_t lerp = lerpTiles;
-			for (int x4 = tundraStartSouth4x4; x4-- > 0;) {
-				_rainfall4x4Map[x4 + y4 * _tile4x4DimX] = _rainfall4x4Map[x4 + y4 * _tile4x4DimX] * lerp / lerpTiles;
-				lerp = max(0, lerp - 1);
-			}
+		//const int32 tundraStartNorth4x4 = tundraTemperatureStart100 * half4x4DimX / 100 + half4x4DimX;
+		//const int32 tundraStartSouth4x4 = half4x4DimX - tundraTemperatureStart100 * half4x4DimX / 100;
 
-			// North rainfall deduction
-			lerp = lerpTiles;
-			for (int x4 = tundraStartNorth4x4; x4 < _tile4x4DimX; x4++) {
-				_rainfall4x4Map[x4 + y4 * _tile4x4DimX] = _rainfall4x4Map[x4 + y4 * _tile4x4DimX] * lerp / lerpTiles;
-				lerp = max(0, lerp - 1);
-			}
-		}
+		// Oct 7 Comment
+		//for (int y4 = 0; y4 < _tile4x4DimY; y4++) {
+		//	// South rainfall deduction
+		//	const int32_t lerpTiles = 64;
+		//	int32_t lerp = lerpTiles;
+		//	for (int x4 = tundraStartSouth4x4; x4-- > 0;) {
+		//		_rainfall4x4Map[x4 + y4 * _tile4x4DimX] = _rainfall4x4Map[x4 + y4 * _tile4x4DimX] * lerp / lerpTiles;
+		//		lerp = max(0, lerp - 1);
+		//	}
+
+		//	// North rainfall deduction
+		//	lerp = lerpTiles;
+		//	for (int x4 = tundraStartNorth4x4; x4 < _tile4x4DimX; x4++) {
+		//		_rainfall4x4Map[x4 + y4 * _tile4x4DimX] = _rainfall4x4Map[x4 + y4 * _tile4x4DimX] * lerp / lerpTiles;
+		//		lerp = max(0, lerp - 1);
+		//	}
+		//}
 
 		// Rainfall perlin random
 		PUN_DEBUG_EXPR(int32 riverCount = 0;
@@ -483,7 +533,7 @@ void PunTerrainGenerator::GenerateMoisture()
 				//}
 
 				// Taiga's fertility is 80% normal (at 90% ... taiga will be 72%)
-				if (GetTemperatureFraction10000(x4 * 4, rainfall100) > (borealTemperatureStart100 * 100) &&
+				if (GetTemperatureFraction10000(x4 * 4, rainfall100) > (GameMapConstants::BorealTemperatureStart10000) &&
 					(rainfall * 100 / 255) > 59) // above 59, rainfall gets pushed down
 				{
 					rainfall = (rainfall - 59) * 80 / 100 + 59;
@@ -532,11 +582,11 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 		int loopCount = 0;
 
 		// Don't start beyond tundra
-		int32 tundraBandSize = _tileDimX / 2 * (100 - tundraTemperatureStart100) / 100;
+		int32 tundraBandSize = _tileDimX / 2 * (10000 - GameMapConstants::TundraTemperatureStart10000) / 10000;
 		
 		while (true) 
 		{
-			sourceX = GameRand::Rand() % (_tileDimX - tundraBandSize * 2) + tundraBandSize; // do not start river in tundra
+			sourceX = GameRand::Rand() % std::max(1, _tileDimX - tundraBandSize * 2) + tundraBandSize; // do not start river in tundra
 			sourceY = GameRand::Rand() % _tileDimY;
 			
 			loopCount++;
@@ -801,6 +851,146 @@ void PunTerrainGenerator::Erode(std::vector<int16_t>& heightMapBeforeFlatten, st
 	PUN_LOG("riverCountAfterCreate size:%d, count:%d", _river4x4Map.size(), riverCountAfterCreate);
 }
 
+void PunTerrainGenerator::DryUpLargeLake()
+{
+	SCOPE_TIMER("DryUpLargeLake");
+
+	const int32 maxLakeSize = 2500 * _tileDimX / 1024;
+
+	auto isLargeLake = [&](WorldTile2 tileIn)
+	{
+		std::vector<WorldTile2> queuedTiles;
+		queuedTiles.push_back(tileIn);
+
+		int32 lakeTileCount = 0;
+
+		while (queuedTiles.size() > 0)
+		{
+			WorldTile2 curTile = queuedTiles.back();
+			queuedTiles.pop_back();
+
+			TerrainTileType& tileType = _terrainMap[curTile.tileId()];
+
+			// TODO: Remove if here??
+			if (tileType == TerrainTileType::UnprocessedWater)
+			{
+				tileType = TerrainTileType::UnprocessedWater2;
+				
+				lakeTileCount++;
+				if (lakeTileCount > maxLakeSize) {
+					PUN_LOG("lakeTileCount1 count:%d", lakeTileCount);
+					return true;
+				}
+
+
+				auto tryPushBack = [&](const WorldTile2& nextTile)
+				{
+					if (_terrainMap[nextTile.tileId()] == TerrainTileType::UnprocessedWater) {
+						queuedTiles.push_back(nextTile);
+					}
+				};
+
+				tryPushBack(curTile + WorldTile2(1, 0));
+				tryPushBack(curTile + WorldTile2(-1, 0));
+				tryPushBack(curTile + WorldTile2(0, 1));
+				tryPushBack(curTile + WorldTile2(0, -1));
+			}
+		}
+
+		PUN_LOG("lakeTileCount2 count:%d", lakeTileCount);
+
+		return false;
+	};
+
+	auto floodTiles = [&](WorldTile2 tileIn, TerrainTileType newTileType)
+	{
+		std::vector<WorldTile2> queuedTiles;
+		queuedTiles.push_back(tileIn);
+
+		int32 lakeTileCount = 0;
+
+		while (queuedTiles.size() > 0)
+		{
+			WorldTile2 curTile = queuedTiles.back();
+			queuedTiles.pop_back();
+
+			TerrainTileType& tileType = _terrainMap[curTile.tileId()];
+
+			tileType = newTileType;
+			if (tileType == TerrainTileType::None) {
+				heightMap[curTile.tileId()] = FlatLandHeight;
+			}
+			// Ensure inland lake isn't too deep
+			if (tileType == TerrainTileType::UnprocessedLake_NotDriedUp &&
+				heightMap[curTile.tileId()] < RiverMaxDepth) {
+				heightMap[curTile.tileId()] = RiverMaxDepth;
+			}
+
+			lakeTileCount++;
+
+			auto tryPushBack = [&](const WorldTile2& nextTile)
+			{
+				TerrainTileType& nextTileType = _terrainMap[nextTile.tileId()];
+				if (nextTileType == TerrainTileType::UnprocessedWater ||
+					nextTileType == TerrainTileType::UnprocessedWater2)
+				{
+					queuedTiles.push_back(nextTile);
+				}
+			};
+
+			tryPushBack(curTile + WorldTile2(1, 0));
+			tryPushBack(curTile + WorldTile2(-1, 0));
+			tryPushBack(curTile + WorldTile2(0, 1));
+			tryPushBack(curTile + WorldTile2(0, -1));
+		}
+
+		if (newTileType == TerrainTileType::None) {
+			PUN_LOG("floodTiles lake filling tileCount:%d", lakeTileCount);
+		}
+	};
+
+	//std::vector<WorldTile2> tilesToFloodBack;
+
+	for (int y = 1; y < _tileDimY - 1; y++) {
+		for (int x = 1; x < _tileDimX - 1; x++)
+		{
+			WorldTile2 tile(x, y);
+			if (_terrainMap[tile.tileId()] == TerrainTileType::UnprocessedWater)
+			{
+				if (isLargeLake(tile)) {
+					// Dry it up
+					floodTiles(tile, TerrainTileType::None);
+				}
+				else {
+					// Mark it so it doesn't get picked up again
+					floodTiles(tile, TerrainTileType::UnprocessedLake_NotDriedUp);
+					//tilesToFloodBack.push_back(tile);
+				}
+			}
+		}
+	}
+
+	//for (WorldTile2 tileToFloodBack : tilesToFloodBack) {
+	//	floodTiles(tileToFloodBack, TerrainTileType::UnprocessedWater);
+	//}
+	
+}
+
+void PunTerrainGenerator::MarkLakeAsFreshWater()
+{
+	SCOPE_TIMER("MarkLakeAsFreshWater");
+	
+	for (int y = 1; y < _tileDimY - 1; y++) {
+		for (int x = 1; x < _tileDimX - 1; x++)
+		{
+			if (_terrainMap[x + y * _tileDimX] == TerrainTileType::UnprocessedWater) {
+				WorldTile4x4::AddTileTo4x4(x, y, _river4x4Map, _tile4x4DimX, _tile4x4DimY);
+			}
+		}
+	}
+}
+
+
 void PunTerrainGenerator::Save4x4Map(std::vector<uint8_t>& map4x4, const char* path)
 {
 	ofstream file;
@@ -854,7 +1044,7 @@ bool PunTerrainGenerator::SaveOrLoad(bool isSaving)
 	return PunFileUtils::LoadFile(saveDataPath, serialize);
 }
 
-void PunTerrainGenerator::SetGameMap()
+void PunTerrainGenerator::SetGameMap(bool isFullSetup)
 {
 	{
 		SCOPE_TIMER("SetGameMap");
@@ -865,7 +1055,9 @@ void PunTerrainGenerator::SetGameMap()
 
 		// Borders are all Ocean
 		auto paintBorder = [&](WorldTile2 tile) {
-			_simulation->SetWalkableSkipFlood(tile, false);
+			if (_simulation) {
+				_simulation->SetWalkableSkipFlood(tile, false);
+			}
 			_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
 		};
 		for (int y = 0; y < _tileDimY; y++) {
@@ -925,7 +1117,7 @@ void PunTerrainGenerator::SetGameMap()
 					if (heightFD >= RiverMaxDepth - FD0_XXX(003) && riverFraction100(tile) > 90) {
 						_terrainMap[tile.tileId()] = TerrainTileType::River;
 					} else {
-						_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
+						_terrainMap[tile.tileId()] = TerrainTileType::UnprocessedWater;
 					}
 					
 					//_terrainMap[tile.tileId()] = TerrainTileType::Water;
@@ -935,12 +1127,219 @@ void PunTerrainGenerator::SetGameMap()
 		}
 	}
 
+	SetTerrainTileType_FloodFillOcean();
+
+
+	if (isFullSetup)
+	{
+		SCOPE_TIMER("CalculateWaterShipping");
+
+		// ::River includes lake that connects to ocean
+		// ::Lake includes only land-locked lake
+		// Flood Lake to see if it connects to River
+		// - If it does, flood the whole lake as river
+
+		// Reset River to UnprocessedWater
+		for (int y = 1; y < _tileDimY - 1; y++) {
+			for (int x = 1; x < _tileDimX - 1; x++)
+			{
+				TerrainTileType& tileType = _terrainMap[x + y * GameMapConstants::TilesPerWorldX];
+				if (tileType == TerrainTileType::River) {
+					tileType = TerrainTileType::UnprocessedWater;
+				}
+			}
+		}
+
+		auto isConnectedToSea = [&](int32 x, int32 y)
+		{
+			std::vector<WorldTile2> queuedTiles;
+			queuedTiles.push_back(WorldTile2(x, y));
+
+			while (queuedTiles.size() > 0)
+			{
+				WorldTile2 curTile = queuedTiles.back();
+				queuedTiles.pop_back();
+				
+				TerrainTileType& tileType = _terrainMap[curTile.tileId()];
+
+				if (tileType == TerrainTileType::Ocean) {
+					return true;
+				}
+				
+				if (tileType == TerrainTileType::UnprocessedWater) {
+					tileType = TerrainTileType::UnprocessedWater2;
+					
+					queuedTiles.push_back(curTile + WorldTile2(1, 0));
+					queuedTiles.push_back(curTile + WorldTile2(-1, 0));
+					queuedTiles.push_back(curTile + WorldTile2(0, 1));
+					queuedTiles.push_back(curTile + WorldTile2(0, -1));
+				}
+			}
+			
+			return false;
+		};
+
+		auto floodWaterBody = [&](int32 x, int32 y, TerrainTileType newTileType)
+		{
+			std::vector<WorldTile2> queuedTiles;
+			queuedTiles.push_back(WorldTile2(x, y));
+
+			while (queuedTiles.size() > 0)
+			{
+				WorldTile2 curTile = queuedTiles.back();
+				queuedTiles.pop_back();
+
+				TerrainTileType& tileType = _terrainMap[curTile.tileId()];
+				if (tileType == TerrainTileType::UnprocessedWater ||
+					tileType == TerrainTileType::UnprocessedWater2)
+				{
+					tileType = newTileType;
+					
+					queuedTiles.push_back(curTile + WorldTile2(1, 0));
+					queuedTiles.push_back(curTile + WorldTile2(-1, 0));
+					queuedTiles.push_back(curTile + WorldTile2(0, 1));
+					queuedTiles.push_back(curTile + WorldTile2(0, -1));
+				}
+			}
+		};
+
+		for (int y = 1; y < _tileDimY - 1; y++) {
+			for (int x = 1; x < _tileDimX - 1; x++)
+			{
+				TerrainTileType& tileType = _terrainMap[x + y * GameMapConstants::TilesPerWorldX];
+				if (tileType == TerrainTileType::UnprocessedWater)
+				{
+					TerrainTileType floodTileType = isConnectedToSea(x, y) ? TerrainTileType::River : TerrainTileType::Lake;
+					floodWaterBody(x, y, floodTileType);
+				}
+			}
+		}
+	}
+	
+
 	// Ocean region originate water.. water will flood
-	//if (isMapSetup) {
-		SCOPE_TIMER("CalculateFertility");
+	if (isFullSetup) 
+	{
+		SCOPE_TIMER("CalculateAppeal");
 		CalculateAppeal();
-	//}
+	}
 }
+
+void PunTerrainGenerator::SetTerrainTileType_UnprocessedLakeOnly()
+{
+	SCOPE_TIMER("SetTerrainTileType_UnprocessedLakeOnly");
+
+	VecReset(_terrainMap, TerrainTileType::None);
+
+	// Borders are all Ocean
+	auto paintBorder = [&](WorldTile2 tile) {
+		_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
+	};
+	for (int y = 0; y < _tileDimY; y++) {
+		paintBorder(WorldTile2(0, y));
+		paintBorder(WorldTile2(_tileDimX - 1, y));
+	}
+	for (int x = 0; x < _tileDimX; x++) {
+		paintBorder(WorldTile2(x, 0));
+		paintBorder(WorldTile2(x, _tileDimY - 1));
+	}
+
+	// Fill _terrainMap
+	// Ignore border
+	for (int y = 1; y < _tileDimY - 1; y++) {
+		for (int x = 1; x < _tileDimX - 1; x++)
+		{
+			WorldTile2 tile(x, y);
+
+			FloatDet heightFD = heightMap[x + y * _tileDimX];
+
+			if (heightMap[(x - 1) + (y - 1) * _tileDimX] < BeachToWaterHeight ||
+				heightMap[(x)+(y - 1) * _tileDimX] < BeachToWaterHeight ||
+				heightMap[(x + 1) + (y - 1) * _tileDimX] < BeachToWaterHeight ||
+
+				heightMap[(x - 1) + (y)* _tileDimX] < BeachToWaterHeight ||
+				heightFD < BeachToWaterHeight ||
+				heightMap[(x + 1) + (y)* _tileDimX] < BeachToWaterHeight ||
+
+				heightMap[(x - 1) + (y + 1) * _tileDimX] < BeachToWaterHeight ||
+				heightMap[(x)+(y + 1) * _tileDimX] < BeachToWaterHeight ||
+				heightMap[(x + 1) + (y + 1) * _tileDimX] < BeachToWaterHeight)
+			{
+				_terrainMap[tile.tileId()] = TerrainTileType::UnprocessedWater;
+			}
+		}
+	}
+}
+
+void PunTerrainGenerator::SetTerrainTileType_FloodFillOcean()
+{
+	SCOPE_TIMER("SetGameMap_FloodFillOcean");
+
+	struct FloodFillRange
+	{
+		int32 startX;
+		int32 endX;
+		int32 y;
+	};
+
+	std::vector<FloodFillRange> floodRanges;
+
+	auto LinearFill = [&](int32 xIn, int32 yIn)
+	{
+		FloodFillRange range = { xIn, xIn, yIn };
+
+		// Fill Backward
+		for (int32 x = xIn; x-- > 0;)
+		{
+			TerrainTileType& tileType = _terrainMap[x + yIn * GameMapConstants::TilesPerWorldX];
+			if (tileType == TerrainTileType::UnprocessedWater) {
+				tileType = TerrainTileType::Ocean;
+				range.startX = x;
+			}
+			else {
+				break;
+			}
+		}
+
+		// Fill Forward
+		for (int32 x = xIn; x < _tileDimX; x++)
+		{
+			TerrainTileType& tileType = _terrainMap[x + yIn * GameMapConstants::TilesPerWorldX];
+			if (tileType == TerrainTileType::UnprocessedWater) {
+				tileType = TerrainTileType::Ocean;
+				range.endX = x;
+			}
+			else {
+				break;
+			}
+		}
+
+		floodRanges.push_back(range);
+	};
+
+	LinearFill(1, 1);
+
+	while (floodRanges.size() > 0)
+	{
+		FloodFillRange range = floodRanges.back();
+		floodRanges.pop_back();
+
+		for (int32 x = range.startX; x < range.endX; x++)
+		{
+			// top
+			if (_terrainMap[x + (range.y + 1) * GameMapConstants::TilesPerWorldX] == TerrainTileType::UnprocessedWater) {
+				LinearFill(x, range.y + 1);
+			}
+
+			// bottom
+			if (_terrainMap[x + (range.y - 1) * GameMapConstants::TilesPerWorldX] == TerrainTileType::UnprocessedWater) {
+				LinearFill(x, range.y - 1);
+			}
+		}
+	}
+	
+}
+
 
 void PunTerrainGenerator::SetGameMap2_Walkable()
 {
@@ -971,9 +1370,9 @@ void PunTerrainGenerator::SetMountainTile(WorldTile2 tile)
 	_terrainMap[tile.tileId()] = TerrainTileType::Mountain;
 	_simulation->SetWalkable(tile, false);
 }
-void PunTerrainGenerator::SetWaterTile(WorldTile2 tile)
+void PunTerrainGenerator::SetFreshWaterTile(WorldTile2 tile)
 {
-	_terrainMap[tile.tileId()] = TerrainTileType::Ocean;
+	_terrainMap[tile.tileId()] = TerrainTileType::Lake;
 	_simulation->SetWalkable(tile, false);
 }
 void PunTerrainGenerator::SetImpassableFlatTile(WorldTile2 tile)
@@ -1526,9 +1925,22 @@ uint8 PunTerrainGenerator::Init5()
 {
 	INIT_LOG("WorldInit5: %d, %d .. %d", _tileDimX, _tileDimY, GameMapConstants::TilesPerWorldX);
 
-	GenerateMoisture(); // rainfall4x4map
+	// Remove Large Lakes
+	SetTerrainTileType_UnprocessedLakeOnly();
+	SetTerrainTileType_FloodFillOcean();
+	DryUpLargeLake();
 
+	// rainfall4x4map
+	GenerateMoisture();
+
+	// Erode River
 	Erode(continentPerlin1, continentPerlin2, mirroredRoughness);
+
+	// Determine Lake
+	SetGameMap(false);
+	MarkLakeAsFreshWater();
+	
+	// Blur Freshwater
 	WorldTile4x4::Blur(2, _river4x4Map, _tile4x4DimX, _tile4x4DimY); // Blur River
 
 	SaveOrLoad(true);
@@ -1591,18 +2003,18 @@ int32 PunTerrainGenerator::GetFertilityPercentBase(WorldTile2 tile)
 
 	// beyond tundra decrease fertility
 	int32 temperatureFraction10000 = GetTemperatureFraction10000(tile.x, fertility);
-	if (temperatureFraction10000 > tundraTemperatureStart10000) {
+	if (temperatureFraction10000 > GameMapConstants::TundraTemperatureStart10000) {
 		int32 tundraFertilityZeroBandFraction10000 = 200;
-		int32 fertilityDeduction = (temperatureFraction10000 - tundraTemperatureStart10000) / tundraFertilityZeroBandFraction10000;
+		int32 fertilityDeduction = (temperatureFraction10000 - GameMapConstants::TundraTemperatureStart10000) / tundraFertilityZeroBandFraction10000;
 		fertility = max(0, fertility - fertilityDeduction);
 	}
 	// Within equator
 	// Note that we must lerp under savanna band since desert is forced to have no plant
-	else if (temperatureFraction10000 < forestTemperatureStart10000)
+	else if (temperatureFraction10000 < GameMapConstants::ForestTemperatureStart10000)
 	{
 		int32 equatorFertilityFullBandFraction10000 = 200;
 		
-		int32 fertilityMin = (forestTemperatureStart10000 - temperatureFraction10000) * 30 / equatorFertilityFullBandFraction10000; // minimum 30 fertility at full...
+		int32 fertilityMin = (GameMapConstants::ForestTemperatureStart10000 - temperatureFraction10000) * 30 / equatorFertilityFullBandFraction10000; // minimum 30 fertility at full...
 		fertilityMin = min(fertilityMin, 30);
 		fertility = max(fertilityMin, fertility);
 	}

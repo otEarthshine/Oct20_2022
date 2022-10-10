@@ -575,13 +575,20 @@ void APunPlayerController::Tick(float DeltaTime)
 							tickInfo.gameSpeed = kGameSpeed;
 
 							// Dispatch all commands (Limited to 10)
-							int32 numberOfCommandsToSend = min(static_cast<int>(kCommandQueue.size()), 10);
-							for (int32 j = 0; j < numberOfCommandsToSend; j++) {
+							int32 targetNumberOfCommandsToSend = min(static_cast<int>(kCommandQueue.size()), 10);
+							for (int32 j = 0; j < targetNumberOfCommandsToSend; j++) {
 								tickInfo.commands.push_back(kCommandQueue[j]);
+
+								if (kCommandQueue[j]->commandType() == NetworkCommandEnum::PlaceDrag &&
+									static_pointer_cast<FPlaceDrag>(kCommandQueue[j])->path.Num() >= 100)
+								{
+									break;
+								}
 								//PUN_DEBUG(FString::Printf(TEXT("Add tickInfo.commands init: %d"), tickInfo.commands.size()));
 							}
+
 							vector<shared_ptr<FNetworkCommand>> commands;
-							for (int32 j = numberOfCommandsToSend; j < kCommandQueue.size(); j++) {
+							for (int32 j = tickInfo.commands.size(); j < kCommandQueue.size(); j++) {
 								commands.push_back(kCommandQueue[j]);
 							}
 							kCommandQueue = commands;

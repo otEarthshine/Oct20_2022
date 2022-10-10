@@ -1056,13 +1056,13 @@ public:
 	static FChooseInitialResources GetDefault(FactionEnum factionEnum)
 	{
 		FChooseInitialResources command;
-		command.foodAmount = 300;
+		command.foodAmount = 180;
 		command.woodAmount = 120;
 		command.stoneAmount = 120;
 		command.clayAmount = factionEnum == FactionEnum::Arab ? 240 : 0;
 		
 		command.medicineAmount = 240;
-		command.toolsAmount = 180;
+		command.toolsAmount = 240;
 		return command;
 	}
 

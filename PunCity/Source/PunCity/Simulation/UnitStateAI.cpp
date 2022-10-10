@@ -2126,12 +2126,11 @@ void UnitStateAI::UseTools()
 	//else 
 	if (resourceEnum == ResourceEnum::IronTools) 
 	{
-		int32 ticksUntilNextToolNeed = (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year;
+		int32 ticksUntilNextToolNeed = (Time::TicksPerYear * 3 / 4) + (GameRand::Rand() % (Time::TicksPerYear / 2)); // Steel tool 1 year;
 
 		ticksUntilNextToolNeed = ticksUntilNextToolNeed * 100 / (100 + _simulation->difficultyConsumptionAdjustment(_playerId));
 		
 		_nextToolNeedTick = Time::Ticks() + ticksUntilNextToolNeed;
-		//_nextToolNeedTick = Time::Ticks() + (Time::TicksPerYear * 2) + (GameRand::Rand() % Time::TicksPerYear * 2); // Steel tool 3 year
 	}
 	else if (resourceEnum == ResourceEnum::StoneTools)
 	{
@@ -2416,6 +2415,10 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 #endif
 		// Invalid move, use force move
 		succeed = _simulation->pathAI()->FindPathRobust(tile.x, tile.y, end.x, end.y, rawWaypoint);
+		if (succeed) {
+			MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+		}
+		
 		animationEnum = UnitAnimationEnum::Invisible;
 	}
 	else
@@ -2425,27 +2428,31 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 		if (unitEnum() == UnitEnum::Human)
 		{
 			LEAN_PROFILING_A(MoveTo_Human);
+
+			succeed = _simulation->FindPathHuman(tile, end, _unitData->waypoint(_id), rawWaypoint);
 			
-			int64 customCalculationCount = 30000;
-			int64 distance = WorldTile2::Distance(tile, end);
-			const int64 baseDistance = 70;
-			if (distance > baseDistance) {
-				customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
-			}
+			//int64 customCalculationCount = 30000;
+			//int64 distance = WorldTile2::Distance(tile, end);
+			//const int64 baseDistance = 70;
+			//if (distance > baseDistance) {
+			//	customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
+			//}
 
-			int32 roadCostDownFactor = 1;
-			if (_simulation->IsRoadTile(tile) && _simulation->IsRoadTile(end)) {
-				roadCostDownFactor = 2;
-			}
+			//int32 roadCostDownFactor = 1;
+			//if (_simulation->IsRoadTile(tile) && _simulation->IsRoadTile(end)) {
+			//	roadCostDownFactor = 2;
+			//}
 
-			
-
-			succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
+			//succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount); // ppl like road
+			//
 		}
 		else {
 			LEAN_PROFILING_A(MoveTo_Animal);
 			
 			succeed = _simulation->pathAI()->FindPathAnimal(tile.x, tile.y, end.x, end.y, rawWaypoint, 1, 30000);
+			if (succeed) {
+				MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+			}
 		}
 	}
 
@@ -2470,7 +2477,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 
 	SetAnimation(animationEnum);
 
-	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
+	//MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id)); // 9/28/2022 move to top
 	_unitData->SetWaypointCacheBuildingId(_id, -1);
 	_unitData->SetForceMove(_id, false);
 
@@ -2479,7 +2486,7 @@ bool UnitStateAI::MoveTo(WorldTile2 end, int32 customFloodDistance, UnitAnimatio
 	if (shouldCacheWaypoints) {
 		const std::vector<WorldTile2>& waypoint = _unitData->waypoint(_id);
 		check(_simulation->building(startBuildingId).gateTile() == tile);
-		check(waypoint.back() == tile);
+		//check(waypoint.back() == tile);
 		
 		_simulation->building(startBuildingId).AddCachedWaypoints(waypoint);
 	}
@@ -2522,43 +2529,7 @@ bool UnitStateAI::MoveToResource(ResourceHolderInfo holderInfo, int32 customFloo
 	return succeed;
 }
 
-// For moving army across long distance.
-//void UnitStateAI::Add_MoveToForceLongDistance(WorldTile2 end) {
-//	_actions.push_back(Action(ActionEnum::MoveToForceLongDistance, end.tileId()));
-//}
-//void UnitStateAI::MoveToForceLongDistance()
-//{
-//	LEAN_PROFILING_A(MoveToForceLongDistance);
-//	
-//	WorldTile2 end(action().int32val1);
-//	
-//	SCOPE_CYCLE_COUNTER(STAT_PunUnitDoMoveTo);
-//	WorldTile2 tile = unitTile();
-//
-//	bool isIntelligent = IsIntelligentUnit(unitEnum());
-//	
-//	const int32 customCalculationCount = 200000;
-//	bool succeed = _simulation->pathAI()->FindPath(tile.x, tile.y, end.x, end.y, rawWaypoint, true, isIntelligent, customCalculationCount);
-//
-//	if (!succeed) 
-//	{
-//		DEBUG_AI_VAR(FailedToFindPathLongDist);
-//		_simulation->ResetUnitActions(_id, 60);
-//		
-//		AddDebugSpeech("(Bad)MoveToForceLongDistance: " + tile.ToString() + end.ToString());
-//		MoveToRobust(end);
-//		return;
-//	}
-//
-//	_animationEnum = UnitAnimationEnum::Walk;
-//
-//	MapUtil::UnpackAStarPath(rawWaypoint, _unitData->waypoint(_id));
-//	_unitData->SetForceMove(_id, true);
-//
-//	// Convert waypoint to targetTile next tick.
-//	_unitData->SetNextTickState(_id, TransformState::NeedTargetAtom, UnitUpdateCallerEnum::MoveToForceLongDistance_Done);
-//	AddDebugSpeech("(Done)MoveToForceLongDistance:" + end.ToString());
-//}
+
 
 void UnitStateAI::Add_MoveInRange(WorldTile2 end, int32_t range) {
 	_actions.push_back(Action(ActionEnum::MoveInRange, end.tileId(), range));

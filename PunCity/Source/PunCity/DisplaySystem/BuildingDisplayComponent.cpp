@@ -121,6 +121,8 @@ int UBuildingDisplayComponent::CreateNewDisplay(int objectId)
 			if (protoMesh) {
 				_moduleMeshes[meshId]->AddProtoMesh(moduleNames[i], protoMesh, nullptr);
 
+				_moduleMeshes[meshId]->SetReceivesDecals(moduleNames[i], true); // For rain wet decals
+
 				//// Add burnt frame
 				//if (moduleNames[i].Len() > 5 && moduleNames[i].Right(5) == FString("Frame")) {
 				//	_moduleMeshes[meshId]->AddProtoMesh(moduleNames[i] + FString("Burnt"), protoMesh, _assetLoader->M_WoodFrameBurned);
@@ -139,6 +141,8 @@ int UBuildingDisplayComponent::CreateNewDisplay(int objectId)
 			UStaticMesh* protoMesh = _assetLoader->moduleMesh(moduleNames[i]);
 			PUN_CHECK(protoMesh);
 			_togglableModuleMeshes[meshId]->AddProtoMesh(moduleNames[i], protoMesh, nullptr);
+
+			_moduleMeshes[meshId]->SetReceivesDecals(moduleNames[i], true); // For rain wet decals
 		}
 	}
 

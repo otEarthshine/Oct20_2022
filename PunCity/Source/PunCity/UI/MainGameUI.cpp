@@ -982,12 +982,12 @@ void UMainGameUI::Tick()
 			//	Time::SeasonName(Time::Seasons())
 			//));
 
-			SET_TEXT_FORMAT(TimeText, 
-				Time::Ticks() / (Time::TicksPerSeason * 3), 
+			SET_TEXT_FORMAT(TimeText,
+				Time::Ticks() / Time::TicksPerMinute,// / (Time::TicksPerSeason * 3),
 				INVTEXT("{0} {1}"),
 				Time::SeasonPrefix(Time::Ticks()),
 				Time::SeasonName(Time::Seasons())
-			)
+			);
 			//uint32 StateHash = Time::Ticks() / (Time::TicksPerSeason * 3);
 			//if (auto Value = TextUniqueIdToStateHash.Find(TimeText->GetUniqueID())) 
 			//{
@@ -2864,8 +2864,18 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 				};
 
 				
-				if (buildingEnum == CardEnum::SellFood) {
-					sendCommandWithWarning(LOCTEXT("SellFood_Ask", "Are you sure you want to sell half of this city's food?"));
+				if (buildingEnum == CardEnum::SellFood) 
+				{
+					int32 totalSold = simulation().GetSellFoodAmount_Helper(playerId(), command->townId, false);
+					int32 totalMoneyReceived = totalSold * FoodCost;
+					
+					sendCommandWithWarning(
+						FText::Format(
+							LOCTEXT("SellFood_Ask", "Are you sure you want to sell {0} food for {1}<img id=\"Coin\"/>?"),
+							TEXT_NUM(totalSold),
+							TEXT_NUM(totalMoneyReceived)
+						)
+					);
 				} 
 				else if (buildingEnum == CardEnum::BuyWood) 
 				{
@@ -2875,7 +2885,7 @@ void UMainGameUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEn
 					if (money >= cost)
 					{
 						int32 amountToBuy = money / 2 / cost;
-						amountToBuy = min(amountToBuy, 1000);
+						amountToBuy = min(amountToBuy, 500);
 
 						if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy))
 						{

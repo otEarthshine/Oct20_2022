@@ -385,6 +385,26 @@ public:
 			networkInterface()->SendNetworkCommand(command);
 		}
 
+		// Build
+		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("Build"))
+		{
+			CardEnum cardEnum = FindCardEnumByName(FString(commandAndParams[1].c_str()));
+			if (cardEnum == CardEnum::None) {
+				return;
+			}
+
+			int32 addCount = commandAndParams.size() >= 3 ? FCString::Atoi(commandAndParams[2].c_str()) : 1;
+			if (addCount <= 0) {
+				return;
+			}
+
+			auto command = make_shared<FCheat>();
+			command->cheatEnum = GetCheatEnum("Build");
+			command->var1 = static_cast<int32>(cardEnum);
+			command->var2 = addCount;
+			networkInterface()->SendNetworkCommand(command);
+		}
+
 		// AddImmigrants
 		if (commandAndParams.size() >= 2 && commandAndParams[0] == TEXT("AddImmigrants"))
 		{

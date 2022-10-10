@@ -160,9 +160,13 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 	{
 		if (currentCount >= requiredCount)
 		{
-			SetText(TechRequirement,
-				LOCTEXT("TechBoxRequirementsCompleted", "Ready for Research!")
-			);
+			if (!unlockSys->IsLocked(tech->techEnum, tech->isMainTree))
+			{
+				SetText(TechRequirement,
+					LOCTEXT("TechBoxRequirementsCompleted", "Ready for Research!")
+				);
+				TechRequirement->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			}
 		}
 		else {
 			SetText(TechRequirement, FText::Format(
@@ -171,16 +175,13 @@ void UTechBoxUI::SetTechState(TechStateEnum techStateIn, bool isLockedIn, bool i
 				TEXT_NUM(requiredCount),
 				requiredName
 			));
+			TechRequirement->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		}
-		
-		//SetResourceImage(TechRequirementIcon, tech->requiredResourceEnum, assetLoader());
-		//TechRequirementIcon->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
-		TechRequirement->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	};
 
 	TechRequirement->SetVisibility(ESlateVisibility::Collapsed);
 	TechRequirementIcon->SetVisibility(ESlateVisibility::Collapsed);
+	
 	if (tech)
 	{
 		// Required Resource

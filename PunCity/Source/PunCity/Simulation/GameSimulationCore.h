@@ -948,9 +948,15 @@ public:
 		return IsWaterTileType(terraintileType(tile.tileId()));
 	}
 
+	bool IsShippableWater(WorldTile2 tile) {
+		return IsShippableWaterTileType(terraintileType(tile.tileId()));
+	}
+
 	bool IsFreshWater(WorldTile2 tile)
 	{
-		if (terrainGenerator().terrainTileType(tile) == TerrainTileType::River) {
+		TerrainTileType tileType = terrainGenerator().terrainTileType(tile);
+		if (tileType == TerrainTileType::River ||
+			tileType == TerrainTileType::Lake) {
 			return true;
 		}
 		const std::vector<int32>& oasisSlotIds = provinceInfoSystem().oasisSlotProvinceIds();
@@ -993,30 +999,38 @@ public:
 
 	FloatDet ModifyCelsiusByBiome(int32 temperatureFraction10000, FloatDet celsius, int32 divider = 1)
 	{
+		/**
+		 * !!! Before Viking
+		 * - snow should always hit jungle temperatureFraction100
+		 */
+
 		const FloatDet tundraModifierMax = FDOne * 10; // Tundra has no divider, summer temperature is still low
 		const FloatDet borealModifierMax = FDOne * 15 / divider;
 		const FloatDet jungleModifierMax = FDOne * 5 / divider; // This increases the temperature
 
 		// Tundra
-		if (temperatureFraction10000 > tundraTemperatureStart10000) {
-			FloatDet modifier = tundraModifierMax * (temperatureFraction10000 - tundraTemperatureStart10000) / (10000 - tundraTemperatureStart10000);
+		const int32 tundraStart10000 = GameMapConstants::TundraTemperatureStart10000;
+		if (temperatureFraction10000 >= tundraStart10000) {
+			FloatDet modifier = tundraModifierMax * (temperatureFraction10000 - tundraStart10000) / (10000 - tundraStart10000);
 			modifier *= 3; // reach modifierMax 3 times faster (1/3 of band is the increment)
 			
 			return celsius - borealModifierMax - std::min(modifier, tundraModifierMax);
 		}
 		// Boreal
-		if (temperatureFraction10000 > borealTemperatureStart10000) {
-			FloatDet modifier = borealModifierMax * (temperatureFraction10000 - borealTemperatureStart10000) / (tundraTemperatureStart10000 - borealTemperatureStart10000);
+		const int32 borealStart10000 = GameMapConstants::BorealTemperatureStart10000;
+		const int32 forestStart10000 = GameMapConstants::ForestTemperatureStart10000;
+		if (temperatureFraction10000 > borealStart10000) {
+			FloatDet modifier = borealModifierMax * (temperatureFraction10000 - borealStart10000) / (tundraStart10000 - borealStart10000);
 			modifier *= 3; // reach modifierMax 3 times faster (1/3 of band is the increment)
 			
 			return celsius - std::min(modifier, borealModifierMax);
 		}
-		if (temperatureFraction10000 > forestTemperatureStart10000) {
+		if (temperatureFraction10000 > forestStart10000) {
 			return celsius;
 		}
 
 		// Jungle
-		FloatDet modifier = jungleModifierMax * (forestTemperatureStart10000 - temperatureFraction10000) / forestTemperatureStart10000;
+		FloatDet modifier = jungleModifierMax * (forestStart10000 - temperatureFraction10000) / std::max(1, forestStart10000);
 		modifier *= 3;
 		return celsius + std::min(modifier, jungleModifierMax);
 	}
@@ -1589,6 +1603,65 @@ public:
 	void OnRefreshFloodGrid(WorldRegion2 region) override {
 		_buildingSystem->OnRefreshFloodGrid(region);
 	}
+
+
+	bool FindPath_LongRange(const WorldTile2& start, const WorldTile2& end, std::vector<WorldTile2>& waypoint, std::vector<uint32_t>& rawWaypoint)
+	{
+		std::vector<WorldTile2> higherLevelPath_startToEnd = floodSystem().FindPath_FloodRegionHelper(start, end, GameConstants::MaxFloodDistance_IsBuildingConnected);
+
+		waypoint.clear();
+		std::vector<WorldTile2> tempPath_EndToStart;
+
+		for (int32 i = higherLevelPath_startToEnd.size(); i-- > 1;)
+		{
+			const WorldTile2& lowLevelEnd = higherLevelPath_startToEnd[i];
+			const WorldTile2& lowLevelStart = higherLevelPath_startToEnd[i - 1];
+
+			_pathAI->FindPath(lowLevelStart.x, lowLevelStart.y, lowLevelEnd.x, lowLevelEnd.y, rawWaypoint, true, 1);
+
+			MapUtil::UnpackAStarPath(rawWaypoint, tempPath_EndToStart);
+
+			waypoint.insert(waypoint.end(), tempPath_EndToStart.begin(), tempPath_EndToStart.end() - 1);
+
+			tempPath_EndToStart.clear();
+		}
+
+		return waypoint.size() > 0;
+	}
+
+	virtual bool FindPathHuman(const WorldTile2& start, const WorldTile2& end, std::vector<WorldTile2>& waypoint, std::vector<uint32_t>& rawWaypoint) override
+	{
+		int64 customCalculationCount = 30000;
+		int64 distance = WorldTile2::Distance(start, end);
+		const int64 baseDistance = 70;
+		if (distance > baseDistance) {
+			customCalculationCount = 30000 * distance * distance / (baseDistance * baseDistance);
+		}
+
+		int32 roadCostDownFactor = 1;
+		if (IsRoadTile(start) && IsRoadTile(end)) {
+			roadCostDownFactor = 2;  // ppl like road
+		}
+
+		// Distance longer than X, check floodRegionDistance
+		if (baseDistance > GameConstants::FindPath_DistanceToCheckFloodRegionDistance)
+		{
+			std::vector<PathFindingFloodInfo> floodPath = floodSystem().FindPath_CheckFloodRegionHelper(start, end, GameConstants::MaxFloodDistance_IsBuildingConnected);
+			if (floodPath.size() > 3) {
+				return FindPath_LongRange(start, end, waypoint, rawWaypoint);
+			}
+		}
+
+		// Try finding path normally first
+		bool success = pathAI()->FindPath(start.x, start.y, end.x, end.y, rawWaypoint, true, roadCostDownFactor, customCalculationCount);
+		if (success) {
+			MapUtil::UnpackAStarPath(rawWaypoint, waypoint);
+			return true;
+		}
+
+		return FindPath_LongRange(start, end, waypoint, rawWaypoint);
+	}
+	
 
 	int32 FindNearestBuildingId(WorldTile2 tile, CardEnum buildingEnum, int32 townId, int32& minBuildingDist) override
 	{
@@ -4530,8 +4603,15 @@ public:
 			return;
 		}
 
-		auto isWater = [&](WorldTile2 tile) {
-			return buildingEnum == CardEnum::IrrigationPump ? IsFreshWater(tile) : IsWater(tile);
+		auto isWater = [&](WorldTile2 tile)
+		{
+			if (IsFreshwaterPortBuilding(buildingEnum)) {
+				return IsFreshWater(tile);
+			}
+			if (IsShippingPortBuilding(buildingEnum)) {
+				return IsShippableWater(tile);
+			}
+			return IsWater(tile);
 		};
 		
 		auto extraInfoPair = DockPlacementExtraInfo(buildingEnum);
@@ -4625,6 +4705,33 @@ public:
 		});
 	}
 
+
+	int32 GetSellFoodAmount_Helper(int32 playerId, int32 townId, bool shouldExecuteTransaction)
+	{
+		auto& globalResourceSys = globalResourceSystem(playerId);
+		auto& townResourceSys = resourceSystem(townId);
+
+		const int32 maxRemoval = 500;
+		int32 totalRemoved = 0;
+		for (ResourceEnum foodEnum : StaticData::FoodEnums)
+		{
+			int32 amountToRemove = townResourceSys.resourceCount(foodEnum) / 2;
+			amountToRemove = std::min(amountToRemove, maxRemoval - totalRemoved);
+
+			if (shouldExecuteTransaction) {
+				townResourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
+				globalResourceSys.ChangeMoney(amountToRemove * FoodCost);
+			}
+			
+			totalRemoved += amountToRemove;
+			if (totalRemoved >= maxRemoval) {
+				break;
+			}
+		}
+		
+		return totalRemoved;
+	}
+
 private:
 	void PlaceInitialTownhallHelper(FPlaceBuilding command, int32 townhallId);
 
@@ -4640,6 +4747,10 @@ private:
 		});
 	}
 
+
+	bool CheatPlaceBuildingSpiral(CardEnum buildingEnum, WorldTile2 curTile, int32 commandPlayerId);
+	bool CheatQuickBuild(int32 townId, CardEnum buildingEnum);
+	void CheatBuildTick();
 	void TestCityNetworkStage();
 
 public:

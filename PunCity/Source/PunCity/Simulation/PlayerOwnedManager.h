@@ -2,6 +2,7 @@
 
 #pragma once
 
+#include "BuildingCardSystem.h"
 #include "TownManager.h"
 
 /**
@@ -23,6 +24,7 @@ public:
 		_currentSkill = CardEnum::SpeedBoost;
 
 		_isInDarkAge = false;
+		_hasAlreadyReceivedFreeColony = false;
 
 		_uniqueBuildingIds.resize(BuildingEnumCount, -1);
 	}
@@ -243,6 +245,8 @@ public:
 
 	bool IsInDarkAge() { return _isInDarkAge; }
 
+	void TryGetFreeColony(int32 originProvinceId);
+
 	/*
 	 * Diplomacy
 	 */
@@ -302,6 +306,7 @@ public:
 		Ar << _currentSkill;
 
 		Ar << _isInDarkAge;
+		Ar << _hasAlreadyReceivedFreeColony;
 		
 		SerializeVecValue(Ar, _usedSkillEnums);
 		SerializeVecValue(Ar, _usedSkillBuildingIds);
@@ -370,6 +375,8 @@ private:
 
 	// Dark Age
 	bool _isInDarkAge;
+
+	bool _hasAlreadyReceivedFreeColony;
 
 private:
 	IGameSimulationCore* _simulation;

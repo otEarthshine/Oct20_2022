@@ -861,7 +861,7 @@ public:
 	int32 workRevenuePerSec100_perMan_() {
 		int32 result = buildingInfo().resourceInfo.workRevenuePerSec100_perMan(GetEraUpgradeCount());
 		if (IsElectricityUpgraded()) {
-			result += result * ElectricityAmountUsage() / std::max(1, ElectricityAmountNeeded()) / 2; // having full (usage == needed) means we get 50% increase in productivity
+			result += result * ElectricityAmountUsage() / std::max(1, GetCurrentElectricityUsageTarget()) * 3 / 10; // having full (usage == needed) means we get 50% increase in productivity
 		}
 		return result;
 	}
@@ -1204,19 +1204,23 @@ public:
 	int32 ElectricityAmountUsage() {
 		return _electricityReceived;
 	}
-	int32 ElectricityAmountNeeded() {
+	int32 GetCurrentElectricityUsageTarget() {
 		return occupantCount();
 	}
+	int32 GetMaxElectricityUsage() {
+		return maxOccupants();
+	}
+
 	bool IsElectricityUpgraded() {
 		// Last era is electricity
 		return GetUpgradeEraLevel() >= 5;
 	}
-	void SetElectricityAmountUsage(int32 electricityReceivedIn) {
+	void SetCurrentElectricityUsage(int32 electricityReceivedIn) {
 		_electricityReceived = electricityReceivedIn;
 	}
 
 	bool NotEnoughElectricity() {
-		return IsElectricityUpgraded() && ElectricityAmountUsage() < ElectricityAmountNeeded() * 3 / 4;
+		return IsElectricityUpgraded() && ElectricityAmountUsage() < GetCurrentElectricityUsageTarget() * 3 / 4;
 	}
 
 	
@@ -1416,12 +1420,20 @@ public:
 	const std::vector<std::vector<WorldTile2>>& cachedWaypoints() { return _cachedWaypoints; }
 	void AddCachedWaypoints(const std::vector<WorldTile2>& waypointsIn)
 	{
-		check(waypointsIn.back() == gateTile());
 		for (int32 i = 0; i < _cachedWaypoints.size(); i++) {
 			check(_cachedWaypoints[i].front() != waypointsIn.front());
 		}
 
 		_cachedWaypoints.insert(_cachedWaypoints.begin(), waypointsIn);
+
+		// Fix for 1 tile off issue
+		WorldTile2 gate = gateTile();
+		if (_cachedWaypoints[0].back() != gate &&
+			WorldTile2::ManDiagDistance(_cachedWaypoints[0].back(), gate) <= 1)
+		{
+			_cachedWaypoints[0].push_back(gate);
+		}
+		check(_cachedWaypoints[0].back() == gate);
 
 		if (_cachedWaypoints.size() > PunSettings::Get("CachedWaypointsThreshold")) {
 			_cachedWaypoints.pop_back();

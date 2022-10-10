@@ -2199,6 +2199,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 
 	const FText foreignBuild_NotInsideTargetTown = LOCTEXT("ForeignBuild_NotInsideTargetTown", "<Red>All tiles must be in the same Town.</>");
 	const FText foreignOnlyBuild_MustBeForeignTown = LOCTEXT("ForeignOnlyBuild_NeedToBeInForeignTown", "<Red>Must be built on other player's town.</>");
+
+	const FText seaportInstructionText = LOCTEXT("Port_Instruct", "<Red>Port must face water</>\n<Red>connected to sea</>");
 	
 
 	if (useNormalPlacement)
@@ -2222,7 +2224,11 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 				if (setDockInstruct) {
 					if (_buildingEnum == CardEnum::IrrigationPump) {
 						SetInstruction(PlacementInstructionEnum::Generic, true, LOCTEXT("Pump_Instruct", "<Red>Pump must face fresh water</>"));
-					} else {
+					}
+					else if (IsShippingPortBuilding(_buildingEnum)) {
+						SetInstruction(PlacementInstructionEnum::Generic, true, seaportInstructionText);
+					}
+					else {
 						SetInstruction(PlacementInstructionEnum::Dock, true);
 					}
 				}
@@ -2710,7 +2716,8 @@ void ABuildingPlacementSystem::TickPlacement(AGameManager* gameInterface, IGameN
 						}
 
 						if (setDockInstruct) {
-							SetInstruction(PlacementInstructionEnum::Dock, true);
+							SetInstruction(PlacementInstructionEnum::Generic, true, seaportInstructionText);
+							//SetInstruction(PlacementInstructionEnum::Dock, true);
 						}
 					}
 				}
@@ -3427,6 +3434,23 @@ void ABuildingPlacementSystem::NetworkTryPlaceBuilding(IGameNetworkInterface* ne
 						return;
 					}
 					//sim.AddPopupToFront(playerId(), "Not enough SP to use the leader skill.", ExclusiveUIEnum::None, "PopupCannot");
+				}
+				else if (_useWildCard != CardEnum::None)
+				{
+					int32 cardPrice = sim.cardSystem(playerId).GetCardPrice(_buildingEnum, ResourceEnum::Money);
+
+					if (sim.money64(playerId) >= cardPrice * 2)
+					{
+						if (sim.cardSystem(playerId).BoughtCardCount(_useWildCard)) {
+							return;
+						}
+					}
+					else if (sim.money64(playerId) >= cardPrice) // Lower than cardPrice, there is already another warning.
+					{
+						_gameInterface->simulation().AddPopupToFront(playerId,
+							LOCTEXT("PlacementNoMoney_ShiftClick", "Not enough money to continue shift-click build.")
+						);
+					}
 				}
 			}
 

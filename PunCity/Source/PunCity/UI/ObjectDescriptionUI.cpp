@@ -27,6 +27,8 @@ void UObjectDescriptionUI::Setup()
 	ChooseResourceCloseButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickedChooseResource);
 	SearchBox->SelectAllTextWhenFocused = true;
 
+	ManageStorageSearchBox->SelectAllTextWhenFocused = true;
+
 	AllowAllButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickAllowAll);
 	DisallowAllButton->OnClicked.AddDynamic(this, &UObjectDescriptionUI::ClickDisallowAll);
 

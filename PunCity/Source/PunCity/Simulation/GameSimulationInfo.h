@@ -19,10 +19,10 @@
 // GAME_VERSION
 // !!! Don't forget SAVE_VERSION !!!
 #define MAJOR_VERSION 0
-#define MINOR_VERSION 77 // 3 digit
+#define MINOR_VERSION 78 // 3 digit
 
-#define VERSION_DAY 7
-#define VERSION_MONTH 3
+#define VERSION_DAY 29
+#define VERSION_MONTH 9
 #define VERSION_YEAR 22
 
 #define VERSION_DATE (VERSION_YEAR * 10000) + (VERSION_MONTH * 100) + VERSION_DAY
@@ -32,11 +32,11 @@
 
 // SAVE_VERSION
 #define MAJOR_SAVE_VERSION 0
-#define MINOR_SAVE_VERSION 47 // 3 digit
+#define MINOR_SAVE_VERSION 48 // 3 digit
 
-#define VERSION_SAVE_DAY 1
-#define VERSION_SAVE_MONTH 2
-#define VERSION_SAVE_YEAR 25
+#define VERSION_SAVE_DAY 29
+#define VERSION_SAVE_MONTH 9
+#define VERSION_SAVE_YEAR 22
 
 #define VERSION_SAVE_DATE (VERSION_SAVE_YEAR * 10000) + (VERSION_SAVE_MONTH * 100) + VERSION_SAVE_DAY
 #define SAVE_VERSION (MAJOR_SAVE_VERSION * 1000000000) + (MINOR_SAVE_VERSION * 1000000) + VERSION_SAVE_DATE
@@ -1008,11 +1008,11 @@ static const std::vector<int32> DifficultyConsumptionAdjustment
 {
 	0,
 	30,
-	70,
-	110,
-	160,
-	230,
-	300,
+	60,
+	90,
+	120,
+	150,
+	200,
 };
 
 #undef LOCTEXT_NAMESPACE
@@ -1176,18 +1176,18 @@ struct ResourceInfo
 // BALANCE
 // human consume 100 food per year, 100 food is roughly 300 coins, 1 year is 20 mins or 1200 sec..
 //
-static const int32 HumanFoodPerYear = 24; // 45 (nov 19) // 35 // 70
-static const int32 FoodCost = 5; // 3 (nov 19)
+static const int32 HumanFoodPerYear = 12; // Arab: 24 // 45 (nov 19) // 35 // 70
+static const int32 FoodCost = 10; // Arab: 5 // 3 (nov 19)
 static const int32 BaseHumanFoodCost100PerYear = 100 * HumanFoodPerYear * FoodCost;
 
 /*
- * HumanFoodCostPerYear affects:
+ * BaseHumanFoodCost100PerYear affects:
  * - Industrial
- * - Hunting/Gathering through AssumedFoodProductionPerYear
- * Note: Farm is affected by this
+ * - Hunting/Gathering through AssumedFoodProduction100PerYear
+ * ??? - Farm needs manual adjustment???
  */
 static const int32 WoodGatherYield_Base100 = 250;
-static const int32 FarmBaseYield100 = 200; // 250 -> 200 (nov 19)
+static const int32 FarmBaseYield100 = 100; // Arab: 200 // 250 -> 200 (nov 19)
 static const int32 StoneGatherYield_Base = 4;
 
 static const int32 CutTreeTicksBase = Time::TicksPerSecond * 10;
@@ -1351,7 +1351,7 @@ static const ResourceInfo ResourceInfos[]
 	// Apr 9
 	ResourceInfo(ResourceEnum::StoneTools,	LOCTEXT("Stone Tools", "Stone Tools"),	10, LOCTEXT("Stone Tools Desc", "Low-grade Tools made by Stone Tool Shop.")),
 	ResourceInfo(ResourceEnum::Sand,		LOCTEXT("Sand", "Sand"),	6, LOCTEXT("Sand Desc", "Raw material for producing Glass.")),
-	ResourceInfo(ResourceEnum::Oil,			LOCTEXT("Oil", "Oil"),	12, LOCTEXT("Oil Desc", "Fuel used to produce electricity at Oil Power Plant.")),
+	ResourceInfo(ResourceEnum::Oil,			LOCTEXT("Oil", "Oil"),	15, LOCTEXT("Oil Desc", "Fuel used to produce electricity at Oil Power Plant.")),
 	
 	ResourceInfo(ResourceEnum::Glass,		LOCTEXT("Glass", "Glass"),	30, LOCTEXT("Glass Desc", "Transparent construction material made from Sand")),
 	ResourceInfo(ResourceEnum::Concrete,	LOCTEXT("Concrete", "Concrete"),	30, LOCTEXT("Concrete Desc", "Sturdy, versatile construction material")),
@@ -2926,11 +2926,11 @@ struct BldResourceInfo
 
 	// TODO:
 	static const int32 BaseCostPercentEraMultiplier = 135;
-	static int32 BaseProfitPercentEraMultiplier(int32 nextEra) { return nextEra == 2 ? 120 : 115; }
+	static int32 BaseProfitPercentEraMultiplier(int32 nextEra) { return nextEra == 2 ? 110 : 107; } // Arab: { return nextEra == 2 ? 120 : 115; } 
 
 	// For calculating upgrade cost and final base production
 	static const int32 UpgradeCostPercentEraMultiplier = 145;
-	static int32 UpgradeProfitPercentEraMultiplier(int32 nextEra) { return nextEra == 2 ? 115 : 110; }
+	static int32 UpgradeProfitPercentEraMultiplier(int32 nextEra) { return nextEra == 2 ? 108 : 105; } // Arab: { return nextEra == 2 ? 115 : 110; }
 
 	static const int32 FirstIndustryIncentiveMultiplier = 80;
 
@@ -3065,13 +3065,17 @@ struct BldResourceInfo
 			// Economy of scale, each worker increases revenue by 5%
 			workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * (workerCount * 5 + 100) / 100;
 
-			// Special cases
+			// Special cases:
 			// Building without era upgrade gets work bonus
 			if (HasNoEraUpgrade(buildingEnum)) {
 				workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * UpgradeProfitPercentEraMultiplier(0) / 100;
 			}
 
-			if (buildingEnum == CardEnum::Tailor) { // Tailor is has high worker count while not being too expensive
+			if (buildingEnum == CardEnum::Tailor) { // Tailor has high worker count while not being too expensive
+				workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * 70 / 100;
+			}
+
+			if (buildingEnum == CardEnum::Bakery) { // Bakery nerf, since it is producing food
 				workRevenuePerSec100_perMan_beforeUpgrade = workRevenuePerSec100_perMan_beforeUpgrade * 70 / 100;
 			}
 		}
@@ -3324,6 +3328,7 @@ static BldResourceInfo GetBldResourceInfo(int32 era, std::vector<ResourceEnum> i
 	BldResourceInfoCount++;
 	
 	bldResourceInfo.era = era;
+
 
 	// Determine Worker Count by Era
 	int32 workerCount = 2;
@@ -3607,7 +3612,7 @@ static const BldInfo BuildingInfo[]
 
 	
 	BldInfo(CardEnum::GoldSmelter, _LOCTEXT("Gold Smelter", "Gold Smelter"), LOCTEXT("Gold Smelter (Plural)", "Gold Smelters"), LOCTEXT("Gold Smelter Desc", "Smelt Gold Ores into Gold Bars."),
-		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::GoldOre, ResourceEnum::Coal, ResourceEnum::GoldBar }, { 0, 2, 1, 2 }, 50)
+		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::GoldOre, ResourceEnum::Coal, ResourceEnum::GoldBar }, { 0, 2, 1, 2 }, 50)
 	),
 	BldInfo(CardEnum::Mint, _LOCTEXT("Mint", "Mint"),				LOCTEXT("Mint (Plural)", "Mints"), LOCTEXT("Mint Desc", "Mint Gold Bars into <img id=\"Coin\"/>."),
 		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::GoldBar, ResourceEnum::None }, { 0, 0, 1, 3 }, 50)
@@ -3797,7 +3802,7 @@ static const BldInfo BuildingInfo[]
 		GetBldResourceInfo(4, { ResourceEnum::Stone, ResourceEnum::Sand, ResourceEnum::Concrete }, { 0, 0, 1, 5 }, 0, 100, -3)
 	),
 	BldInfo(CardEnum::CoalPowerPlant, _LOCTEXT("CoalPowerPlant", "Coal Power Plant"), LOCTEXT("CoalPowerPlant (Plural)", "Coal Power Plants"), LOCTEXT("Coal Power Plants Desc", "Provide Electricity converting 1 Coal to 1 kWh of Electricity."),
-		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Coal, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 3 }, 0, 100, -8)
+		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Coal, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 3 }, 0, 100, -6)
 	),
 	BldInfo(CardEnum::IndustrialIronSmelter, _LOCTEXT("Industrial Iron Smelter", "Industrial Iron Smelter"), LOCTEXT("Industrial Iron Smelter (Plural)", "Industrial Iron Smelters"), LOCTEXT("Industrial Iron Smelter Desc", "Produce Iron Bars on the industrial scale."),
 		WorldTile2(10, 14), GetBldResourceInfo(4, { ResourceEnum::IronOre, ResourceEnum::Coal, ResourceEnum::Iron }, { 0, 0, 0, 5, 0 }, 20)
@@ -3812,7 +3817,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(6, 6), GetBldResourceInfo(4, { ResourceEnum::Oil }, { 0, 0, 0, 0, 0, 1, 5 }, 0, 150, -5)
 	),
 	BldInfo(CardEnum::OilPowerPlant, _LOCTEXT("OilPowerPlant", "Oil Power Plant"), LOCTEXT("Oil Power Plant (Plural)", "Oil Power Plants"), LOCTEXT("Oil Power Plant Desc", "Provide Electricity converting 1 Oil to 2 kWh of Electricity."),
-		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Oil, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 5 }, 30, 100, -8)
+		WorldTile2(8, 12), GetBldResourceInfo(4, { ResourceEnum::Oil, ResourceEnum::None }, { 0, 0, 0, 5, 0, 5, 5 }, 30, 100, -7)
 	),
 	BldInfo(CardEnum::PaperMill, _LOCTEXT("PaperMill", "Paper Mill"), LOCTEXT("Paper Mill (Plural)", "Paper Mills"), LOCTEXT("Paper Mill Desc", "Mass-produce Paper from Wood."),
 		WorldTile2(10, 16), GetBldResourceInfo(4, { ResourceEnum::Wood, ResourceEnum::Paper }, { 0, 0, 0, 5, 0, 0, 5 }, 0, 100, -2)
@@ -3982,7 +3987,7 @@ static const BldInfo BuildingInfo[]
 		WorldTile2(8, 6), GetBldResourceInfo(2, { ResourceEnum::Wool, ResourceEnum::Dye, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
 	),
 	BldInfo(CardEnum::CheeseMaker, _LOCTEXT("Cheese Maker", "Cheese Maker"), LOCTEXT("Cheese Maker (Plural)", "Cheese Makers"), LOCTEXT("Cheese Maker Desc", ".TODO_DESC"),
-		WorldTile2(6, 6), GetBldResourceInfo(2, { ResourceEnum::Milk, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
+		WorldTile2(6, 6), GetBldResourceInfo(3, { ResourceEnum::Milk, ResourceEnum::Carpet }, { 3, 2 }, 0, 130)
 	),
 	BldInfo(CardEnum::BathHouse, _LOCTEXT("Bath House", "Bath House"), LOCTEXT("Bath House (Plural)", "Bath Houses"), LOCTEXT("Bath House Desc", ""),
 		WorldTile2(12, 12), GetBldResourceInfoManual({})
@@ -4081,8 +4086,8 @@ static const BldInfo CardInfos[]
 	BldInfo(CardEnum::CactusFruitSeeds,		_LOCTEXT("Cactus Fruit Seeds", "Cactus Fruit Seeds"), 0, LOCTEXT("Cactus Fruit Seeds Desc", "Unlock Cactus Fruit farming.")),
 	
 	BldInfo(CardEnum::ChimneyRestrictor,	_LOCTEXT("Chimney Restrictor", "Chimney Restrictor"), 250, LOCTEXT("Chimney Restrictor Desc", "Wood/Coal gives 15% more heat")),
-	BldInfo(CardEnum::SellFood,				_LOCTEXT("Sell Food", "Sell Food"), 90, LOCTEXT("Sell Food Desc", "Sell half of city's food for 5<img id=\"Coin\"/> each.")),
-	BldInfo(CardEnum::BuyWood,				_LOCTEXT("Buy Wood", "Buy Wood"), 50, LOCTEXT("Buy Wood Desc", "Buy Wood with half of your treasury for 6<img id=\"Coin\"/> each. (max: 1000)")),
+	BldInfo(CardEnum::SellFood,				_LOCTEXT("Sell Food", "Sell Food"), 90, LOCTEXT("Sell Food Desc", "Sell half of city's food for 5<img id=\"Coin\"/> each. (max: 500)")),
+	BldInfo(CardEnum::BuyWood,				_LOCTEXT("Buy Wood", "Buy Wood"), 50, LOCTEXT("Buy Wood Desc", "Buy Wood with half of your treasury for 6<img id=\"Coin\"/> each. (max: 500)")),
 	BldInfo(CardEnum::ChildMarriage,		_LOCTEXT("Child Marriage", "Child Marriage"), 200, LOCTEXT("Child Marriage Desc", "Decrease the minimum age for having children.")),
 	BldInfo(CardEnum::ProlongLife,			_LOCTEXT("Prolong Life", "Prolong Life"), 200, LOCTEXT("Prolong Life Desc", "People live longer.")),
 	BldInfo(CardEnum::BirthControl,			_LOCTEXT("Birth Control", "Birth Control"), 200, LOCTEXT("Birth Control Desc", "Prevents childbirth when the housing capacity is full.")),
@@ -5151,13 +5156,27 @@ static bool IsBridgeOrTunnel(CardEnum buildingEnum)
 		buildingEnum == CardEnum::Tunnel;
 }
 
-static bool IsPortBuilding(CardEnum buildingEnum)
+static bool IsAnyWaterPortBuilding(CardEnum buildingEnum)
 {
 	switch (buildingEnum) {
 	case CardEnum::Fisher:
-	case CardEnum::IrrigationPump:
 	case CardEnum::SandMine:
 	case CardEnum::PaperMaker:
+		return true;
+	default: return false;
+	}
+}
+static bool IsFreshwaterPortBuilding(CardEnum buildingEnum)
+{
+	switch (buildingEnum) {
+	case CardEnum::IrrigationPump:
+		return true;
+	default: return false;
+	}
+}
+static bool IsShippingPortBuilding(CardEnum buildingEnum)
+{
+	switch (buildingEnum) {
 	case CardEnum::TradingPort:
 	case CardEnum::MinorCityPort:
 	case CardEnum::IntercityLogisticsPort:
@@ -5166,6 +5185,25 @@ static bool IsPortBuilding(CardEnum buildingEnum)
 	default: return false;
 	}
 }
+static bool IsPortBuilding(CardEnum buildingEnum)
+{
+	return IsAnyWaterPortBuilding(buildingEnum) ||
+		IsFreshwaterPortBuilding(buildingEnum) ||
+		IsShippingPortBuilding(buildingEnum);
+	//switch (buildingEnum) {
+	//case CardEnum::Fisher:
+	//case CardEnum::IrrigationPump:
+	//case CardEnum::SandMine:
+	//case CardEnum::PaperMaker:
+	//case CardEnum::TradingPort:
+	//case CardEnum::MinorCityPort:
+	//case CardEnum::IntercityLogisticsPort:
+	//case CardEnum::ForeignPort:
+	//	return true;
+	//default: return false;
+	//}
+}
+
 static std::pair<int32, int32> DockPlacementExtraInfo(CardEnum cardEnum)
 {
 	int32 indexLandEnd = 1;
@@ -5383,7 +5421,8 @@ struct BuildingUpgrade
 	}
 
 	static int32 CalculateMaxHouseLvlBonus(int32 houseLvl) {
-		return 20 + houseLvl * 5; // at House Lvl 8 -> can go up to 80% from 80 House Lvl Count
+		return 20 + (houseLvl / 2) * 5; // Viking: at House Lvl 8 -> can go up to 40% from 40 House Lvl Count
+		// Arab: at House Lvl 8 -> can go up to 80% from 80 House Lvl Count
 	}
 	
 
@@ -6101,6 +6140,11 @@ enum class TerrainTileType : uint8
 	Ocean,
 	Mountain,
 	ImpassableFlat,
+
+	Lake,
+	UnprocessedWater,
+	UnprocessedWater2,
+	UnprocessedLake_NotDriedUp,
 };
 static const TArray<FText> TerrainTileTypeName
 {
@@ -6109,6 +6153,8 @@ static const TArray<FText> TerrainTileTypeName
 	LOCTEXT("Ocean", "Ocean"),
 	LOCTEXT("Mountain", "Mountain"),
 	LOCTEXT("Impassable Terrain", "Impassable Terrain"),
+
+	LOCTEXT("Lake", "Lake"),
 };
 
 #undef LOCTEXT_NAMESPACE
@@ -6118,7 +6164,11 @@ static FText GetTerrainTileTypeName(TerrainTileType type) {
 }
 
 static bool IsWaterTileType(TerrainTileType tileType) {
-	return tileType == TerrainTileType::River || tileType == TerrainTileType::Ocean;
+	return tileType == TerrainTileType::River || tileType == TerrainTileType::Ocean || tileType == TerrainTileType::Lake; // TODO: rearrange TerrainTileTypeName and use > ??
+}
+
+static bool IsShippableWaterTileType(TerrainTileType tileType) {
+	return tileType == TerrainTileType::River || tileType == TerrainTileType::Ocean; // TODO: rearrange TerrainTileTypeName and use > ??
 }
 
 static bool IsLandPassableTileType(TerrainTileType tileType) {
@@ -6128,7 +6178,7 @@ static bool IsLandPassableTileType(TerrainTileType tileType) {
 class GameMap
 {
 public:
-	static void SetRegionsPerWorld(int regionPerWorldX, int regionPerWorldY);
+	//static void SetRegionsPerWorld(int regionPerWorldX, int regionPerWorldY);
 
 	//static void Serialize(FArchive& Ar, TArray<uint8>& data);
 
@@ -7278,10 +7328,13 @@ static const float FlatLandHeightFloat = FDToFloat(FlatLandHeight);
 // Desert latitude 15-35
 
 // Temperature Band
-const int32 tundraTemperatureStart100 = 60;
-const int32 borealTemperatureStart100 = 40;
-const int32 forestTemperatureStart100 = 7;
+//const int32 tundraTemperatureStart100 = 60;
+//const int32 borealTemperatureStart100 = 40;
+//const int32 forestTemperatureStart100 = 7;
 
+/**
+ * Rainfall Bands
+ */
 // Temperate Rainfall Band
 const int32 forestRainfallStart100 = 50;
 const int32 grasslandRainfallStart100 = 20;
@@ -7292,10 +7345,6 @@ const int32 jungleRainfallStart100 = 30;
 // Taiga to Tundra Rainfall Band
 const int32 taigaStartRainfall100 = 45;
 
-
-const int32 tundraTemperatureStart10000 = tundraTemperatureStart100 * 100;
-const int32 borealTemperatureStart10000 = borealTemperatureStart100 * 100;
-const int32 forestTemperatureStart10000 = forestTemperatureStart100 * 100;
 
 
 const int32 maxCelsiusDivider = 2;
@@ -7365,7 +7414,7 @@ struct UnitInfo
 		// ppl must eat 5 times a year (slightly less than a season so they can winter starve)... maxFood = 2 * one consumption
 		int32 foodTicksPerFetch = Time::TicksPerYear / UnitFoodFetchPerYear;
 		
-		foodPerFetch = foodResourcePerYear / UnitFoodFetchPerYear * 2; // How much food do human take at once
+		foodPerFetch = foodResourcePerYear * 2 / UnitFoodFetchPerYear; // How much food do human take at once
 
 		maxFoodTicks = foodTicksPerFetch * (unitEnum == UnitEnum::Human ? 3 : 5); // Fragile humans ... Animals has loads of maxFoodTicks
 		
@@ -8220,6 +8269,7 @@ static FLinearColor PlayerColor2(int32 playerId)
 	entry(FastBuild) \
 	entry(Resources) \
 	entry(ConstructionResources) \
+	entry(SurvivalResources) \
 	entry(Undead) \
 	entry(Immigration) \
 	\
@@ -8280,6 +8330,7 @@ static FLinearColor PlayerColor2(int32 playerId)
 	entry(AddAIMoney) \
 	entry(AddAIInfluence) \
 	\
+	entry(Build) \
 	entry(TestCity) \
 	entry(TestCityNetwork) \
 	entry(DebugUI) \
@@ -10420,6 +10471,7 @@ enum class CallbackEnum : uint8
 
 	SelectEmptySlot,
 	LobbyChoosePlayerSettings,
+	LobbyChooseFactionFromDropdown,
 
 	SetGlobalJobPriority_Up,
 	SetGlobalJobPriority_Down,
@@ -10539,10 +10591,11 @@ static FText GameSpeedName(int32 gameSpeed)
  * Provinces
  */
 const int32 RiverProvinceId = -INT32_MAX;
-const int32 OceanProvinceId = -INT32_MAX + 1;
-const int32 MountainProvinceId = -INT32_MAX + 2;
-const int32 InvalidProvinceId = -INT32_MAX + 3;
-const int32 EmptyProvinceId = -INT32_MAX + 4;
+const int32 LakeProvinceId = -INT32_MAX + 1;
+const int32 OceanProvinceId = -INT32_MAX + 2;
+const int32 MountainProvinceId = -INT32_MAX + 3;
+const int32 InvalidProvinceId = -INT32_MAX + 4;
+const int32 EmptyProvinceId = -INT32_MAX + 5;
 
 static bool IsValidRawProvinceId(int32 provinceId) {
 	return provinceId > EmptyProvinceId;
@@ -10644,7 +10697,7 @@ static const std::vector<FText> HoverWarningString = {
 	LOCTEXT("Storage Too Far", "Storage Too Far"),
 	LOCTEXT("House Too Far", "House Too Far"),
 
-	LOCTEXT("Not Enough Input", "Not Enough Input"),
+	LOCTEXT("Need Input", "Need Input"),
 	LOCTEXT("Not Enough Electricity", "Not Enough\nElectricity"),
 
 	LOCTEXT("Inaccessible", "Inaccessible"),
@@ -10999,6 +11052,16 @@ static const FactionInfo& GetFactionInfo(FactionEnum factionEnum) {
 }
 static const FactionInfo& GetFactionInfoInt(int32 factionEnumInt) {
 	return FactionInfos[factionEnumInt];
+}
+
+static FactionEnum FindFactionEnumFromName(const FString& factionName)
+{
+	for (const FactionInfo& factionInfo : FactionInfos) {
+		if (factionInfo.name.ToString() == factionName) {
+			return factionInfo.factionEnum;
+		}
+	}
+	return FactionEnum::Europe;
 }
 
 static FString WithFactionNameInternal(FactionEnum factionEnum, const FString& moduleSetName) {

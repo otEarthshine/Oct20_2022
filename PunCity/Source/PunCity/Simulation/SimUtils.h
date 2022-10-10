@@ -51,47 +51,12 @@ public:
 
 	static bool CanReserveSpot_NotTooCloseToAnother(int32 provinceId, IGameSimulationCore* simulation, int spread = 2)
 	{
-		// Also do not allow reserveSpot
-		//if (!region.IsInnerRegion()) {
-		//	return false;
-		//}
-		
-		//const int _startingSpotSpread = (spread != -1) ? spread : 2;
-
-		//if (spread == -1) {
-		//	spread = _startingSpotSpread;
-		//}
-
-		//PUN_LOG("CanReserveSpot_NotTooCloseToAnother spread:%d", spread);
-		
 		bool cannotPlant = simulation->provinceSystem().ExecuteNearbyProvincesWithExitTrue(provinceId, spread, [&](ProvinceConnection connection)
 		{
 			return simulation->provinceOwnerTown_Major(connection.provinceId) != -1;
 		});
 
 		return !cannotPlant;
-
-		//bool canPlant = true;
-		//int minX = std::max(0, region.x - spread);
-		//int maxX = std::min(GameMapConstants::RegionsPerWorldX - 1, region.x + spread);
-		//int minY = std::max(0, region.y - spread);
-		//int maxY = std::min(GameMapConstants::RegionsPerWorldY - 1, region.y + spread);
-		//for (int xx = minX; xx <= maxX; xx++) {
-		//	for (int yy = minY; yy <= maxY; yy++)
-		//	{
-		//		int32_t regionId = xx + yy * GameMapConstants::RegionsPerWorldX;
-		//		//if (_regionIdToStartingSpots.find(regionId) != _regionIdToStartingSpots.end()) {
-		//		//	canPlant = false;
-		//		//	break;
-		//		//}
-		//		if (simulation->regionOwner(regionId) != -1) {
-		//			canPlant = false;
-		//			break;
-		//		}
-		//	}
-		//}
-
-		//return canPlant;
 	}
 
 	static TileArea FindStartSpot(int32 provinceId, IGameSimulationCore* simulation)

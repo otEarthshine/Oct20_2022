@@ -73,16 +73,16 @@ private:
 
 	template <typename Func>
 	static void ExecuteRegionsWithJumpAndExit(Func func) {
-		for (int i = 0; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 1; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 2; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 3; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 4; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 5; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 6; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 7; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 8; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
-		for (int i = 9; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) break; }
+		for (int i = 0; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 1; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 2; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 3; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 4; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 5; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 6; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 7; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 8; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
+		for (int i = 9; i < GameMapConstants::TotalRegions; i += 10) { if (func(i)) return; }
 	}
 
 private:

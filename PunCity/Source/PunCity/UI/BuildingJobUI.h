@@ -63,6 +63,12 @@ public:
 	
 	UPROPERTY(meta = (BindWidget)) UHorizontalBox* OtherIconsBox;
 
+	UPROPERTY(meta = (BindWidget)) UOverlay* PowerPlantResourceOuter;
+	UPROPERTY(meta = (BindWidget)) UImage* PowerPlantResourceIcon;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* PowerPlantResourceCountText;
+
+	UPROPERTY(meta = (BindWidget)) UImage* PowerWarningIcon;
+
 	UPROPERTY(meta = (BindWidget)) UTextBlock* DepletedText;
 
 	UPROPERTY(meta = (BindWidget)) UTextBlock* LargeWhiteText;
@@ -128,6 +134,8 @@ public:
 	SET_VISIBILITY_FAST(MediumGrayText, ESlateVisibility::Visible)
 
 	SET_VISIBILITY_FAST(DepletedText, ESlateVisibility::SelfHitTestInvisible)
+
+	SET_VISIBILITY_FAST(PowerWarningIcon, ESlateVisibility::Visible)
 
 	SET_VISIBILITY_FAST(HumanSlotsUI, ESlateVisibility::Visible)
 	
@@ -257,6 +265,8 @@ public:
 			}
 			return;
 		}
+
+
 		
 		if (IsStorage(building.buildingEnum()) ||
 			building.isEnum(CardEnum::IntercityLogisticsHub) ||
@@ -328,7 +338,11 @@ public:
 			}
 			return;
 		}
-		
+
+
+		/**
+		 * Trade
+		 */
 		if (IsTradingPostLike(building.buildingEnum()) ||
 			building.isEnum(CardEnum::TradingCompany)) 
 		{
@@ -373,7 +387,11 @@ public:
 			building.hoverWarning = HoverWarning::None;
 		}
 
-		if (building.hoverWarning != HoverWarning::None)
+		if (building.hoverWarning == HoverWarning::NotEnoughElectricity)
+		{
+			SetVisibility_PowerWarningIcon(true);
+		}
+		else if (building.hoverWarning != HoverWarning::None)
 		{
 			//PUN_LOG("Hover Warning %s warningId:%d", ToTChar(building.buildingInfo().nameStd()), static_cast<int>(building.hoverWarning));
 
@@ -393,6 +411,7 @@ public:
 		else {
 			//DepletedText->SetVisibility(ESlateVisibility::Collapsed);
 			SetVisibility_DepletedText(false);
+			SetVisibility_PowerWarningIcon(false);
 		}
 	}
 	

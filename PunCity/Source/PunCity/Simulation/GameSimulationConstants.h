@@ -65,6 +65,44 @@ public:
 	static int32 MaxInnerRegionY;
 
 	static void SetRegionsPerWorld(int regionPerWorldX, int regionPerWorldY);
+
+	static int32 TundraTemperatureStart10000;
+	static int32 BorealTemperatureStart10000;
+	static int32 ForestTemperatureStart10000;
+
+	static void SetTemperatureBands(int32 mapTemperatureEnumInt)
+	{
+		if (mapTemperatureEnumInt == 0)
+		{
+			TundraTemperatureStart10000 = 0;
+			BorealTemperatureStart10000 = 0;
+			ForestTemperatureStart10000 = 0;
+		}
+		else if (mapTemperatureEnumInt == 1)
+		{
+			TundraTemperatureStart10000 = 3000;
+			BorealTemperatureStart10000 = 2000;
+			ForestTemperatureStart10000 = 300;
+		}
+		else if (mapTemperatureEnumInt == 2)
+		{
+			TundraTemperatureStart10000 = 6000;
+			BorealTemperatureStart10000 = 4000;
+			ForestTemperatureStart10000 = 700;
+		}
+		else if (mapTemperatureEnumInt == 3)
+		{
+			TundraTemperatureStart10000 = 8000;
+			BorealTemperatureStart10000 = 6000;
+			ForestTemperatureStart10000 = 4000;
+		}
+		else if (mapTemperatureEnumInt == 4)
+		{
+			TundraTemperatureStart10000 = 10000;
+			BorealTemperatureStart10000 = 10000;
+			ForestTemperatureStart10000 = 10000;
+		}
+	}
 };
 
 class CoordinateConstants

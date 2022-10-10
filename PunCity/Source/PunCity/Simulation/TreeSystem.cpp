@@ -1060,7 +1060,6 @@ void TreeSystem::TickTile(int32_t id)
 
 void TreeSystem::Tick()
 {
-	LEAN_PROFILING_R(TreeSysTick);
 	//CheckMemoryValidity();
 
 	// Only tick on specific sector.

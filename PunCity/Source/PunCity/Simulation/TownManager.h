@@ -386,9 +386,9 @@ public:
 	/*
 	 * Electricity
 	 */
-	int32 electricityConsumption() { return _electricityConsumption; }
-	int32 electricityProductionCapacity() { return _electricityProductionCapacity; }
-
+	int32 electricityCurrentUsage() const { return _electricityCurrentUsage; }
+	int32 electricityProductionCapacity() const { return _electricityProductionCapacity; }
+	int32 electricityDemand() const { return _electricityDemand; }
 	
 
 	/*
@@ -1076,7 +1076,8 @@ public:
 		Ar << _trainUnitsTicks;
 		
 		Ar << _electricityProductionCapacity;
-		Ar << _electricityConsumption;
+		Ar << _electricityCurrentUsage;
+		Ar << _electricityDemand;
 
 		Ar << _tourismIncreaseIndex;
 		Ar << _tourismDecreaseIndex;
@@ -1167,7 +1168,8 @@ private:
 
 
 	int32 _electricityProductionCapacity = 0;
-	int32 _electricityConsumption = 0;
+	int32 _electricityCurrentUsage = 0;
+	int32 _electricityDemand = 0;
 
 
 	int32 _tourismIncreaseIndex = 0;

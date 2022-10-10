@@ -343,6 +343,13 @@ public:
 	}
 
 	/*
+	 * Set
+	 */
+	void SetFactionEnum(FactionEnum factionEnum) {
+		_factionEnum = factionEnum;
+	}
+
+	/*
 	 *
 	 */
 	virtual void RecalculateTaxDelayed() {}

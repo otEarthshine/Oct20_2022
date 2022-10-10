@@ -35,12 +35,15 @@ public:
 	
 	bool SaveOrLoad(bool isSaving);
 
-	void SetGameMap();
+	void SetGameMap(bool isFullSetup = true);
+	void SetTerrainTileType_UnprocessedLakeOnly();
+	void SetTerrainTileType_FloodFillOcean();
+	
 	void SetGameMap2_Walkable();
 
 	// Set some tiles to terrain (such as those without provinceId)
 	void SetMountainTile(WorldTile2 tile);
-	void SetWaterTile(WorldTile2 tile);
+	void SetFreshWaterTile(WorldTile2 tile);
 	void SetImpassableFlatTile(WorldTile2 tile);
 
 	const std::vector<int16>& GetHeightMap() { return heightMap; }
@@ -48,9 +51,10 @@ public:
 	void QuadrantMirror(std::vector<int16>& lastOctave, std::vector<int16>& mirrored, int octaves, FloatDet persistence, FloatDet curPersistence = FDOne);
 	void QuadrantMirror2(std::vector<int16>& lastOctave, std::vector<int16>& mirrored);
 
+	void DryUpLargeLake();
 	void GenerateMoisture();
 	void Erode(std::vector<int16>& heightMapBeforeFlatten, std::vector<int16>& riverGuideMap, std::vector<int16>& roughPerlin_n1to1);
-
+	void MarkLakeAsFreshWater();
 
 	void CalculateAppeal();
 	int32 GetFertilityPercentBase(WorldTile2 tile);
@@ -120,7 +124,8 @@ public:
 	{
 		int32 latitudeFraction10000 = tileX * 10000 / GameMapConstants::TilesPerWorldX;
 		latitudeFraction10000 = abs(latitudeFraction10000 - 5000) * 2; // Make equator 0
-		return latitudeFraction10000 - ((rainfall100 - 50) * 1 / 10) * 100; // rainfall affect temperature with 0.1 factor
+		latitudeFraction10000 = latitudeFraction10000 - ((rainfall100 - 50) * 1 / 10) * 100; // rainfall affect temperature with 0.1 factor
+		return std::max(0, latitudeFraction10000);
 	}
 
 	BiomeEnum GetBiome(WorldRegion2 region) const {
@@ -133,16 +138,20 @@ public:
 
 		int32 temperatureFraction10000 = GetTemperatureFraction10000(tile.x, rainfall100);
 
-		if (temperatureFraction10000 > tundraTemperatureStart10000) {
+		if (_mapSettings.mapTemperature == MapTemperatureEnum::VeryLow) {
 			return BiomeEnum::Tundra;
 		}
-		if (temperatureFraction10000 > borealTemperatureStart10000) {
+
+		if (temperatureFraction10000 >= GameMapConstants::TundraTemperatureStart10000) {
+			return BiomeEnum::Tundra;
+		}
+		if (temperatureFraction10000 > GameMapConstants::BorealTemperatureStart10000) {
 			if (rainfall100 > taigaStartRainfall100) {
 				return BiomeEnum::BorealForest;
 			}
 			return BiomeEnum::Tundra;
 		}
-		if (temperatureFraction10000 > forestTemperatureStart10000) {
+		if (temperatureFraction10000 > GameMapConstants::ForestTemperatureStart10000) {
 			if (rainfall100 > forestRainfallStart100) {
 				return BiomeEnum::Forest;
 			}
@@ -284,7 +293,7 @@ private:
 	//MapSizeEnum _mapSize = MapSizeEnum::Medium;
 	FMapSettings _mapSettings;
 	
-	std::vector<uint8> _river4x4Map;
+	std::vector<uint8> _river4x4Map; // Note: River is now freshwater (includes lake)
 	std::vector<uint8> _rainfall4x4Map;
 	
 	// For Appeal map

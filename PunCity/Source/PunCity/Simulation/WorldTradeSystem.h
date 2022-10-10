@@ -127,7 +127,7 @@ public:
 		return _enumToSupplyValue100[static_cast<int>(resourceEnum)] + 1; // Note: can't be 0
 	}
 
-	void ChangePrice100_Percent(ResourceEnum resourceEnum, int32 percent)
+	void ChangePrice100_Percent(ResourceEnum resourceEnum, int64 percent)
 	{
 		// Change price based on the Equilibrium or base price value
 		// price = basePrice100 * equilibriumSupplyValue100 / supplyValue100
@@ -142,7 +142,8 @@ public:
 		int64 equilibriumSupplyValue100 = EquilibriumSupplyValue100(resourceEnum);
 
 		int resourceEnumInt = static_cast<int>(resourceEnum);
-		_enumToSupplyValue100[resourceEnumInt] = lastSupplyValue100 * 10000 / (10000 + percent * 100 * lastSupplyValue100 / equilibriumSupplyValue100); // more percent, less supply, more price
+
+		_enumToSupplyValue100[resourceEnumInt] = GameRand::RandRound64(lastSupplyValue100 * 100L, 100L + percent); // more percent, less supply, more price
 
 		_enumToSupplyValue100[resourceEnumInt] = std::max(_enumToSupplyValue100[resourceEnumInt], GetMinSupplyValue100());
 	}

@@ -8,6 +8,7 @@
 #include "Buildings/GathererHut.h"
 #include "WorldTradeSystem.h"
 #include "BuildingCardSystem.h"
+#include "UnlockSystem.h"
 
 
 #define LOCTEXT_NAMESPACE "PlayerOwnedManager"
@@ -1027,8 +1028,8 @@ void TownManager::Tick1Sec()
 	// TODO: make this more randomized by using Tick1Sec instead and randomizing check interval... doing that will also allow infecting other ppl in random interval
 	/*
 	 * Sickness
-	 *  on average, a person get sick once every year equating to 1 medicine and 10 coins
-	 *  in winter sickness chance x3 .. overall lead to 15 coins usage per year
+	 *  on average, a person get sick once every year equating to 1 medicine and 12 coins
+	 *  in winter sickness chance x3 .. overall lead to 18 coins usage per year
 	 *
 	 *  jungle x3 sickness
 	 */
@@ -1059,43 +1060,93 @@ void TownManager::Tick1Sec()
 	}
 
 	/*
-	 * Electricity
+	 * Electricity Comments
 	 * - Electricity half worker usage. Existing worker works 100% faster
 	 * - Electricity consumption 1 kW = 1  person
-	 * - 135 food value per year = 20 coal per year, 10 coal per year ~ 1kWh per Round
+	 * - 120 food value per year
+	 * - 42 fuel (180 fuel for 30  = 6 per person per year)
+	 * - 18 Medicine value per year (1.5 medicine usage for non-jungle)
+	 * - 27 Tool per year (1 iron tools per year)
+	 * - total 207 to maintain a person each year.
+	 *
+	 * // ARAB: - 135 food value per year = 20 coal per year.. 50% faster.. 10 coal per year ~ 1kWh per Round
 	 * - 1 kW = 1 coal burn per round
 	 */
-	int32 totalElectricityNeeded = 0;
-	for (std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
-		for (int32 buildingId : buildingIds) {
-			Building& building = _simulation->building(buildingId);
-			if (building.IsElectricityUpgraded()) {
-				totalElectricityNeeded += building.ElectricityAmountNeeded();
-			}
-		}
-	}
+	const int32 electricFuelConsumptionValuePerKWPerYear = 207 * 3 / 10; // 30% increase in productivity
+	const int32 electricFuelConsumptionValuePerKWPerRound = electricFuelConsumptionValuePerKWPerYear / Time::RoundsPerYear;
+
+	/**
+	 * Production
+	 */
 	int32 totalElectricityProductionCapacity = 0;
+	int32 totalElectricityProductionCurrentPotential = 0;
 	for (const auto& powerPlantInfo : PowerPlantInfoList) {
 		const std::vector<int32>& buildingIds = _simulation->buildingIds(_townId, powerPlantInfo.buildingEnum);
-		for (int32 buildingId : buildingIds) {
-			totalElectricityProductionCapacity += _simulation->building(buildingId).subclass<PowerPlant>().ElectricityProductionCapacity();
-		}
-	}
+		for (int32 buildingId : buildingIds) 
+		{
+			PowerPlant& powerPlant = _simulation->building(buildingId).subclass<PowerPlant>();
+			int32 Capacity = powerPlant.GetElectricityProductionCapacity();;
+			totalElectricityProductionCapacity += Capacity;
 
-	int32 totalElectricityUsage = 0;
-	if (totalElectricityProductionCapacity >= totalElectricityNeeded) {
-		totalElectricityUsage = totalElectricityNeeded;
-	}
-
-	// Provide Electricity
-	for (std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
-		for (int32 buildingId : buildingIds) {
-			Building& building = _simulation->building(buildingId);
-			if (building.IsElectricityUpgraded()) {
-				building.SetElectricityAmountUsage(building.ElectricityAmountNeeded() * totalElectricityUsage / std::max(1, totalElectricityNeeded));
+			if (powerPlant.IsPowerPlantOn()) {
+				totalElectricityProductionCurrentPotential += Capacity;
 			}
 		}
 	}
+	_electricityProductionCapacity = totalElectricityProductionCapacity;
+
+	/**
+	 * Demand/Usage
+	 */
+	//const int32 totalCurrentElectricityUsage = std::min(totalElectricityDemand, totalElectricityProductionCurrentPotential);
+
+	int32 totalElectricityDemand = 0;
+	int32 totalCurrentElectricityUsage = 0;
+
+	// Try fill electricity by building priority
+	const std::vector<CardEnum>& buildingEnumPriorityList = GetJobPriorityList();
+
+	for (CardEnum buildingEnum : buildingEnumPriorityList)
+	{
+		int buildingEnumInt = static_cast<int>(buildingEnum);
+		if (buildingEnumInt >= _jobBuildingEnumToIds.size()) {
+			continue;
+		}
+
+		std::vector<int32>& buildingIds = _jobBuildingEnumToIds[buildingEnumInt];
+		for (int32 buildingId : buildingIds) {
+			Building& building = _simulation->building(buildingId);
+
+			if (building.IsElectricityUpgraded()) {
+				int32 buildingUsageTarget = building.GetCurrentElectricityUsageTarget();
+				totalElectricityDemand += buildingUsageTarget;
+
+				int32 buildingActualUsage = std::min(totalElectricityProductionCurrentPotential - totalCurrentElectricityUsage, buildingUsageTarget);
+				building.SetCurrentElectricityUsage(buildingActualUsage);
+
+				totalCurrentElectricityUsage += buildingActualUsage;
+			}
+		}
+	}
+
+	//for (std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+	//	for (int32 buildingId : buildingIds) {
+	//		Building& building = _simulation->building(buildingId);
+	//		if (building.IsElectricityUpgraded()) {
+	//			totalElectricityDemand += building.GetCurrentElectricityUsageTarget();
+	//		}
+	//	}
+	//}
+
+	// Provide Electricity
+	//for (std::vector<int32>& buildingIds : _jobBuildingEnumToIds) {
+	//	for (int32 buildingId : buildingIds) {
+	//		Building& building = _simulation->building(buildingId);
+	//		if (building.IsElectricityUpgraded()) {
+	//			building.SetCurrentElectricityUsage(building.GetCurrentElectricityUsageTarget() * totalCurrentElectricityUsage / std::max(1, totalElectricityDemand));
+	//		}
+	//	}
+	//}
 
 	// Consume Fuel
 	for (const auto& powerPlantInfo : PowerPlantInfoList) {
@@ -1104,19 +1155,19 @@ void TownManager::Tick1Sec()
 		{
 			PowerPlant& building = _simulation->building(buildingId).subclass<PowerPlant>();
 
-			if (building.isConstructed())
+			if (building.IsPowerPlantOn())
 			{
 				int32 actualProduction_kW = GameRand::RandRound(
-					building.ElectricityProductionCapacity() * totalElectricityUsage,
+					building.GetElectricityProductionCapacity() * totalCurrentElectricityUsage,
 					std::max(1, totalElectricityProductionCapacity)
 				);
-				building.ConsumeFuel1Sec(actualProduction_kW);
+				building.ConsumeFuel1Sec(actualProduction_kW * electricFuelConsumptionValuePerKWPerRound);
 			}
 		}
 	}
 
-	_electricityConsumption = totalElectricityUsage;
-	_electricityProductionCapacity = totalElectricityProductionCapacity;
+	_electricityCurrentUsage = totalCurrentElectricityUsage;
+	_electricityDemand = totalElectricityDemand;
 
 	/*
 	 * Tourism

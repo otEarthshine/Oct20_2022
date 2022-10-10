@@ -536,7 +536,7 @@ public:
 		return widget;
 	}
 
-	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, FText sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool justOpenedUI, bool showTarget, int32 target = -1)
+	UManageStorageElement* AddManageStorageElement(ResourceEnum resourceEnum, FText sectionName, int32 buildingId, ECheckBoxState checkBoxState, bool isSection, bool justOpenedUI, bool showTarget, int32 target, bool shouldShow)
 	{
 		auto widget = GetChildElement<UManageStorageElement>(UIEnum::ManageStorageElement);
 		widget->PunInit(resourceEnum, sectionName, buildingId, checkBoxState, isSection);
@@ -545,6 +545,8 @@ public:
 			widget->TargetAmount_InitOnce(target);
 		}
 		widget->TargetAmount_Update(showTarget);
+
+		widget->SetVisibility(shouldShow ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 		
 		return widget;
 	}

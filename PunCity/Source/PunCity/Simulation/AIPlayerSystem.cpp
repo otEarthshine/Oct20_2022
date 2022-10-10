@@ -4,6 +4,7 @@
 #include "AIPlayerSystem.h"
 
 #include "BuildingCardSystem.h"
+#include "UnlockSystem.h"
 
 static const int32 MaxFoodPerPopulation = 10;
 static const int32 MaxNonFoodPerPopulation = 5;
@@ -537,14 +538,14 @@ void AIPlayerSystem::Tick1Sec()
 
 					for (int32 provinceClaimed : provincesClaimed)
 					{
-						const std::vector<WorldTile2>& coastalTiles = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceClaimed).coastalTiles;
+						const ProvinceBuildingSlot& provinceBuildingSlot = _simulation->provinceInfoSystem().provinceBuildingSlot(provinceClaimed);
 
-						for (const WorldTile2& coastalTile : coastalTiles)
+						auto tryPlaceFisherOnTile = [&](const WorldTile2& tileIn)
 						{
 							for (int32 i = 0; i < DirectionCount; i++)
 							{
 								Direction faceDirection = static_cast<Direction>(i);
-								BuildPlacement placement(coastalTile, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
+								BuildPlacement placement(tileIn, GetBuildingInfo(CardEnum::Fisher).GetSize(factionEnum()), faceDirection);
 
 								std::vector<PlacementGridInfo> grids;
 								bool setDockInstruction;
@@ -552,14 +553,24 @@ void AIPlayerSystem::Tick1Sec()
 
 								if (AreGridsBuildable(grids))
 								{
-									int32 efficiency = Fisher::FisherAreaEfficiency(coastalTile, false, WorldTile2::Invalid, _simulation);
+									int32 efficiency = Fisher::FisherAreaEfficiency(tileIn, false, WorldTile2::Invalid, _simulation);
 									if (efficiency > bestEfficiency) {
 										bestEfficiency = efficiency;
-										bestCenterTile = coastalTile;
+										bestCenterTile = tileIn;
 										bestFaceDirection = faceDirection;
 									}
 								}
 							}
+						};
+						
+						const std::vector<WorldTile2>& coastalTiles = provinceBuildingSlot.coastalTiles;
+						for (const WorldTile2& coastalTile : coastalTiles) {
+							tryPlaceFisherOnTile(coastalTile);
+						}
+
+						const std::vector<WorldTile2>& lakeTiles = provinceBuildingSlot.lakeTiles;
+						for (const WorldTile2& lakeTile : lakeTiles) {
+							tryPlaceFisherOnTile(lakeTile);
 						}
 					}
 

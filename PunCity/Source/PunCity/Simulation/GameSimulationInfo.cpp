@@ -102,11 +102,11 @@ WorldTile2 GetBuildingCenter(TileArea area, Direction faceDirection)
  * Map
  */
 
-void GameMap::SetRegionsPerWorld(int regionPerWorldX, int regionPerWorldY)
-{
-	// TODO: get rid of GameMap
-	GameMapConstants::SetRegionsPerWorld(regionPerWorldX, regionPerWorldY);
-}
+//void GameMap::SetRegionsPerWorld(int regionPerWorldX, int regionPerWorldY)
+//{
+//	// TODO: get rid of GameMap
+//	GameMapConstants::SetRegionsPerWorld(regionPerWorldX, regionPerWorldY);
+//}
 
 int32 Time::_Ticks = 0;
 

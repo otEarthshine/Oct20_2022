@@ -255,5 +255,54 @@ void PlayerOwnedManager::AddInfluenceIncomeToString(TArray<FText>& args)
 	//addStoredInfluenceRow(InfluenceIncomeEnum::Luxury);
 }
 
+void PlayerOwnedManager::TryGetFreeColony(int32 originProvinceId)
+{
+	if (_hasAlreadyReceivedFreeColony) {
+		return;
+	}
+	if (_simulation->unlockSystem(_playerId)->GetEra() <= 1) {
+		return;
+	}
+
+	auto& provinceInfoSys = _simulation->provinceInfoSystem();
+
+	TSet<int32> visitedProvinceIds;
+
+	std::function<bool(int32)> floodHasEmptyProvinceOnIsland = [&](int32 provinceIdIn)
+	{
+		if (provinceInfoSys.provinceOwnerInfo(provinceIdIn).townId == -1) {
+			return true;
+		}
+
+		if (!visitedProvinceIds.Contains(provinceIdIn)) {
+			visitedProvinceIds.Add(provinceIdIn);
+
+			// Flood to same town's flat or river connections
+			const auto& connections = _simulation->GetProvinceConnections(provinceIdIn);
+			for (const ProvinceConnection& connection : connections) {
+				if (connection.tileType == TerrainTileType::None ||
+					connection.tileType == TerrainTileType::River)
+				{
+					if (floodHasEmptyProvinceOnIsland(connection.provinceId)) {
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	};
+
+	if (!floodHasEmptyProvinceOnIsland(originProvinceId))
+	{
+		_hasAlreadyReceivedFreeColony = true;
+		_simulation->cardSystem(_playerId).AddCards_BoughtHandAndInventory(CardEnum::PortColony);
+
+		_simulation->AddPopup(_playerId, 
+			LOCTEXT("Conquered Island Free Port Colony", "You claimed all claimable provinces on your island. Your people now yearn for the sea.<space>You received a Port Colony Card. You can use it to expand to other landmasses.")
+		);
+	}
+}
+
 
 #undef LOCTEXT_NAMESPACE

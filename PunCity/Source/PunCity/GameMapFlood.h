@@ -45,6 +45,11 @@ static int32 Region64YToMinTileY(int32 region64Id) {
 	return (region64Id >> Region64PerWorldXShift) << Region64SizeShift;
 }
 
+static WorldTile2 Region64IdToTile(int32 region64Id)
+{
+	return WorldTile2(Region64XToMinTileX(region64Id), Region64YToMinTileY(region64Id));
+}
+
 static int32 Region64ManDistance(int32 region64Id1, int32 region64Id2)
 {
 	return abs(Region64X(region64Id1) + Region64X(region64Id2)) +
@@ -95,12 +100,29 @@ struct FloodInfo
 		return a.region64Id == region64Id && a.floodId == floodId;
 	}
 
+	bool operator!=(const FloodInfo& a) const {
+		return a.region64Id != region64Id || a.floodId != floodId;
+	}
+
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
 		Ar << region64Id << floodId;
 		return Ar;
 	}
+
+	int64 GetHash() {
+		return floodId + Region64Tiles * region64Id;
+	}
 };
+
+
+struct PathFindingFloodInfo
+{
+	FloodInfo currentFloodInfo;
+	FloodInfo lastFloodInfo;
+	int8 regionDistance; // ManDistance to end point
+};
+
 
 struct FloodConnection
 {
@@ -162,11 +184,11 @@ public:
 	
 	std::vector<FloodInfo> connectedFloods(FloodInfo info);
 
-	std::array<std::vector<FloodConnection>, 4>& directionToConnections() {
+	const std::array<std::vector<FloodConnection>, 4>& directionToConnections() const {
 		return _directionToConnections;
 	}
 
-	int32 region64Id() { return _region64Id; }
+	int32 region64Id() const { return _region64Id; }
 
 	//! Serialize
 	FArchive& operator>>(FArchive &Ar) {
@@ -214,7 +236,7 @@ public:
 
 	void Tick();
 
-	int32 GetFloodId(WorldTile2 tile) {
+	int32 GetFloodId(WorldTile2 tile) const {
 		return _region64ToFloods[TileToRegion64Id(tile)][TileToLocal64Id(tile)];
 	}
 
@@ -231,6 +253,77 @@ public:
 
 	bool IsConnected(WorldTile2 start, WorldTile2 end, int maxRegionDistance);
 	bool IsConnected(FloodInfo startFlood, FloodInfo endFlood, int maxRegionDistance);
+
+	/**
+	 * Long Path
+	 */
+	template<typename Func1, typename Func2>
+	void LoopThrough(const std::vector<PathFindingFloodInfo>& infos, Func1 func1, Func2 func2) const
+	{
+		for (int32 i = infos.size(); i-- > 0;)
+		{
+			const FloodInfo& currentFloodInfo = infos[i].currentFloodInfo;
+			const FloodInfo& lastFloodInfo = infos[i].lastFloodInfo;
+
+			int32 minTileX = Region64XToMinTileX(currentFloodInfo.region64Id);
+			int32 minTileY = Region64YToMinTileY(currentFloodInfo.region64Id);
+
+			WorldTile2 nearestTile = WorldTile2::Invalid;
+			int32 nearestDistance = GameMapConstants::TilesPerWorldY;
+
+			// From North
+			if (currentFloodInfo.region64Id + 1 == lastFloodInfo.region64Id)
+			{
+				int32 x = minTileX + Region64Size - 1;
+				int32 yMax = minTileY + Region64Size - 1;
+				for (int32 y = minTileY; y < yMax; y++)
+				{
+					func1(i, WorldTile2(x, y), currentFloodInfo, lastFloodInfo, nearestTile, nearestDistance);
+				}
+			}
+
+			// From South
+			if (currentFloodInfo.region64Id - 1 == lastFloodInfo.region64Id)
+			{
+				int32 x = minTileX;
+				int32 yMax = minTileY + Region64Size - 1;
+				for (int32 y = minTileY; y < yMax; y++)
+				{
+					func1(i, WorldTile2(x, y), currentFloodInfo, lastFloodInfo, nearestTile, nearestDistance);
+				}
+			}
+
+			// From East
+			if (currentFloodInfo.region64Id + Region64PerWorldX == lastFloodInfo.region64Id)
+			{
+				int32 xMax = minTileX + Region64Size - 1;
+				int32 y = minTileY + Region64Size - 1;
+				for (int32 x = minTileX; x < xMax; x++)
+				{
+					func1(i, WorldTile2(x, y), currentFloodInfo, lastFloodInfo, nearestTile, nearestDistance);
+				}
+			}
+
+			// From West
+			if (currentFloodInfo.region64Id - Region64PerWorldX == lastFloodInfo.region64Id)
+			{
+				int32 xMax = minTileX + Region64Size - 1;
+				int32 y = minTileY;
+				for (int32 x = minTileX; x < xMax; x++)
+				{
+					func1(i, WorldTile2(x, y), currentFloodInfo, lastFloodInfo, nearestTile, nearestDistance);
+				}
+			}
+
+			check(nearestTile.isValid());
+
+			func2(nearestTile);
+			//result.push_back(nearestTile);
+		}
+	}
+	std::vector<WorldTile2> FindPath_FloodRegionHelper(WorldTile2 start, WorldTile2 end, int maxRegionDistance) const;
+	std::vector<PathFindingFloodInfo> FindPath_CheckFloodRegionHelper(WorldTile2 start, WorldTile2 end, int maxRegionDistance) const;
+	std::vector<PathFindingFloodInfo> FindPath_FloodRegionHelper(FloodInfo startFlood, FloodInfo endFlood, int32 maxRegionDistance) const;
 
 	// Can go within 1 tile of non-walkable tile such as trees/stones etc.
 	// For these cases, we try to find any nearby tile that is within the same flood

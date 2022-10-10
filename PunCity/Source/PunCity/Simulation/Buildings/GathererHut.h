@@ -908,9 +908,9 @@ class PowerPlant : public Building
 public:
 	void FinishConstruction() override;
 
-	ResourceEnum fuelEnum() { return GetPowerPlantInfo(_buildingEnum).resourceEnum; }
+	ResourceEnum fuelEnum() const { return GetPowerPlantInfo(_buildingEnum).resourceEnum; }
 
-	void ConsumeFuel1Sec(int32 actualProduction_kW)
+	void ConsumeFuel1Sec(int32 actualConsumptionValuePerRound)
 	{
 		ResourceEnum resourceEnum = fuelEnum();
 		if (resourceCount(resourceEnum) <= 0) {
@@ -918,41 +918,42 @@ public:
 		}
 		
 		// 1 kW = 1 coal burn per round
-		bool shouldBurnFuel = (GameRand::Rand() % Time::SecondsPerRound) < actualProduction_kW;
+		int32 targetBurnValue = GameRand::RandRound(actualConsumptionValuePerRound, Time::SecondsPerRound);
+		int32 targetBurnCount = GameRand::RandRound(targetBurnValue, GetResourceInfo(resourceEnum).basePrice);
+		int32 actualBurnCount = std::min(targetBurnCount, resourceCount(resourceEnum));
 
+		// OLD
+		//bool shouldBurnFuel = (GameRand::Rand() % Time::SecondsPerRound) < actualProduction_kW;
 		// Half chance for oil
-		if (shouldBurnFuel && resourceEnum == ResourceEnum::Oil) {
-			shouldBurnFuel = static_cast<bool>(GameRand::Rand() % 2);
-		}
+		//if (targetBurnCount > 0 && resourceEnum == ResourceEnum::Oil) {
+		//	shouldBurnFuel = static_cast<bool>(GameRand::Rand() % 2);
+		//}
 
-		if (shouldBurnFuel) {
-			if (resourceCount(resourceEnum) > 0) {
-				RemoveResource(resourceEnum, 1);
-				AddConsumption1Stat(ResourcePair(resourceEnum, 1));
-			} else {
-				UE_DEBUG_BREAK();
-			}
+		if (actualBurnCount > 0) {
+			RemoveResource(resourceEnum, actualBurnCount);
+			AddConsumption1Stat(ResourcePair(resourceEnum, 1));
 		}
 	}
 
-	int32 ElectricityConsumption()
-	{
-		if (!isConstructed()) {
-			return 0;
-		}
-		auto& townManage = townManager();
-		return ElectricityProductionCapacity() * townManage.electricityConsumption() / std::max(1, townManage.electricityProductionCapacity());
+	//int32 ElectricityConsumption()
+	//{
+	//	if (!isConstructed()) {
+	//		return 0;
+	//	}
+	//	auto& townManage = townManager();
+	//	return GetElectricityProductionCapacity() * townManage.electricityCurrentUsage() / std::max(1, townManage.electricityProductionCapacity());
+	//}
+
+	int32 GetElectricityProductionCapacity() const {
+		return GetPowerPlantInfo(_buildingEnum).baseCapacity;
 	}
 
-	int32 ElectricityProductionCapacity() {
-		if (!isConstructed()) {
-			return 0;
-		}
-		return resourceCount(fuelEnum()) > 0 ? GetPowerPlantInfo(_buildingEnum).baseCapacity : 0;
+	bool IsPowerPlantOn() {
+		return isConstructed() && resourceCount(fuelEnum()) > 0 && occupantCount() > 0;
 	}
 
 	bool shouldDisplayParticles() override {
-		return isConstructed() && resourceCount(fuelEnum()) > 0;
+		return IsPowerPlantOn();
 	}
 	
 };
@@ -1691,6 +1692,20 @@ public:
 	virtual void OnDeinit() override;
 
 	virtual int32 displayVariationIndex() override;
+
+	virtual void OnTick1Sec() override
+	{
+		// Try adding road if not yet there
+		// - Crude check on 4 corners
+		if (_simulation->townManagerBase(_townId)->GetMinorCityLevel() >= 2 &&
+			!_simulation->IsRoadTile(_area.corner00()) &&
+			!_simulation->IsRoadTile(_area.corner01()) &&
+			!_simulation->IsRoadTile(_area.corner10()) &&
+			!_simulation->IsRoadTile(_area.corner11()))
+		{
+			AddRoadAroundBuilding();
+		}
+	}
 };
 
 

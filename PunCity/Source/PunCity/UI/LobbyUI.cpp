@@ -913,7 +913,11 @@ void ULobbyUI::UpdatePlayerPortraitUI(UPlayerListElementUI* element, int32 playe
 		//element->FactionName->SetText(GetFactionInfo(playerInfos[i].factionEnum()).name);
 		//element->FactionName->SetVisibility(ESlateVisibility::Visible);
 
-		element->FactionBackground->GetDynamicMaterial()->SetTextureParameterValue("Image", _mainMenuAssetLoader->GetFactionImage(GetFactionInfoInt(playerInfos[i].factionIndex).internalName));
+		const FactionInfo& factionInfo = GetFactionInfoInt(playerInfos[i].factionIndex);
+		element->FactionBackground->GetDynamicMaterial()->SetTextureParameterValue("Image", _mainMenuAssetLoader->GetFactionImage(factionInfo.internalName));
+		element->FactionSelectionDropdown->SetSelectedOption(factionInfo.name.ToString());
+		element->replyFactionEnum = factionInfo.factionEnum;
+
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetTextureParameterValue("Logo", _mainMenuAssetLoader->PlayerLogos[playerInfos[i].logoIndex]);
 		element->PlayerLogoForeground->GetDynamicMaterial()->SetVectorParameterValue("ColorForeground", playerInfos[i].logoColorForeground);
 		element->PlayerLogoBackground->GetDynamicMaterial()->SetVectorParameterValue("ColorBackground", playerInfos[i].logoColorBackground);
@@ -1057,7 +1061,17 @@ void ULobbyUI::CallBack1(UPunWidget* punWidgetCaller, CallbackEnum callbackEnum)
 
 		UpdatePreviewPlayerInfoDisplay();
 	}
+	else if (callbackEnum == CallbackEnum::LobbyChooseFactionFromDropdown)
+	{
+		UPlayerListElementUI* element = CastChecked<UPlayerListElementUI>(punWidgetCaller);
 
+		CSteamID steamId(*(uint64*)GetFirstController()->PlayerState->GetUniqueId()->GetBytes());
+		previewPlayerInfo = gameInstance()->GetPlayerInfoBySteamId(steamId.ConvertToUint64());
+
+		previewPlayerInfo.factionIndex = static_cast<int32>(element->replyFactionEnum);
+		GetFirstController()->SendPlayerInfo_ToServer(previewPlayerInfo);
+		SavePlayerInfo();
+	}
 	else if (callbackEnum == CallbackEnum::ChoosePlayerLogo)
 	{
 		auto buttonImage = CastChecked<UPunButtonImage>(punWidgetCaller);

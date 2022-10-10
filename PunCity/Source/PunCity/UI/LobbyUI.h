@@ -218,7 +218,9 @@ public:
 		FMapSettings mapSettings = gameInstance()->GetMapSettings();
 		//std::string mapSeed = mapSettings.mapSeedStd();
 		WorldRegion2 regionPerWorld = GetMapSize(mapSettings.mapSizeEnum());
+
 		GameMapConstants::SetRegionsPerWorld(regionPerWorld.x, regionPerWorld.y);
+		GameMapConstants::SetTemperatureBands(static_cast<int32>(mapSettings.mapTemperature));
 
 		PUN_DEBUG2("GenerateWorld %d, (%d %d)", mapSettings.mapSizeEnumInt, GameMapConstants::TilesPerWorldX, GameMapConstants::TilesPerWorldY);
 		

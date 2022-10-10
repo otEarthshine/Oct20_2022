@@ -289,8 +289,6 @@ struct ScopeTimerLoop
 	entry(R_GetDropFromSmallArea_Any) \
 	entry(R_GetDropFromArea_Pickable) \
 	entry(R_GetDropsFromArea_Pickable) \
-	\
-	entry(R_TreeSysTick)
 
 
 
@@ -300,6 +298,17 @@ struct ScopeTimerLoop
 	entry(TickSim_Commands) \
 	entry(TickSim_Replays) \
 	entry(TickSim_Pre) \
+	entry(TickSim_Flood) \
+	entry(TickSim_StatSys) \
+	entry(TickSim_PlayerOwned) \
+	entry(TickSim_UnitSys) \
+	entry(TickSim_BuildingSys) \
+	entry(TickSim_TreeSys) \
+	entry(TickSim_OverlaySys) \
+	entry(TickSim_TickHash) \
+	entry(TickSim_LeanProfiling) \
+	entry(TickSim_Snow) \
+	entry(TickSim_SaveCheck) \
 	\
 	entry(P_FindPath) \
 	entry(P_FindPathAnimal) \
@@ -308,6 +317,7 @@ struct ScopeTimerLoop
 	\
 	entry(IsConnected) \
 	entry(IsConnectedBuilding) \
+	entry(RefreshIsBuildingConnected) \
 	entry(FindNearestBuildingId) \
 	entry(FindNearestMark) \
 	entry(FindNearestMark_IsReserved) \
@@ -345,14 +355,6 @@ struct ScopeTimerLoop
 
 #if USE_PATH_PROFILING
 		PATH_PROFILING_LIST(CREATE_ENUM)
-		//P_FindPath, // Also ResourceProfiling Count;
-		//P_FindPathAnimal,
-		//P_FindPathRoadOnly,
-		//P_FindPathRobust,
-		//
-		//IsConnected,
-		//IsConnectedBuilding,
-		//FindNearestBuildingId,
 #endif
 
 #if USE_UNIT_PROFILING

@@ -44,6 +44,9 @@ public:
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerLogoForeground;
 	UPROPERTY(meta = (BindWidget)) UImage* PlayerCharacterImage;
 
+	UPROPERTY(meta = (BindWidget)) UComboBoxString* FactionSelectionDropdown;
+
+
 	FString playerName;
 	
 	void PunInit(UPunWidget* parent, int32 slotIdIn) {
@@ -52,6 +55,14 @@ public:
 		BUTTON_ON_CLICK(PlayerKickButton->CoreButton, this, &UPlayerListElementUI::OnClickPlayerKickButton);
 		BUTTON_ON_CLICK(EmptySelectButton, this, &UPlayerListElementUI::OnClickEmptySelectButton);
 		BUTTON_ON_CLICK(PlayerLogoChangeButton, this, &UPlayerListElementUI::OnClickPlayerLogoChangeButton);
+
+		FactionSelectionDropdown->OnSelectionChanged.Clear();
+		FactionSelectionDropdown->OnSelectionChanged.AddDynamic(this, &UPlayerListElementUI::OnFactionSelectionDropdownChanged);
+		FactionSelectionDropdown->ClearOptions();
+		for (const FactionInfo& factionInfo : FactionInfos) {
+			FactionSelectionDropdown->AddOption(factionInfo.name.ToString());
+		}
+		FactionSelectionDropdown->SetSelectedIndex(0);
 	}
 	
 	UFUNCTION() void OnClickPlayerKickButton();
@@ -64,7 +75,19 @@ public:
 		_parent->CallBack1(this, CallbackEnum::LobbyChoosePlayerSettings);
 	}
 
+	UFUNCTION() void OnFactionSelectionDropdownChanged(FString sItem, ESelectInfo::Type seltype)
+	{
+		if (seltype != ESelectInfo::Direct) 
+		{
+			replyFactionEnum = FindFactionEnumFromName(sItem);
+			_parent->CallBack1(this, CallbackEnum::LobbyChooseFactionFromDropdown);
+		}
+	}
+
+
 	int32 slotId = -1;
+
+	FactionEnum replyFactionEnum = FactionEnum::Europe;
 private:
 	UPROPERTY() UPunWidget* _parent;
 };

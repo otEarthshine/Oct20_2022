@@ -49,6 +49,7 @@ public:
 	UPROPERTY(meta = (BindWidget)) UButton* ManageStorageCloseButton;
 	UPROPERTY(meta = (BindWidget)) UButton* AllowAllButton;
 	UPROPERTY(meta = (BindWidget)) UButton* DisallowAllButton;
+	UPROPERTY(meta = (BindWidget)) UEditableTextBox* ManageStorageSearchBox;
 
 	UPROPERTY(meta = (BindWidget)) USizeBox* DescriptionPunBoxScrollOuter;
 	UPROPERTY(meta = (BindWidget)) UPunBoxWidget* DescriptionPunBoxScroll;

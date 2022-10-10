@@ -38,6 +38,8 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	//DepletedText->SetVisibility(ESlateVisibility::Collapsed);
 	SetVisibility_DepletedText(false);
 
+	SetVisibility_PowerWarningIcon(false);
+
 	//LargeWhiteText->SetVisibility(ESlateVisibility::Collapsed);
 	//MediumGrayText->SetVisibility(ESlateVisibility::Collapsed);
 	SetVisibility_LargeWhiteText(false);
@@ -77,6 +79,8 @@ void UBuildingJobUI::PunInit(int buildingId, bool isHouse)
 	ResourceCompletionIconBox->ClearChildren();
 	FarmIconBox->SetVisibility(ESlateVisibility::Collapsed);
 	OtherIconsBox->ClearChildren();
+
+	PowerPlantResourceOuter->SetVisibility(ESlateVisibility::Collapsed);
 
 	ClockBox->SetVisibility(ESlateVisibility::Collapsed);
 

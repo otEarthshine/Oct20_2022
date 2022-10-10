@@ -46,7 +46,7 @@ void AMainMenuDisplayManager::InitMainMenuDisplayManager(MapSizeEnum mapSizeEnum
 	
 	_LOG(PunSaveLoad, "InitMainMenuDisplayManager mapSize(%d, %d)", regionPerWorld.x, regionPerWorld.y);
 	
-	GameMap::SetRegionsPerWorld(regionPerWorld.x, regionPerWorld.y);
+	GameMapConstants::SetRegionsPerWorld(regionPerWorld.x, regionPerWorld.y);
 
 	_simulation = std::make_unique<GameSimulationCore>();
 	_simulation->MainMenuDisplayInit();

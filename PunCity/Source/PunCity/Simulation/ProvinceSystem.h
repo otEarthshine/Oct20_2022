@@ -47,6 +47,7 @@ public:
 		_provinceMountainTileCount.resize(GameMapConstants::TotalRegions);
 		_provinceRiverTileCount.resize(GameMapConstants::TotalRegions);
 		_provinceOceanTileCount.resize(GameMapConstants::TotalRegions);
+		_provinceLakeTileCount.resize(GameMapConstants::TotalRegions);
 		_provinceFlatTileCount.resize(GameMapConstants::TotalRegions);
 
 		int32 totalTiles2x2 = GameMapConstants::TilesPerWorld / 4;
@@ -62,6 +63,9 @@ public:
 			}
 			else if (tileType == TerrainTileType::Ocean) {
 				_provinceId2x2[i] = OceanProvinceId;
+			}
+			else if (tileType == TerrainTileType::Lake) {
+				_provinceId2x2[i] = LakeProvinceId;
 			}
 			else {
 				_provinceId2x2[i] = EmptyProvinceId;
@@ -227,6 +231,10 @@ public:
 			else if (curProvinceId == OceanProvinceId) {
 				floodProvinceId();
 				_provinceOceanTileCount[provinceId] += 4;
+			}
+			else if (curProvinceId == LakeProvinceId) {
+				floodProvinceId();
+				_provinceLakeTileCount[provinceId] += 4;
 			}
 		});
 
@@ -514,6 +522,9 @@ public:
 					else if (tileType == TerrainTileType::Ocean) {
 						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = OceanProvinceId;
 					}
+					else if (tileType == TerrainTileType::Lake) {
+						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = LakeProvinceId;
+					}
 					else if (tileType == TerrainTileType::River) {
 						_provinceId2x2[WorldTile2x2(tile).tile2x2Id()] = RiverProvinceId;
 					}
@@ -530,6 +541,7 @@ public:
 				_provinceMountainTileCount[provinceId] = 0;
 				_provinceRiverTileCount[provinceId] = 0;
 				_provinceOceanTileCount[provinceId] = 0;
+				_provinceLakeTileCount[provinceId] = 0;
 				_provinceFlatTileCount[provinceId] = 0;
 
 				_provinceConnections[provinceId].clear();
@@ -1162,11 +1174,14 @@ public:
 	int16 provinceMountainTileCount(int32 provinceId) const { return _provinceMountainTileCount[provinceId]; }
 	int16 provinceRiverTileCount(int32 provinceId) const { return _provinceRiverTileCount[provinceId]; }
 	int16 provinceOceanTileCount(int32 provinceId) const { return _provinceOceanTileCount[provinceId]; }
+	int16 provinceLakeTileCount(int32 provinceId) const { return _provinceLakeTileCount[provinceId]; }
 	int32 provinceFlatTileCount(int32 provinceId) const { return _provinceFlatTileCount[provinceId]; };
+	
 	int32 provinceTileCount(int32 provinceId) const { return _provinceFlatTileCount[provinceId] + 
 															_provinceMountainTileCount[provinceId] + 
 															_provinceRiverTileCount[provinceId] + 
-															_provinceOceanTileCount[provinceId]; };
+															_provinceOceanTileCount[provinceId] +
+															_provinceLakeTileCount[provinceId]; };
 
 	int32 totalFlatTiles() { return _totalFlatTiles; }
 	
@@ -1520,11 +1535,13 @@ private:
 		_provinceMountainTileCount[newProvinceId] += _provinceMountainTileCount[oldProvinceId];
 		_provinceRiverTileCount[newProvinceId] += _provinceRiverTileCount[oldProvinceId];
 		_provinceOceanTileCount[newProvinceId] += _provinceOceanTileCount[oldProvinceId];
+		_provinceLakeTileCount[newProvinceId] += _provinceLakeTileCount[oldProvinceId];
 		_provinceFlatTileCount[newProvinceId] += _provinceFlatTileCount[oldProvinceId];
 
 		_provinceMountainTileCount[oldProvinceId] = 0;
 		_provinceRiverTileCount[oldProvinceId] = 0;
 		_provinceOceanTileCount[oldProvinceId] = 0;
+		_provinceLakeTileCount[oldProvinceId] = 0;
 		_provinceFlatTileCount[oldProvinceId] = 0;
 
 
@@ -1596,6 +1613,7 @@ public:
 		SerializeVecValue(Ar, _provinceMountainTileCount);
 		SerializeVecValue(Ar, _provinceRiverTileCount);
 		SerializeVecValue(Ar, _provinceOceanTileCount);
+		SerializeVecValue(Ar, _provinceLakeTileCount);
 		SerializeVecValue(Ar, _provinceFlatTileCount);
 
 		Ar << _totalFlatTiles;
@@ -1624,6 +1642,7 @@ private:
 	std::vector<int16> _provinceMountainTileCount;
 	std::vector<int16> _provinceRiverTileCount;
 	std::vector<int16> _provinceOceanTileCount;
+	std::vector<int16> _provinceLakeTileCount;
 	std::vector<int16> _provinceFlatTileCount;
 
 	int32 _totalFlatTiles = 0;

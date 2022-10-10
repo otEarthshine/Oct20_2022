@@ -199,6 +199,39 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 	// ... Fill like this to make sure it is deterministic
 	// - Start by filling Gemstone/Gold Ore/Oil first
 
+	auto ensureAtLeastOneNode = [&](int32& fillIndex, GeoresourceEnum georesourceEnumIn, int32 depositAmount = 50000)
+	{
+		if (fillIndex == 0)
+		{
+			ExecuteRegionsWithJumpAndExit([&](int32 provinceId)
+			{
+				if (usableFlatProvinceIds.Contains(provinceId) &&
+					usableFlatProvinceIds[provinceId]) {
+					usableFlatProvinceIds[provinceId] = false;
+					PlantResource(provinceId, georesourceEnumIn, depositAmount);
+					fillIndex++;
+					return true;
+				}
+				if (usableLightMountainProvinceIds.Contains(provinceId) &&
+					usableLightMountainProvinceIds[provinceId]) {
+					usableLightMountainProvinceIds[provinceId] = false;
+					PlantResource(provinceId, georesourceEnumIn, depositAmount);
+					fillIndex++;
+					return true;
+				}
+				if (usableHeavyMountainProvinceIds.Contains(provinceId) &&
+					usableHeavyMountainProvinceIds[provinceId]) {
+					usableHeavyMountainProvinceIds[provinceId] = false;
+					PlantResource(provinceId, georesourceEnumIn, depositAmount);
+					fillIndex++;
+					return true;
+				}
+				return false;
+			});
+			PUN_CHECK(fillIndex == 1);
+		}
+	};
+
 	// Desert Gem
 	int32 totalFill = 0;
 	int32 fillIndex = 0;
@@ -225,6 +258,8 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 		}
 		return fillIndex >= gemCount;
 	});
+	ensureAtLeastOneNode(fillIndex, GeoresourceEnum::Gemstone);
+
 	totalFill += fillIndex;
 	PUN_LOG("totalFill:%d fillIndex:%d", totalFill, fillIndex);
 
@@ -255,6 +290,8 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 		}
 		return fillIndex >= goldCount;
 	});
+	ensureAtLeastOneNode(fillIndex, GeoresourceEnum::GoldOre);
+
 	totalFill += fillIndex;
 	PUN_LOG("totalFill:%d fillIndex:%d", totalFill, fillIndex);
 
@@ -290,6 +327,9 @@ void GeoresourceSystem::InitGeoresourceSystem(IGameSimulationCore* simulation, b
 		}
 		return fillIndex >= oilCount;
 	});
+	ensureAtLeastOneNode(fillIndex, GeoresourceEnum::Oil);
+
+	PUN_CHECK(fillIndex > 0);
 	totalFill += fillIndex;
 	PUN_LOG("totalFill:%d fillIndex:%d", totalFill, fillIndex);
 

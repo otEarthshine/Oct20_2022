@@ -114,8 +114,9 @@ protected:
 			{
 				switch (tileType)
 				{
+				case TerrainTileType::Lake: return FLinearColor(0.4, 0.4, 1);
 				case TerrainTileType::Ocean: return FLinearColor::Blue;
-				case TerrainTileType::River: return FLinearColor(0.2, 0.2, 1);
+				case TerrainTileType::River: return FLinearColor(0, 0, .5);
 				case TerrainTileType::Mountain: return  FLinearColor(0.4f, 0.3f, 0.3f);
 				default:
 					return FLinearColor(1, 0, 1);
@@ -238,7 +239,30 @@ protected:
 					if (PunSettings::Settings["FloodId"])
 					{
 						int16 floodId = sim.floodSystem().GetFloodId(curTile);
-						line->DrawLine(start, start + FVector(2, 0, 2), GetFloodColor(floodId), 100.0f, 1.0f, 10000);
+						int32 curTileRegion64Id = TileToRegion64Id(curTile);
+
+						int32 sameNearbyFloodIdCount = 0;
+						auto checkNearbyFloodId = [&](const WorldTile2 checkTile)
+						{
+							if (TileToRegion64Id(checkTile) == curTileRegion64Id &&
+								floodId == sim.floodSystem().GetFloodId(checkTile))
+							{
+								sameNearbyFloodIdCount++;
+							}
+						};
+
+						checkNearbyFloodId(curTile + WorldTile2(-1, -1));
+						checkNearbyFloodId(curTile + WorldTile2(-1, 0));
+						checkNearbyFloodId(curTile + WorldTile2(-1, 1));
+						checkNearbyFloodId(curTile + WorldTile2(0, -1));
+						checkNearbyFloodId(curTile + WorldTile2(0, 1));
+						checkNearbyFloodId(curTile + WorldTile2(1, -1));
+						checkNearbyFloodId(curTile + WorldTile2(1, 0));
+						checkNearbyFloodId(curTile + WorldTile2(1, 1));
+
+						if (8 - sameNearbyFloodIdCount >= 3) {
+							line->DrawLine(start, start + FVector(2, 0, 2), GetFloodColor(floodId), 100.0f, 1.0f, 10000);
+						}
 					}
 					//if (PunSettings::Settings["FloodIdHuman"])
 					//{
@@ -376,10 +400,21 @@ protected:
 			FVector pos01 = MapUtil::DisplayLocation(cameraAtom, WorldTile2(startX, region.maxYTile()).worldAtom2());
 			FVector pos10 = MapUtil::DisplayLocation(cameraAtom, WorldTile2(region.maxXTile(), startY).worldAtom2());
 			FVector pos11 = MapUtil::DisplayLocation(cameraAtom, WorldTile2(region.maxXTile(), region.maxYTile()).worldAtom2());
-			line->DrawLine(pos00, pos01, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
-			line->DrawLine(pos01, pos11, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
-			line->DrawLine(pos11, pos10, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
-			line->DrawLine(pos10, pos00, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+
+			if (PunSettings::Settings["FloodId"])
+			{
+				if (TileToRegion64Id(WorldTile2(startX, startY)) != TileToRegion64Id(WorldTile2(startX - 1, startY))) line->DrawLine(pos00, pos01, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+				if (TileToRegion64Id(WorldTile2(startX, startY)) != TileToRegion64Id(WorldTile2(startX, startY + 1))) line->DrawLine(pos01, pos11, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+				if (TileToRegion64Id(WorldTile2(startX, startY)) != TileToRegion64Id(WorldTile2(startX + 1, startY))) line->DrawLine(pos11, pos10, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+				if (TileToRegion64Id(WorldTile2(startX, startY)) != TileToRegion64Id(WorldTile2(startX, startY - 1))) line->DrawLine(pos10, pos00, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+			}
+			else
+			{
+				line->DrawLine(pos00, pos01, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+				line->DrawLine(pos01, pos11, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+				line->DrawLine(pos11, pos10, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+				line->DrawLine(pos10, pos00, FLinearColor(0.1, 0, 0.1), 100.0f, 1.0f, 10000);
+			}
 		}
 
 		// Waypoints
@@ -412,11 +447,11 @@ protected:
 			//GameMapFlood* floodSystem = &(simulation()->floodSystem());
 
 			RegionFloodConnections& region64Connections = floodSystem->region64ToConnections()[region64Id];
-			std::array<std::vector<FloodConnection>, 4>& directionToConnections = region64Connections.directionToConnections();
+			const std::array<std::vector<FloodConnection>, 4>& directionToConnections = region64Connections.directionToConnections();
 
 			for (int directionInt = 0; directionInt < DirectionCount; directionInt++)
 			{
-				std::vector<FloodConnection>& connectionsInDir = directionToConnections[directionInt];
+				const std::vector<FloodConnection>& connectionsInDir = directionToConnections[directionInt];
 				Direction direction = static_cast<Direction>(directionInt);
 				int16_t neighborRegion64Id = Region64Neighbor(region64Id, direction);
 
@@ -462,6 +497,11 @@ protected:
 				for (WorldTile2 coastalTile : slot.coastalTiles) {
 					FVector coastalTileVec = MapUtil::DisplayLocation(cameraAtom, coastalTile.worldAtom2());
 					lineBatch()->DrawLine(coastalTileVec, coastalTileVec + FVector(0, 0, 10), FLinearColor::Blue, 100.0f, 1.0f, 10000);
+				}
+
+				for (WorldTile2 lakeTile : slot.lakeTiles) {
+					FVector lakeTileVec = MapUtil::DisplayLocation(cameraAtom, lakeTile.worldAtom2());
+					lineBatch()->DrawLine(lakeTileVec, lakeTileVec + FVector(0, 0, 10), FLinearColor(0.5, 0.5, 1), 100.0f, 1.0f, 10000);
 				}
 
 				for (WorldTile2 riverTile : slot.riverTiles) {

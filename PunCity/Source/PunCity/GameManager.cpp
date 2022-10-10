@@ -176,7 +176,8 @@ void AGameManager::InitPhase1()
 	
 	SCOPE_TIMER("InitPhase1");
 
-	WorldRegion2 mapSize = GetMapSize(GetMapSettings().mapSizeEnumInt);
+	FMapSettings mapSettings = GetMapSettings();
+	WorldRegion2 mapSize = GetMapSize(mapSettings.mapSizeEnumInt);
 
 	int regionPerWorldX = mapSize.x;
 	int regionPerWorldY = mapSize.y;
@@ -184,11 +185,12 @@ void AGameManager::InitPhase1()
 	_assetLoader->SetMaterialCollectionParametersScalar("TotalRegionX", regionPerWorldX);
 	_assetLoader->SetMaterialCollectionParametersScalar("TotalRegionY", regionPerWorldY);
 
-	_assetLoader->SetMaterialCollectionParametersScalar("TundraTemperatureStart", tundraTemperatureStart100 / 100.0f);
-	_assetLoader->SetMaterialCollectionParametersScalar("BorealTemperatureStart", borealTemperatureStart100 / 100.0f);
-	_assetLoader->SetMaterialCollectionParametersScalar("ForestTemperatureStart", forestTemperatureStart100 / 100.0f);
+	_assetLoader->SetMaterialCollectionParametersScalar("TundraTemperatureStart", GameMapConstants::TundraTemperatureStart10000 / 10000.0f);
+	_assetLoader->SetMaterialCollectionParametersScalar("BorealTemperatureStart", GameMapConstants::BorealTemperatureStart10000 / 10000.0f);
+	_assetLoader->SetMaterialCollectionParametersScalar("ForestTemperatureStart", GameMapConstants::ForestTemperatureStart10000 / 10000.0f);
 
-	GameMap::SetRegionsPerWorld(regionPerWorldX, regionPerWorldY);
+	GameMapConstants::SetRegionsPerWorld(regionPerWorldX, regionPerWorldY);
+	GameMapConstants::SetTemperatureBands(static_cast<int32>(mapSettings.mapTemperature));
 
 	_simulation = make_unique<GameSimulationCore>();
 	_simulation->Init(this, this, _uiInterface, _isLoadingFromFile);
@@ -1081,8 +1083,8 @@ void AGameManager::TickDisplay(float DeltaTime, WorldAtom2 cameraAtom, float zoo
 
 		{
 			SCOPE_TIMER_FILTER(5000, "Tick -- Map");
-			bool isVisible = PunSettings::IsOn("DisplayTerrainMap") && (smoothZoomDistance >= WorldZoomTransition_Region4x4ToMap_SlightBelow);
-			bool isWaterVisible = PunSettings::IsOn("DisplayTerrainMap") && (smoothZoomDistance >= WorldZoomTransition_RegionToRegion4x4);
+			bool isVisible = PunSettings::IsOn("DisplayMapTerrain") && (smoothZoomDistance >= WorldZoomTransition_Region4x4ToMap_SlightBelow);
+			bool isWaterVisible = PunSettings::IsOn("DisplayMapWater") && (smoothZoomDistance >= WorldZoomTransition_RegionToRegion4x4);
 			bool isColliderVisible = (smoothZoomDistance >= WorldZoomTransition_RegionToRegion4x4_Mid);
 
 #if DISPLAY_TILEOBJ

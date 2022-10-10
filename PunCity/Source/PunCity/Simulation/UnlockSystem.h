@@ -7,6 +7,7 @@
 #include <unordered_map>
 #include "PunCity/PunUtils.h"
 #include "Buildings/House.h"
+#include "Buildings/TownHall.h"
 
 #define LOCTEXT_NAMESPACE "UnlockSys"
 
@@ -623,6 +624,12 @@ public:
 		{
 			simulation->TryAddCards_BoughtHandAndInventory(playerId, CardStatus(CardEnum::PolicyOffice, 1));
 		}
+
+		/*
+		 * Free Colony
+		 */
+		int32 provinceId = simulation->GetTownhallCapital(playerId).provinceId();
+		simulation->playerOwned(playerId).TryGetFreeColony(provinceId);
 	}
 
 	// Helpers
@@ -2101,6 +2108,7 @@ public:
 	int32 totalTechs() { return _enumToTech.size() - 1;  } // -1 for TechEnum::None tech
 	//bool allTechsUnlocked() { return techsFinished == totalTechs(); } // TODO: fix this... should only compare Tech Tree's tech
 
+	// TODO: this might be old?
 	int32 currentTechColumn()
 	{
 		int32 currentEra = 1;

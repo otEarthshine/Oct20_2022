@@ -605,12 +605,12 @@ public:
 		//simulation().DrawLine(start.worldAtom2(), FVector::ZeroVector, start.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
 		//simulation().DrawLine(end.worldAtom2(), FVector::ZeroVector, end.worldAtom2(), FVector(0, 5, 10), color, 1.0f, 10000);
 	}
-	void PrintPath_Helper(const std::vector<WorldTile2>& path)
+	void PrintPath_Helper(const std::vector<WorldTile2>& path, FLinearColor color = FLinearColor::Green)
 	{
 		for (int32 i = path.size(); i-- > 1;) {
 			WorldTile2 tile1 = path[i - 1];
 			WorldTile2 tile2 = path[i];
-			simulation().DrawLine(tile1.worldAtom2(), FVector::ZeroVector, tile2.worldAtom2(), FVector(0, 0, 3), FLinearColor::Green, 1.0f, 10000);
+			simulation().DrawLine(tile1.worldAtom2(), FVector::ZeroVector, tile2.worldAtom2(), FVector(0, 0, 3), color, 1.0f, 10000);
 		}
 
 		PUN_LOG("FindPathTest %d", path.size());
@@ -631,22 +631,46 @@ public:
 		
 		PrintPath_Helper(path);
 	}
-	//UFUNCTION(Exec) void FindPathHumanTest(int32 roadCostDownFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
-	//{
-	//	WorldTile2 start(startX, startY);
-	//	WorldTile2 end(endX, endY);
 
-	//	std::vector<WorldTile2> path;
-	//	{
-	//		SCOPE_TIMER("FindPathHumanTest");
-	//		std::vector<uint32_t> rawPath;
-	//		simulation().pathAI()->FindPathHuman(start.x, start.y, end.x, end.y, rawPath, roadCostDownFactor, true, customCalcCount);
+	UFUNCTION(Exec) void FindPathNewTest(int32 startX, int32 startY, int32 endX, int32 endY)
+	{
+		std::vector<WorldTile2> higherLevelPath_startToEnd;
+		{
+			SCOPE_TIMER("FindPathNewTest1");
 
-	//		MapUtil::UnpackAStarPath(rawPath, path);
-	//	}
+			WorldTile2 start(startX, startY);
+			WorldTile2 end(endX, endY);
 
-	//	PrintPath_Helper(path);
-	//}
+			const GameMapFlood& floodSystem = simulation().floodSystem();
+			higherLevelPath_startToEnd = floodSystem.FindPath_FloodRegionHelper(start, end, GameConstants::MaxFloodDistance_IsBuildingConnected);
+
+			PrintPath_Helper(higherLevelPath_startToEnd, FLinearColor(0.7, 1, 0.7));
+		}
+		
+		SCOPE_TIMER("FindPathNewTest2");
+		
+		std::vector<WorldTile2> finalPath_EndToStart;
+		std::vector<WorldTile2> tempPath_EndToStart;
+		
+		for (int32 i = higherLevelPath_startToEnd.size(); i-- > 1;)
+		{
+			const WorldTile2& lowLevelEnd = higherLevelPath_startToEnd[i];
+			const WorldTile2& lowLevelStart = higherLevelPath_startToEnd[i - 1];
+			
+			std::vector<uint32_t> rawPath;
+			simulation().pathAI()->FindPath(lowLevelStart.x, lowLevelStart.y, lowLevelEnd.x, lowLevelEnd.y, rawPath, true, 1);
+
+			MapUtil::UnpackAStarPath(rawPath, tempPath_EndToStart);
+
+			finalPath_EndToStart.insert(finalPath_EndToStart.end(), tempPath_EndToStart.begin(), tempPath_EndToStart.end() - 1);
+			
+			tempPath_EndToStart.clear();
+		}
+
+		PrintPath_Helper(finalPath_EndToStart);
+	}
+	
+
 	UFUNCTION(Exec) void FindPathAnimalTest(int32 heuristicsFactor, uint16 customCalcCount, int32 startX, int32 startY, int32 endX, int32 endY)
 	{
 		WorldTile2 start(startX, startY);

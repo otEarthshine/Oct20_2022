@@ -30,6 +30,7 @@ struct ProvinceBuildingSlot
 	int32 provinceId = -1;
 
 	std::vector<WorldTile2> coastalTiles;
+	std::vector<WorldTile2> lakeTiles;
 	std::vector<WorldTile2> riverTiles;
 	std::vector<WorldTile2> mountainTiles;
 	
@@ -49,6 +50,7 @@ struct ProvinceBuildingSlot
 		Ar << provinceId;
 
 		SerializeVecObj(Ar, coastalTiles);
+		SerializeVecObj(Ar, lakeTiles);
 		SerializeVecObj(Ar, riverTiles);
 		SerializeVecObj(Ar, mountainTiles);
 		
@@ -162,23 +164,12 @@ public:
 				if (provinceSys.provinceOceanTileCount(provinceId) > 1)
 				{
 					tryAddSpecialTiles(provinceBuildingSlot.coastalTiles, TerrainTileType::Ocean);
-					
-					//provinceSys.GetProvinceRectArea(provinceId).ExecuteOnArea_WorldTile2([&](WorldTile2 tile)
-					//{
-					//	if (isBuildable(tile))
-					//	{
-					//		// Check found nearby tiles if any water
-					//		auto checkAdjacentTile = [&](WorldTile2 shift) {
-					//			if (terrainGen.terrainTileType(tile + shift) == TerrainTileType::Ocean) {
-					//				provinceBuildingSlot.coastalTiles.push_back(tile + shift);
-					//			}
-					//		};
-					//		checkAdjacentTile(WorldTile2(1, 0));
-					//		checkAdjacentTile(WorldTile2(-1, 0));
-					//		checkAdjacentTile(WorldTile2(0, 1));
-					//		checkAdjacentTile(WorldTile2(0, -1));
-					//	}
-					//});
+				}
+
+				// Fill Lake Tiles
+				if (provinceSys.provinceLakeTileCount(provinceId) > 1)
+				{
+					tryAddSpecialTiles(provinceBuildingSlot.lakeTiles, TerrainTileType::Lake);
 				}
 
 				// Fill River Tiles

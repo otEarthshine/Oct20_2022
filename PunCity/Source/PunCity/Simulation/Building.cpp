@@ -445,13 +445,15 @@ void Building::Deinit()
 	//PUN_LOG("Deinit %d constructed:%d ticks:%d", _objectId, _isConstructed, Time::Ticks());
 	
 	if (_townId == -1) {
-		OnDeinit();
+		//OnDeinit();
 
 		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
 			_simulation->SetWalkable(tile, true);
 		});
 		_simulation->SetRoadPathAI(gateTile(), false);
-		return; // Animal Controlled
+
+		OnDeinit();
+		return; // Animal Controlled/Intercity Bridge
 	}
 
 	// Despawn all resource holders
@@ -485,10 +487,12 @@ void Building::Deinit()
 	}
 
 	// SetWalkable
-	_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
-		_simulation->SetWalkable(tile, true);
-	});
-	_simulation->SetRoadPathAI(gateTile(), false);
+	if (!isEnum(CardEnum::Farm)) {
+		_area.ExecuteOnArea_WorldTile2([&](WorldTile2 tile) {
+			_simulation->SetWalkable(tile, true);
+		});
+		_simulation->SetRoadPathAI(gateTile(), false);
+	}
 
 	// Smoke
 	_simulation->AddFireOnceParticleInfo(IsRoad(buildingEnum()) ? ParticleEnum::OnPlacement : ParticleEnum::OnDemolish, _area);
@@ -877,9 +881,9 @@ FText Building::GetUpgradeDisplayDescription(int32 index)
 		}
 		if (nextEra == 5) 
 		{
-			int32 electricityPerBatch = ElectricityAmountNeeded();
+			int32 electricityPerBatch = GetMaxElectricityUsage();
 			return FText::Format(
-				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 50% faster with Electricity.<space>Consumes {0} kW Electricity."),
+				NSLOCTEXT("BuildingUpgrade", "Electric Machinery Desc", "Once upgraded, this Building will need Electricity.<space>Workers work 30% faster with Electricity.<space>Consumes {0} kW Electricity."),
 				TEXT_NUM(electricityPerBatch)
 			);
 		}

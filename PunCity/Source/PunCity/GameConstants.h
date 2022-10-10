@@ -35,7 +35,11 @@ public:
 
 	static const int32 MaxFindNearestMarkRegionDistance = 5;
 
-	static const int32 MaxFloodDistance_Army = 10;
+	static const int32 MaxFloodDistance_IsBuildingConnected = 10;
+
+	static const int32 FindPath_DistanceToCheckFloodRegionDistance = 50;
+	static const int32 FindPath_FloodRegionDistanceToUseHPA = 4;
+	
 
 	static const int32 MaxDistanceFetch_MedTools = 120;
 	static const int32 MaxDistanceFetch_NonLaborer = 40;

@@ -1060,8 +1060,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 				{
 					focusBox->AddSpacer();
 					focusBox->AddRichText(
-						TEXT_TAG("<GrayBold>", LOCTEXT("Electricity", "Electric Usage/Need")),
-						FText::Format(INVTEXT("{0}/{1}kW"), TextRed(TEXT_NUM(building.ElectricityAmountUsage()), building.NotEnoughElectricity()), TEXT_NUM(building.ElectricityAmountNeeded()))
+						TEXT_TAG("<GrayBold>", LOCTEXT("Electric Usage", "Electric Usage")),
+						FText::Format(INVTEXT("{0}/{1}kW"), TextRed(TEXT_NUM(building.ElectricityAmountUsage()), building.NotEnoughElectricity()), TEXT_NUM(building.GetMaxElectricityUsage()))
 					);
 				}
 				
@@ -2252,18 +2252,24 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (IsPowerPlant(buildingEnum))
 					{
-						focusBox->AddRichText(TEXT_TAG("<GrayBold>", LOCTEXT("Consumption (season):", "Consumption (per season):")),
+						auto& powerPlant = building.subclass<PowerPlant>();
+
+						focusBox->AddSpacer(8);
+
+						focusBox->AddRichText(
+							TEXT_TAG("<GrayBold>", buildingEnum == CardEnum::CoalPowerPlant ? LOCTEXT("Coal Inventory", "Coal Inventory") : LOCTEXT("Oil Inventory", "Oil Inventory")),
+							TEXT_NUM(building.resourceCount(building.input1())), building.input1()
+						);
+						focusBox->AddRichText(TEXT_TAG("<GrayBold>", LOCTEXT("Consumption (season)", "Consumption (season)")),
 							TEXT_NUM(building.seasonalConsumption1()), building.input1()
 						);
 
 						focusBox->AddLineSpacer();
 						Indent(5);
-						
-						auto& powerPlant = building.subclass<PowerPlant>();
 
 						auto addElectricityRow = [&](FText leftText, FText rightText, FText tipText)
 						{
-							auto electricityWidget = focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							auto electricityWidget = focusBox->AddRichText(
 								leftText, rightText
 							);
 
@@ -2272,25 +2278,57 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 							AddToolTip(electricityWidget, args);
 						};
 						
-						auto electricityWidget = focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader,
-							LOCTEXT("Electricity_FocusUI1", "Electricity Stats:")
-						);
+						//auto electricityWidget = focusBox->AddWGT_PunText(UIEnum::WGT_ObjectFocus_Subheader,
+						//	LOCTEXT("Electricity_FocusUI1", "Electricity Stats:")
+						//);
 						args.Empty();
-						args.Add(LOCTEXT("Electricity_Tip1", "Electricity production of 1 kW consumes 1 Coal per Round\n<Gray>(8 per year)</>"));
-						AddToolTip(electricityWidget, args);
-						
+						//args.Add(LOCTEXT("Electricity_Tip1", "Electricity production of 1 kW consumes 1 Coal per Round\n<Gray>(8 per year)</>"));
+						//AddToolTip(electricityWidget, args);
+
+						/**
+						 * Building Production	50kW
+						 * Building Status		Off
+						 * 
+						 * Citywide Satisfaction	100kW/100kW
+						 * Citywide Production		100kW/300kW
+						 */
 
 						addElectricityRow(
-							LOCTEXT("Electricity_FocusUI2", "Building Production Capacity"),
-							FText::Format(INVTEXT("{0}kW"), TEXT_NUM(powerPlant.ElectricityProductionCapacity())),
-							LOCTEXT("Electricity_Tip2", "The maximum Electricity Production (kW) from this Building.")
+							LOCTEXT("Electricity_FocusUI1", "Building Production"),
+							FText::Format(INVTEXT("{0}kW"), TEXT_NUM(GetPowerPlantInfo(buildingEnum).baseCapacity)),
+							LOCTEXT("Electricity_Tip1", "The maximum Electricity Production (kW) from this Building.")
 						);
+						
+						addElectricityRow(
+							LOCTEXT("Electricity_FocusUI2", "Building Status"),
+							powerPlant.IsPowerPlantOn() ? LOCTEXT("<Green>On</>", "<Green>On</>") : LOCTEXT("<Red>Off</>", "<Red>Off</>"),
+							LOCTEXT("Electricity_Tip2", "Is Electricity Production On or Off.")
+						);
+
+						focusBox->AddSpacer(8);
 
 						auto& townManager = sim.townManager(powerPlant.playerId());
+						FText citywideSatisfactionText = FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(townManager.electricityCurrentUsage()), TEXT_NUM(townManager.electricityDemand()));
+						if (townManager.electricityCurrentUsage() < townManager.electricityDemand()) {
+							citywideSatisfactionText = TEXT_TAG("<Orange>", citywideSatisfactionText);
+						}
+						else if (townManager.electricityCurrentUsage() < townManager.electricityDemand() / 2) {
+							citywideSatisfactionText = TEXT_TAG("<Red>", citywideSatisfactionText);
+						}
+						else {
+							citywideSatisfactionText = TEXT_TAG("<Green>", citywideSatisfactionText);
+						}
+
 						addElectricityRow(
-							LOCTEXT("Electricity_FocusUI3", "City Usage/Capacity"),
-							FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(townManager.electricityConsumption()), TEXT_NUM(townManager.electricityProductionCapacity())),
-							LOCTEXT("Electricity_Tip3", "City-wide Electricity:<space>[Consumption]/[Production Capacity].")
+							LOCTEXT("Electricity_FocusUI3", "City-wide Satisfaction"),
+							citywideSatisfactionText,
+							LOCTEXT("Electricity_Tip3", "TODO:TEXT")
+						);
+
+						addElectricityRow(
+							LOCTEXT("Electricity_FocusUI4", "City-wide Production"),
+							FText::Format(INVTEXT("{0}/{1}kW"), TEXT_NUM(townManager.electricityCurrentUsage()), TEXT_NUM(townManager.electricityProductionCapacity())),
+							LOCTEXT("Electricity_Tip4", "TODO:TEXT")
 						);
 
 						ResetIndent();
@@ -2359,18 +2397,29 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 
 						//uiResourceTargetsToDisplay = market.GetMarketTargets();
 					}
+
 					
-					auto tryAddManageStorageElement_UnderExpansion = [&](ResourceEnum resourceEnum, bool isShowing, bool isSection, bool shouldRemoveFromList = true)
+					FString searchString = _objectDescriptionUI->ManageStorageSearchBox->GetText().ToString();
+
+					
+					auto tryAddManageStorageElement_UnderExpansion = [&](ResourceEnum resourceEnum, bool isExpanded, bool isSection, bool shouldRemoveFromList = true)
 					{
-						// Note: isShowing is needed since we should do RemoveIf even if we aren't showing the resource row 
-						if (isShowing) {
+						// ??? OLD  Note: isShowing is needed since we should do RemoveIf even if we aren't showing the resource row
+						if (!isExpanded && !searchString.IsEmpty()) {// Force Expansion for Filter
+							isExpanded = true;
+						}
+
+						if (isExpanded)
+						{
 							bool isAllowed = storage.ResourceAllowed(resourceEnum);
 							ECheckBoxState checkState = (isAllowed ? ECheckBoxState::Checked : ECheckBoxState::Unchecked);
 
 							bool showTarget = isMarket && building.subclass<StorageBase>().ResourceAllowed(resourceEnum);
 							int32 target = showTarget ? uiResourceTargetsToDisplay[static_cast<int>(resourceEnum)] : -1;
-							
-							manageStorageBox->AddManageStorageElement(resourceEnum, FText(), objectId, checkState, isSection, _justOpenedDescriptionUI, showTarget, target);
+
+							bool shouldShow = searchString.IsEmpty() ? isExpanded : (ResourceNameF(resourceEnum).Find(searchString, ESearchCase::Type::IgnoreCase, ESearchDir::FromStart) != INDEX_NONE);
+
+							manageStorageBox->AddManageStorageElement(resourceEnum, FText(), objectId, checkState, isSection, _justOpenedDescriptionUI, showTarget, target, shouldShow);
 						}
 						if (shouldRemoveFromList) {
 							CppUtils::RemoveIf(resourceEnums, [&](ResourceInfo resourceInfo) { return resourceInfo.resourceEnum == resourceEnum; });
@@ -2413,7 +2462,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								target = building.subclass<Market>().GetFoodTarget();
 							}
 
-							auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Food, LOCTEXT("Food", "Food"), objectId, checkState, true, _justOpenedDescriptionUI, isMarket, target);
+							auto element = manageStorageBox->AddManageStorageElement(
+								ResourceEnum::Food, LOCTEXT("Food", "Food"), 
+								objectId, checkState, true, _justOpenedDescriptionUI, isMarket, target, searchString.IsEmpty()
+							);
 							bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedFood;
 							for (ResourceEnum resourceEnum : StaticData::FoodEnums) {
 								tryAddManageStorageElement_UnderExpansion(resourceEnum, expanded, false);
@@ -2441,7 +2493,10 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 								checkState = ECheckBoxState::Unchecked;
 							}
 
-							auto element = manageStorageBox->AddManageStorageElement(ResourceEnum::Luxury, LOCTEXT("Luxury", "Luxury"), objectId, checkState, true, _justOpenedDescriptionUI, false);
+							auto element = manageStorageBox->AddManageStorageElement(
+								ResourceEnum::Luxury, LOCTEXT("Luxury", "Luxury"), 
+								objectId, checkState, true, _justOpenedDescriptionUI, false, -1, searchString.IsEmpty()
+							);
 							bool expanded = element->HasDelayOverride() ? element->expandedOverride : storage.expandedLuxury;
 							for (int32 i = 1; i < TierToLuxuryEnums.size(); i++) {
 								for (ResourceEnum resourceEnum : TierToLuxuryEnums[i]) {
@@ -2965,7 +3020,9 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 #endif
 				}
 				// Inventory
-				else if (!holderInfos.empty() && buildingEnum != CardEnum::House)
+				else if (!holderInfos.empty() && 
+						buildingEnum != CardEnum::House &&
+						!IsPowerPlant(buildingEnum))
 				{
 					focusBox->AddLineSpacer();
 
@@ -4097,13 +4154,13 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 					}
 					else if (sim.IsWater(tile)) 
 					{
-						if (sim.IsFreshWater(tile))
-						{
-							focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Fresh Water Tile", "Fresh Water Tile"));
-						}
-						else {
-							focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Salt Water Tile", "Salt Water Tile"));
-						}
+						focusBox->AddWGT_ObjectFocus_Title(
+							sim.IsFreshWater(tile) ? LOCTEXT("Fresh Water Tile", "Fresh Water Tile") : LOCTEXT("Salt Water Tile", "Salt Water Tile")
+						);
+						focusBox->AddWGT_TextRow(UIEnum::WGT_ObjectFocus_TextRow,
+							LOCTEXT("Maritime Trade", "Maritime Trade"),
+							sim.IsShippableWater(tile) ? LOCTEXT("Available", "Available") : LOCTEXT("No(Landlocked)", "No(Landlocked)")
+						);
 					}
 					else if (sim.IsMountain(tile)) {
 						focusBox->AddWGT_ObjectFocus_Title(LOCTEXT("Mountain Tile", "Mountain Tile"));
@@ -4125,8 +4182,8 @@ void UObjectDescriptionUISystem::UpdateDescriptionUI()
 						TArray<FText> args;
 						ADDTEXT_(INVTEXT("--Province: {0}\n"), provinceId);
 						ADDTEXT_(INVTEXT("--Region({0}, {1})\n"), region.x, region.y);
-						ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y)
-							ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
+						ADDTEXT_(INVTEXT("--LocalTile({0}, {1})\n"), tile.localTile(region).x, tile.localTile(region).y);
+						ADDTEXT_(INVTEXT("<Header>{0}</>"), tile.ToText());
 						focusBox->AddSpecialRichText(INVTEXT("<Yellow>"), args);
 					}
 #endif
@@ -4918,7 +4975,8 @@ void UObjectDescriptionUISystem::CallBack1(UPunWidget* punWidgetCaller, Callback
 	else if (callbackEnum == CallbackEnum::OpenManageStorage)
 	{
 		auto overlay = _objectDescriptionUI->ManageStorageOverlay;
-		overlay->SetVisibility(overlay->GetVisibility() == ESlateVisibility::Visible ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		_objectDescriptionUI->ManageStorageOverlay->SetVisibility(overlay->IsVisible() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
+		_objectDescriptionUI->ManageStorageSearchBox->SetText(FText());
 	}
 	
 	else if (callbackEnum == CallbackEnum::SelectBuildingSlotCard)

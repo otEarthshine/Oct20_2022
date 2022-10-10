@@ -94,7 +94,7 @@ void GameSimulationCore::Init(IGameManagerInterface* gameManager, IGameSoundInte
 		for (int32 yy = 0; yy < GameMapConstants::Tiles4x4PerWorldY; yy++) {
 			for (int32 xx = 0; xx < GameMapConstants::Tiles4x4PerWorldX; xx++) {
 				TerrainTileType tileType = terrainMap[WorldTile2(xx * 4, yy * 4).tileId()];
-				PunAStar128x256::SetWater(xx, yy, tileType == TerrainTileType::Ocean || tileType == TerrainTileType::River);
+				PunAStar128x256::SetWater(xx, yy, tileType == TerrainTileType::Ocean || tileType == TerrainTileType::Lake || tileType == TerrainTileType::River);
 			}
 		}
 	}
@@ -309,7 +309,7 @@ void GameSimulationCore::InitOasis()
 			int32 index = bldTileBeforeRotation.y + bldTileBeforeRotation.x * size.y;
 			check(isHole.size() > index && index >= 0);
 			if (isHole[index]) {
-				_terrainGenerator->SetWaterTile(tile);
+				_terrainGenerator->SetFreshWaterTile(tile);
 				_terrainChanges.AddHole(tile);
 
 				// TODO: remove?? SetHoleWorldTexture doesn't work
@@ -570,6 +570,44 @@ void GameSimulationCore::InitProvinceBuildings()
 		}
 	}
 	endMinorCityLoop:
+
+	/*
+	 * Ensure Each Faction has at least 1 Minor City
+	 */
+	std::vector<int32> factionToMinorCityCount(FactionEnumCount, 0);
+	
+	for (const std::unique_ptr<TownManagerBase>& minorTown : _minorTownManagers)
+	{
+		if (minorTown->isValid()) {
+			factionToMinorCityCount[static_cast<int32>(minorTown->factionEnum())]++;
+		}
+	}
+
+	auto tryChangeMinorCityFaction = [&](int32 factionEnumInt)
+	{
+		for (int32 j = 0; j < factionToMinorCityCount.size(); j++) {
+			if (factionToMinorCityCount[j] > 1)
+			{
+				for (const std::unique_ptr<TownManagerBase>& minorTown : _minorTownManagers)
+				{
+					if (minorTown->factionEnum() == static_cast<FactionEnum>(j)) {
+						minorTown->SetFactionEnum(static_cast<FactionEnum>(factionEnumInt));
+
+						factionToMinorCityCount[factionEnumInt]++;
+						factionToMinorCityCount[j]--;
+						return;
+					}
+				}
+			}
+		}
+	};
+
+	for (int32 i = 0; i < factionToMinorCityCount.size(); i++)  {
+		if (factionToMinorCityCount[i] == 0) {
+			tryChangeMinorCityFaction(i);
+		}
+	}
+	
 
 	/*
 	 * Crates/Shrines
@@ -855,7 +893,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 	int32 simTicksForThisControllerTick;
 	int32 gameSpeed = tickInfo.gameSpeed;
 	{
-		LEAN_PROFILING(TickSim_Replays);
+		LEAN_PROFILING(TickSim_Pre);
 		// Note: _tickCount contains simulation local tick as oppose to server's tick
 
 		if (!AllPlayerHasTownhallAfterInitialTicks()) {
@@ -882,25 +920,24 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		GameRand::ResetStateToTickCount(_tickCount);
 		Time::SetTickCount(_tickCount);
 
-		_floodSystem.Tick();
-
-
-		if (Time::Ticks() % 60 == 0)
 		{
-			//if (isConnectedNotCached || isConnectedCached) {
-			//	PUN_LOG("isConnected notCached:%d cached:%d", isConnectedNotCached, isConnectedCached);
-			//}
-			//isConnectedNotCached = 0;
-			//isConnectedCached = 0;
+			LEAN_PROFILING(TickSim_Flood);
+			
+			_floodSystem.Tick();
 		}
 		
 
-		if (PunSettings::IsOn("TickStats")) {
+		if (PunSettings::IsOn("TickStats")) 
+		{
+			LEAN_PROFILING(TickSim_StatSys);
+			
 			_statSystem.Tick(this);
 		}
 
 		if (PunSettings::IsOn("TickPlayerOwned"))
 		{
+			LEAN_PROFILING(TickSim_PlayerOwned);
+			
 			//! Tick Round
 			if (Time::Ticks() % Time::TicksPerRound == 0) 
 			{
@@ -1127,39 +1164,6 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 							}
 						}
 
-						//// Check for owner change, and update vassals accordingly...
-						//ArmyNode& armyNode = townhall(playerId).armyNode;
-						//int32 lastLordPlayerId = armyNode.lastLordPlayerId;
-						//int32 lordPlayerId = armyNode.lordPlayerId;
-						//if (lastLordPlayerId != lordPlayerId)
-						//{
-						//	// If the last lord wasn't the original owner, that player lose vassalage
-						//	if (lastLordPlayerId != armyNode.originalPlayerId) {
-						//		_playerOwnedManagers[lastLordPlayerId].LoseVassal(armyNode.nodeId);
-						//	}
-
-						//	// Attacker made node owner's a vassal
-						//	if (lordPlayerId != armyNode.originalPlayerId) {
-						//		_playerOwnedManagers[lordPlayerId].GainVassal(armyNode.nodeId);
-						//		AddPopupAll(PopupInfo(lordPlayerId, playerName(lordPlayerId) + " has conquered " + armyNodeName(armyNode.nodeId) + "."), -1);
-						//		AddPopup(armyNode.originalPlayerId, 
-						//			"<Bold>You became " + playerName(lordPlayerId) + "'s vassal.</>"
-						//					 "<space>"
-						//					 "<bullet>As a vassal, you pay your lord 5% <img id=\"Coin\"/> revenue as a tribute each round.</>"
-						//					 "<bullet>If your lord is ahead of you in science, you gain +20% <img id=\"Science\"/> from knowledge transfer.</>");
-						//		_playerOwnedManagers[lordPlayerId].RecalculateTaxDelayed();
-						//		_playerOwnedManagers[armyNode.originalPlayerId].RecalculateTaxDelayed();
-
-						//		CheckDominationVictory(lordPlayerId);
-						//	}
-						//	// lord title returns to its original owner, liberated!
-						//	else
-						//	{
-						//		AddPopupAll(PopupInfo(lordPlayerId, playerName(armyNode.originalPlayerId) + " has declared independence from " + playerName(lastLordPlayerId) + "."), -1);
-						//	}
-						//	
-						//	armyNode.lastLordPlayerId = lordPlayerId;
-						//}
 
 						/*
 						 * Economic Victory
@@ -1483,6 +1487,7 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 				/*
 				 * CityNetwork
 				 */
+				CheatBuildTick();
 				TestCityNetworkStage();
 				
 			}
@@ -1569,20 +1574,28 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 			}
 		}
 
-		if (PunSettings::IsOn("TickUnits")) {
+		if (PunSettings::IsOn("TickUnits")) 
+		{
+			LEAN_PROFILING(TickSim_UnitSys);
 			_unitSystem->Tick();
 		}
 
-		if (PunSettings::IsOn("TickBuildings")) {
+		if (PunSettings::IsOn("TickBuildings")) 
+		{
+			LEAN_PROFILING(TickSim_BuildingSys);
 			_buildingSystem->Tick();
 		}
 
 		if (PunSettings::IsOn("TickTiles")) 
 		{
-			//PUN_LLM(PunSimLLMTag::Trees);
-			_treeSystem->Tick();
-
-			_overlaySystem.Tick();
+			{
+				LEAN_PROFILING(TickSim_TreeSys);
+				_treeSystem->Tick();
+			}
+			{
+				LEAN_PROFILING(TickSim_OverlaySys);
+				_overlaySystem.Tick();
+			}
 		}
 
 		if (PunSettings::IsOn("TickUnlocks"))
@@ -1594,6 +1607,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		// Hashes
 #if CHECK_TICKHASH
 		{
+			LEAN_PROFILING(TickSim_TickHash);
+			
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Input, _currentInputHashes);
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::RandCount, GameRand::RandUsageCount());
 			AddTickHash(_tickHashes, _tickCount, TickHashEnum::Rand, GameRand::RandState());
@@ -1620,6 +1635,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 
 		if (Time::Ticks() % TickHashInterval == 0)
 		{
+			LEAN_PROFILING(TickSim_TickHash);
+			
 			int32 tmp;
 			uint32_t randState = GameRand::RandState();
 			std::memcpy(&tmp, &randState, sizeof(tmp));
@@ -1643,22 +1660,28 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		
 
 #if USE_LEAN_PROFILING
-		LeanProfiler::FinishTick(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
-		if (Time::Ticks() % (PunSettings::Get("LeanProfilingTicksInterval") * gameSpeed) == 0)
 		{
-			LeanProfiler::FinishInterval(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
+			LEAN_PROFILING(TickSim_LeanProfiling);
+			
+			LeanProfiler::FinishTick(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
+			if (Time::Ticks() % (PunSettings::Get("LeanProfilingTicksInterval") * gameSpeed) == 0)
+			{
+				LeanProfiler::FinishInterval(static_cast<int32>(LeanProfilerEnum::R_resourceCount), static_cast<int32>(LeanProfilerEnum::DropoffFoodAnimal));
+			}
 		}
 #endif
 		
 
 		// Snow
 		{
-			auto snowAccumulate = [&](FloatDet& lastSnow, FloatDet& snow, int32 temperatureFraction100)
+			LEAN_PROFILING(TickSim_Snow);
+			
+			auto snowAccumulate = [&](FloatDet& lastSnow, FloatDet& snow, int32 temperatureFraction10000)
 			{
 				lastSnow = snow;
 
-				FloatDet minCelsius = ModifyCelsiusByBiome(temperatureFraction100, Time::MinCelsiusBase());
-				FloatDet maxCelsius = ModifyCelsiusByBiome(temperatureFraction100, Time::MaxCelsiusBase(), maxCelsiusDivider);
+				FloatDet minCelsius = ModifyCelsiusByBiome(temperatureFraction10000, Time::MinCelsiusBase());
+				FloatDet maxCelsius = ModifyCelsiusByBiome(temperatureFraction10000, Time::MaxCelsiusBase(), maxCelsiusDivider);
 
 				FloatDet currentCelsius = Time::CelsiusHelper(minCelsius, maxCelsius);
 
@@ -1668,9 +1691,9 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 				//PUN_LOG("SnowAccumulation snow:%f celsius:%f", FDToFloat(snow), FDToFloat(currentCelsius));
 			};
 
-			snowAccumulate(_lastTickSnowAccumulation3, _snowAccumulation3, tundraTemperatureStart100);
-			snowAccumulate(_lastTickSnowAccumulation2, _snowAccumulation2, borealTemperatureStart100);
-			snowAccumulate(_lastTickSnowAccumulation1, _snowAccumulation1, forestTemperatureStart100);
+			snowAccumulate(_lastTickSnowAccumulation3, _snowAccumulation3, GameMapConstants::TundraTemperatureStart10000);
+			snowAccumulate(_lastTickSnowAccumulation2, _snowAccumulation2, GameMapConstants::BorealTemperatureStart10000);
+			snowAccumulate(_lastTickSnowAccumulation1, _snowAccumulation1, GameMapConstants::ForestTemperatureStart10000);
 		}
 		
 
@@ -1681,6 +1704,8 @@ void GameSimulationCore::Tick(int bufferCount, NetworkTickInfo& tickInfo, bool t
 		// SaveCheck
 		if (saveCheckActive())
 		{
+			LEAN_PROFILING(TickSim_SaveCheck);
+			
 			PUN_CHECK(saveCheckState == SaveCheckState::SerializeBeforeSave ||
 					  saveCheckState == SaveCheckState::SerializeAfterSave);
 			
@@ -3482,7 +3507,8 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 					}
 					else
 					{
-						if (!bld->isConstructed() && moneyCap32(command.playerId) >= bld->GetQuickBuildCost())
+						if (!bld->isConstructed() && 
+							(moneyCap32(command.playerId) >= bld->GetQuickBuildCost() || command.intVar2 == 1))
 						{
 							ChangeMoney(command.playerId, -bld->GetQuickBuildCost());
 							_buildingSystem->AddQuickBuild(command.intVar1);
@@ -3663,6 +3689,17 @@ void GameSimulationCore::GenericCommand(FGenericCommand command)
 			if (IsMinorTown(targetTownId))
 			{
 				int32 moneyAmount = command.intVar3;
+
+				//! Money Availability
+				if (money64(giverPlayerId) < moneyAmount)
+				{
+					AddPopupToFront(giverPlayerId,
+						LOCTEXT("GiftingMinorTown_NotEnoughMoney", "Not enough money to give out."),
+						ExclusiveUIEnum::GiftResourceUI, "PopupCannot"
+					);
+					return;
+				}
+				
 				ChangeMoney(giverPlayerId, -moneyAmount);
 				townManagerBase(targetTownId)->ChangeWealth_MinorCity(moneyAmount);
 				townManagerBase(targetTownId)->relationship().ChangeModifier(giverPlayerId, RelationshipModifierEnum::YouGaveUsGifts, moneyAmount / GoldToRelationship);
@@ -4479,6 +4516,32 @@ void GameSimulationCore::ProcessTradeDeal(const PopupInfo& popupInfo)
 	checkCardAvailability(sourcePlayerId, sourceDealInfo);
 	checkCardAvailability(targetPlayerId, targetDealInfo);
 
+	//! Money Availability
+	bool sourceNotEnoughMoney = money64(sourcePlayerId) < sourceDealInfo.moneyAmount;
+	if (sourceNotEnoughMoney ||
+		money64(targetPlayerId) < targetDealInfo.moneyAmount)
+	{
+		if (dealStageEnum == TradeDealStageEnum::Gifting) {
+			AddPopupToFront(sourcePlayerId,
+				LOCTEXT("Gifting_NotEnoughMoney", "Not enough money to give out."),
+				ExclusiveUIEnum::GiftResourceUI, "PopupCannot"
+			);
+		}
+		else
+		{
+			AddPopupToFront(sourcePlayerId,
+				FText::Format(
+					LOCTEXT("TradeDeal_NotEnoughMoney", "Deal failed.<space>{0} not enough money."),
+					playerNameT(sourceNotEnoughMoney ? sourcePlayerId : targetPlayerId)
+				),
+				ExclusiveUIEnum::GiftResourceUI, "PopupCannot"
+			);
+		}
+		return;
+	}
+
+	
+
 	/*
 	 * Execute the deal
 	 */
@@ -5213,16 +5276,26 @@ void GameSimulationCore::UseCard(FUseCard command)
 	{
 		if (IsValidTown(command.townId))
 		{
-			auto& townResourceSys = resourceSystem(command.townId);
+			//auto& townResourceSys = resourceSystem(command.townId);
+
+			//const int32 maxRemoval = 500;
+			//int32 totalRemoved = 0;
+			//for (ResourceEnum foodEnum : StaticData::FoodEnums) 
+			//{
+			//	int32 amountToRemove = townResourceSys.resourceCount(foodEnum) / 2;
+			//	amountToRemove = std::min(amountToRemove, maxRemoval - totalRemoved);
+			//	
+			//	townResourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
+			//	globalResourceSys.ChangeMoney(amountToRemove * FoodCost);
+			//	totalRemoved += amountToRemove;
+
+			//	if (totalRemoved >= maxRemoval) {
+			//		break;
+			//	}
+			//}
+
+			int32 totalRemoved = GetSellFoodAmount_Helper(command.playerId, command.townId, true);
 			
-			int32 totalRemoved = 0;
-			for (ResourceEnum foodEnum : StaticData::FoodEnums) 
-			{
-				int32 amountToRemove = townResourceSys.resourceCount(foodEnum) / 2;
-				townResourceSys.RemoveResourceGlobal(foodEnum, amountToRemove);
-				globalResourceSys.ChangeMoney(amountToRemove * FoodCost);
-				totalRemoved += amountToRemove;
-			}
 			AddPopupToFront(command.playerId,
 				FText::Format(LOCTEXT("SoldFoodForCoin", "Sold {0} food for <img id=\"Coin\"/>{1}."), TEXT_NUM(totalRemoved), TEXT_NUM(totalRemoved * FoodCost))
 			);
@@ -5237,7 +5310,7 @@ void GameSimulationCore::UseCard(FUseCard command)
 			
 			int32 cost = GetResourceInfo(ResourceEnum::Wood).basePrice;
 			int32 amountToBuy = globalResourceSys.moneyCap32() / 2 / cost;
-			amountToBuy = min(amountToBuy, 1000);
+			amountToBuy = min(amountToBuy, 500);
 
 			if (townResourceSys.CanAddResourceGlobal(ResourceEnum::Wood, amountToBuy)) {
 				townResourceSys.AddResourceGlobal(ResourceEnum::Wood, amountToBuy, *this);
@@ -5951,6 +6024,14 @@ void GameSimulationCore::SetProvinceOwnerFull(int32 provinceId, int32 townId)
 
 		// Taking over proper land grants seeds or unlocks proper mine
 		CheckSeedAndMineCard(playerId);
+
+
+		// Free Colony card when the player conquered the starting island
+		if (townId == playerId &&
+			playerId != -1)
+		{
+			playerOwned(playerId).TryGetFreeColony(provinceId);
+		}
 	}
 }
 
@@ -5990,6 +6071,15 @@ void GameSimulationCore::ChooseLocation(FChooseLocation command)
 	if (playerOwned(command.playerId).hasChosenLocation()) {
 		return;
 	}
+
+	// Ensure that Player can't choose Province too close to another player
+	if (provinceOwnerTown_Major(command.provinceId) != -1) {
+		return;
+	}
+	if (!SimUtils::CanReserveSpot_NotTooCloseToAnother(command.provinceId, this, 2)) {
+		return;
+	}
+
 	
 	if (command.isChoosingOrReserving)
 	{
@@ -6136,6 +6226,14 @@ void GameSimulationCore::Cheat(FCheat command)
 			}
 			break;
 		}
+		case CheatEnum::SurvivalResources: {
+			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Orange, 10000, *this);
+			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Coal, 5000, *this);
+			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::Medicine, 1000, *this);
+			resourceSystem(command.playerId).AddResourceGlobal(ResourceEnum::IronTools, 500, *this);
+			break;
+		}
+		
 		case CheatEnum::Undead: SimSettings::Toggle("CheatUndead"); break;
 		case CheatEnum::Immigration: GetTownhallCapital(command.playerId).ImmigrationEvent(30); break;
 
@@ -6474,6 +6572,31 @@ void GameSimulationCore::Cheat(FCheat command)
 		/*
 		 * Test City Building Across Network (Desync)
 		 */
+		case CheatEnum::Build:
+		{
+			if (command.playerId == gameManagerPlayerId())
+			{
+				CardEnum cardEnum = static_cast<CardEnum>(command.var1);
+				int32 addCount = command.var2;
+
+				WorldTile2 curTile = GetTownhallGateCapital(command.playerId);
+				ObjectTypeEnum objectTypeEnum = _descriptionUIState.objectType;
+				
+				if (objectTypeEnum == ObjectTypeEnum::Building) {
+					curTile = buildingCenter(_descriptionUIState.objectId);
+				}
+				else if (objectTypeEnum == ObjectTypeEnum::TileObject ||
+						objectTypeEnum == ObjectTypeEnum::EmptyTile) {
+					curTile = WorldTile2(_descriptionUIState.objectId);
+				}
+
+				PunSettings::Set("CheatBuild_BuildingEnum", static_cast<int32>(cardEnum));
+				PunSettings::Set("CheatBuild_CountLeft", addCount);
+				PunSettings::Set("CheatBuild_CurTileId", curTile.tileId());
+				PunSettings::Set("CheatBuild_PendingQuickBuild", 1);
+			}
+			break;
+		}
 		case CheatEnum::TestCityNetwork:
 		{
 			if (command.playerId == gameManagerPlayerId()) 
@@ -7154,6 +7277,85 @@ void GameSimulationCore::AddTickHash(TickHashes& tickHashes, int32 tickCount, Ti
 /*
  * Test for what causes the desync
  */
+bool GameSimulationCore::CheatPlaceBuildingSpiral(CardEnum buildingEnum, WorldTile2 curTile, int32 commandPlayerId)
+{
+	WorldTile2 size = GetBuildingInfo(buildingEnum).GetSize(playerFactionEnum(commandPlayerId));
+
+	const WorldTile2 buildingSpacing(3, 3);
+	TileArea startArea(curTile, size + WorldTile2(2, 2) + buildingSpacing);
+
+	TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
+		[&](WorldTile2 tile) {
+			return IsPlayerBuildable(tile, commandPlayerId);
+		},
+		[&](WorldTile2 tile) {
+			return WorldTile2::ManDistance(curTile, tile) > 300;
+		}
+	);
+
+	if (!endArea.isValid()) {
+		return false;
+	}
+
+	{
+		auto command = make_shared<FPlaceBuilding>();
+		command->center = endArea.centerTile();
+		command->buildingEnum = static_cast<uint8>(buildingEnum);
+		command->faceDirection = static_cast<uint8>(Direction::S);
+		command->area = BuildingArea(command->center, size, static_cast<Direction>(command->faceDirection));
+		_gameManager->SendNetworkCommand(command);
+
+		PUN_LOG("TestCityNetworkStage FPlaceBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
+	}
+
+	return true;
+}
+
+bool GameSimulationCore::CheatQuickBuild(int32 townId, CardEnum buildingEnum)
+{
+	const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+	for (int32 bldId : bldIds)
+	{
+		if (!building(bldId).isConstructed() &&
+			!_buildingSystem->IsQuickBuild(bldId))
+		{
+			auto command = make_shared<FGenericCommand>();
+			command->callbackEnum = CallbackEnum::QuickBuild;
+			command->intVar1 = bldId;
+			command->intVar2 = 1; // Force Quick Build
+			_gameManager->SendNetworkCommand(command);
+
+			PUN_LOG("TestCityNetworkStage QuickBuild:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);
+			return true;
+		}
+	}
+	return false;
+};
+
+void GameSimulationCore::CheatBuildTick()
+{
+	if (PunSettings::Get("CheatBuild_CountLeft") <= 0) 
+	{
+		if (PunSettings::Get("CheatBuild_PendingQuickBuild") == 1)
+		{
+			if (CheatQuickBuild(gameManagerPlayerId(), static_cast<CardEnum>(PunSettings::Get("CheatBuild_BuildingEnum")))) {
+				return;
+			}
+			PunSettings::Set("CheatBuild_PendingQuickBuild", 0);
+		}
+		
+		return;
+	}
+
+	CheatPlaceBuildingSpiral(
+		static_cast<CardEnum>(PunSettings::Get("CheatBuild_BuildingEnum")), 
+		WorldTile2(PunSettings::Get("CheatBuild_CurTileId")), 
+		gameManagerPlayerId()
+	);
+
+	PunSettings::Set("CheatBuild_CountLeft", PunSettings::Get("CheatBuild_CountLeft") - 1);
+}
+
 void GameSimulationCore::TestCityNetworkStage()
 {
 	if (PunSettings::Get("TestCityNetwork_Stage") == -1) {
@@ -7216,59 +7418,33 @@ void GameSimulationCore::TestCityNetworkStage()
 	{
 		WorldTile2 curTile(PunSettings::Get("TestCityNetwork_CurTileId"));
 
-		WorldTile2 size = GetBuildingInfo(buildingEnum).GetSize(playerFactionEnum(commandPlayerId));
+		CheatPlaceBuildingSpiral(buildingEnum, curTile, commandPlayerId);
 
-		const WorldTile2 buildingSpacing(3, 3);
-		TileArea startArea(curTile, size + WorldTile2(2, 2) + buildingSpacing);
-
-		TileArea endArea = SimUtils::SpiralFindAvailableBuildArea(startArea,
-			[&](WorldTile2 tile) {
-			return IsPlayerBuildable(tile, commandPlayerId);
-		},
-			[&](WorldTile2 tile) {
-				return WorldTile2::ManDistance(curTile, tile) > 300;
-			}
-		);
-
-		if (!endArea.isValid()) {
-			return false;
-		}
-
+		// TODO: later on might update curTile to new building location?
 		PunSettings::Set("TestCityNetwork_CurTileId", curTile.tileId());
-
-		{
-			auto command = make_shared<FPlaceBuilding>();
-			command->center = endArea.centerTile();
-			command->buildingEnum = static_cast<uint8>(buildingEnum);
-			command->faceDirection = static_cast<uint8>(Direction::S);
-			command->area = BuildingArea(command->center, size, static_cast<Direction>(command->faceDirection));
-			_gameManager->SendNetworkCommand(command);
-
-			PUN_LOG("TestCityNetworkStage FPlaceBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
-		}
 
 		return true;
 	};
 
-	auto quickBuild = [&](CardEnum buildingEnum)
-	{
-		const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
-		for (int32 bldId : bldIds)
-		{
-			if (!building(bldId).isConstructed() &&
-				!_buildingSystem->IsQuickBuild(bldId))
-			{
-				auto command = make_shared<FGenericCommand>();
-				command->callbackEnum = CallbackEnum::QuickBuild;
-				command->intVar1 = bldId;
-				_gameManager->SendNetworkCommand(command);
+	//auto quickBuild = [&](CardEnum buildingEnum)
+	//{
+	//	const std::vector<int32>& bldIds = buildingIds(townId, buildingEnum);
+	//	for (int32 bldId : bldIds)
+	//	{
+	//		if (!building(bldId).isConstructed() &&
+	//			!_buildingSystem->IsQuickBuild(bldId))
+	//		{
+	//			auto command = make_shared<FGenericCommand>();
+	//			command->callbackEnum = CallbackEnum::QuickBuild;
+	//			command->intVar1 = bldId;
+	//			_gameManager->SendNetworkCommand(command);
 
-				PUN_LOG("TestCityNetworkStage QuickBuild:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);
-				return true;
-			}
-		}
-		return false;
-	};
+	//			PUN_LOG("TestCityNetworkStage QuickBuild:%s id:%d", *GetBuildingInfo(buildingEnum).nameF(), bldId);
+	//			return true;
+	//		}
+	//	}
+	//	return false;
+	//};
 
 	{
 		LEAN_PROFILING_D(TestCityNetworkStage);
@@ -7284,7 +7460,7 @@ void GameSimulationCore::TestCityNetworkStage()
 					}
 				}
 
-				quickBuild(CardEnum::Warehouse);
+				CheatQuickBuild(townId, CardEnum::Warehouse);
 				return;
 			}
 		}
@@ -7300,7 +7476,7 @@ void GameSimulationCore::TestCityNetworkStage()
 				}
 			}
 
-			quickBuild(CardEnum::House);
+			CheatQuickBuild(townId, CardEnum::House);
 			return;
 		}
 
@@ -7351,7 +7527,7 @@ void GameSimulationCore::TestCityNetworkStage()
 				{
 					if (placeBuilding(buildingEnum)) {
 						PUN_LOG("TestCityNetworkStage placeBuilding:%s", *GetBuildingInfo(buildingEnum).nameF());
-						quickBuild(buildingEnum);
+						CheatQuickBuild(townId, buildingEnum);
 						return;
 					}
 				}
@@ -7365,7 +7541,7 @@ void GameSimulationCore::TestCityNetworkStage()
 	for (CardEnum buildingEnum : buildingsToSpawn)
 	{
 		if (townBuildingFinishedCount(townId, buildingEnum) < 1) {
-			if (quickBuild(buildingEnum)) {
+			if (CheatQuickBuild(townId, buildingEnum)) {
 				return;
 			}
 		}

@@ -541,27 +541,16 @@ void Farm::DoFarmWork(int32_t unitId, int32 farmTileId, FarmStage farmStage)
 		{
 			int32 dropCount = GameRand::Rand100RoundTo1(resource.count * efficiency());
 
-			dropCount = max(1, dropCount);
+			//dropCount = max(1, dropCount);
 
-			resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);
+			if (dropCount > 0)
+			{
+				resourceSystem().SpawnDrop(resource.resourceEnum, dropCount, tile, ResourceHolderType::DropManual);
 
-			AddProductionStat(ResourcePair(resource.resourceEnum, dropCount));
+				AddProductionStat(ResourcePair(resource.resourceEnum, dropCount));
 
-			_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(resource.resourceEnum, dropCount);
-//			// Quests
-//#define UPDATE_QUEST(enumName) else if (product() == ResourceEnum::##enumName) { \
-//				_simulation->QuestUpdateStatus(_playerId, QuestEnum::##enumName##Quest, dropCount); \
-//			}
-//			
-//			if (product() == ResourceEnum::Cabbage) {
-//				_simulation->QuestUpdateStatus(_playerId, QuestEnum::CabbageQuest, dropCount);
-//			}
-//			UPDATE_QUEST(Blueberries)
-//			UPDATE_QUEST(Wheat)
-//			UPDATE_QUEST(Pumpkin)
-//			UPDATE_QUEST(Potato)
-//			
-//#undef UPDATE_QUEST
+				_simulation->unlockSystem(_playerId)->UpdateResourceProductionCount(resource.resourceEnum, dropCount);
+			}
 		}
 
 		// Play sound
@@ -1175,7 +1164,7 @@ void CottonMill::FinishConstruction() {
 	AddResourceHolder(ResourceEnum::DyedCottonFabric, ResourceHolderType::Provider, 0);
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 7),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Automatic Looms", "Automatic Looms"), ResourceEnum::Iron, 7),
 		MakeComboUpgrade(LOCTEXT("Cotton Mill Town", "Cotton Mill Town"), ResourceEnum::Iron),
 	});
 }
@@ -1187,7 +1176,7 @@ void PrintingPress::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Iron, 7),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Cylinder Press", "Cylinder Press"), ResourceEnum::Iron, 7),
 		MakeComboUpgrade(LOCTEXT("Printing Press Town", "Printing Press Town"), ResourceEnum::Iron),
 	});
 }
@@ -1914,7 +1903,7 @@ void Steelworks::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Open-hearth Furnace", "Open-hearth Furnace"), ResourceEnum::Steel, 8),
 		MakeComboUpgrade(LOCTEXT("Steelworks Town", "Steelworks Town"), ResourceEnum::Concrete),
 	});
 }
@@ -1922,7 +1911,7 @@ void OilRig::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Seismic Survey", "Seismic Survey"), ResourceEnum::Steel, 8),
 		MakeComboUpgrade(LOCTEXT("Oil Rig Town", "Oil Rig Town"), ResourceEnum::Steel),
 	});
 }
@@ -1944,7 +1933,7 @@ void PaperMill::FinishConstruction() {
 
 	AddUpgrades({
 		MakeUpgrade(LOCTEXT("Drying Cylinder PaperMill", "Drying Cylinder"), LOCTEXT("Uses 50% less wood to produce paper.", "Uses 50% less wood to produce paper."), ResourceEnum::Steel, 50),
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Suction Roll", "Suction Roll"), ResourceEnum::Steel, 8),
 		MakeComboUpgrade(LOCTEXT("Paper Mill Town", "Paper Mill Town"), ResourceEnum::Steel),
 	});
 }
@@ -1955,7 +1944,7 @@ void ClockMakers::FinishConstruction() {
 	Building::FinishConstruction();
 
 	AddUpgrades({
-		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Advanced Machinery", "Advanced Machinery"), ResourceEnum::Steel, 8),
+		MakeProductionUpgrade_WithHouseLvl(LOCTEXT("Improved Gears", "Improved Gears"), ResourceEnum::Steel, 8),
 		MakeComboUpgrade(LOCTEXT("Clock Makers Town", "Clock Makers Town"), ResourceEnum::Steel),
 	});
 }
@@ -1973,7 +1962,11 @@ void PowerPlant::FinishConstruction() {
 	//	MakeWorkerSlotUpgrade(30),
 	//});
 
-	AddResourceHolder(fuelEnum(), ResourceHolderType::Requester, 100);
+	//constexpr int32 StashTicksToLast = Time::TicksPerSeason * 2;
+
+	// Store Coal to fire for 2 seasons = 4 rounds = 4 * 50kW = 200 Coal
+
+	AddResourceHolder(fuelEnum(), ResourceHolderType::Requester, fuelEnum() == ResourceEnum::Coal ? 200 : 100);
 }
 
 
@@ -2143,7 +2136,6 @@ void MinorCity::FinishConstruction()
 		}
 	}
 
-	AddRoadAroundBuilding();
 }
 
 void MinorCity::OnDeinit()

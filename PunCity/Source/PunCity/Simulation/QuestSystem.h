@@ -7,7 +7,6 @@
 #include "GameSimulationInfo.h"
 #include "IGameSimulationCore.h"
 #include "PunCity/PunUtils.h"
-#include "UnlockSystem.h"
 #include "PlayerOwnedManager.h"
 #include "StatSystem.h"
 
@@ -150,20 +149,7 @@ struct BuildHousesQuest final : Quest
 		return simulation->buildingCount(playerId, CardEnum::House) < 5;
 	}
 
-	void OnFinishQuest() override
-	{
-		PUN_CHECK(simulation);
-		auto unlockSys = simulation->unlockSystem(playerId);
-		unlockSys->townhallUpgradeUnlocked = true;
-
-		AddEndPopup(
-			LOCTEXT("BuildHouses_Finish", "Well done! Your people are happy that they finally have houses to live in.<space>Providing enough housing is important. Homeless people can migrate away, or die during winter. On the other hand, having extra houses can attract immigrants.")
-		);
-		
-		if (simulation->GetTownLvl(playerId) == 1) {
-			simulation->parameters(playerId)->NeedTownhallUpgradeNoticed = true;
-		}
-	}
+	void OnFinishQuest() override;
 
 	int32 currentValue() override { return simulation->townBuildingFinishedCount(playerId, CardEnum::House); }
 	int32 neededValue() override { return 5; }
@@ -183,17 +169,7 @@ struct TownhallUpgradeQuest final : Quest
 
 	void OnStartQuest() override { AddStartPopup(); }
 
-	void OnFinishQuest() override
-	{
-		PUN_CHECK(simulation);
-		auto unlockSys = simulation->unlockSystem(playerId);
-		unlockSys->townhallUpgradeUnlocked = true;
-
-		AddEndPopup(
-			LOCTEXT("UpgradeTownhall_Finish", "Great! Your townhall is now level 2.<space>Upgrading the Townhall, Researching Technology, and Upgrading Houses are ways you progress through the game and unlock new gameplay elements."
-		));
-
-	}
+	void OnFinishQuest() override;
 
 	int32 currentValue() override { return (simulation->GetTownLvl(playerId) >= 2); }
 	int32 neededValue() override { return 1; }

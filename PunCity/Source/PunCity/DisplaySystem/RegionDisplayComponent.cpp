@@ -189,7 +189,9 @@ void URegionDisplayComponent::UpdateDisplay(int regionId, int meshId, WorldAtom2
 	if (PunSettings::IsOn("HideWater")) {
 		_waterMeshes[meshId]->SetVisibility(false);
 	}
-	
+	if (PunSettings::IsOn("HideTerrain")) {
+		_terrainChunks[meshId]->SetVisibility(false);
+	}
 }
 
 void URegionDisplayComponent::AfterAdd()

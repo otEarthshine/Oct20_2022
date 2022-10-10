@@ -69,7 +69,8 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "DisplayTiles", 1 },
 	{ "DisplayResources", 1 },
 	{ "DisplayTerritory", 1 },
-	{ "DisplayTerrainMap", 1 },
+	{ "DisplayMapTerrain", 1 },
+	{ "DisplayMapWater", 1 },
 	{ "DisplayMapUI", 1 },
 	{ "MiniTree", 0},
 
@@ -79,6 +80,15 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 	{ "TileObjFull", 1}, // Turn this off to turn off grass, Must refresh manually if in game
 	{ "PlainTerrain", 0 },
 	{ "HideWater", 0 },
+	{ "HideTerrain", 0 },
+
+	//! Terrain Generator
+	{ "EnableWestwardWind", 1 },
+	{ "EnableEastwardWind", 1 },
+	{ "EnableEastwardCloudSmooth", 1 },
+	{ "EastwardCloudSmoothWidth", 11 },
+	{ "DesertLatitudeBandSize10000", 700 },
+	{ "DesertLongitudeSize10000", 3000 },
 
 	//! Ticks
 	{ "TickBuildings", 1 },
@@ -194,6 +204,11 @@ std::unordered_map<std::string, int32> PunSettings::Settings =
 
 	{ "TestCityNetwork_BuildingEnumToStart", 0 },
 	{ "TestCityNetwork_BuildingEnumToStop", 1000 },
+
+	{ "CheatBuild_BuildingEnum", 0 },
+	{ "CheatBuild_CountLeft", 0 },
+	{ "CheatBuild_CurTileId", -1 },
+	{ "CheatBuild_PendingQuickBuild", 0 },
 	
 	// Debug Network
 	{ "ForceDelayInput", 0 },

@@ -2648,7 +2648,7 @@ void UAssetLoaderComponent::TraverseTris_July10(uint32 mergedVertIndex, int32 gr
 void UAssetLoaderComponent::DetectOrLoadMeshVertexInfo(FString meshName, UStaticMesh* mesh)
 {
 	//! Turn this on to cache the result
-#if (WITH_EDITOR && 1)
+#if (WITH_EDITOR && 0)
 	// In the editor, we DetectMeshGroups and cache results in meshName_to_groupIndexToConnectedVertIndices
 	TArray<FVector> vertexPositions;
 	

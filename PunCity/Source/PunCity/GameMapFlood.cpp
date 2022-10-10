@@ -411,7 +411,7 @@ bool GameMapFlood::IsConnected(FloodInfo startFlood, FloodInfo endFlood, int max
 					continue;
 				}
 
-				std::vector<FloodConnection>& connections = directionToConnections[i];
+				const std::vector<FloodConnection>& connections = directionToConnections[i];
 				for (const FloodConnection& connection : connections) {
 					if (connection.originId == info.floodId) {
 						FloodInfo connectedInfo(neighborRegion64Id, connection.neighborId);
@@ -444,4 +444,251 @@ bool GameMapFlood::IsConnected(FloodInfo startFlood, FloodInfo endFlood, int max
 	}
 
 	return false;
+}
+
+std::vector<PathFindingFloodInfo> GameMapFlood::FindPath_CheckFloodRegionHelper(WorldTile2 start, WorldTile2 end, int maxRegionDistance) const
+{
+	int32 startRegion64Id;
+	int32 endRegion64Id;
+	int32 startFloodId;
+	int32 endFloodId;
+	{
+		//SCOPE_CYCLE_COUNTER(STAT_PunIsConnectedLight); // Note: Turning on affect overall speed
+
+		check(start.isValid());
+		check(end.isValid());
+
+		startRegion64Id = TileToRegion64Id(start);
+		endRegion64Id = TileToRegion64Id(end);
+
+		startFloodId = _region64ToFloods[startRegion64Id][TileToLocal64Id(start)];
+		endFloodId = _region64ToFloods[endRegion64Id][TileToLocal64Id(end)];
+		if (startFloodId == -1 || endFloodId == -1) {
+			return {};
+		}
+	}
+
+	return FindPath_FloodRegionHelper(FloodInfo(startRegion64Id, startFloodId), FloodInfo(endRegion64Id, endFloodId), maxRegionDistance);
+}
+
+
+std::vector<WorldTile2> GameMapFlood::FindPath_FloodRegionHelper(WorldTile2 start, WorldTile2 end, int maxRegionDistance) const
+{
+	int32 startRegion64Id;
+	int32 endRegion64Id;
+	int32 startFloodId;
+	int32 endFloodId;
+	{
+		//SCOPE_CYCLE_COUNTER(STAT_PunIsConnectedLight); // Note: Turning on affect overall speed
+
+		check(start.isValid());
+		check(end.isValid());
+
+		startRegion64Id = TileToRegion64Id(start);
+		endRegion64Id = TileToRegion64Id(end);
+
+		startFloodId = _region64ToFloods[startRegion64Id][TileToLocal64Id(start)];
+		endFloodId = _region64ToFloods[endRegion64Id][TileToLocal64Id(end)];
+		if (startFloodId == -1 || endFloodId == -1) {
+			return {};
+		}
+	}
+
+	std::vector<PathFindingFloodInfo> infos = FindPath_FloodRegionHelper(FloodInfo(startRegion64Id, startFloodId), FloodInfo(endRegion64Id, endFloodId), maxRegionDistance);
+
+	std::vector<WorldTile2> rawPath;
+
+	auto isValidConnectingTile = [&](const WorldTile2& currentTile, const FloodInfo& currentFloodInfo, const FloodInfo& lastFloodInfo)
+	{
+		if (GetFloodId(currentTile) != currentFloodInfo.floodId) {
+			return false;
+		}
+
+		// TODO Optimize checking only neighbor in direction
+		return GetFloodId(currentTile + WorldTile2(-1, -1)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(-1, 0)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(-1, 1)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(0, -1)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(0, 1)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(1, -1)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(1, 0)) == lastFloodInfo.floodId ||
+			GetFloodId(currentTile + WorldTile2(1, 1)) == lastFloodInfo.floodId;
+	};
+
+	/**
+	 * Calculate
+	 */
+	auto checkDistance1 = [&](int32 index, const WorldTile2& currentTile, const FloodInfo& currentFloodInfo, const FloodInfo& lastFloodInfo, WorldTile2& nearestTile, int32& nearestDistance)
+	{
+		if (isValidConnectingTile(currentTile, currentFloodInfo, lastFloodInfo))
+		{
+			int32 distanceToStart = WorldTile2::Distance(currentTile, start);
+			if (nearestDistance > distanceToStart) {
+				nearestDistance = distanceToStart;
+				nearestTile = currentTile;
+			}
+			int32 distanceToEnd = WorldTile2::Distance(currentTile, end);
+			if (nearestDistance > distanceToEnd) {
+				nearestDistance = distanceToEnd;
+				nearestTile = currentTile;
+			}
+		}
+	};
+
+	auto addNearestTile1 = [&](const WorldTile2& nearestTile)
+	{
+		rawPath.push_back(nearestTile);
+	};
+
+	LoopThrough(infos, checkDistance1, addNearestTile1);
+
+	rawPath.insert(rawPath.begin(), start);
+	rawPath.push_back(end);
+
+	//for (int32 i = rawPath.size(); i-- > 1;) {
+	//	WorldTile2 tile1 = rawPath[i - 1];
+	//	WorldTile2 tile2 = rawPath[i];
+	//	_simulation->DrawLine(tile1.worldAtom2(), FVector(0, 0, 10), tile2.worldAtom2(), FVector(0, 0, 15), FLinearColor::Gray, 1.0f, 10000);
+	//}
+
+	check(rawPath.size() == infos.size() + 2);
+
+	/**
+	 * Refine
+	 */
+	std::vector<WorldTile2> refinedPath;
+	
+	auto checkDistance2 = [&](int32 infosIndex, const WorldTile2& currentTile, const FloodInfo& currentFloodInfo, const FloodInfo& lastFloodInfo, WorldTile2& nearestTile, int32& nearestDistance)
+	{
+		if (isValidConnectingTile(currentTile, currentFloodInfo, lastFloodInfo))
+		{
+			// index is reverse for path vs infos
+			int32 index = infos.size() - 1 - infosIndex;
+			
+			WorldTile2 previousTile = rawPath[index];
+			WorldTile2 nextTile = rawPath[index + 2];
+			
+			int32 distance = WorldTile2::Distance(previousTile, currentTile) + WorldTile2::Distance(currentTile, nextTile);
+			if (nearestDistance > distance) {
+				nearestDistance = distance;
+				nearestTile = currentTile;
+			}
+		}
+	};
+
+	auto addNearestTile2 = [&](const WorldTile2& nearestTile)
+	{
+		refinedPath.push_back(nearestTile);
+	};
+
+	LoopThrough(infos, checkDistance2, addNearestTile2);
+
+	refinedPath.insert(refinedPath.begin(), start);
+	refinedPath.push_back(end);
+	
+	// Note: high level path is "start first"
+	// low level path is "end first"
+	return refinedPath;
+}
+
+
+std::vector<PathFindingFloodInfo> GameMapFlood::FindPath_FloodRegionHelper(FloodInfo startFlood, FloodInfo endFlood, int32 maxRegionDistance) const
+{
+	//SCOPE_TIMER("FindPath_FloodRegionHelper2");
+	
+	// Fast track special case...
+	if (startFlood == endFlood) {
+		return {};
+	}
+
+	static std::vector<PathFindingFloodInfo> queue;
+	queue.clear();
+
+	static TMap<int64, PathFindingFloodInfo> visited;
+	visited.Empty();
+
+	
+	queue.push_back({ startFlood, FloodInfo(-1, -1), 0});
+	
+
+	int32 loop = 0;
+	while (!queue.empty())
+	{
+		// Get current FloodInfo
+		PathFindingFloodInfo info = queue[0];
+		queue.erase(queue.begin());
+
+		// If at the end, return
+		if (info.currentFloodInfo == endFlood)
+		{
+			// reconstruct path
+			PathFindingFloodInfo currentInfo = info;
+			
+			std::vector<PathFindingFloodInfo> path;
+			path.push_back(currentInfo);
+
+			while (currentInfo.lastFloodInfo != startFlood &&
+				currentInfo.lastFloodInfo.region64Id != -1)
+			{
+				currentInfo = visited[currentInfo.lastFloodInfo.GetHash()];
+				path.push_back(currentInfo);
+			}
+			
+			return path;
+		}
+
+		visited.Add(info.currentFloodInfo.GetHash(), info);
+
+		if (info.regionDistance >= maxRegionDistance) {
+			continue;
+		}
+
+		// Expand and queue more FloodInfo
+		const RegionFloodConnections& regionConnections = _region64ToConnections[info.currentFloodInfo.region64Id];
+		auto& directionToConnections = regionConnections.directionToConnections();
+
+		{
+			check(info.currentFloodInfo.region64Id == regionConnections.region64Id());
+
+			for (int i = 0; i < DirectionCount; i++)
+			{
+				// Check region validity first
+				int32_t neighborRegion64Id = Region64Neighbor(info.currentFloodInfo.region64Id, static_cast<Direction>(i));
+				if (neighborRegion64Id == -1) {
+					continue;
+				}
+
+				const std::vector<FloodConnection>& connections = directionToConnections[i];
+				for (const FloodConnection& connection : connections) {
+					if (connection.originId == info.currentFloodInfo.floodId) 
+					{
+						if (!visited.Contains(connection.neighborId + Region64Tiles * neighborRegion64Id))
+						{
+							queue.push_back({ FloodInfo(neighborRegion64Id, connection.neighborId), info.currentFloodInfo, info.regionDistance + 1 });
+						}
+					}
+				}
+			}
+		}
+
+		loop++;
+		if (loop > 100000) {
+			UE_DEBUG_BREAK();
+			break;
+		}
+	}
+
+	
+	//for (const auto& info : visited) {
+	//	if (info.Value.lastFloodInfo.region64Id != -1)
+	//	{
+	//		WorldTile2 start = Region64IdToTile(info.Value.currentFloodInfo.region64Id);
+	//		WorldTile2 last = Region64IdToTile(info.Value.lastFloodInfo.region64Id);
+	//		start += WorldTile2(32, 32);
+	//		last += WorldTile2(32, 32);
+	//		_simulation->DrawLine(start, FVector::ZeroVector, last, FVector(0, 0, 3), FLinearColor::Red, 1.0f, 10000);
+	//	}
+	//}
+
+	return {};
 }

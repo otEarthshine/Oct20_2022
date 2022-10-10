@@ -977,6 +977,27 @@ void UWorldSpaceUI::TickJobUI(int buildingId)
 		return;
 	}
 
+	//! Power Plant
+	if (IsPowerPlant(building.buildingEnum()))
+	{
+		buildingJobUI->PowerPlantResourceOuter->SetVisibility(ESlateVisibility::Visible);
+
+		PowerPlant& powerPlant = building.subclass<PowerPlant>();
+		ResourceEnum fuelEnum = powerPlant.fuelEnum();
+		int32 fuelCount = powerPlant.resourceCount(fuelEnum);
+
+		if (PunGlobalHashCache::IsStateChanged(buildingJobUI->PowerPlantResourceIcon, static_cast<uint32>(fuelEnum))) {
+			SetResourceImage_MemoryLeak(buildingJobUI->PowerPlantResourceIcon, fuelEnum, assetLoader());
+		}
+
+		if (PunGlobalHashCache::IsStateChanged(buildingJobUI->PowerPlantResourceCountText, fuelCount)) {
+			buildingJobUI->PowerPlantResourceCountText->SetText(TEXT_NUM(fuelCount));
+			buildingJobUI->PowerPlantResourceCountText->SetColorAndOpacity(fuelCount > 0 ? FLinearColor::White : FLinearColor(1, 0.05, 0.05));
+		}
+	}
+
+
+
 	{
 		LEAN_PROFILING_WORLD_UI(TickWorldSpaceUI_BldJob_SpeedBoost);
 		
